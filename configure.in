@@ -1,0 +1,38 @@
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ(2.59)
+AC_INIT(mcmc_affine,0.1.0,alexander.conley@colorado.edu)
+AC_LANG_CPLUSPLUS
+dnl AC_CONFIG_SRCDIR([src])
+AM_INIT_AUTOMAKE(mcmc_affine,0.1.0)
+AC_CONFIG_MACRO_DIR([m4])
+
+dnl Checks for programs.
+AC_PROG_CXX
+AC_PROG_LIBTOOL
+AC_PROG_INSTALL
+
+dnl Initialize CXXFLAGS and CPPFLAGS
+dnl CPPFLAGS are preprocessor flags, CXX are compiler flags
+dnl Unless --enable-debug is set, then -O3 is used
+AC_ARG_WITH(cppflags,
+            [  --with-cppflags=VAL     CPPFLAGS value (def: )],
+            [CPPFLAGS="$withval"],[CPPFLAGS=""] )
+AC_ARG_WITH(cxxflags,[AC_HELP_STRING([--with-cxxflags=VAL],
+	[CXXFLAGS value (def: -Wall)])], [ CXXFLAGS=$withval $CXXFLAGS ], 
+	[CXXFLAGS="-Wall $CXXFLAGS"])
+AC_ARG_ENABLE(debug,
+	      AC_HELP_STRING([--enable-debug],
+	                     [Add -g to CXXFLAGS]),
+              [ CXXFLAGS="-g -O0 $CXXFLAGS"], [ CXXFLAGS="-O3 $CXXFLAGS"])
+AC_ARG_ENABLE(profile,
+              [  --enable-profile        Add gprof-friendly stuff to CXXFLAGS],
+              [ CXXFLAGS="$CXXFLAGS -pg -fprofile-arcs" ],)
+
+
+
+# Checks for header files.
+AC_HEADER_STDC
+
+AC_CONFIG_FILES([Makefile src/Makefile])
+AC_OUTPUT
