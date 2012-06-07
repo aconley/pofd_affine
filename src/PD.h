@@ -6,8 +6,6 @@
 #include<string>
 #include<ostream>
 
-#include<simImage.h>
-
 /*!
   \brief Class to hold P(D).  Supports interpolation.
 
@@ -26,9 +24,6 @@ class PD {
 
   unsigned int n; //!< Current size
   unsigned int capacity; //!< Current capacity
-
-  double getLogLikeBinned(const simImage&) const;
-  double getLogLikeUnbinned(const simImage&) const;
 
  public:
   PD(unsigned int N=0, double MINFLUX=0.0, double DFLUX=0.0,
@@ -72,9 +67,6 @@ class PD {
 
   const double operator[](unsigned int i) const { return pd_[i]; }
   unsigned int getDim() const { return n; }
-
-  /*! \brief Get Log likelihood of data set*/
-  double getLogLike(const simImage&) const;
 
   std::ostream& writeToStream(std::ostream& os) const; //!< Write summary
 

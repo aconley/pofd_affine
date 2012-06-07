@@ -25,10 +25,15 @@ namespace mcmc_affine {
 
 namespace pofd_mcmc {
   const char version[] = "0.1.0"; //Version number of P(D) library
-  const double n_sigma_pad = 12.0; //!< Noise padding size in sigma
-  const double n_sigma_pad2d = 5.0; //!< Noise padding size in sigma, 2D
+  const double n_sigma_shift = 8.0; //!< Shift amount
+  const double n_sigma_pad = 10.0; //!< Noise padding size in sigma
+  const double n_sigma_shift2d = 4.0; //!< Shift amount
+  const double n_sigma_pad2d = 6.0; //!< Noise padding size in sigma, 2D
   const double logfac = log2(10.0); //!< Conversion base 2, base 10
   const double ilogfac = 1.0/logfac; //!< Inverse conversion factor
+  const double smallval=exp2(-100); //!< Log of small number (base 2)
+  const double log2toe = log(2); //!< Multiply by this to go from log2 to ln
+
   const double smalllogval=-100; //!< Log of small number
 
   /*! \brief Maximum transform size.  Make sure it's a power of 2*/
@@ -53,7 +58,10 @@ namespace pofd_mcmc {
 		       BEAMSENDTOTSQNEG=1014,
 		       NCKSENDNKNOTS=2000, NCKSENDKNOTS=2001,
 		       NCKSENDKNOTSLOADED=2002, NCKSENDLOGKNOTVALS=2003,
-		       NCKSSENDLOGKNOTS=2100};
+		       NCKSSENDLOGKNOTS=2100,
+		       PDFSENDPLANSTYLE=3000, PDFHASWISDOM=3001,
+		       PDFWISLEN=3002, PDFWISNAME=3003,
+		       PDFVERBOSE=3004, PDFNINTERP=3004};
 
 }
 
