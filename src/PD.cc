@@ -391,6 +391,134 @@ int PD::writeToFits( const std::string& outputfile ) const {
   return status;
 }
 
+double PD::getLogLike(const fitsData& data) const {
+  if (pd_ == NULL) throw affineExcept("PD","getLogLike",
+				      "pd not filled before likelihood calc",1);
+  unsigned int ndata = data.getN();
+  if (ndata == 0) throw affineExcept("PD","getLogLike",
+				   "No data present",2);
+
+  if (data.isBinned()) return getLogLikeBinned(data);
+  else return getLogLikeUnbinned(data);
+}
+
+double PD::getLogLikeBinned(const fitsData& data) const {
+
+  if (!data.isBinned())
+    throw affineExcept("PD","getLogLikeBinned",
+                     "Data is not binned",1);
+
+  //Quantities for edge test
+  double maxflux = minflux + static_cast<double>(n-1)*dflux;
+
+  int idx; //!< Index look up
+  const unsigned int* bins;
+  unsigned int nbins, ninbin;
+  double cflux, bincent0, bindelta, loglike;
+  double t, delt, maxfluxval;
+  loglike = 0.0;
+  bins = data.getBinnedData();
+  bincent0 = data.getBinCent0();
+  bindelta = data.getBinDelta();
+  nbins = data.getNBins();
+  double idflux = 1.0/dflux;
+  maxfluxval = maxflux - dflux;
+  if (logflat) {
+    for (unsigned int i = 0; i < nbins; ++i) {
+      ninbin = bins[i];
+      if (ninbin == 0) continue;
+      cflux = bincent0 + static_cast<double>(i)*bindelta;
+      //Get effective index
+      if ( cflux < minflux ) loglike += static_cast<double>(ninbin)*pd_[0];
+      else if ( cflux > maxfluxval ) 
+        loglike += static_cast<double>(ninbin)*pd_[n-1];
+      else {
+        //Not off edge
+        delt = (cflux-minflux)*idflux;
+        idx = static_cast<int>( delt );
+        t   = delt - static_cast<double>(idx);
+        loglike += ((1.0-t)*pd_[idx] + t*pd_[idx+1]) *
+          static_cast<double>(ninbin);
+      }
+    }
+  } else {
+    //Not stored as log -- inefficient, but supported
+    //Note that it would be insane to do this multiplicatively,
+    // then take the log.  Also, it's better to interpolate
+    // in log space than interpolate, then log
+    for (unsigned int i = 0; i < nbins; ++i) {
+      ninbin = bins[i];
+      if (ninbin == 0) continue;
+      cflux = bincent0 + static_cast<double>(i)*bindelta;
+      delt = (cflux-minflux)*idflux;
+      idx = static_cast<int>( delt );
+      if ( cflux < minflux ) 
+        loglike += static_cast<double>(ninbin)*log2(pd_[0]);
+      else if ( cflux > maxfluxval ) 
+        loglike += static_cast<double>(ninbin)*log2(pd_[n-1]);
+      else {
+        t   = delt - static_cast<double>(idx);
+        loglike += ((1.0-t)*log2(pd_[idx]) + t*log2(pd_[idx+1])) *
+          static_cast<double>(ninbin);
+      }
+    }
+  }
+  //This has been base 2 -- convert back to base e
+  return pofd_mcmc::log2toe * loglike;
+}
+
+double PD::getLogLikeUnbinned(const fitsData& data) const {
+
+  unsigned int ndata = data.getN();
+
+  //Quantities for edge test
+  double maxflux = minflux + static_cast<double>(n-1)*dflux;
+
+  int idx; //!< Index look up
+  const double* flux;
+  double cflux, loglike, t, delt, maxfluxval;
+  loglike = 0.0;
+  flux = data.getData();
+  double idflux = 1.0/dflux;
+  maxfluxval = maxflux - dflux;
+
+  if (logflat) {
+    //Stored as log2 P(D)
+    for (unsigned int i = 0; i < ndata; ++i) {
+      cflux = flux[i];
+      //Get effective index
+      if ( cflux <= minflux ) loglike += pd_[0];
+      else if ( cflux >= maxfluxval ) loglike += pd_[n-1];
+      else {
+        //Not off edge
+        delt = (cflux-minflux)*idflux;
+        idx = static_cast<int>( delt );
+        t   = delt - static_cast<double>(idx);
+        loglike += (1.0-t)*pd_[idx] + t*pd_[idx+1];
+      }
+    }
+  } else {
+    //Not stored as log -- inefficient, but supported
+    //Note that it would be insane to do this multiplicatively,
+    // then take the log.  Also, it's better to interpolate
+    // in log space than interpolate, then log
+    for (unsigned int i = 0; i < ndata; ++i) {
+      cflux = flux[i]; 
+      if ( cflux <= minflux ) loglike += log2(pd_[0]);
+      else if ( cflux >= maxfluxval ) loglike += log2(pd_[n-1]);
+      else {
+        delt = (cflux-minflux)*idflux;
+        idx = static_cast<int>( delt );
+        t   = delt - static_cast<double>(idx);
+        loglike += (1.0-t)*log2(pd_[idx]) + t*log2(pd_[idx+1]);
+      }
+    }
+  }
+  //This has been base 2 -- convert back to base e
+  return pofd_mcmc::log2toe * loglike;
+}
+
+
 std::ostream& operator<<(std::ostream& os, const PD& b) {
   b.writeToStream(os);
   return os;

@@ -6,6 +6,8 @@
 #include<string>
 #include<ostream>
 
+#include<fitsData.h>
+
 /*!
   \brief Class to hold P(D).  Supports interpolation.
 
@@ -25,13 +27,16 @@ class PD {
   unsigned int n; //!< Current size
   unsigned int capacity; //!< Current capacity
 
+  double getLogLikeBinned(const fitsData&) const;
+  double getLogLikeUnbinned(const fitsData&) const;
+
  public:
   PD(unsigned int N=0, double MINFLUX=0.0, double DFLUX=0.0,
      bool LOG=true); //!< Constructor
   ~PD(); //!< Destructor
 
   //Public for efficient filling -- bad form, but speed matters here
-  bool logflat; //!< True if log( P(D1,D2) ) is stored instead of P(D1,D2)
+  bool logflat; //!< True if log( P(D) ) is stored instead of P(D)
   double minflux; //!< Minimum flux
   double dflux; //!< Flux step along axis
   double* pd_; //!< Actual P(D)
@@ -67,6 +72,9 @@ class PD {
 
   const double operator[](unsigned int i) const { return pd_[i]; }
   unsigned int getDim() const { return n; }
+
+  /*! \brief Get Log likelihood of data set*/
+  double getLogLike(const fitsData&) const;
 
   std::ostream& writeToStream(std::ostream& os) const; //!< Write summary
 

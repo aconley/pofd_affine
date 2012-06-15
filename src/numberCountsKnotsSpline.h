@@ -14,7 +14,7 @@
   \ingroup Models
  
   The user inputs knot values in \f$\log_{10}\f$, but they are
-  stored internally as natural logarithms.  The parameters are
+  stored internally as base 2 logarithms.  The parameters are
   the knots
  */
 class numberCountsKnotsSpline : public numberCountsKnots {
