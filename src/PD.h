@@ -31,8 +31,7 @@ class PD {
   double getLogLikeUnbinned(const fitsData&) const;
 
  public:
-  PD(unsigned int N=0, double MINFLUX=0.0, double DFLUX=0.0,
-     bool LOG=true); //!< Constructor
+  PD(unsigned int N=0, double MINFLUX=0.0, double DFLUX=0.0); //!< Constructor
   ~PD(); //!< Destructor
 
   //Public for efficient filling -- bad form, but speed matters here

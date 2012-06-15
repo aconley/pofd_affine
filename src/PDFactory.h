@@ -30,7 +30,7 @@ class PDFactory {
 
   bool initialized; //!< some R transform is filled
 
-  unsigned int currsize; //!< Current memory allocation
+  unsigned int currsize; //!< Current memory allocation for R, rtrans, etc.
   unsigned int lastfftlen; //!< FFT length of last transform
   double max_sigma; //!< Current supported max sigma
   double mn; //!< Expected mean
@@ -91,13 +91,14 @@ class PDFactory {
   unsigned int getLastFFTLen() const { return lastfftlen; }
 
   unsigned int getNInterp() const { return ninterp; }
+  void setNInterp(unsigned int);
 
   /*! \brief Adds wisdom file*/
   bool addWisdom(const std::string& filename);
 
   /*! \brief Initializes P(D) by computing R */
   void initPD(unsigned int, double, double, 
-	      numberCounts&, const beam&);
+	      const numberCounts&, const beam&);
 
   /*! \brief Gets P(D) of specified transform size */
   void getPD(double, PD&, bool setLog=true, 

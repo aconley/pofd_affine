@@ -15,6 +15,8 @@
 
   It is up to each subclass to interpret paramSet
 */
+//The use of const in getR really means don't change the model parameters,
+// not any internal state data.
 class numberCounts {
  public:
   enum rtype { BEAMPOS=1, BEAMNEG=2, BEAMBOTH=3 }; //!< For user to request what R they wayt
@@ -39,11 +41,11 @@ class numberCounts {
   virtual double getNumberCounts( double ) const = 0; 
 
   /*! \brief Get number of source responses, single value version */
-  virtual double getR(double,const beam&, rtype=BEAMBOTH) = 0;
+  virtual double getR(double,const beam&, rtype=BEAMBOTH) const = 0;
   
   /*! \brief Get number of source responses, array version*/
   virtual void getR(unsigned int n,const double* const,
-		    const beam&,double*, rtype=BEAMBOTH) = 0;
+		    const beam&,double*, rtype=BEAMBOTH) const = 0;
 
   virtual bool writeToStream(std::ostream& os) const=0; //<! Output
 };

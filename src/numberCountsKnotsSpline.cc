@@ -227,7 +227,8 @@ double numberCountsKnotsSpline::getMeanFluxSqPerArea() const {
   \params[in] beam Beam
   \returns R(fluxdensity) for the positive beam
  */
-double numberCountsKnotsSpline::getRPos(double fluxdensity,const beam& bm) {
+double numberCountsKnotsSpline::getRPos(double fluxdensity,
+					const beam& bm) const {
 
   if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
   if (! bm.hasPos()) return std::numeric_limits<double>::quiet_NaN();
@@ -276,7 +277,7 @@ double numberCountsKnotsSpline::getRPos(double fluxdensity,const beam& bm) {
   Note you need to zero your input array first if you just want R+
  */
 void numberCountsKnotsSpline::getRPos(unsigned int n,const double* const flux,
-				      const beam& bm,double* R) {
+				      const beam& bm,double* R) const {
   if (n == 0) return;
   if ( (!isValid()) || (!bm.hasPos()) ) {
     for (unsigned int i = 0; i < n; ++i)
@@ -333,7 +334,8 @@ void numberCountsKnotsSpline::getRPos(unsigned int n,const double* const flux,
   \params[in] bm Beam
   \returns R(fluxdensity) for the negative beam
  */
-double numberCountsKnotsSpline::getRNeg(double fluxdensity,const beam& bm) {
+double numberCountsKnotsSpline::getRNeg(double fluxdensity,
+					const beam& bm) const {
 
   if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
   if (!bm.hasNeg()) return std::numeric_limits<double>::quiet_NaN();
@@ -379,7 +381,7 @@ double numberCountsKnotsSpline::getRNeg(double fluxdensity,const beam& bm) {
   \param[inout] R Values of R from the negative beam are added onto this (len n)
  */
 void numberCountsKnotsSpline::getRNeg(unsigned int n,const double* const flux,
-				      const beam& bm,double* R) {
+				      const beam& bm,double* R) const {
   if (n == 0) return;
   if ( (!isValid()) || (!bm.hasNeg()) ) {
     for (unsigned int i = 0; i < n; ++i)
@@ -436,7 +438,7 @@ void numberCountsKnotsSpline::getRNeg(unsigned int n,const double* const flux,
   \returns R(fluxdensity)
 */
 double numberCountsKnotsSpline::getR(double fluxdensity,const beam& bm,
-				     rtype rt) {
+				     rtype rt) const {
   switch (rt) {
   case BEAMBOTH :
     if (bm.hasPos()) {
@@ -466,7 +468,7 @@ double numberCountsKnotsSpline::getR(double fluxdensity,const beam& bm,
   \param[inout] R Values of R from the negative beam are added onto this (len n)
  */
 void numberCountsKnotsSpline::getR(unsigned int n,const double* const flux,
-				   const beam& bm,double* R, rtype rt) {
+				   const beam& bm,double* R, rtype rt) const {
   if (n == 0) return;
   for (unsigned int i = 0; i < n; ++i) R[i] = 0.0;
 

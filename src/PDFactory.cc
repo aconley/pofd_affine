@@ -154,6 +154,15 @@ void PDFactory::freeRvars() {
   rvars_allocated = false;
 }
 
+void PDFactory::setNInterp(unsigned int NINTERP) {
+  if (NINTERP == ninterp) return;
+  ninterp = NINTERP;
+  if (interpvars_allocated) {
+    freeInterp();
+    allocateInterp();
+  }
+}
+
 /*!
   \param[in] NINTERP Interpolation size
 */
@@ -173,9 +182,9 @@ void PDFactory::allocateInterp() {
 
 
 void PDFactory::freeInterp() {
-  interpvars_allocated = false;
   if (RinterpFlux != NULL) { delete[] RinterpFlux; RinterpFlux = NULL; }
   if (RinterpVals != NULL) { delete[] RinterpVals; RinterpVals = NULL; }
+  interpvars_allocated = false;
 }
 
 /*!
@@ -213,8 +222,6 @@ bool PDFactory::addWisdom(const std::string& filename) {
 }
 
 
-
-
 /*!
   Gets ready for P(D) computation by preparing R, including forward
   transforming it.  The idea is to compute everything that doesn't
@@ -233,7 +240,7 @@ bool PDFactory::addWisdom(const std::string& filename) {
   by about the mean flux + 10 sigma.
  */
 void PDFactory::initPD(unsigned int n, double sigma,
-		       double maxflux, numberCounts& model,
+		       double maxflux, const numberCounts& model,
 		       const beam& bm ) {
 
   //Make sure we have enough room

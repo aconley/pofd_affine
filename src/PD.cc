@@ -10,8 +10,8 @@
 
 const double PD::lowsigval = 3.0;
 
-PD::PD(unsigned int N, double MINFLUX, double DFLUX, bool LOG) : 
-  n(N), capacity(N), logflat(LOG), minflux(MINFLUX), dflux(DFLUX) {
+PD::PD(unsigned int N, double MINFLUX, double DFLUX) :
+  n(N), capacity(N), logflat(false), minflux(MINFLUX), dflux(DFLUX) {
   if (capacity == 0) pd_ = NULL; else
     pd_ = (double *) fftw_malloc( sizeof(double)*capacity );
 }

@@ -31,12 +31,12 @@ class numberCountsKnotsSpline : public numberCountsKnots {
   void **varr; //!< Internal evil casting array for integration
 
   //Internal pos/neg parts
-  double getRPos(double,const beam&);
+  double getRPos(double,const beam&) const;
   void getRPos(unsigned int n,const double* const,
-	       const beam&,double*);
-  double getRNeg(double,const beam&);
+	       const beam&,double*) const;
+  double getRNeg(double,const beam&) const;
   void getRNeg(unsigned int n,const double* const,
-	       const beam&,double*);
+	       const beam&,double*) const;
 
 
  public :
@@ -60,9 +60,9 @@ class numberCountsKnotsSpline : public numberCountsKnots {
   double getMeanFluxPerArea() const; //!< Mean flux per unit area (sq deg)
   double getMeanFluxSqPerArea() const; //!< Mean flux squared per unit area (sq deg)
   
-  double getR(double,const beam&, rtype=BEAMPOS);
+  double getR(double,const beam&, rtype=BEAMPOS) const;
   void getR(unsigned int n,const double* const,
-	    const beam&,double*, rtype=BEAMPOS);
+	    const beam&,double*, rtype=BEAMPOS) const;
 
   virtual void SendSelf(MPI::Comm&, int dest) const; //!< Send self
   virtual void RecieveCopy(MPI::Comm&, int src); //!< Recieve
