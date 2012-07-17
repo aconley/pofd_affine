@@ -36,7 +36,7 @@ int main( int argc, char** argv ) {
     {0,0,0,0}
   };
 
-  char optstring[] = "hHnpVS";
+  char optstring[] = "hHnpV";
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
 			    &option_index ) ) != -1 ) 
     switch(c) {
