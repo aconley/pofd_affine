@@ -1,5 +1,5 @@
 bin_PROGRAMS = pofd_affine_getR pofd_affine_getPD pofd_affine_getLike \
-	pofd_affine_getDoubleR
+	pofd_affine_getDoubleR pofd_affine_getDoublePD
 
 pofd_affine_getR_SOURCES =global_settings.h numberCounts.h numberCountsKnots.h \
 	numberCountsKnotsSpline.h paramSet.h affineExcept.h beam.h utility.h \
@@ -30,3 +30,11 @@ pofd_affine_getDoubleR_SOURCES = global_settings.h numberCountsDouble.h \
 	numberCountsDouble.cc numberCountsDoubleLogNormal.cc paramSet.cc \
 	affineExcept.cc doublebeam.cc utility.cc \
 	pofd_affine_getDoubleR.cc
+
+pofd_affine_getDoublePD_SOURCES = global_settings.h numberCountsDouble.h \
+	numberCountsDoubleLogNormal.h paramSet.h affineExcept.h doublebeam.h \
+	utility.h PDDouble.h PDFactoryDouble.h fitsDataDouble.h \
+	numberCountsDouble.cc numberCountsDoubleLogNormal.cc paramSet.cc \
+	affineExcept.cc doublebeam.cc utility.cc PDDouble.cc \
+	PDFactoryDouble.cc fitsDataDouble.cc \
+	pofd_affine_getDoublePD.cc 

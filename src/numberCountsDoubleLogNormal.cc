@@ -773,7 +773,7 @@ getRInternal(unsigned int n1, const double* const f1,
   \param[in] params Parameters
   \param[in] beam Beam
   \param[in] bmtype What type of R value to get (pos-pos, pos-neg, neg-pos,
-                   neg-neg or the sum of all types)
+                   neg-neg or the sum of all types that are present)
   \returns R value
  */
 double numberCountsDoubleLogNormal::getR(double f1, double f2, 
@@ -813,13 +813,10 @@ double numberCountsDoubleLogNormal::getR(double f1, double f2,
     Rval = getRInternal(f1,f2,bm,3);
     break;
   case BEAMALL :
-    if ( ! bm.hasSign(0) )
-      return std::numeric_limits<double>::quiet_NaN();
-    Rval = getRInternal(f1,f2,bm,0);
-    for (unsigned int i = 1; i < 4; ++i) {
-      if ( ! bm.hasSign(i) )
-	return std::numeric_limits<double>::quiet_NaN();
-      Rval += getRInternal(f1,f2,bm,i);
+    Rval = 0.0;
+    for (unsigned int i = 0; i < 4; ++i) {
+      if ( bm.hasSign(i) )
+	Rval += getRInternal(f1,f2,bm,i);
     }
     break;
   default :
@@ -900,12 +897,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
     break;
   case BEAMALL :
     for (unsigned int k = 0; k < 4; ++k) {
-      if ( ! bm.hasSign(k) ) {
-	for (unsigned int i = 0; i < n1*n2; ++i)
-	  vals[i] = std::numeric_limits<double>::quiet_NaN();
-	return;
-      }
-      getRInternal(n1,f1,n2,f2,bm,k,vals);
+      if ( bm.hasSign(k) ) getRInternal(n1,f1,n2,f2,bm,k,vals);
     }
     break;
   default :

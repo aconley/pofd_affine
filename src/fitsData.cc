@@ -371,8 +371,8 @@ double fitsData::meanSubtract() {
   double mnval = getMean();
   for (unsigned int i = 0; i < n; ++i) data[i] -= mnval;
   
-  //Have to rebin if we are binned
-  if (is_binned) applyBinning(nbins);
+  //Have to adjust binning if we are binned
+  if (is_binned) bincent0 -= mnval;
 
   return mnval;
 }

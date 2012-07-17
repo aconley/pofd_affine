@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
     case 'h' :
       std::cerr << "NAME" << std::endl;
       std::cerr << "\tpofd_affine_getPD -- get the P(D) for a" << std::endl;
-      std::cerr << "\tpower law model" << std::endl;
+      std::cerr << "\tspline law model" << std::endl;
       std::cerr << std::endl;
       std::cerr << "SYNOPSIS" << std::endl;
       std::cerr << "\tpofd_affine_getPD [options] initfile beamfile outputfile"
@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
       std::cerr << "DESCRIPTION" << std::endl;
       std::cerr << "\tWrites out the P(D) for the model in initfile using"
 		<< std::endl;
-      std::cerr << "\ta multiply broken power law model."
+      std::cerr << "\ta spline model."
 		<< std::endl;
       std::cerr << std::endl;
       std::cerr << "\tinitfile is a text file giving the positions of the"
