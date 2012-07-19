@@ -21,7 +21,7 @@ private:
   unsigned int nparams; //!< Number of params
   
   //Names of parameters
-  bool has_any_names;
+  bool has_any_names; //!< Have we set any parameter names?
   std::vector<bool> has_name; //!< Does a given param have a name
   std::vector< std::string > parnames; //!< Optional names of params
 
@@ -72,37 +72,39 @@ protected:
   bool verbose; //!< Ouput information messages as we run
 
 public:
+  /* \brief Constructor */
   affineEnsemble(unsigned int, unsigned int, unsigned int,
 		 unsigned int=50, unsigned int=50, double=5, double=2);
-  ~affineEnsemble();
+  ~affineEnsemble(); //!< Destructor
 
   bool isValid() const; //!< Are params valid?
 
-  void setVerbose() { verbose = true; }
-  void unsetVerbose() { verbose = false; }
+  void setVerbose() { verbose = true; } //!< Set verbose mode
+  void unsetVerbose() { verbose = false; } //!< Turn off verbose mode
 
-  unsigned int getNWalkers() const { return nwalkers; }
-  unsigned int getNParams() const { return nparams; }
-  unsigned int getNChunks() const { return chains.getNChunks(); }
-  unsigned int getMinNIters() const { return chains.getMinNIters(); }
-  unsigned int getNSteps() const { return nsteps; }
-  double getScalefac() const { return scalefac; }
-  void setScalefac(double val) { scalefac = val; }
+  unsigned int getNWalkers() const { return nwalkers; } //!< Get number of walkers
+  unsigned int getNParams() const { return nparams; } //!< Get number of params
+  unsigned int getNChunks() const { return chains.getNChunks(); } //!< Get number of chunks
+  unsigned int getMinNIters() const { return chains.getMinNIters(); } //!< Get minimum number of iterations across all walkers
+  unsigned int getNSteps() const { return nsteps; } //!< Get number of steps
+  double getScalefac() const { return scalefac; } //!< Get scalefac
+  void setScalefac(double val) { scalefac = val; } //!< Return scalefac
 
-  double getMaxLogLike() const;
-  void getMaxLogLikeParam(double& val, paramSet& p) const;
+  double getMaxLogLike() const; //!< Get Maximum recorded Log Likelihood
+  void getMaxLogLikeParam(double& val, paramSet& p) const; //!< Get parameters corresponding to maximum recorded log likelihood
 
   //Dealing with ignorable params
-  unsigned int getNIgnoreParams() const { return nignore; }
-  void attentionAllParams();
-  bool ignoreParam( unsigned int );
-  bool attentionParam( unsigned int );
+  unsigned int getNIgnoreParams() const { return nignore; } //!< Return number of parameters being ignored for burn-in check
+  void attentionAllParams(); //!< Don't ignore any parameters in burn-in check
+  bool ignoreParam( unsigned int ); //!< Ignore this parameter in burn-in check
+  bool attentionParam( unsigned int ); //!< Don't ignore this parameter is burn-in check
+  /*! \brief Is a particular parameter being ignored in burn-in */
   bool isParamIgnored(unsigned int idx) const { return ignore_params[idx]; }
   
   void setParamName(unsigned int, const std::string&); //!< Set param names
   void unsetParamName(unsigned int); //!< Unset parameter name
-  bool hasName(unsigned int idx) const { return has_name[idx]; }
-  std::string getParamName(unsigned int) const; //!< Get param name
+  bool hasName(unsigned int idx) const { return has_name[idx]; } //!< Does a particular parameter have a name?
+  std::string getParamName(unsigned int) const; //!< Get param name for particular parameter
 
   /*! \brief Sets random number generator seed */
   void setSeed( unsigned long long int seed ) const { rangen.setSeed(seed); }
@@ -123,7 +125,7 @@ public:
   
   void doSteps(unsigned int,unsigned int=0); //!< Do a fixed number of steps
 
-  void writeToFile( const std::string& ) const;
+  void writeToFile( const std::string& ) const; //!< Write results to file
 
 };
 
