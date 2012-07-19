@@ -25,7 +25,16 @@
     where \f$n_1\f$ is just the spline as in the one-dimensional case.
     The division by \f$S_1\f$ may seem odd, but assures that the
     distribution marginalized over \f$S_2\f$ is just \f$ n_1 \f$.
-    \f$\sigma\f$ and \f$\mu\f$ are also strored as splines.
+    \f$\sigma\f$ and \f$\mu\f$ are also strored as splines. \f$L\f$
+    is just the Log-Normal form:
+    \f[
+      \mathrm{L}\left( x ; \mu, \sigma \right) =
+       \frac{1}{\sqrt{2 \pi} \sigma} \frac{1}{x}
+       \exp\left[ \frac{ - \left(\log x - \mu\right)^2 / \sigma^2 } \right] .
+    \f]
+    Note that \f$\sigma\f$ and \f$\mu\f$ are not the mean and square root
+    of the variance of the actual distribution, but rather the mean
+    and square root of the variance of the log quantities.
 
   \ingroup Models
 */

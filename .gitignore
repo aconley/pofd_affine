@@ -20,6 +20,8 @@ install-sh
 libtool
 ltmain.sh
 missing
+doc
+test
 src/Makefile
 src/Makefile.in
 src/chain_test
@@ -31,7 +33,4 @@ src/single_gauss_example
 pofd_affine_getPD
 pofd_affine_getR
 pofd_affine_getLike
-pofd_affine_getDoubleR
-pofd_affine_getDoublePD
-pofd_affine_getDoubleLike
 *.m4
