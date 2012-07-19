@@ -11,8 +11,6 @@
 #include<utility.h>
 #include<affineExcept.h>
 
-const double numberCountsKnots::ftol = 1e-5;
-
 numberCountsKnots::numberCountsKnots() {
   nknots = 0;
   knots = NULL;
@@ -81,7 +79,7 @@ void numberCountsKnots::setNKnots(unsigned int n) {
 }
 
 /*!
-  \params[in] S Input knot positions
+  \param[in] S Input knot positions
 */
 void numberCountsKnots::setKnotPositions(const std::vector<double>& S) {
   unsigned int n = S.size();
@@ -95,8 +93,8 @@ void numberCountsKnots::setKnotPositions(const std::vector<double>& S) {
 }
 
 /*!
-  \params[in] n Number of knots
-  \params[in] S Input knot positions
+  \param[in] n Number of knots
+  \param[in] S Input knot positions
 */
 void numberCountsKnots::setKnotPositions(unsigned int n, 
 					 const double* const S) {
@@ -110,7 +108,7 @@ void numberCountsKnots::setKnotPositions(unsigned int n,
 }
 
 /*!
-  \params[in] params Parameters
+  \param[in] F Parameters to set in model
  */
 void numberCountsKnots::setParams(const paramSet& F) {
   if (F.getNParams() <= 2)

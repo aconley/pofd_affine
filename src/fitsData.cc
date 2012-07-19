@@ -334,8 +334,8 @@ double fitsData::getMax() const {
 }
 
 /*!
-  \params[out] min Minimum flux
-  \params[out] max Maximum flux
+  \param[out] min Minimum flux
+  \param[out] max Maximum flux
  */
 void fitsData::getMinMax(double& min, double& max) const {
   if (n == 0) {

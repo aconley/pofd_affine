@@ -18,12 +18,13 @@
 
 
 /*!
-  Always call initPD before using getPD for a given model.
- */
+  \brief Class for computing P(D) values from a set of parameters,
+  one band version
 
-//This uses an interpolative approach -- fill R into an interpolation
-// array, then get the full R from that, which is much faster than
-// a full r fill
+  Always call initPD before using getPD for a given model.
+  Uses and interpolative approach -- fills R into an interpolation array,
+  then get the full R from that, which is much faster.
+ */
 class PDFactory {
  private :
   static const double subedgemult; //!< Controls interpolation lower edge
@@ -38,14 +39,15 @@ class PDFactory {
   double sg; //!< Expected sigma, inc instrument noise
 
   //Working variables for transformation.
-  fftw_plan plan, plan_inv; //!< Hold plans
+  fftw_plan plan;     //!< Holds forward transform plan
+  fftw_plan plan_inv; //!< Holds inverse transform plan
   bool rvars_allocated; //!< Are R variables allocated (rest of this block)
   double* rvals; //!< Working space for R computation 
   fftw_complex *rtrans; //!< Holds FFTed rvals 
   fftw_complex* pval; //!< Working variable holding p = exp( stuff ) 
   double* pofd; //!< Internal P(D) variable.  
   void allocateRvars(); //!< Allocates R variables if needed
-  void freeRvars();
+  void freeRvars(); //!< Free R variables
 
   //Flux variables
   double dflux; //!< Flux size step of last computation
@@ -69,7 +71,7 @@ class PDFactory {
   double *RinterpFlux; //!< Flux values to interpolate with
   double *RinterpVals; //!< R values 
   void allocateInterp(); //!< Allocates interpolation variables if needed
-  void freeInterp();
+  void freeInterp(); //!< Free interpolation variables
 
   void init(unsigned int); //!< Initializes memory
   bool resize(unsigned int); //!< Sets transform size arrays
@@ -88,28 +90,31 @@ class PDFactory {
   void setVerbose() { verbose = true; } //!< Sets verbose mode
   void unsetVerbose() { verbose = false; } //!< Unset verbose mode
 
+  /*! \brief Get fft size of last transformation */
   unsigned int getLastFFTLen() const { return lastfftlen; }
 
+  /*! \brief Get number of interpolation elements for R */
   unsigned int getNInterp() const { return ninterp; }
+  /*! \brief Set number of interpolation elements for R */
   void setNInterp(unsigned int);
 
-  /*! \brief Adds wisdom file*/
+  /*! \brief Adds FFTW wisdom file*/
   bool addWisdom(const std::string& filename);
 
-  /*! \brief Initializes P(D) by computing R */
+  /*! \brief Initializes P(D) by computing R and forward transforming it*/
   void initPD(unsigned int, double, double, 
 	      const numberCounts&, const beam&);
 
-  /*! \brief Gets P(D) of specified transform size */
+  /*! \brief Gets P(D) of with specified noise level */
   void getPD(double, PD&, bool setLog=true, 
 	     bool edgeFix=false);
 
-  void SendSelf(MPI::Comm&, int dest) const;
-  void RecieveCopy(MPI::Comm&, int dest);
+  void SendSelf(MPI::Comm&, int dest) const; //!< MPI copy send operation
+  void RecieveCopy(MPI::Comm&, int dest); //!< MPI copy recieve operation
 
 #ifdef TIMING
-  void resetTime();
-  void summarizeTime(unsigned int=0) const;
+  void resetTime(); //!< Reset timing information
+  void summarizeTime(unsigned int=0) const; //!< Output timing information
 #endif
 
 };

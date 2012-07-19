@@ -42,7 +42,7 @@ class beam {
   double totnegsq; //!< Sum of negative elements squared
 
   void cleanup(); //!< Frees internal structures
-  bool revSort(const double&, const double&) const;
+  bool revSort(const double&, const double&) const; //!< Reverse sort comparison
  public :
   beam(); //!< Default constructor
   beam( const std::string& filename, bool histogram=false, 
@@ -54,30 +54,34 @@ class beam {
 		 bool histogram=false, 
 		 double histogramlogstep=0.2); //!< Read in file
 
-  double getEffectiveArea() const; //<! Get effective area of beam in sq deg
-  double getEffectiveAreaPos() const; //<! Get effective area of positive beam in sq deg
-  double getEffectiveAreaNeg() const; //<! Get effective area of negative beam in sq deg
-  double getEffectiveAreaPix() const; //<! Get effective area of beam in pixels
-  double getEffectiveAreaSq() const; //<! Get effective area of squared beam in sq deg
+  double getEffectiveArea() const; //!< Get effective area of beam in sq deg
+  double getEffectiveAreaPos() const; //!< Get effective area of positive beam in sq deg
+  double getEffectiveAreaNeg() const; //!< Get effective area of negative beam in sq deg
+  double getEffectiveAreaPix() const; //!< Get effective area of beam in pixels
+  double getEffectiveAreaSq() const; //!< Get effective area of squared beam in sq deg
 
   beam& operator=(const beam&); //!< Copy
 
-  unsigned int getNPos() const { return npos; }
-  unsigned int getNNeg() const { return nneg; }
-  bool hasPos() const { return haspos; }
-  bool hasNeg() const { return hasneg; }
-  bool hasPosWeights() const { return hasposweights; }
-  bool hasNegWeights() const { return hasnegweights; }
+  unsigned int getNPos() const { return npos; } //!< Number of positive beam pix
+  unsigned int getNNeg() const { return nneg; } //!< Number of negative beam pix
+  bool hasPos() const { return haspos; } //!< Beam has positive pixels
+  bool hasNeg() const { return hasneg; } //!< Beam has negative pixels
+  bool hasPosWeights() const { return hasposweights; } //!< Has positive pixel weights
+  bool hasNegWeights() const { return hasnegweights; } //!< Has negative pixel weights
 
-  double getPixSize() const { return pixsize; }
-  double getPos(unsigned int i) const { return pospixarr[i]; }
-  double& getPos(unsigned int i) { return pospixarr[i]; }
-  double getNeg(unsigned int i) const { return negpixarr[i]; }
-  double& getNeg(unsigned int i) { return negpixarr[i]; }
+  double getPixSize() const { return pixsize; } //!< Pixel size (1d)
+  double getPos(unsigned int i) const { return pospixarr[i]; } //!< Get positive pixel
+  double& getPos(unsigned int i) { return pospixarr[i]; } //!< Get positive pixel
+  double getNeg(unsigned int i) const { return negpixarr[i]; } //!< Get negative pixel
+  double& getNeg(unsigned int i) { return negpixarr[i]; } //!< Get negative pixel
 
+  /*! \brief Access inverse positive pixel array */
   const double* const getPosInvPixArr() const { return posinvpixarr; }
+  /*! \brief Access inverse negative pixel array */
   const double* const getNegInvPixArr() const { return neginvpixarr; }
+  /*! \brief Access positive pixel weight array */
   const double* const getPosWeights() const { return posweights; }
+  /*! \brief Access negative pixel weight array */
   const double* const getNegWeights() const { return negweights; }
 
   double getMinPos() const; //!< Minimum positive pixel
@@ -85,11 +89,12 @@ class beam {
   double getMinAbsNeg() const; //!< Minimum absolute value negative pixel
   double getMaxAbsNeg() const; //!< Maximum absolute value negative pixel
   
-  std::pair<double,double> getRangePos() const;
-  std::pair<double,double> getRangeNeg() const;
+  std::pair<double,double> getRangePos() const; //!< Get range of positive pixels
+  std::pair<double,double> getRangeNeg() const; //!< Get range of negative pixels
 
-  /*! \brief Returns pixel values raised to some power */
+  /*! \brief Returns positive pixel values raised to some power */
   void powerPos( double, double* ) const;
+  /*! \brief Returns negative pixel values raised to some power */
   void powerNeg( double, double* ) const;
 
   /*! \brief Returns first index greater than specified value in pos pixel map,
@@ -132,7 +137,9 @@ class beam {
     return utility::binary_search_lte(val, negpixarr, nneg);
   }
 
+  /*! \brief MPI copy send operation */
   void SendSelf(MPI::Comm&, int dest) const;
+  /*! \brief MPI copy recieve operation */
   void RecieveCopy(MPI::Comm&, int dest);
 };
 

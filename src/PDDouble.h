@@ -72,14 +72,21 @@ class PDDouble {
 	    unsigned int, double, double,
 	    const double* const, bool LOG=true); 
 
+  /*! \brief Get flux value (band 1) corresponding to index */
   double getFluxVal1(unsigned int i) const { return minflux1+static_cast<double>(i)*dflux1; }
+  /*! \brief Get flux value (band 2) corresponding to index */
   double getFluxVal2(unsigned int i) const { return minflux2+static_cast<double>(i)*dflux2; }
+  /*! \brief Get PD value corresponding to indices */
   double getPDVal(unsigned int i, 
 		  unsigned int j) const { return pd_[n2*i+j]; }
+  /*! \brief Get PD value corresponding to flux values (using interpolation) */
   double getPDVal(double,double,bool=false) const; //!< Interpolation
 
+  /*! \brief PD element access */
   const double* operator[](unsigned int i) const { return pd_+n2*i; }
+  /*! \brief Number of elements in PD, band 1 */
   unsigned int getDim1() const { return n1; }
+  /*! \brief Number of elements in PD, band 2 */
   unsigned int getDim2() const { return n2; }
 
   /*! \brief Get Log likelihood of data set*/
@@ -91,6 +98,7 @@ class PDDouble {
   
 };
 
+/*! \brief Output to stream operator */
 std::ostream& operator<<(std::ostream& os, const PDDouble&);
 
 #endif

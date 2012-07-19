@@ -65,12 +65,16 @@ class PD {
   void fill(unsigned int, double, double,
 	    const double* const, bool LOG=true); 
 
+  /*! \brief Get flux value for specified index */
   double getFluxVal(unsigned int i) const { return minflux+static_cast<double>(i)*dflux; }
+  /*! \brief Get PD value for specified index */
   double getPDVal(unsigned int i) const { return pd_[i]; }
-  double getPDVal(double) const; //!< Interpolation
+  /*! \brief Get PD value for specified flux value (with interpolation) */
+  double getPDVal(double) const;
 
+  /*! \brief Element access */
   const double operator[](unsigned int i) const { return pd_[i]; }
-  unsigned int getDim() const { return n; }
+  unsigned int getDim() const { return n; } //!< Get number of elements in PD
 
   /*! \brief Get Log likelihood of data set*/
   double getLogLike(const fitsData&) const;
@@ -81,6 +85,7 @@ class PD {
   
 };
 
+/*!\brief Write to stream */
 std::ostream& operator<<(std::ostream& os, const PD&);
 
 #endif

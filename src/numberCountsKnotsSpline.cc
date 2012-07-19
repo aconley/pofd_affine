@@ -158,8 +158,8 @@ void numberCountsKnotsSpline::setKnotPositions(unsigned int n,
 
 
 /*!
-  \params[in] params Parameters.  Will ignore any after
-  the first nknots
+  \param[in] F Parameters.  Will ignore any after
+                    the first nknots
  */
 void numberCountsKnotsSpline::setParams(const paramSet& F) {
   if (nknots > F.getNParams())
@@ -272,7 +272,8 @@ double numberCountsKnotsSpline::getRPos(double fluxdensity,
   \param[in] n Number of elements to get R for (length of flux)
   \param[in] flux Fluxes to get R for
   \param[in] bm   Beam
-  \param[inout] R Values of R from the positive beam are added onto this (len n)
+  \param[in,out] R Values of R from the positive beam are added onto this 
+                 (len n)
 
   Note you need to zero your input array first if you just want R+
  */
@@ -378,7 +379,8 @@ double numberCountsKnotsSpline::getRNeg(double fluxdensity,
   \param[in] n Number of elements to get R for (length of flux)
   \param[in] flux Fluxes to get R for
   \param[in] bm   Beam
-  \param[inout] R Values of R from the negative beam are added onto this (len n)
+  \param[in,out] R Values of R from the negative beam are added onto this 
+          (len n)
  */
 void numberCountsKnotsSpline::getRNeg(unsigned int n,const double* const flux,
 				      const beam& bm,double* R) const {
@@ -464,8 +466,10 @@ double numberCountsKnotsSpline::getR(double fluxdensity,const beam& bm,
 /*!
   \param[in] n Number of elements to get R for (length of flux)
   \param[in] flux Fluxes to get R for
-  \param[in] bm   Beam
-  \param[inout] R Values of R from the negative beam are added onto this (len n)
+  \param[in] bm Beam
+  \param[in,out] R Values of R from the negative beam are added onto 
+                 this (len n)
+  \param[in] rt Type of R desired (pos, neg, sum of both)
  */
 void numberCountsKnotsSpline::getR(unsigned int n,const double* const flux,
 				   const beam& bm,double* R, rtype rt) const {

@@ -397,9 +397,9 @@ void calcLikeDoubleSingle::RecieveCopy(MPI::Comm& comm, int src) {
 /////////////////////////////////////////////////////////////////
 
 calcLikeDouble::calcLikeDouble(unsigned int FFTSIZE, unsigned int NEDGE, 
-			       bool EDGEFIX, bool EDGEINTERP,
+			       bool EDGEFIX, bool EDGEINTEG,
 			       bool BINNED, unsigned int NBINS) :
-  fftsize(FFTSIZE), nedge(NEDGE), edgeInterp(EDGEINTERP),
+  fftsize(FFTSIZE), nedge(NEDGE), edgeInteg(EDGEINTEG),
   edgeFix(EDGEFIX), bin_data(BINNED), nbins(NBINS), 
   has_cfirb_prior1(false), cfirb_prior_mean1(0.0), cfirb_prior_sigma1(0.0), 
   has_cfirb_prior2(false), cfirb_prior_mean2(0.0), cfirb_prior_sigma2(0.0), 
@@ -557,7 +557,7 @@ double calcLikeDouble::getLogLike(const paramSet& p) const {
   double sigmult = p[nmodelpars]; //Sigma multiplier is after knot values
   for (unsigned int i = 0; i < nbeamsets; ++i)
     LogLike += beamsets[i].getLogLike(model,sigmult,fftsize,edgeFix,
-				      edgeInterp);
+				      edgeInteg);
 
   //Add on cfirb prior and sigma prior if needed
   //Only do this once for all data sets so as not to multi-count the prior
@@ -587,7 +587,7 @@ void calcLikeDouble::SendSelf(MPI::Comm& comm, int dest) const {
   //Transform
   comm.Send(&fftsize,1,MPI::UNSIGNED,dest,pofd_mcmc::CLDSENDFFTSIZE);
   comm.Send(&edgeFix,1,MPI::BOOL,dest,pofd_mcmc::CLDSENDEDGEFIX);
-  comm.Send(&edgeInterp,1,MPI::BOOL,dest,pofd_mcmc::CLDSENDEDGEINTERP);
+  comm.Send(&edgeInteg,1,MPI::BOOL,dest,pofd_mcmc::CLDSENDEDGEINTEG);
   comm.Send(&nedge,1,MPI::BOOL,dest,pofd_mcmc::CLDSENDNEDGE);
 
   //Data
@@ -634,7 +634,7 @@ void calcLikeDouble::RecieveCopy(MPI::Comm& comm, int src) {
   //Transform
   comm.Recv(&fftsize,1,MPI::DOUBLE,src,pofd_mcmc::CLDSENDFFTSIZE);
   comm.Recv(&edgeFix,1,MPI::BOOL,src,pofd_mcmc::CLDSENDEDGEFIX);
-  comm.Recv(&edgeInterp,1,MPI::BOOL,src,pofd_mcmc::CLDSENDEDGEINTERP);
+  comm.Recv(&edgeInteg,1,MPI::BOOL,src,pofd_mcmc::CLDSENDEDGEINTEG);
   comm.Recv(&nedge,1,MPI::BOOL,src,pofd_mcmc::CLDSENDNEDGE);
 
   //Data

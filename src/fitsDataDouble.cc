@@ -442,10 +442,10 @@ std::pair<double,double> fitsDataDouble::getMax() const {
 }
 
 /*!
-  \params[out] min1 Minimum flux, band 1
-  \params[out] max1 Maximum flux, band 1
-  \params[out] min2 Minimum flux, band 2
-  \params[out] max2 Maximum flux, band 2
+  \param[out] min1 Minimum flux, band 1
+  \param[out] max1 Maximum flux, band 1
+  \param[out] min2 Minimum flux, band 2
+  \param[out] max2 Maximum flux, band 2
  */
 void fitsDataDouble::getMinMax(double& min1, double& max1,
 			       double& min2, double& max2) const {

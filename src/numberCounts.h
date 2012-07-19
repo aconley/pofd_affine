@@ -19,7 +19,8 @@
 // not any internal state data.
 class numberCounts {
  public:
-  enum rtype { BEAMPOS=1, BEAMNEG=2, BEAMBOTH=3 }; //!< For user to request what R they wayt
+  /*! \brief For user to request what R they want */
+  enum rtype { BEAMPOS=1, BEAMNEG=2, BEAMBOTH=3 }; 
   
   numberCounts() {};
   virtual ~numberCounts() {};
@@ -47,9 +48,10 @@ class numberCounts {
   virtual void getR(unsigned int n,const double* const,
 		    const beam&,double*, rtype=BEAMBOTH) const = 0;
 
-  virtual bool writeToStream(std::ostream& os) const=0; //<! Output
+  virtual bool writeToStream(std::ostream& os) const=0; //!< Output
 };
 
+/*! \brief Write to stream */
 std::ostream& operator<<(std::ostream& os, const numberCounts& b);
 
 #endif

@@ -27,19 +27,19 @@ namespace utility {
   /*! \brief Binary search for first value greater than specified amount */
   unsigned int binary_search_gt(double value,std::vector<double> data);
 
-  /* \brief Binary search for last value less than or equal to 
+  /*! \brief Binary search for last value less than or equal to 
      specified amount */
   unsigned int binary_search_lte(double value, double* data, 
 				 unsigned int ndata);
 
-  /* \brief Binary search for last value greater than specified amount in reverse array*/
+  /*! \brief Binary search for last value greater than specified amount in reverse array*/
   int binary_search_rev(double value, double* data, 
 			unsigned int ndata);
 
-  /* \brief Binary logarithm (\f$log_{2}\f$) of 32 bit integer */
+  /*! \brief Binary logarithm (\f$log_{2}\f$) of 32 bit integer */
   unsigned int log2( unsigned int );
 
-  /* \brief Log of factorial of argument */
+  /*! \brief Log of factorial of argument */
   double logfactorial( double );
 
 }

@@ -32,18 +32,19 @@ class fitsData {
   void readData(const std::string&, bool igmore_mask=false, 
 		bool domeansub=false); //!< Read data from file
 
-  bool isBinned() const { return is_binned; }
+  bool isBinned() const { return is_binned; } //!< Is data binned?
   void applyBinning(unsigned int); //!< Takes an unbinned image and bins it
-  unsigned int getNBins() const { return nbins; }
-  double getBinCent0() const { return bincent0; }
-  double getBinDelta() const { return bindelta; }
+  unsigned int getNBins() const { return nbins; } //!< Gets number of bins
+  double getBinCent0() const { return bincent0; } //!< Gets center of 0th bin
+  double getBinDelta() const { return bindelta; } //!< Gets size of bins
 
-  unsigned int getN() const { return n; }
-  const double* const getData() const { return data; }
+  unsigned int getN() const { return n; } //!< Number of data points
+  const double* const getData() const { return data; } //!< Access to data
+  /*! \brief Access to binned data */
   const unsigned int* const getBinnedData() const { return binval; }
 
-  double getData(unsigned int i) const { return data[i]; } //!< Unchecked
-  unsigned int getBinnedData(unsigned int i) const { return binval[i]; } //!< Unckecked
+  double getData(unsigned int i) const { return data[i]; } //!< Unchecked data access
+  unsigned int getBinnedData(unsigned int i) const { return binval[i]; } //!< Unckecked binned data access
   
   double meanSubtract(); //!< Subract the mean from the data. May require rebinning
 

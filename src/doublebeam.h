@@ -65,12 +65,12 @@ class doublebeam {
 		 const double* const, double, bool histogram=false,
 		 double histogramlogstep=0.2 ); //!< Set beams
 
-  double getEffectiveArea1() const; //<! Get effective area of beam1 in sq deg
-  double getEffectiveAreaSign1(unsigned int) const; //<! Get effective area of either pp,pn,np, or nn beam 1, in pixels
-  double getEffectiveAreaSqSign1(unsigned int) const; //<! Get effective squared area of either pp,pn,np, or nn, beam 1
-  double getEffectiveArea2() const; //<! Get effective area of beam2 in sq deg
-  double getEffectiveAreaSign2(unsigned int) const; //<! Get effective area of either pp,pn,np, or nn beam 2, in pixels
-  double getEffectiveAreaSqSign2(unsigned int) const; //<! Get effective squared area of either pp,pn,np, or nn, beam 2
+  double getEffectiveArea1() const; //!< Get effective area of beam1 in sq deg
+  double getEffectiveAreaSign1(unsigned int) const; //!< Get effective area of either pp,pn,np, or nn beam 1, in pixels
+  double getEffectiveAreaSqSign1(unsigned int) const; //!< Get effective squared area of either pp,pn,np, or nn, beam 1
+  double getEffectiveArea2() const; //!< Get effective area of beam2 in sq deg
+  double getEffectiveAreaSign2(unsigned int) const; //!< Get effective area of either pp,pn,np, or nn beam 2, in pixels
+  double getEffectiveAreaSqSign2(unsigned int) const; //!< Get effective squared area of either pp,pn,np, or nn, beam 2
 
   double getEffectiveAreaPixGeoMean() const; //!< Get the geometric mean of the effective areas in pixels
   
@@ -88,29 +88,40 @@ class doublebeam {
   /*! \brief Get min/max values for pp,pn,np,nn pieces of beam 2*/
   void getMinMax2(unsigned int, double&, double&) const;
 
+  /*! \brief Get pixel array element, band 1 */
   const double* const getPixArr1(unsigned int idx) const { return pixarr1[idx]; }
+  /*! \brief Get pixel array element, band 2 */
   const double* const getPixArr2(unsigned int idx) const { return pixarr2[idx]; }
 
+  /*! \brief Get inverse pixel array element, band 1 */
   const double* const getInvPixArr1(unsigned int idx) const { return ipixarr1[idx]; }
+  /*! \brief Get inverse pixel array element, band 2 */
   const double* const getInvPixArr2(unsigned int idx) const { return ipixarr2[idx]; }
 
+  /*! \brief Get weights element */
   const double* const getWeights(unsigned int idx) const { return weights[idx]; }
 
-  double getPixSize() const { return pixsize; }
+  double getPixSize() const { return pixsize; } //!< Get pixel size (1d)
 
+  /*! \brief MPI copy send operation */
   void SendSelf(MPI::Comm&, int dest) const;
+  /*! \brief MPI copy recieve operation */
   void RecieveCopy(MPI::Comm&, int dest);
 };
 
 /*! \brief Structure for beam histogramming */
 struct bmhist {
 public:
-  unsigned int cnt;
-  double tot1, tot2; //For some reason averaging over 1/beam works badly
-  bmhist() { cnt = 0; tot1=tot2=0.0; }
+  //For some reason averaging over 1/beam works badly
+  unsigned int cnt; //!< Number of elements in bin
+  double tot1; //!< Total in band 1
+  double tot2; //!< Total in band 2
+  bmhist() { cnt = 0; tot1=tot2=0.0; } //!< Constructor
+  /*! \brief Copy constructor */
   bmhist(const bmhist& other) {
     cnt = other.cnt; tot1=other.tot1; tot2=other.tot2;
   }
+  /*! \brief Copy operator */
   bmhist& operator=(const bmhist& other) {
     if (this == &other) return *this;
     cnt = other.cnt; tot1=other.tot1; tot2=other.tot2;

@@ -19,8 +19,9 @@
 // not any internal state data.
 class numberCountsDouble {
  public:
+  /*! \brief For user to request what R they want */
   enum rtype { BEAMPOS=1, BEAMNEG=2, BEAMPOSNEG=3, BEAMNEGPOS=4, 
-	       BEAMALL=5 }; //!< For user to request what R they want
+	       BEAMALL=5 }; 
   
   numberCountsDouble() {};
   virtual ~numberCountsDouble() {};
@@ -52,9 +53,10 @@ class numberCountsDouble {
 		    unsigned int,const double* const,
 		    const doublebeam&, double*, rtype=BEAMALL) const = 0;
 
-  virtual bool writeToStream(std::ostream& os) const=0; //<! Output
+  virtual bool writeToStream(std::ostream& os) const=0; //!< Output
 };
 
+/*! \brief Write to stream */
 std::ostream& operator<<(std::ostream& os, const numberCountsDouble& b);
 
 #endif

@@ -10,7 +10,7 @@
 
 /*!
   \brief Data class for holding 2-band data from a fits files.
-  Supports binning.
+  Supports binning of data.
 */
 
 class fitsDataDouble {
@@ -44,28 +44,28 @@ class fitsDataDouble {
   void readData(const std::string&, const std::string&, bool=false, 
 		bool=false); //!< Read data from file
 
-  bool isBinned() const { return is_binned; }
+  bool isBinned() const { return is_binned; } //!< Is data binned
   void applyBinning(unsigned int, unsigned int); //!< Takes an unbinned image and bins it
-  std::pair<unsigned int, unsigned int> getNBins() const;
-  std::pair<double,double> getBinCent0() const;
-  std::pair<double,double> getBinDelta() const;
-  const unsigned int* const getBinnedData() const { return binval; }
+  std::pair<unsigned int, unsigned int> getNBins() const; //!< Get number of bins along each dimension
+  std::pair<double,double> getBinCent0() const; //!< Gets center of 0th bin along each dimension
+  std::pair<double,double> getBinDelta() const; //!< Gets size of bins along each dimension
+  const unsigned int* const getBinnedData() const { return binval; } //!< Access to binned elements
   unsigned int getBinnedData(unsigned int i, unsigned int j) const 
-  { return binval[i*nbins2+j]; } //!< Unckecked
-  unsigned int getBinnedData(unsigned int i) const { return binval[i]; } //!< Unckecked
+  { return binval[i*nbins2+j]; } //!< Unchecked binned data access
+  unsigned int getBinnedData(unsigned int i) const { return binval[i]; } //!< Unckecked binned data access
 
   unsigned int getN() const { return n; } //!< Get number of data points
-  const double* const getData1() const { return data1; }
-  const double* const getData2() const { return data2; }
+  const double* const getData1() const { return data1; } //!< Direct data access, band 1
+  const double* const getData2() const { return data2; } //!< Direct data access, band 2
   double getData1(unsigned int i) const { return data1[i]; } //!< Unchecked
   double getData2(unsigned int i) const { return data2[i]; } //!< Unchecked
   
   std::pair<double,double> meanSubtract(); //!< Subract the mean from the data. May require rebinning
 
-  std::pair<double,double> getMin() const;
-  std::pair<double,double> getMax() const;
-  void getMinMax(double&, double&, double&, double&) const; //!< Get minima and maxima
-  std::pair<double,double> getMean() const;
+  std::pair<double,double> getMin() const; //!< Gets minimum in each band
+  std::pair<double,double> getMax() const; //!< Gets maximum in each band
+  void getMinMax(double&, double&, double&, double&) const; //!< Get minima and maxima for both bands
+  std::pair<double,double> getMean() const; //!< Gets mean value in each band
 
   void SendSelf(MPI::Comm&, int dest) const; //!< Send self
   void RecieveCopy(MPI::Comm&, int src); //!< Recieve

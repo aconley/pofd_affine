@@ -85,8 +85,8 @@ class calcLikeDoubleSingle { //Odd name...
   /*! \brief Access to beam info */
   const doublebeam& getBeam() const { return bm; }
 
-  void setVerbose() { verbose=true; }
-  void unSetVerbose() { verbose = false; }
+  void setVerbose() { verbose=true; } //!< Activate verbose mode
+  void unSetVerbose() { verbose = false; } //!< Turn off verbose mode
 
   void setLikeNorm(unsigned int i, double val) { like_norm[i]=val;} //!< Set likelihood normalization factor relative to beam area; set to zero to nor normalize
   void setLikeNorm(const std::vector<double>&); //!< Set likelihood normalization factor
@@ -95,9 +95,11 @@ class calcLikeDoubleSingle { //Odd name...
 
   void setSigmaBase1(const std::vector<double>&); //!< Set base sigma values, band 1
   void setSigmaBase1(unsigned int, const double* const); //!< Set base sigma values, band 1
+  /*! \brief Gets sigma base value for band 1 */
   double getSigmaBase1(unsigned int i) const { return sigma_base1[i]; }
   void setSigmaBase2(const std::vector<double>&); //!< Set base sigma values, band 2
   void setSigmaBase2(unsigned int, const double* const); //!< Set base sigma values, band 2
+  /*! \brief Gets sigma base value for band 2 */
   double getSigmaBase2(unsigned int i) const { return sigma_base2[i]; }
 
 
@@ -107,27 +109,29 @@ class calcLikeDoubleSingle { //Odd name...
   /*! \brief Returns \f$\log L\f$ over all data sets.  Model must be set */
   double getLogLike(const numberCountsDouble&, double sigmult=1.0, 
 		    unsigned int fftsize=4096, bool edgefix=true,
-		    bool setedge=true) const;
+		    bool edgeinteg=true) const;
 
   void writePDToStream( std::ostream& os ) const; //!< Write out computed P(D)
 
+  /*! \brief MPI copy send operation */
   void SendSelf(MPI::Comm&, int dest) const;
+  /*! \brief MPI copy recieve operation */
   void RecieveCopy(MPI::Comm&, int dest);
 };
 
 ////////////////////////////////////////////////////
-// Utility structure for grouping things by beam
+/*! \brief Utility structure for grouping things by beam */
 struct doublebeam_group {
-  unsigned int n;
-  std::vector<std::string> datafiles1;
-  std::vector<std::string> datafiles2;
-  std::string beamfile1;
-  std::string beamfile2;
-  std::vector<double> sigmas1;
-  std::vector<double> sigmas2;
-  std::vector<double> like_norms;
-
-  doublebeam_group() { n = 0; }
+  unsigned int n; //!< Number in group
+  std::vector<std::string> datafiles1; //!< Band 1 datafiles (len n)
+  std::vector<std::string> datafiles2; //!< Band 2 datafiles (len n)
+  std::string beamfile1; //!< Beamfile, band 1, for all elements in group
+  std::string beamfile2; //!< Beamfile, band 2, for all elements in group
+  std::vector<double> sigmas1; //!< Instrument noise, band 1 (len n)
+  std::vector<double> sigmas2; //!< Instrument noise, band 2 (len n)
+  std::vector<double> like_norms; //!< Likelihood normalization (len n)
+ 
+  doublebeam_group() { n = 0; } //!< Constructor
 };
 
 
@@ -144,11 +148,11 @@ class calcLikeDouble {
   //Transform stuff
   unsigned int fftsize; //!< Size of FFT (on each dim)
   unsigned int nedge; //!< R edge size
-  bool edgeInterp; //!< Do edge interpolation
+  bool edgeInteg; //!< Do edge integration
   bool edgeFix; //!< Apply edge fix
 
   //Data
-  unsigned int nbeamsets;
+  unsigned int nbeamsets; //!< Number of beam sets
   calcLikeDoubleSingle* beamsets; //!< Sets of data grouped by beam
   bool bin_data; //!< Bin the data
   unsigned int nbins; //!< Number of bins (if bin_data)
@@ -164,17 +168,18 @@ class calcLikeDouble {
   double sigma_prior_width; //!< Sigma multiplier width, both bands
 
   //Model
-  mutable numberCountsDoubleLogNormal model;
+  mutable numberCountsDoubleLogNormal model; //!< Number counts model
 
   bool verbose; //!< Output informational messages while running
 
  public:
+  /*! \brief Constructor */
   calcLikeDouble(unsigned int FFTSIZE=4096, unsigned int NEDGE=256, 
-		 bool EDGEFIX=true, bool EDGEINTERP=true,
+		 bool EDGEFIX=true, bool EDGEINTEG=true,
 		 bool BINNED=false, unsigned int NBINS=1000);
-  ~calcLikeDouble();
+  ~calcLikeDouble(); //!< Destructor 
 
-  void addWisdom(const std::string& filename);
+  void addWisdom(const std::string& filename); //!< Add FFTW wisdom information
 
   /*! \brief Reads data to compute likelihood for multiple data and beam files*/
   void readDataFromFiles(const std::vector<std::string>&, 
@@ -187,30 +192,37 @@ class calcLikeDouble {
 			 bool IGNOREMASK=false, bool MEANSUB=false,
 			 bool HISTOGRAM=false, double HISTOGRAMLOGSTEP=0.2);
   
-  void setVerbose() { verbose=true; }
-  void unSetVerbose() { verbose = false; }
+  void setVerbose() { verbose=true; } //!< Turn on verbose mode
+  void unSetVerbose() { verbose = false; } //!< Turn off verbose mode
 
-  void setFFTSize(unsigned int val) { fftsize = val; }
-  unsigned int getFFTSize() const { return fftsize; }
+  void setFFTSize(unsigned int val) { fftsize = val; } //!< Set FFT size
+  unsigned int getFFTSize() const { return fftsize; } //!< Return current FFT size
 
-  void setEdgeFix() { edgeFix=true; }
-  void unSetEdgeFix() { edgeFix=false; }
-  bool getEdgeFix() const { return edgeFix; }
+  void setEdgeFix() { edgeFix=true; } //!< Turn on edge fixing
+  void unSetEdgeFix() { edgeFix=false; } //!< Turn off edge fixing
+  bool getEdgeFix() const { return edgeFix; } //!< Are we using edge fixing?
 
-  //Note -- you can't set the edge interp size except at construction
-  void setEdgeInterp() { edgeInterp=true; }
-  void unSetEdgeInterp() { edgeInterp=false; }
-  bool getEdgeInterp() const { return edgeInterp; }
+  //Note -- you can't set the edge integration size except at construction
+  void setEdgeInteg() { edgeInteg=true; } //!< Turn on edge integration
+  void unSetEdgeInteg() { edgeInteg=false; } //!< Turn off edge integration
+  bool getEdgeInteg() const { return edgeInteg; } //!< Are we doing edge integration?
 
+  /*! \brief Return number of knots for 1st band spline*/
   unsigned int getNKnots() const { return model.getNKnots(); }
+  /*! \brief Return number of knots in color sigma model */
   unsigned int getNSigmas() const { return model.getNSigmas(); }
+  /*! \brief Return number of knots in color offset model */
   unsigned int getNOffsets() const { return model.getNOffsets(); }
+  /*! \brief Set knot positoins for 1st band spline */
   void setKnotPositions(std::vector<double>& knts) 
   { model.setKnotPositions(knts); }
+  /*! \brief Set knot positions for color sigma model */
   void setSigmaPositions(std::vector<double>& knts) 
   { model.setSigmaPositions(knts); }
+  /*! \brief Set knot positions for color offset model */
   void setOffsetPositions(std::vector<double>& knts) 
   { model.setOffsetPositions(knts); }
+  /*! \brief Set positions of all knots */
   void setPositions(std::vector<double>& K, std::vector<double>& S,
 		    std::vector<double>& O) {
     model.setPositions(K,S,O);
@@ -233,11 +245,15 @@ class calcLikeDouble {
   /*! \brief De-activated CFIRB prior, band 2 */
   void unsetCFIRBPrior2() { has_cfirb_prior2 = false; }
 
+  /*! \brief Get number of beam sets */
   unsigned int getNBeamSets() const { return nbeamsets; }
 
+  /*! \brief Get Log-Likelihood of data for a set of parameters */
   double getLogLike(const paramSet&) const;
 
+  /*! \brief MPI copy send operation */
   void SendSelf(MPI::Comm&, int dest) const;
+  /*! \brief MPI copy recieve operation */
   void RecieveCopy(MPI::Comm&, int dest);
 };
 

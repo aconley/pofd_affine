@@ -80,8 +80,8 @@ class calcLikeSingle {
   /*! \brief Access to beam info */
   const beam& getBeam() const { return bm; }
 
-  void setVerbose() { verbose=true; }
-  void unSetVerbose() { verbose = false; }
+  void setVerbose() { verbose=true; } //!< Activate verbose mode
+  void unSetVerbose() { verbose = false; } //!< Turn off verbose mode
 
   void setLikeNorm(unsigned int i, double val) { like_norm[i]=val;} //!< Set likelihood normalization factor relative to beam area; set to zero to nor normalize
   void setLikeNorm(const std::vector<double>&); //!< Set likelihood normalization factor
@@ -90,6 +90,7 @@ class calcLikeSingle {
 
   void setSigmaBase(const std::vector<double>&); //!< Set base sigma values
   void setSigmaBase(unsigned int, const double* const); //!< Set base sigma values
+  /*! \brief Get sigma base value */
   double getSigmaBase(unsigned int i) const { return sigma_base[i]; }
 
 
@@ -101,21 +102,25 @@ class calcLikeSingle {
 		    unsigned int fftsize=131072, bool edgefix=true) const;
 
   void writePDToStream( std::ostream& os ) const; //!< Write out computed P(D)
-
+  
+  /*! \brief MPI copy send operation */
   void SendSelf(MPI::Comm&, int dest) const;
+  /*! \brief MPI copy recieve operation */
   void RecieveCopy(MPI::Comm&, int dest);
 };
 
 ////////////////////////////////////////////////////
-// Utility structure for grouping things by beam
+/*!
+  \brief Utility structure for grouping things by beam
+*/
 struct beam_group {
-  unsigned int n;
-  std::vector<std::string> datafiles;
-  std::string beamfile;
-  std::vector<double> sigmas;
-  std::vector<double> like_norms;
+  unsigned int n; //!< Number in group
+  std::vector<std::string> datafiles; //!< List of datafiles (len n)
+  std::string beamfile; //!< Beam file, shared between all members
+  std::vector<double> sigmas; //!< List of instrumental sigmas (len n)
+  std::vector<double> like_norms; //!< List of likelihood normalizations (len n)
 
-  beam_group() { n = 0; }
+  beam_group() { n = 0; } //!< Constructor
 };
 
 
@@ -135,7 +140,7 @@ class calcLike {
   bool edgeFix; //!< Apply edge fix
 
   //Data
-  unsigned int nbeamsets;
+  unsigned int nbeamsets; //!< Number of beam sets 
   calcLikeSingle* beamsets; //!< Sets of data grouped by beam
   bool bin_data; //!< Bin the data
   unsigned int nbins; //!< Number of bins (if bin_data)
@@ -148,16 +153,17 @@ class calcLike {
   double sigma_prior_width; //!< Sigma multiplier width
 
   //Model
-  mutable numberCountsKnotsSpline model;
+  mutable numberCountsKnotsSpline model; //!< Holds number counts model
 
   bool verbose; //!< Output informational messages while running
 
  public:
+  /*! \brief Constructor */
   calcLike(unsigned int FFTSIZE=262144, unsigned int NINTERP=1024, 
 	   bool EDGEFIX=true, bool BINNED=false, unsigned int NBINS=1000 );
-  ~calcLike();
+  ~calcLike(); //!< Destuctor
 
-  void addWisdom(const std::string& filename);
+  void addWisdom(const std::string& filename); //!< Add FFTW wisdom
 
   /*! \brief Reads data to compute likelihood for multiple data and beam files*/
   void readDataFromFiles(const std::vector<std::string>&, 
@@ -167,17 +173,19 @@ class calcLike {
 			 bool IGNOREMASK=false, bool MEANSUB=false,
 			 bool HISTOGRAM=false, double HISTOGRAMLOGSTEP=0.2);
   
-  void setVerbose() { verbose=true; }
-  void unSetVerbose() { verbose = false; }
+  void setVerbose() { verbose=true; } //!< Turn on verbose mode
+  void unSetVerbose() { verbose = false; } //!< Turn off verbose mode
 
-  void setFFTSize(unsigned int val) { fftsize = val; }
-  unsigned int getFFTSize() const { return fftsize; }
+  void setFFTSize(unsigned int val) { fftsize = val; } //!< Set FFT size
+  unsigned int getFFTSize() const { return fftsize; } //!< Get FFT size
 
-  void setEdgeFix() { edgeFix=true; }
-  void unSetEdgeFix() { edgeFix=false; }
-  bool getEdgeFix() const { return edgeFix; }
+  void setEdgeFix() { edgeFix=true; } //!< Turn on edge fixing
+  void unSetEdgeFix() { edgeFix=false; } //!< Turn off edge fixing
+  bool getEdgeFix() const { return edgeFix; } //!< Are we edge fixing?
 
-  unsigned int getNKnots() const { return model.getNKnots(); }
+  /*! \brief Get number of knots in model */
+  unsigned int getNKnots() const { return model.getNKnots(); } 
+  /*! \brief Set positions of knots in model */
   void setKnotPositions(std::vector<double>& knts) 
   { model.setKnotPositions(knts); }
 
@@ -193,12 +201,16 @@ class calcLike {
   void setCFIRBPrior( double, double );
   /*! \brief De-activated CFIRB prior */
   void unsetCFIRBPrior() { has_cfirb_prior = false; }
-
+  
+  /*! \brief Get number of beam sets */
   unsigned int getNBeamSets() const { return nbeamsets; }
 
+  /*! \brief Get Log Likelihood for set of parameters */
   double getLogLike(const paramSet&) const;
 
+  /*! \brief MPI copy send operation */
   void SendSelf(MPI::Comm&, int dest) const;
+  /*! \brief MPI copy send operation */
   void RecieveCopy(MPI::Comm&, int dest);
 };
 

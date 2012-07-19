@@ -370,7 +370,7 @@ void PDFactoryDouble::getRStats(unsigned int n, double& mn1, double& mn2,
   \param[in] maxflux1 Maximum flux generated for R, dimension 1
   \param[in] maxflux2 Maximum flux generator for R, dimension 2
   \param[in] model    number counts model to use for fill.  Params must be set
-  \param[in] beam     Beam fwhm
+  \param[in] bm       Beam
   \param[in] setEdge  Use integral of mean values at the edges
 
   Note that n is the transform size; the output array will generally

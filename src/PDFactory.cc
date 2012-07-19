@@ -163,9 +163,6 @@ void PDFactory::setNInterp(unsigned int NINTERP) {
   }
 }
 
-/*!
-  \param[in] NINTERP Interpolation size
-*/
 void PDFactory::allocateInterp() {
   if (interpvars_allocated) return;
   if (ninterp == 0)
@@ -232,7 +229,7 @@ bool PDFactory::addWisdom(const std::string& filename) {
   \param[in] sigma   Maximum allowed sigma
   \param[in] maxflux Maximum flux generated in R
   \param[in] model   number counts model to use for fill.  Params must be set
-  \param[in] beam    Beam fwhm
+  \param[in] bm      Beam 
 
   Note that n is the transform size; the output array will generally
   be smaller because of padding.  Furthermore, because of mean shifting,

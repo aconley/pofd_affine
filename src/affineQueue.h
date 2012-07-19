@@ -12,7 +12,7 @@
 // the gcc version!
 
 /*!
-  Queue (FIFO stack) of fixed capacity.  Implemented as a circular list.
+  \brief Queue (FIFO stack) of fixed capacity.  Implemented as a circular list.
  */
 template <class Item> class affineQueue {
  private :

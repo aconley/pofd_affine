@@ -297,7 +297,7 @@ void numberCountsDoubleLogNormal::setNOffsets(unsigned int n) {
 }
 
 /*!
-  \params[in] S Input knot positions
+  \param[in] S Input knot positions
 */
 void numberCountsDoubleLogNormal::
 setKnotPositions(const std::vector<double>& S) {
@@ -314,8 +314,8 @@ setKnotPositions(const std::vector<double>& S) {
 }
 
 /*!
-  \params[in] n Number of knots
-  \params[in] S Input knot positions
+  \param[in] n Number of knots
+  \param[in] S Input knot positions
 */
 void numberCountsDoubleLogNormal::setKnotPositions(unsigned int n, 
 						   const double* const S) {
@@ -331,7 +331,7 @@ void numberCountsDoubleLogNormal::setKnotPositions(unsigned int n,
 }
 
 /*!
-  \params[in] S Input knot positions
+  \param[in] S Input knot positions
 */
 void numberCountsDoubleLogNormal::
 setSigmaPositions(const std::vector<double>& S) {
@@ -346,8 +346,8 @@ setSigmaPositions(const std::vector<double>& S) {
 }
 
 /*!
-  \params[in] n Number of knots
-  \params[in] S Input knot positions
+  \param[in] n Number of knots
+  \param[in] S Input knot positions
 */
 void numberCountsDoubleLogNormal::setSigmaPositions(unsigned int n, 
 						    const double* const S) {
@@ -362,7 +362,7 @@ void numberCountsDoubleLogNormal::setSigmaPositions(unsigned int n,
 
 
 /*!
-  \params[in] S Input knot positions
+  \param[in] S Input knot positions
 */
 void numberCountsDoubleLogNormal::
 setOffsetPositions(const std::vector<double>& S) {
@@ -377,8 +377,8 @@ setOffsetPositions(const std::vector<double>& S) {
 }
 
 /*!
-  \params[in] n Number of knots
-  \params[in] S Input knot positions
+  \param[in] n Number of knots
+  \param[in] S Input knot positions
 */
 void numberCountsDoubleLogNormal::setOffsetPositions(unsigned int n, 
 						     const double* const S) {
@@ -427,7 +427,7 @@ void numberCountsDoubleLogNormal::setRWorkSize( unsigned int sz ) const {
 
 
 /*!
-  \params[in] params Parameters
+  \param[in] F Parameters to set in model
  */
 void numberCountsDoubleLogNormal::setParams(const paramSet& F) {
   //This will ignore any parameters beyond those it needs.
@@ -844,13 +844,13 @@ double numberCountsDoubleLogNormal::getR(double f1, double f2,
 /*!
   Array version.
 
-  \param[in] n1 Number of fluxes along dimension 1
-  \param[in] f1 Fluxes along dimension 1
-  \param[in] n2 Number of fluxes along dimension 2
-  \param[in] f2 Fluxes along dimension 2
-  \param[in] doublebeam Holds beam information
+  \param[in]  n1 Number of fluxes along dimension 1
+  \param[in]  f1 Fluxes along dimension 1
+  \param[in]  n2 Number of fluxes along dimension 2
+  \param[in]  f2 Fluxes along dimension 2
+  \param[in]  bm Holds beam information
   \param[out] vals Row major 2D array (n1xn2) giving values of R
-  \param[in] bmtype What type of R value to get (pos-pos, pos-neg, neg-pos,
+  \param[in]  bmtype What type of R value to get (pos-pos, pos-neg, neg-pos,
                    neg-neg or the sum of all types)
 
  */ 

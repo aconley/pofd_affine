@@ -25,6 +25,8 @@ beam::beam() {
 
 /*!
   \param[in] filename   File to read from
+  \param[in] histogram  Do beam histogramming
+  \param[in] histogramlogstep Log step for histogram bins
 */
 beam::beam( const std::string& filename, bool histogram, 
 	    double histogramlogstep ) {

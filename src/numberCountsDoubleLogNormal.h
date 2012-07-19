@@ -30,7 +30,7 @@
     \f[
       \mathrm{L}\left( x ; \mu, \sigma \right) =
        \frac{1}{\sqrt{2 \pi} \sigma} \frac{1}{x}
-       \exp\left[ \frac{ - \left(\log x - \mu\right)^2 / \sigma^2 } \right] .
+       \exp\left[ \frac{ - \left(\log x - \mu\right)^2 }{ \sigma^2 } \right] .
     \f]
     Note that \f$\sigma\f$ and \f$\mu\f$ are not the mean and square root
     of the variance of the actual distribution, but rather the mean
@@ -73,9 +73,9 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   void setRWorkSize( unsigned int ) const; //!< Controls R working arrays
 
   //Convenience functions for spline computations without input checking
-  double getSigmaInner(double) const;
-  double getOffsetInner(double) const;
-  double getNumberCountsInner(double,double) const;
+  double getSigmaInner(double) const; //!< Inner sigma computation
+  double getOffsetInner(double) const; //!< Inner offset computation
+  double getNumberCountsInner(double,double) const; //!< Inner number counts computation
 
   /*! \brief Integrate spline * flux1^power1 * EXP( const1*mu + 
     const2*sigma^2 ) */
@@ -93,33 +93,48 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
  public :
   numberCountsDoubleLogNormal(); //!< Default
   explicit numberCountsDoubleLogNormal(unsigned int, unsigned int, 
-				       unsigned int);
+				       unsigned int); //!< Constructor
   numberCountsDoubleLogNormal( const std::vector<double>&, 
 			       const std::vector<double>&,
-			       const std::vector<double>& );
+			       const std::vector<double>& ); //!< Constructor
+  /*! \brief Constructor */
   numberCountsDoubleLogNormal( unsigned int, const double* const,
 			       unsigned int, const double* const,
 			       unsigned int, const double* const);
+  /*! \brief Copy constructor */
   numberCountsDoubleLogNormal( const numberCountsDoubleLogNormal& other );
   ~numberCountsDoubleLogNormal(); //!< Destructor
 
+  /*! \brief Copy operator */
   numberCountsDoubleLogNormal& operator=(const numberCountsDoubleLogNormal&);
 
   virtual bool isValid() const; //!< Are model settings loaded and valid?
 
   void setNKnots(unsigned int n); //!< Sets number of knots in band 1
-  unsigned int getNKnots() const { return nknots; }
+  unsigned int getNKnots() const { return nknots; } //!< Number of knots in band 1 spline
+  /*! \brief Sets knot positions, band 1, vector version */
   void setKnotPositions( const std::vector<double>& );
+  /*! \brief Sets knot positions, band 1, c array version */
   void setKnotPositions( unsigned int, const double* const );
+  /*! \brief Sets number of sigma positions for color model */
   void setNSigmas(unsigned int);
+  /*! \brief Gets number of sigma knots in band 2 color model */
   unsigned int getNSigmas() const { return nsigmaknots; }
+  /*! \brief Sets knot positions for band 2 sigma model, vector version */
   void setSigmaPositions( const std::vector<double>& );
+  /*! \brief Sets knot positions for band 2 sigma model, c array version */
   void setSigmaPositions( unsigned int, const double* const );
+  /*! \brief Sets number of offset positions for color model */
   void setNOffsets(unsigned int);
+  /*! \brief Gets number of offset knots in band 2 color model */
   unsigned int getNOffsets() const { return noffsetknots; }
+  /*! \brief Sets knot positions for band 2 offset model, vector version */
   void setOffsetPositions( const std::vector<double>& );
+  /*! \brief Sets knot positions for band 2 offset model, c array version */
   void setOffsetPositions( unsigned int, const double* const );
+  /*! \brief Gets total number of parameters */
   unsigned int getNParams() const { return nknots+nsigmaknots+noffsetknots; }
+  /*! \brief Sets positions of all knots */
   void setPositions(const std::vector<double>&,const std::vector<double>&,
 		    const std::vector<double>&); //!< Set all positions
   
@@ -145,7 +160,9 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
    double getMeanFluxPowerPerArea(double p1,double p2) const; //!< Integral of s1 to some power and s2 to some power over number counts
 
    //Routines for getting R
+   /*! \brief Get R value at single flux1,flux2 value */
    double getR(double, double, const doublebeam&, rtype=BEAMALL) const;
+   /*! \brief Gets R values, array version */
    void getR(unsigned int n1,const double* const, unsigned int n2,
 	     const double* const, const doublebeam&, double*, 
 	     rtype=BEAMALL) const;

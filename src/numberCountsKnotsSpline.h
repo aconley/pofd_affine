@@ -31,22 +31,27 @@ class numberCountsKnotsSpline : public numberCountsKnots {
   void **varr; //!< Internal evil casting array for integration
 
   //Internal pos/neg parts
+  /*! \brief Get R for positive beam, single flux version */
   double getRPos(double,const beam&) const;
+  /*! \brief Get R for positive beam, array of fluxes version */
   void getRPos(unsigned int n,const double* const,
 	       const beam&,double*) const;
+  /*! \brief Get R for negative beam, single flux version */
   double getRNeg(double,const beam&) const;
+  /*! \brief Get R for negative beam, array of fluxes version */
   void getRNeg(unsigned int n,const double* const,
 	       const beam&,double*) const;
 
 
  public :
   numberCountsKnotsSpline(); //!< Default
-  explicit numberCountsKnotsSpline(unsigned int);
-  numberCountsKnotsSpline( const std::vector<double>& );
-  numberCountsKnotsSpline( unsigned int, const double* const);
-  numberCountsKnotsSpline( const numberCountsKnotsSpline& );
+  explicit numberCountsKnotsSpline(unsigned int); //!< Constructor with number of knots
+  numberCountsKnotsSpline( const std::vector<double>& ); //!< Vector constructor
+  numberCountsKnotsSpline( unsigned int, const double* const); //!< C array constructor
+  numberCountsKnotsSpline( const numberCountsKnotsSpline& ); //!< Copy constructor
   ~numberCountsKnotsSpline(); //!< Destructor
 
+  /*! \brief copy operator */
   numberCountsKnotsSpline& operator=(const numberCountsKnotsSpline&);
  
   void setKnotPositions(const std::vector<double>&); //!< Set knot positions
@@ -60,7 +65,9 @@ class numberCountsKnotsSpline : public numberCountsKnots {
   double getMeanFluxPerArea() const; //!< Mean flux per unit area (sq deg)
   double getMeanFluxSqPerArea() const; //!< Mean flux squared per unit area (sq deg)
   
+  /*! \brief Get R at single flux value */
   double getR(double,const beam&, rtype=BEAMPOS) const;
+  /*! \brief Get R, array version */
   void getR(unsigned int n,const double* const,
 	    const beam&,double*, rtype=BEAMPOS) const;
 

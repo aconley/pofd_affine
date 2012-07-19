@@ -15,10 +15,15 @@
 #include<paramSet.h>
 
 /*!
+  \brief Class for computing P(D) values from a set of parameters,
+  two band version
+
   Only square FFTs are supported.
   
   Always call initPD before using getPD for a given model.
-
+  Unlike the one band version, doesn't interpolate on R.  Two dimensional
+  interpolation was either inaccurate or not faster than directly computing
+  R in tests.
  */
 
 class PDFactoryDouble {
@@ -32,12 +37,17 @@ class PDFactoryDouble {
 
   unsigned int currsize; //!< Current memory allocation
   unsigned int lastfftlen; //!< FFT length of last transform
-  double max_sigma1, max_sigma2; //!< Current max supported sigma
-  double mn1, mn2; //!< Expected means
-  double var_noi1, var_noi2; //!< Expected variance without instrumental noise
-  double sg1, sg2; //!< Expected sigmas (inc instrument noise)
+  double max_sigma1; //!< Current max supported sigma, band 1
+  double max_sigma2; //!< Current max supported sigma, band 2
+  double mn1; //!< Expected mean, band 1
+  double mn2; //!< Expected mean, band 2
+  double var_noi1; //!< Expected variance without instrumental noise, band 1
+  double var_noi2; //!< Expected variance without instrumental noise, band 2
+  double sg1; //!< Expected sigma (inc instrument noise), band 1
+  double sg2; //!< Expected sigma (inc instrument noise), band 2
 
-  fftw_plan plan, plan_inv; //!< Holds plans
+  fftw_plan plan;     //!< Holds forward transformation plan
+  fftw_plan plan_inv; //!< Holds inverse transformation plan
 
   //Working variables for transformation
   bool rvars_allocated; //!< Are R variables (rest of this block) allocated
@@ -62,10 +72,14 @@ class PDFactoryDouble {
   void allocateEdgevars(); //!< Allocate Edge variables
   void freeEdgevars(); //!< Free edge variables
 
-  double dflux1, dflux2; //!< Flux size step of last computation
-  unsigned int maxidx1, maxidx2; //!< Max non-zero index in Rs
-  bool doshift1, doshift2; //!< Apply shifting
-  double shift1, shift2; //!< Shift amounts
+  double dflux1; //!< Flux size step of last computation, band 1
+  double dflux2; //!< Flux size step of last computation, band 2
+  unsigned int maxidx1; //!< Max non-zero index in R, band 2
+  unsigned int maxidx2; //!< Max non-zero index in R, band 2
+  bool doshift1; //!< Apply shifting, band 2
+  bool doshift2; //!< Apply shifting, band 2
+  double shift1; //!< Shift amount, band 2
+  double shift2; //!< Shift amount, band 2
 
   unsigned int fftw_plan_style; //!< FFTW plan flags
   bool has_wisdom; //!< Has FFTW wisdom 
@@ -77,6 +91,7 @@ class PDFactoryDouble {
   bool resize(unsigned int); //!< Sets transform size arrays
   void strict_resize(unsigned int); //!< Sets transform size arrays
   
+  /*! \brief Get P(D) statistics from R computation (so without inst. noise) */
   void getRStats(unsigned int n, double& mn1, double& mn2,
 		 double& var1, double& var2) const;
 
@@ -93,27 +108,28 @@ class PDFactoryDouble {
   void setVerbose() { verbose = true; } //!< Sets verbose mode
   void unsetVerbose() { verbose = false; } //!< Unset verbose mode
 
+  /*! \brief Get size of last FFT */
   unsigned int getLastFFTLen() const { return lastfftlen; }
 
-  /*! \brief Adds wisdom file*/
+  /*! \brief Adds FFTW wisdom file*/
   bool addWisdom(const std::string& filename);
 
-  /*! \brief Initializes P(D) by computing R */
+  /*! \brief Initializes P(D) by computing R and forward transforming it*/
   void initPD(unsigned int, double, double, double, double, 
 	      const numberCountsDouble&, const doublebeam&,
 	      bool setEdge=true);
 
-  /*! \brief Gets P(D) of specified transform size */
+  /*! \brief Gets P(D) with specified noise levels */
   void getPD(double, double, PDDouble&, bool setLog=true, 
 	     bool edgeFix=false);
 
-  void SendSelf(MPI::Comm&, int dest) const;
-  void RecieveCopy(MPI::Comm&, int dest);
+  void SendSelf(MPI::Comm&, int dest) const; //!< MPI copy send operation
+  void RecieveCopy(MPI::Comm&, int dest); //!< MPI copy recieve operation
 
 
 #ifdef TIMING
-  void resetTime();
-  void summarizeTime(unsigned int=0) const;
+  void resetTime(); //!< Reset timing information
+  void summarizeTime(unsigned int=0) const; //!< Summarize timing information
 #endif
 };
 
