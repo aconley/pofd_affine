@@ -65,8 +65,11 @@ affineStepChunk::~affineStepChunk() {
 }
 
 /*!
-  Fills a chunk with the last step of another chunk, resizing as
-  needed
+  Takes this chunk, throws out the contents, makes it one iteration long,
+  and sets the only entry for each walker to the last step from the other
+  walker. 
+
+  \param[in] other Other chunk to fill from
 */
 void affineStepChunk::fillFromLastStep(const affineStepChunk& other)
   throw (affineExcept) {
@@ -832,6 +835,7 @@ bool affineChainSet::getAcorVector(std::vector<double>& tau) const
 
 
 /*!
+  \param[out] tau Autocorrelation length for each parameter
   \param[in] ignore Set to true where to ignore params.  tau is set to NaN
                     where this is true
   \returns True if the autocorrelation vector was computed for all params
@@ -884,7 +888,7 @@ double affineChainSet::getParamMean(unsigned int paridx) const
 }
 
 /*!
-  \param[in] idx Index of parameter
+  \param[in]  paridx Index of parameter
   \param[out] mean Mean value of parameter
   \param[out] var  Variance of parameter
   \param[out] lowlimit Lower limit of parameter. Returns Nan if non-computable

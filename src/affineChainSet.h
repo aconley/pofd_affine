@@ -17,16 +17,19 @@ struct affineStepChunk {
   double* logLike; //!< Log likelihoods, nwalkers by niters
   unsigned int *nsteps; //!< Number of filled elements for each walker (size nwalkers)
 
-  affineStepChunk(unsigned int, unsigned int, unsigned int);
-  affineStepChunk(const affineStepChunk&);
-  ~affineStepChunk();
+  affineStepChunk(unsigned int, unsigned int, unsigned int); //!< Constructor
+  affineStepChunk(const affineStepChunk&); //!< Copy constructor
+  ~affineStepChunk(); //!< Destructor
 
+  /*! \brief Fills a chunk with the last step of another chunk, resizing as
+  needed */
   void fillFromLastStep(const affineStepChunk&) throw (affineExcept);
 
   void clear(); //!< Frees memory
 
+  /*! \brief Gets number of steps for specified walker */
   unsigned int getNSteps(unsigned int i) const { return nsteps[i]; }
-  unsigned int getMinNSteps() const;
+  unsigned int getMinNSteps() const; //!< Get minimum number of steps accross all walkers
 
   affineStepChunk& operator=(const affineStepChunk&); //!< Copy
  
@@ -41,12 +44,17 @@ struct affineStepChunk {
 
   /*! \brief get most resent step for given walker */
   bool getLastStep(unsigned int, paramSet&, double& ) const;
-
-  double* getParamPointer(unsigned int, unsigned int);
+  
+  /*! \brief Get pointer to particular set of parameters */
+  double* getParamPointer(unsigned int, unsigned int); 
+  /*! \brief Get pointer to particular set of parameters */
   double* const getParamPointer(unsigned int, unsigned int) const;
+  /*! \brief Get pointer to last set of parameters for a given walker*/
   double* getLastParamPointer(unsigned int);
+  /*! \brief Get pointer to last set of parameters for a given walker*/
   double* const getLastParamPointer(unsigned int) const;
 
+  /*! \brief Get log likelihood for a particular walker and step */
   double getLogLike(unsigned int i1, unsigned int i2) const {
     return logLike[i1*niters+i2]; }
 
@@ -60,8 +68,10 @@ std::ostream& operator<<( std::ostream& os, const affineStepChunk& );
 */
 class affineChainSet {
  private:
-  //Acor computation parameters
-  static const unsigned int taumax, winmult, maxlag, minfac;
+  static const unsigned int taumax;  //!< Acor computation constant
+  static const unsigned int winmult; //!< Acor computation constant
+  static const unsigned int maxlag;  //!< Acor computation constant
+  static const unsigned int minfac;  //!< Acor computation constant
 
   //The ideal storage scheme here would be a nwalker x niter x nparams
   // array.  The problem is that we don't know in advance how
@@ -82,22 +92,22 @@ class affineChainSet {
   bool skipfirst; //!< True if the first chunk is just the initialization, and should be ignored in stats, etc.
 
  public:
-  affineChainSet(unsigned int, unsigned int);
-  ~affineChainSet();
+  affineChainSet(unsigned int, unsigned int); //!< Constructor
+  ~affineChainSet(); //!< Destructor
 
   void clear(); //!< Clears the chain
   void clearPreserveLast() throw (affineExcept); //!< Clears the chain, preserving the last step of the old one as the first of the new
 
-  unsigned int getNWalkers() const { return nwalkers; }
+  unsigned int getNWalkers() const { return nwalkers; } //!< Get number of walkers
   unsigned int getNIters() const; //!< Total number of iterations present across all walkers
   unsigned int getNIters(unsigned int) const throw (affineExcept); //!< Total number of iterations for given walker
   unsigned int getMinNIters() const; //!< Minimum number of iterations across all walkers
-  unsigned int getNParams() const { return nparams; }
-  unsigned int getNChunks() const { return steps.size(); }
+  unsigned int getNParams() const { return nparams; } //!< Get number of params
+  unsigned int getNChunks() const { return steps.size(); } //!< Get number of chunks
 
-  bool doSkipFirst() const { return skipfirst; }
-  void setSkipFirst() { skipfirst = true; }
-  void unsetSkipFirst() { skipfirst = false; }
+  bool doSkipFirst() const { return skipfirst; } //!< Are we skipping the first tep in any results?
+  void setSkipFirst() { skipfirst = true; } //!< Do skip the first step
+  void unsetSkipFirst() { skipfirst = false; } //!< Don't skip the first step
 
   double getMaxLogLike() const; //!< Return maximum log likelihood over all walkers
   void getMaxLogLikeParam(double&,paramSet&) const; //!< Return best Log Likelihood step and it's likelihood over all walkers
@@ -113,6 +123,7 @@ class affineChainSet {
   void getLastStep( unsigned int, paramSet&, double& ) const
     throw (affineExcept);
 
+  /*! \brief Get a specified step */
   void getStep(unsigned int, unsigned int, unsigned int, paramSet&,
 	       double&) const throw (affineExcept);
 
@@ -134,9 +145,10 @@ class affineChainSet {
   affineChainSet& operator+=( const affineChainSet& ) throw (affineExcept);  //!<Merge another chain set onto this
 
   double getParamMean(unsigned int) const throw (affineExcept); //!< Get mean value of param across all walkers
+  /* \brief Get statistics on a given parameter across all walkers */
   void getParamStats(unsigned int, double&, double&, double&,
 		     double&, double=0.683) const
-    throw (affineExcept); //!< Get statistics on a given parameter across all walkers
+    throw (affineExcept); 
   void makeCovMatrix(double** covmat) const; //!< Get covariance of all params
 
   void writeToFile( const std::string&) const throw (affineExcept); //!< Write to file

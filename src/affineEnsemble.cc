@@ -11,8 +11,16 @@
 /////////////////////////////////////
 
 /*!
-  \param[in] NSAMPLES number of samples (across all walkers) to do after burn;
+  \param[in] NWALKERS Number of walkers
+  \param[in] NPARAMS  Number of parameters
+  \param[in] NSAMPLES Number of samples (across all walkers) to do after burn;
                       realized to the closest larger multiple of nwalkers
+  \param[in] INIT_STEPS Number of initialization steps, which are thrown away
+                         even before starting burn-in process
+  \param[in] MIN_BURN Minimum number of steps before burn-in
+  \param[in] BURN_MULTIPLE This fraction of autocorrelation steps to add
+                            before checking burn-in again
+  \param[in] SCALEFAC Scale factor of Z distribution			    
  */
 affineEnsemble::affineEnsemble( unsigned int NWALKERS, unsigned int NPARAMS,
 				unsigned int NSAMPLES, unsigned int INIT_STEPS,

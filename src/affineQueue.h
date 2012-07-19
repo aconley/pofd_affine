@@ -24,19 +24,19 @@ template <class Item> class affineQueue {
 
  public :
 
-  affineQueue();
-  affineQueue(unsigned int);
-  ~affineQueue();
+  affineQueue(); //!< Constructor
+  affineQueue(unsigned int); //!< Constructor with specified capacity
+  ~affineQueue(); //!< Destructor
 
-  unsigned int capacity() const { return cap; }
-  unsigned int size() const { return nelem; }
-  bool empty() const { return nelem == 0; }
+  unsigned int capacity() const { return cap; } //!< Get capactity
+  unsigned int size() const { return nelem; } //!< Get number of elements in queue
+  bool empty() const { return nelem == 0; } //!< Is queue empty?
 
   void clear(); //!< Clear out contents (but preserve capacity)
   void setCapacity( unsigned int ); //!< Change capacity -- does not preserve contents
 
-  void push(const Item&) throw (affineExcept);
-  Item pop() throw (affineExcept);
+  void push(const Item&) throw (affineExcept);  //!< Push something onto queue
+  Item pop() throw (affineExcept); //!< Pull item off of queue
 };
 
 template< class Item > affineQueue<Item>::affineQueue() {
@@ -47,6 +47,9 @@ template< class Item > affineQueue<Item>::affineQueue() {
   data = NULL;
 }
 
+/*!
+  \param[in] CAP capacity
+*/
 template< class Item > affineQueue<Item>::affineQueue(unsigned int CAP) {
   cap      = CAP;
   nelem    = 0;
@@ -62,6 +65,9 @@ template< class Item > affineQueue<Item>::~affineQueue() {
   if (data != NULL) delete[] data;
 }
 
+/*!
+  \param[in] CAP capacity
+*/
 template< class Item > void affineQueue<Item>::setCapacity(unsigned int CAP) {
   if (cap != CAP) {
     if (data != NULL) delete[] data;
@@ -81,6 +87,9 @@ template< class Item > void affineQueue<Item>::clear() {
   return;
 }
 
+/*!
+  \param[in] item Item to push onto queue
+ */
 template< class Item > void affineQueue<Item>::push(const Item& item)
   throw (affineExcept) {
   
@@ -94,6 +103,9 @@ template< class Item > void affineQueue<Item>::push(const Item& item)
   nelem += 1;
 }
 
+/*!
+  \returns Item pulled off of queue
+ */
 template< class Item > Item affineQueue<Item>::pop()
   throw (affineExcept) {
   if (nelem == 0) 

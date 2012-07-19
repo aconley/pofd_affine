@@ -12,20 +12,22 @@
  */
 struct proposedStep {
   unsigned int update_idx; //!< Which one to update
-  paramSet oldStep;
-  paramSet newStep;
-  double   oldLogLike;
-  double   newLogLike;
+  paramSet oldStep; //!< Previous step
+  paramSet newStep; //!< New step to try
+  double   oldLogLike; //!< Log Likelihood of previous step
+  double   newLogLike; //!< Log Likelihood of new step
+ 
+  proposedStep(unsigned int); //!< Constructor with number of parameters
+  proposedStep(const proposedStep&); //!< Copy constructor
+  ~proposedStep(); //!< Destructor
 
-  proposedStep(unsigned int);
-  proposedStep(const proposedStep&);
-  ~proposedStep();
+  void clear(); //!<Clear contents
 
-  void clear();
+  proposedStep& operator=(const proposedStep&); //!< Copy operator
 
-  proposedStep& operator=(const proposedStep&);
-
+  /*! MPI copy send operation */
   void sendSelf(MPI::Comm& comm, int dest) const;
+  /*! MPI copy recieve operation */
   void recieveCopy(MPI::Comm& comm, int src);
 };
 
