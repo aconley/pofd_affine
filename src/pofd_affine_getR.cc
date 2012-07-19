@@ -42,7 +42,7 @@ int main( int argc, char** argv ) {
     switch(c) {
     case 'h' :
       std::cerr << "NAME" << std::endl;
-      std::cerr << "\tpofd_affine_getR -- get R for a number counts" 
+      std::cerr << "\tpofd_affine_getR -- get R for a spline number counts" 
 		<< std::endl;
       std::cerr << "\tmodel" << std::endl;
       std::cerr << std::endl;

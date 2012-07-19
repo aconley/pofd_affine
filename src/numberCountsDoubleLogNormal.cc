@@ -391,6 +391,15 @@ void numberCountsDoubleLogNormal::setOffsetPositions(unsigned int n,
     offsetknots[i] = S[i];
 }
 
+
+void numberCountsDoubleLogNormal::
+setPositions(const std::vector<double>& K, const std::vector<double>& S,
+	     const std::vector<double>& O) {
+  setKnotPositions(K);
+  setSigmaPositions(S);
+  setOffsetPositions(O);
+}
+
 /*! Allocates R work arrays.  Only upsizes */
 
 void numberCountsDoubleLogNormal::setRWorkSize( unsigned int sz ) const {

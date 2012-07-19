@@ -38,6 +38,8 @@ class numberCountsDouble {
 
   virtual void setParams(const paramSet& params)=0; //!< Set parameters
 
+  virtual unsigned int getNParams() const = 0; //!< Return number of parameters required
+
   /*! Evaluates number counts model */
   virtual double getNumberCounts( double, double ) const = 0; 
 

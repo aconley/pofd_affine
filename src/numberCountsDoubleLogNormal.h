@@ -110,6 +110,10 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   unsigned int getNOffsets() const { return noffsetknots; }
   void setOffsetPositions( const std::vector<double>& );
   void setOffsetPositions( unsigned int, const double* const );
+  unsigned int getNParams() const { return nknots+nsigmaknots+noffsetknots; }
+  void setPositions(const std::vector<double>&,const std::vector<double>&,
+		    const std::vector<double>&); //!< Set all positions
+  
 
   void setParams(const paramSet&); //!< Set parameters
  

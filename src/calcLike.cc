@@ -128,7 +128,7 @@ readDataFromFiles(const std::vector<std::string>& datafiles,
   maxflux = data[0].getMax();
   if (std::isnan(maxflux) || std::isinf(maxflux))
     throw affineExcept("calcLikeSingle","readDataFromFile",
-		       "Problem with maxflux1",8);
+		       "Problem with maxflux",8);
   for (unsigned int i = 1; i < n; ++i) {
     cmaxflux = data[i].getMax();
     if (std::isnan(cmaxflux) || std::isinf(cmaxflux))

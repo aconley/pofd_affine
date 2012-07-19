@@ -8,17 +8,17 @@
 #include<getopt.h>
 
 #include<utility.h>
-#include<calcLike.h>
-#include<beam.h>
-#include<numberCountsKnotsSpline.h>
+#include<calcLikeDouble.h>
+#include<doublebeam.h>
+#include<numberCountsDoubleLogNormal.h>
 #include<paramSet.h>
 #include<affineExcept.h>
 
 int main(int argc, char **argv) {
   double sigma_mult;
-  unsigned int ninterp, fftsize, nbins;
+  unsigned int nedge, fftsize, nbins;
 
-  bool meansub, histogram, bindata;
+  bool meansub, histogram, bindata, edgeInterp;
   bool verbose, ultraverbose, has_wisdom;
   std::string wisdom_file;
   
@@ -27,9 +27,9 @@ int main(int argc, char **argv) {
 
   //Defaults
   sigma_mult          = 1.0;
-  ninterp             = 1024;
-  fftsize             = 131072;
-  nbins               = 1000;
+  nedge               = 256;
+  fftsize             = 2048;
+  nbins               = 100;
   meansub             = false;
   histogram           = false;
   bindata             = false;
@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
     {"histogram",no_argument,0,'H'},
     {"meansub",no_argument,0,'$'},
     {"fftsize",required_argument,0,'f'},
-    {"ninterp",required_argument,0,'n'},
+    {"nedge",required_argument,0,'n'},
     {"nbins",required_argument,0,'N'},
     {"sigma_mult",required_argument,0,'s'},
     {"ultraverbose",no_argument,0,'u'},
@@ -61,40 +61,47 @@ int main(int argc, char **argv) {
     switch(c) {
     case 'h' :
       std::cerr << "NAME" << std::endl;
-      std::cerr << "\tpofd_affine_getLike -- Evaluate the likelihood of "
-		<< "a spline" << std::endl;
-      std::cerr << "\tnumber counts model" << std::endl;
+      std::cerr << "\tpofd_affine_getDoubleLike -- Evaluate the likelihood of "
+		<< "a spline plus" << std::endl;
+      std::cerr << "\tlog normal model" << std::endl;
       std::cerr << std::endl;
       std::cerr << "SYNOPSIS" << std::endl;
-      std::cerr << "\tpofd_affine_getLike [options] specfile initfile" 
+      std::cerr << "\tpofd_affine_getDoubleLike [options] specfile initfile" 
 		<< std::endl;
       std::cerr << std::endl;
       std::cerr << "DESCRIPTION" << std::endl;
       std::cerr << "\tEvaluates the likelihood of the data specified by"
 		<< " specfile" << std::endl;
-      std::cerr << "\tfor the model in in initfile using a spline number "
-		<< "counts" << std::endl;
-      std::cerr << "\tmodel and the P(D) "
-		<< "formalism." << std::endl;
+      std::cerr << "\tfor the model in in initfile using a 2-band spline plus" 
+		<< " log"<< std::endl;
+      std::cerr << "\tnormal color law model and the P(D,D) formalism." 
+		<< std::endl;
       std::cerr << std::endl;
       std::cerr << "\tspecfile is a text file containing the beams, datafiles,"
 		<< " sigma," << std::endl;
       std::cerr << "\tetc. using the same format as pofd_affine."
 		<< std::endl;
       std::cerr << std::endl;
-      std::cerr << "\tinitfile is a text file giving the positions of the"
-		<< "knot points," << std::endl;
-      std::cerr << "\ttheir initial values, and their estimated errors in"
-		<< std::endl;
-      std::cerr << "\tthe format knotflux value error.  The error is ignored."
-		<< std::endl;
+     std::cerr << "\tinitfile is a text file giving the positions of the"
+                << std::endl;
+      std::cerr << "\tknot points and their initial values, followed by the "
+		<< "sigma" << std::endl;
+      std::cerr << "\tknot points and their values, then likewise for the "
+		<< "colour" << std::endl;
+      std::cerr << "\toffset.  The format is three numbers on the first line, "
+		<< "giving" << std::endl;
+      std::cerr << "\tthe number of number count knots, sigma knots, and "
+		<< "offset knots," << std::endl;
+      std::cerr << "\tfollowed by a number of lines with the format"
+                << std::endl;
+      std::cerr << "\tknotpos value." << std::endl;
       std::cerr << std::endl;
       std::cerr << "OPTIONS" << std::endl;
       std::cerr << "\t-b, --bindata" << std::endl;
       std::cerr << "\t\tBin the data when computing the likelihood."
 		<< std::endl;
       std::cerr << "\t-f, --fftsize minsize" << std::endl;
-      std::cerr << "\t\tFFT size Must be a power of 2. (def: 131072)"
+      std::cerr << "\t\tFFT size Must be a power of 2. (def: 2048)"
 		<< std::endl;
       std::cerr << "\t-h --help" << std::endl;
       std::cerr << "\t\tPrint this message and exit." << std::endl;
@@ -103,9 +110,9 @@ int main(int argc, char **argv) {
       std::cerr << "\t--meansub" << std::endl;
       std::cerr << "\t\tMean-subtract the input data."
 		<< std::endl;
-      std::cerr << "\t-n, --ninterp ninterp" << std::endl;
-      std::cerr << "\t\tNumber of interpolation points in R calculation" 
-		<< " (def: 1024)" << std::endl;
+      std::cerr << "\t-n, --nedge nedge" << std::endl;
+      std::cerr << "\t\tNumber of edge integral points in R calculation" 
+		<< " (def: 256)" << std::endl;
       std::cerr << "\t-N, --nbins VAL" << std::endl;
       std::cerr << "\t\tNumber of bins if binning data (def: 1000)."
 		<< std::endl;
@@ -133,7 +140,7 @@ int main(int argc, char **argv) {
       histogram = true;
       break;
     case 'n' :
-      ninterp = static_cast<unsigned int>(atoi(optarg));
+      nedge = static_cast<unsigned int>(atoi(optarg));
       break;
     case 'N' :
       nbins =  static_cast<unsigned int>(atoi(optarg));
@@ -171,18 +178,16 @@ int main(int argc, char **argv) {
   initfile = std::string( argv[optind+1] );
 
   //Input tests
-  if (fftsize < 32768) {
-    std::cerr << "Inadvisably small minimum fft size" << std::endl;
+  if (fftsize < 512) {
+    std::cerr << "Inadvisably small minimum fft size " << fftsize << std::endl;
     return 1;
   }
   if (fftsize & (fftsize-1)) {
     std::cerr << "fftsize must be power of 2" << std::endl;
     return 1;
   }
-  if (ninterp == 0) {
-    std::cerr << "Invalid ninterp -- must be positive" << std::endl;
-    return 1;
-  }
+  if (nedge == 0) edgeInterp = false;
+
   if (sigma_mult < 0) {
     std::cerr << "Invalid (non-positive) sigma mult" << std::endl;
     return 1;
@@ -192,6 +197,7 @@ int main(int argc, char **argv) {
 	      << std::endl;
   }
 
+  //////////////////////////////
   //Read in the initialization file knot positions, values, errors
   if (verbose || ultraverbose)
     std::cout << "Reading initialization file: " << initfile << std::endl;
@@ -199,36 +205,63 @@ int main(int argc, char **argv) {
   if (!initfs) {
     std::cerr << "Error readining in initialization file: "
 	      << initfile << std::endl;
-    return 1;
+    return 2;
   }
-  std::vector<double> knotpos, knotval;
-  unsigned int nknots;
+  unsigned int nk, ns, no; //Number of knots, sigmas, offsets
+  std::vector<double> wvec1, wvec2;
   std::string line;
-  std::stringstream str;
   std::vector<std::string> words;
+  std::stringstream str;
   double currpos, currval;
+
+  //Read in number
+  initfs >> nk >> ns >> no;
+  if ( nk < 2 ) {
+    initfs.close();
+    std::cerr << "Need at least 2 knots!" << std::endl;
+    return 4;
+  }
+  if ( ns < 1 ) {
+    initfs.close();
+    std::cerr << "Need at least 1 sigma knots!" << std::endl;
+    return 4;
+  }
+  if ( no < 1 ) {
+    initfs.close();
+    std::cerr << "Need at least 1 offset knots!" << std::endl;
+    return 4;
+  }
+  //Read in values
   while (!initfs.eof()) {
     std::getline(initfs,line);
-    if (line[0] == '#') continue;
-
-    //Parse into words, stipping spaces
+    if (line[0] == '#') continue; //Comment
     utility::stringwords(line,words);
     if (words.size() == 0) continue; //Nothing on line (with spaces removed)
     if (words[0][0] == '#') continue; //Comment line
     if (words.size() < 2) continue; //Has wrong number of entries
     str.str(words[0]); str.clear(); str >> currpos;
     str.str(words[1]); str.clear(); str >> currval;
-    knotpos.push_back(currpos);
-    knotval.push_back(currval);
+    wvec1.push_back( currpos );
+    wvec2.push_back( currval ); 
   }
   initfs.close();
-  if (knotpos.size() == 0) {
-    std::cerr << "No knot positions or values found in " << initfile
-	      << std::endl;
-    return 1;
+  if (wvec1.size() != nk+ns+no) {
+   std::cerr << "Expected " << nk+ns+no << " values, got: " 
+              << wvec1.size() << std::endl;
+    return 8;
   }
-  nknots = knotpos.size();
 
+  //Parse out into knot positions, etc.
+  //Keep values in wvec2
+  std::vector<double> knotpos(nk), sigmapos(ns), offsetpos(no);
+  for (unsigned int i = 0; i < nk; ++i)
+    knotpos[i] = wvec1[i];
+  for (unsigned int i = nk; i < ns+nk; ++i)
+    sigmapos[i-nk] = wvec1[i];
+  for (unsigned int i = nk+ns; i < no+ns+nk; ++i)
+    offsetpos[i-nk-ns] = wvec1[i];
+
+  ////////////////////////
   //Process the spec file
   if (ultraverbose)
     std::cout << "Reading spec file: " << specfile << std::endl;
@@ -237,9 +270,9 @@ int main(int argc, char **argv) {
     std::cerr << "Error reading spec file: " << specfile << std::endl;
     return 1;
   }
-  std::vector< std::string > datafiles;
-  std::vector< double > sigmas, like_norm;
-  std::vector< std::string > psffiles;
+  std::vector< std::string > datafiles1, datafiles2;
+  std::vector< double > sigmas1, sigmas2, like_norm;
+  std::vector< std::string > psffiles1, psffiles2;
   double lnorm;
   while (! ifs.eof() ) {
     std::getline(ifs,line);
@@ -247,39 +280,54 @@ int main(int argc, char **argv) {
     utility::stringwords(line,words);
     if (words.size() == 0) continue; //Nothing on line (with spaces removed)
     if (words[0][0] == '#') continue; //Comment line
-    if (words.size() < 3) continue; //Has wrong number of entries
+    if (words.size() < 6) continue; //Has wrong number of entries
+
+    datafiles1.push_back( words[0] );
+    datafiles2.push_back( words[1] );
     
     double curr_sigma;
-    datafiles.push_back( words[0] );
-    str.str(words[1]); str.clear(); str >> curr_sigma;
+    str.str(words[2]); str.clear(); str >> curr_sigma;
     if (curr_sigma < 0.0) {
-      std::cerr << "Invalid (negative) sigma " << curr_sigma 
+      std::cerr << "Invalid (negative) sigma1 " << curr_sigma 
 		<< " from line: " << line << std::endl;
       return 1;
     }
-    sigmas.push_back( curr_sigma );
+    sigmas1.push_back( curr_sigma );
+    str.str(words[3]); str.clear(); str >> curr_sigma;
+    if (curr_sigma < 0.0) {
+      std::cerr << "Invalid (negative) sigma2 " << curr_sigma 
+		<< " from line: " << line << std::endl;
+      return 1;
+    }
+    sigmas2.push_back( curr_sigma );
     
+    psffiles1.push_back( words[4] );
+    psffiles2.push_back( words[5] );
 
-    psffiles.push_back( words[2] );
-    if (words.size() >= 4) {
-      str.str(words[3]); str.clear(); str >> lnorm;
+    //like_norm (optional)
+    if (words.size() >= 7) {
+      str.str(words[6]); str.clear(); str >> lnorm;
       like_norm.push_back(lnorm);
     } else like_norm.push_back(1.0);
   }
   ifs.close();
-  unsigned int ndata = datafiles.size();
+  unsigned int ndata = datafiles1.size();
   if (ndata == 0) {
     std::cerr << "No datafiles loaded" << std::endl;
     return 1;
   }
 
+  /////////////////////////////////////
+  // Actual calculation
   try {
-    calcLike likeSet( fftsize, ninterp, true, bindata, nbins );
+    calcLikeDouble likeSet( fftsize, nedge, true, edgeInterp,
+			    bindata, nbins );
 
     //Read data
     if (verbose || ultraverbose)
       std::cout << "Reading in data files" << std::endl;
-    likeSet.readDataFromFiles( datafiles, psffiles, sigmas, like_norm,
+    likeSet.readDataFromFiles( datafiles1, datafiles2, psffiles1, psffiles2,
+			       sigmas1, sigmas2, like_norm,
 			       false, meansub, histogram );
     
     if (has_wisdom) likeSet.addWisdom(wisdom_file);
@@ -288,22 +336,25 @@ int main(int argc, char **argv) {
       
     if ( ultraverbose ) {
       printf("  FFTsize:       %u\n",fftsize);
-      printf("  Nknots:        %u\n",nknots);
       if (histogram)
 	printf("  Using histogramming to reduce beam size\n");  
       if (bindata)
-	printf("  Using histogramming to reduce data size to: %u\n",nbins);  
-      printf("  Positions and initial values:\n");
-      for (unsigned int i = 0; i < nknots; ++i)
-	printf("  %11.5e  %11.5e\n",knotpos[i],knotval[i]);
+	printf("  Using histogramming to reduce data size to: %u by %u\n",
+	       nbins,nbins);  
+      printf("  Knot Positions and initial values:\n");
+      for (unsigned int i = 0; i < nk; ++i)
+	printf("  %11.5e  %11.5e\n",knotpos[i],wvec2[i]);
+      printf("  Sigma Positions and initial values:\n");
+      for (unsigned int i = 0; i < ns; ++i)
+	printf("  %11.5e  %11.5e\n",sigmapos[i],wvec2[i+nk]);
+      printf("  Offset Positions and initial values:\n");
+      for (unsigned int i = 0; i < no; ++i)
+	printf("  %11.5e  %11.5e\n",offsetpos[i],wvec2[i+nk+ns]);
     }
   
     //And, get that likelihood
-    likeSet.setKnotPositions( knotpos );
-    paramSet params(nknots+1);
-    for (unsigned int i = 0; i < nknots; ++i)
-      params[i] = knotval[i];
-    params[nknots] = sigma_mult;
+    likeSet.setPositions( knotpos, offsetpos, sigmapos );
+    paramSet params(wvec2);
 
     double LogLike = likeSet.getLogLike(params);
 
