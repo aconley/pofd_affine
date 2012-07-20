@@ -42,7 +42,7 @@ namespace pofd_mcmc {
   const double n_sigma_pad = 10.0; //!< Noise padding size in sigma
   const double n_sigma_shift2d = 4.0; //!< Shift amount
   const double n_sigma_pad2d = 6.0; //!< Noise padding size in sigma, 2D
-  const double logfac = log2(10.0); //!< Conversion base 2, base 10
+  const double logfac = log2(10.0); //!< Conversion to base 2 from base 10
   const double ilogfac = 1.0/logfac; //!< Inverse conversion factor
   const double smallval=exp2(-100); //!< Log of small number (base 2)
   const double log2toe = log(2); //!< Multiply by this to go from log2 to ln

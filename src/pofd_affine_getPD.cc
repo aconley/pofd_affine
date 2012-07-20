@@ -496,7 +496,7 @@ int getPDDouble(int argc, char** argv) {
   return 0;
 }
 
-
+///////////////////////////////////////
 
 int main( int argc, char** argv ) {
   bool twod;
@@ -523,7 +523,6 @@ int main( int argc, char** argv ) {
 		<< "model. Both" << std::endl;
       std::cerr << "\tone-dimensional and two-dimensional models are supported."
 		<< std::endl;
-      std::cerr << "\tmodel" << std::endl;
       std::cerr << std::endl;
       std::cerr << "SYNOPSIS" << std::endl;
       std::cerr << "\tEither" << std::endl;

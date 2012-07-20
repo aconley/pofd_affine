@@ -24,11 +24,9 @@ class numberCounts {
   
   numberCounts() {};
   virtual ~numberCounts() {};
-  
-  virtual bool isValid() const = 0; //!< See if model params are valid
 
-  /*! \brief Get Mean Flux per unit area */
-  virtual double getMeanFluxPerArea() const = 0;
+  virtual void setParams(const paramSet& params)=0; //!< Set parameters  
+  virtual bool isValid() const = 0; //!< See if model params are valid
 
   /*! \brief Minimum flux model is defined for */
   virtual double getMinFlux() const = 0;
@@ -36,9 +34,15 @@ class numberCounts {
   /*! \brief Maxium flux model is defined for */
   virtual double getMaxFlux() const = 0;
 
-  virtual void setParams(const paramSet& params)=0; //!< Set parameters
+  /*! \brief Return the number of sources per unit area */
+  virtual double getNS() const = 0; 
 
-  /*! Evaluates number counts model */
+  /*! \brief Get mean flux per unit area) */
+  virtual double getMeanFluxPerArea() const = 0; 
+  /*! \brief Get mean flux^2 per unit area) */
+  virtual double getMeanFluxSqPerArea() const = 0;
+
+  /*! Get differential number counts */
   virtual double getNumberCounts( double ) const = 0; 
 
   /*! \brief Get number of source responses, single value version */

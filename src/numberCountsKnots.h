@@ -23,8 +23,7 @@ class numberCountsKnots : public numberCounts {
   unsigned int nknots; //!< Number of knots
   double* knots; //!< Location of knots
 
-  //The knot values are stored as base e 
-  double* logknotvals; //!< Log values of differential number counts at knots
+  double* logknotvals; //!< Log2 values of differential number counts at knots
   bool knotvals_loaded; //!< Are knot values loaded?
 
   virtual void setNKnots(unsigned int n); //!< Sets number of knots
@@ -53,11 +52,6 @@ class numberCountsKnots : public numberCounts {
     return std::pair<double,double>(knots[i],logknotvals[i]); }
 
   virtual bool isValid() const; //!< Are model parameters valid
-
-  virtual double getNS() const = 0; //!< Return the number of sources with \f$S > S_{min}\f$ per square degree
-
-  virtual double getMeanFluxPerArea() const = 0; //!< Mean flux per unit area (sq deg)
-  virtual double getMeanFluxSqPerArea() const = 0; //!< Mean flux squared per unit area (sq deg)
 
   double getMaxFlux() const; //!< Maximum flux supported by model
   double getMinFlux() const; //!< Minimum flux supported by model

@@ -184,7 +184,16 @@ double numberCountsKnotsSpline::getNumberCounts(double value) const {
   return exp2( gsl_spline_eval( splinelog, log2(value), acc ) ); 
 }
 
-double numberCountsKnotsSpline::splineInt(double power) const {
+/*!
+  Computes
+  \f[
+   \int dS\, S^{\alpha} \frac{dN}{dS}
+  \f]
+
+  \param[in] alpha  Power of flux
+  \returns Integral
+ */
+double numberCountsKnotsSpline::splineInt(double alpha) const {
   if (nknots < 2) return std::numeric_limits<double>::quiet_NaN();
   if (! isValid() ) return std::numeric_limits<double>::quiet_NaN();
   double result, error;
@@ -193,18 +202,18 @@ double numberCountsKnotsSpline::splineInt(double power) const {
   double minknot = knots[0];
   double maxknot = knots[nknots-1];
 
-  varr[0] = static_cast<void*>(&power);
+  varr[0] = static_cast<void*>(&alpha);
   varr[1] = static_cast<void*>(splinelog);
   varr[2] = static_cast<void*>(acc);
   varr[3] = static_cast<void*>(&minknot);
   varr[4] = static_cast<void*>(&maxknot);
   params = static_cast<void*>(varr);
 
-  F.function = &evalPowfN;
+  F.function = &evalPowfNKnotsSpline;
   F.params = params;
 
-  gsl_integration_qags (&F, getMinFlux(), getMaxFlux(), 0, 1e-7, 1000,
-			gsl_work, &result, &error); 
+  gsl_integration_qag(&F, minknot, maxknot, 0.0, 1e-5, 1000,
+  		      GSL_INTEG_GAUSS41, gsl_work, &result, &error); 
   return result;
 }
 
@@ -520,11 +529,13 @@ void numberCountsKnotsSpline::RecieveCopy(MPI::Comm& comm, int src) {
   }
 }
 
-double evalPowfN(double x, void* params) {
+double evalPowfNKnotsSpline(double x, void* params) {
   //Params are:
   // parmas[0] power
   // params[1] spline (log2)
   // params[2] accelerator
+  // params[3] minknot
+  // params[4] maxknot
   //But this really has to be an array of pointers to void to work
   void** vptr = static_cast<void**>(params);
 

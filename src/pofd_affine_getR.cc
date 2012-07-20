@@ -353,6 +353,7 @@ int getRDouble(int argc, char** argv) {
 
 }
 
+////////////////////////////////////////
 
 int main( int argc, char** argv ) {
   bool twod;
@@ -379,7 +380,6 @@ int main( int argc, char** argv ) {
 		<< "  Both" << std::endl;
       std::cerr << "\tone-dimensional and two-dimensional models are supported."
 		<< std::endl;
-      std::cerr << "\tmodel" << std::endl;
       std::cerr << std::endl;
       std::cerr << "SYNOPSIS" << std::endl;
       std::cerr << "\tEither" << std::endl;

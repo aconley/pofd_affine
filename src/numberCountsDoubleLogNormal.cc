@@ -310,7 +310,7 @@ setKnotPositions(const std::vector<double>& S) {
   for (unsigned int i = 0; i < nknots; ++i)
     knots[i] = S[i];
   for (unsigned int i = 0; i < nknots; ++i)
-    logknots[i] = log(knots[i]);
+    logknots[i] = log2(knots[i]);
 }
 
 /*!
@@ -327,7 +327,7 @@ void numberCountsDoubleLogNormal::setKnotPositions(unsigned int n,
   for (unsigned int i = 0; i < nknots; ++i)
     knots[i] = S[i];
   for (unsigned int i = 0; i < nknots; ++i)
-    logknots[i] = log(knots[i]);
+    logknots[i] = log2(knots[i]);
 }
 
 /*!
@@ -437,7 +437,7 @@ void numberCountsDoubleLogNormal::setParams(const paramSet& F) {
 		       "Not enough parameters present to set",2);
 
   for (unsigned int i = 0; i < nknots; ++i)
-    logknotvals[i] = pofd_mcmc::logfac*F[i];
+    logknotvals[i] = pofd_mcmc::logfac*F[i]; //Convert to base 2
   if (nknots > 1) 
     gsl_spline_init( splinelog, logknots, logknotvals,
 		     static_cast<size_t>(nknots) );
@@ -536,7 +536,7 @@ getNumberCountsInner(double f1, double f2) const {
     return 0.0; //Out of range
 
   //This is the n_1 bit
-  double cnts = exp( gsl_spline_eval( splinelog, log(f1), acc ) ); 
+  double cnts = exp2( gsl_spline_eval( splinelog, log2(f1), acc ) ); 
 
   //Counts in band 2, Log Normal in f2/f1
   double if1 = 1.0/f1;
@@ -559,25 +559,72 @@ double numberCountsDoubleLogNormal::getNumberCounts(double f1, double f2)
 }
 
 /*
+  \param[in] band Which band to select; 0 for band 1, 1 for band 2
+  \returns The minimum flux
+
   Fluxes must be positive, so return smallest non-zero double value
   for band 2.  Better defined for band 1.
  */
 double numberCountsDoubleLogNormal::getMinFlux(unsigned int band) const {
   if (nknots == 0) return std::numeric_limits<double>::quiet_NaN();
-  if (band == 0) return knots[0];
-  else if (band == 1) return std::numeric_limits<double>::min();
-  else return std::numeric_limits<double>::quiet_NaN();
+  if (band == 0) return std::numeric_limits<double>::min();
+  else if (band == 1) return 0.0;
+  else throw affineExcept("numberCountsDoubleLogNormal","getMinFlux",
+			  "Invalid band (must be 0 or 1)",1);
+return std::numeric_limits<double>::quiet_NaN();
 }
 
+/*
+   \param[in] band Which band to select; 0 for band 1, 1 for band 2
+  \returns The maximum flux
+
+  This is not entirely defined for band 2, so return a value a few sigma
+  above the top value.  It is well defined for band 1.
+ */
 double numberCountsDoubleLogNormal::getMaxFlux(unsigned int band) const {
+  const double sigmult = 4.0; //Number of sigma above
   if (nknots == 0) return std::numeric_limits<double>::quiet_NaN();
   if (band == 0) return knots[nknots-1];
-  else if (band == 1) return std::numeric_limits<double>::infinity();
-  else return std::numeric_limits<double>::quiet_NaN();
+  else if (band == 1) {
+    double kv = knots[nknots-1];
+    //Get the expectation and variance in S2/S1 at the top S1 knot
+    double sg = getSigmaInner(kv);
+    double mu = getOffsetInner(kv);
+    double mn = exp( mu + 0.5*sg*sg );
+    double var = exp( 2*mu + sg*sg )*(exp(sg*sg)-1.0);
+    return kv*(mn + sigmult*sqrt(var));
+  } else throw affineExcept("numberCountsDoubleLogNormal","getMaxFlux",
+			    "Invalid band (must be 0 or 1)",1);
 }
 
-double numberCountsDoubleLogNormal::splineInt(double power1, double const1,
-					      double const2) const {
+/*!
+  Compute
+  \f[
+    \int dS_1 \int dS_2 \, S_1^{\alpha} S_2^{\beta} \frac{dN}{dS_1 dS_2} =
+      \int dS_1 \, S_1^{\alpha+\beta} n_1\left(S_1\right) \exp \left[
+       \beta \mu \left(S_1\right) + \frac{1}{2} \beta^2 \sigma^2
+       \left( S_1 \right) \right]
+  \f]
+  where \f$n_1\left(S_1\right)\f$ is the number counts in band 1.
+  This simplification takes advantage of the rather special form
+  of the number counts model, which was basically designed to keep
+  this simple and avoid actually having to integrate over \f$S_2\f$.  
+  This is not quite correct because it assumes that
+  \f$S_2\f$ extends to negative infinity, but we ignore that as
+  being of little consequence in practice.
+
+  Note that to compute the average flux of each object, you have to 
+  divide by the total number (i.e., with \f$\alpha = \beta = 0\f$).
+  If you want the mean flux per area, however, you don't divide.
+
+  \param[in] alpha   Power of flux in band 1
+  \param[in] beta    Power of flux in band 2
+  \returns Integral
+
+  The function evaluation is done in evalPowfNDoubleLogNormal, 
+  which is the thing that is passed to the GSL integration routines.
+ */
+double numberCountsDoubleLogNormal::splineInt(double alpha, double beta) const {
   if (nknots < 2) return std::numeric_limits<double>::quiet_NaN();
   if (! isValid() ) return std::numeric_limits<double>::quiet_NaN();
   double result, error;
@@ -587,8 +634,22 @@ double numberCountsDoubleLogNormal::splineInt(double power1, double const1,
   double maxknot = knots[nknots-1];
   unsigned int noff = noffsetknots;
   unsigned int nsig = nsigmaknots;
+  
+  //What we actually pass to evalPowfNDoubleLogNormal is
+  // power = alpha+beta
+  // const1 = beta
+  // const2 = 1/2 beta^2
+  //So it evaluates 
+  // S_1^power1 n_1(S_1) exp( const1*mu(S_1) + const2*sigma^2(S_2) )
+  double power = alpha+beta;
+  double const1 = beta;
+  double const2 = 0.5*beta*beta;
 
-  varr[0] = static_cast<void*>(&power1);
+  //There are a -ton- of other things to set though, so that
+  // evalfN knows what to do in detail (minima, maxima, etc.)
+
+  //Stuff we always need
+  varr[0] = static_cast<void*>(&power);
   varr[1] = static_cast<void*>(&const1);
   varr[2] = static_cast<void*>(&const2);
   varr[3] = static_cast<void*>(splinelog);
@@ -596,6 +657,7 @@ double numberCountsDoubleLogNormal::splineInt(double power1, double const1,
   varr[5] = static_cast<void*>(&minknot);
   varr[6] = static_cast<void*>(&maxknot);
   if (const1 != 0) {
+    //We will be evaluating the mu term, so need to pass these
     varr[7]  = static_cast<void*>(offsetinterp);
     varr[8]  = static_cast<void*>(accoffset);
     varr[9]  = static_cast<void*>(&noff);
@@ -603,6 +665,7 @@ double numberCountsDoubleLogNormal::splineInt(double power1, double const1,
     varr[11] = static_cast<void*>(offsetvals);
   }
   if (const2 != 0) {
+    //We will be evaluating the sigma term, so need to pass these
     varr[12] = static_cast<void*>(sigmainterp);
     varr[13] = static_cast<void*>(accsigma);
     varr[14] = static_cast<void*>(&nsig);
@@ -612,22 +675,24 @@ double numberCountsDoubleLogNormal::splineInt(double power1, double const1,
 
   params = static_cast<void*>(varr);
 
-  F.function = &evalPowfNLogNormal;
+  F.function = &evalPowfNDoubleLogNormal;
   F.params = params;
 
-  gsl_integration_qags (&F, getMinFlux(0), getMaxFlux(0), 0, 1e-7, 1000,
-			gsl_work, &result, &error); 
+  gsl_integration_qag(&F, minknot, maxknot, 0, 1e-5, 1000,
+		      GSL_INTEG_GAUSS41, gsl_work, &result, &error); 
   return result;
 }
 
 double numberCountsDoubleLogNormal::getNS() const {
-  return splineInt(1.0,0.0,0.0);
+  return splineInt(0.0,0.0);
 }
 
-double numberCountsDoubleLogNormal::getMeanFluxPerArea(unsigned int band) const {
-  if (band == 0) return splineInt(1.0,0.0,0.0);
-  else if (band == 1) return splineInt(1.0,1.0,0.5);
-  else return std::numeric_limits<double>::quiet_NaN();
+double numberCountsDoubleLogNormal::
+getMeanFluxPerArea(unsigned int band) const {
+  if (band == 0) return splineInt(1.0,0.0);
+  else if (band == 1) return splineInt(0.0,1.0);
+  else throw affineExcept("numberCountsDoubleLogNormal",
+			  "getMeanFluxPerArea","Band must be 0 or 1",1);
 }
 
 //Brute force internal function
@@ -717,7 +782,7 @@ getRInternal(unsigned int n1, const double* const f1,
 	    RWork1[j] = log(f1prod) + getOffsetInner(f1prod);
 	    isigma = 1.0 / getSigmaInner( f1prod );
 	    RWork2[j] = warr[j]*normfac*ieta1*isigma*
-	      exp( gsl_spline_eval( splinelog, log(f1prod), acc ) );
+	      exp2( gsl_spline_eval( splinelog, log2(f1prod), acc ) );
 	    RWork3[j] = -0.5*isigma*isigma;
 	    RWorkValid[j] = true;
 	  } else RWorkValid[j] = false;
@@ -752,7 +817,7 @@ getRInternal(unsigned int n1, const double* const f1,
 	  RWork1[j] = log(f1prod) + getOffsetInner(f1prod);
 	  isigma = 1.0/getSigmaInner( f1prod );
 	  RWork2[j] = normfac*ieta1*isigma*
-	    exp( gsl_spline_eval( splinelog, log(f1prod), acc ) );
+	    exp2( gsl_spline_eval( splinelog, log2(f1prod), acc ) );
 	  RWork3[j] = -0.5*isigma*isigma;
 	}
 	//Now loop over flux 2 values
@@ -1047,11 +1112,12 @@ bool numberCountsDoubleLogNormal::writeToStream(std::ostream& os) const {
 
 
 
-double evalPowfNLogNormal(double x, void* params) {
-  //Model is: ( f^pow1 * exp( const1*mu + const2*sigma^2 ) ) * n(f)
-  // where f is the flux in the first band
+double evalPowfNDoubleLogNormal(double s1, void* params) {
+  //Model is: ( f^power * exp( const1*mu + const2*sigma^2 ) ) * n1(f)
+  // where f is the flux in the first band and n1 is the number
+  // counts in band 1 -- see splineInt.
   //Params are:
-  // params[0]  power1
+  // params[0]  power
   // params[1]  const1
   // params[2]  const2
   // params[3]  knot interpolant (log)
@@ -1071,60 +1137,61 @@ double evalPowfNLogNormal(double x, void* params) {
   //But this really has to be an array of pointers to void to work
   void** vptr = static_cast<void**>(params);
 
+  //First get min/max knot in band 1 for quick return if we are outside that
   double minknot = *static_cast<double*>(vptr[5]);
   double maxknot = *static_cast<double*>(vptr[6]);
+  if (s1 < minknot || s1 >= maxknot) return 0.0;
 
-  if (x < minknot || x >= maxknot) return 0.0;
-
-  double power1 = *static_cast<double*>(vptr[0]);
+  //Get coeffs
+  double power  = *static_cast<double*>(vptr[0]);
   double const1 = *static_cast<double*>(vptr[1]);
   double const2 = *static_cast<double*>(vptr[2]);
-  gsl_spline* spl = static_cast<gsl_spline*>(vptr[3]);
-  gsl_interp_accel* acc = static_cast<gsl_interp_accel*>(vptr[4]);
 
   //Construct thing we multiply spline by
   double prefac;
-  //Construct f^power1 part
-  if (power1 == 0) prefac = 1.0; 
+  
+  //Construct s1^power part
+  if (power == 0) 
+    prefac = 1.0; 
   else {
-    if (fabs(power1-1.0) < 1e-6) prefac = x;
-    else if (fabs(power1-2.0) < 1e-6) prefac = x*x;
-    else prefac = pow(x,power1);
+    if (fabs(power-1.0) < 1e-6) prefac = s1; 
+    else if (fabs(power-2.0) < 1e-6) prefac = s1*s1;
+    else prefac = pow(s1,power);
   }
 
   //Now exponential part
   if (const1 != 0 || const2 != 0) {
     double expbit; //Part to exponentiate
     if (const1 != 0) {
-      //Get offset bit
+      //Evaluate offset at s1
       unsigned int noffsets = *static_cast<unsigned int*>(vptr[9]);
       double *offsetpos = static_cast<double*>(vptr[10]);
       double *offsetval = static_cast<double*>(vptr[11]);
-      if (noffsets == 1) expbit = const1*offsetval[0];
-      else if (x <= offsetpos[0]) expbit = const1*offsetval[0];
-      else if (x >= offsetpos[noffsets-1]) 
-	expbit = const1 * offsetval[noffsets-1];
+      double mu;
+      if (noffsets == 1) mu = offsetval[0];
+      else if (s1 <= offsetpos[0]) mu = offsetval[0];
+      else if (s1 >= offsetpos[noffsets-1]) mu = offsetval[noffsets-1];
       else {
 	gsl_interp* ospl = static_cast<gsl_interp*>(vptr[7]);
 	gsl_interp_accel* oacc = static_cast<gsl_interp_accel*>(vptr[8]);
-	expbit = const1 * gsl_interp_eval( ospl, offsetpos, offsetval, 
-					   x, oacc );
+	mu = gsl_interp_eval( ospl, offsetpos, offsetval, s1, oacc );
       }
+      expbit = const1 * mu;
     } else expbit = 0.0;
 
     if (const2 != 0) {
-      //Get sigma bit
+      //Get sigma bit -> const2* sigma^2
       double sigma;
       unsigned int nsigmas = *static_cast<unsigned int*>(vptr[14]);
       double *sigmapos = static_cast<double*>(vptr[15]);
       double *sigmaval = static_cast<double*>(vptr[16]);
       if (nsigmas == 1) sigma = sigmaval[0];
-      else if (x <= sigmapos[0]) sigma = sigmaval[0];
-      else if (x >= sigmapos[nsigmas-1]) sigma = sigmaval[nsigmas-1];
+      else if (s1 <= sigmapos[0]) sigma = sigmaval[0];
+      else if (s1 >= sigmapos[nsigmas-1]) sigma = sigmaval[nsigmas-1];
       else {
 	gsl_interp* sspl = static_cast<gsl_interp*>(vptr[12]);
 	gsl_interp_accel* sacc = static_cast<gsl_interp_accel*>(vptr[13]);
-	sigma = gsl_interp_eval( sspl, sigmapos, sigmaval, x, sacc );
+	sigma = gsl_interp_eval( sspl, sigmapos, sigmaval, s1, sacc );
       }
       expbit += const2 * sigma * sigma;
     } 
@@ -1134,5 +1201,8 @@ double evalPowfNLogNormal(double x, void* params) {
   } //Otherwise exp bit is just 1
 
   //Now multiply in n(band1)
-  return prefac * exp( gsl_spline_eval(spl,log(x),acc) );
+  gsl_spline* spl = static_cast<gsl_spline*>(vptr[3]);
+  gsl_interp_accel* acc = static_cast<gsl_interp_accel*>(vptr[4]);
+  double splval = exp2( gsl_spline_eval(spl,log2(s1),acc) );
+  return prefac * splval;
 }

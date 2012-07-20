@@ -44,10 +44,10 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   //Number counts in band one
   unsigned int nknots; //!< Number of knot positions for counts in band one
   double *knots; //!< Locations of knots
-  double *logknots; //!< Log of knot positions
-  double *logknotvals; //!< Log values of differential number counts at knots, band 1
+  double *logknots; //!< Log of knot positions (stored as log 2)
+  double *logknotvals; //!< Log 2 values of differential number counts at knots, band 1
   gsl_interp_accel *acc; //!< Spline lookup accelerator
-  gsl_spline *splinelog; //!< Spline in log/log space of logknots.
+  gsl_spline *splinelog; //!< Spline in log2/log2 space of values
 
   //LogNormal for band 2
   unsigned int nsigmaknots; //!< Number of knot positions in sigma
@@ -77,10 +77,8 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   double getOffsetInner(double) const; //!< Inner offset computation
   double getNumberCountsInner(double,double) const; //!< Inner number counts computation
 
-  /*! \brief Integrate spline * flux1^power1 * EXP( const1*mu + 
-    const2*sigma^2 ) */
-  double splineInt(double power1, double const1, 
-		   double const2) const;
+  /*! \brief Integrate powers of fluxes over number counts */
+  double splineInt(double alpha, double beta) const;
   static const unsigned int nvarr; //!< Number of elements in varr
   void **varr; //!< Internal evil casting array for splineInt
 
@@ -175,6 +173,6 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
 
 //Function to pass to GSL integrator
 /*! \brief Evaluates flux1^power1 * exp(const1*mu + const2*sigma^2) dN/dS1 */
-double evalPowfNLogNormal(double,void*); 
+double evalPowfNDoubleLogNormal(double,void*); 
 
 #endif

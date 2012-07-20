@@ -19,7 +19,7 @@
  */
 class numberCountsKnotsSpline : public numberCountsKnots {
  private :
-  double *logknots; //!< Log of knot positions
+  double *logknots; //!< Log2 of knot positions
 
   void setNKnots(unsigned int n); //!< Sets number of knots
   gsl_interp_accel *acc; //!< Spline lookup accelerator
@@ -27,7 +27,8 @@ class numberCountsKnotsSpline : public numberCountsKnots {
 
   gsl_integration_workspace *gsl_work; //!< Integration workspace for QAG
 
-  double splineInt(double power) const; //!< Integrate spline * flux^power
+  /*! \brief Integrates flux^power over number counts */
+  double splineInt(double power) const; 
   void **varr; //!< Internal evil casting array for integration
 
   //Internal pos/neg parts
@@ -76,6 +77,6 @@ class numberCountsKnotsSpline : public numberCountsKnots {
 };
 
 //Function to pass to GSL integrator
-double evalPowfN(double,void*); //!< Evaluates f^pow dN/dS
+double evalPowfNKnotsSpline(double,void*); //!< Evaluates f^pow dN/dS
 
 #endif
