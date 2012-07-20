@@ -11,6 +11,26 @@
 #include<calcLikeDouble.h>
 #include<affineExcept.h>
 
+//See pofd_affine_getdNdS for explanation of why this is global
+static struct option long_options[] = {
+  {"help", no_argument, 0, 'h'},
+  {"double",no_argument,0,'d'},
+  {"version",no_argument,0,'V'}, //Below here not parsed in main routine
+  {"bindata",no_argument, 0, 'b'},
+  {"histogram",no_argument,0,'H'},
+  {"meansub",no_argument,0,'$'},
+  {"fftsize",required_argument,0,'f'},
+  {"ninterp",required_argument,0,'n'},
+  {"nbins",required_argument,0,'N'},
+  {"sigma_mult",required_argument,0,'s'},
+  {"ultraverbose",no_argument,0,'u'},
+  {"verbose",no_argument,0,'v'},
+  {"wisdom",required_argument,0,'w'},
+  {"nedge",required_argument,0,'1'},
+  {0,0,0,0}
+};
+char optstring[] = "hdVbH$f:n:N:s:uvw:1:";
+
 int getLikeSingle(int argc, char **argv) {
   double sigma_mult;
   unsigned int ninterp, fftsize, nbins;
@@ -36,21 +56,7 @@ int getLikeSingle(int argc, char **argv) {
 
   int c;
   int option_index = 0;
-  static struct option long_options[] = {
-    {"bindata",no_argument, 0, 'b'},
-    {"histogram",no_argument,0,'H'},
-    {"meansub",no_argument,0,'$'},
-    {"fftsize",required_argument,0,'f'},
-    {"ninterp",required_argument,0,'n'},
-    {"nbins",required_argument,0,'N'},
-    {"sigma_mult",required_argument,0,'s'},
-    {"ultraverbose",no_argument,0,'u'},
-    {"verbose",no_argument,0,'v'},
-    {"wisdom",required_argument,0,'w'},
-    {0,0,0,0}
-  };
-  
-  char optstring[] = "bH$f:n:N:s:uvw:";
+  optind = 1; //Reset parsing
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
 			    &option_index ) ) != -1 ) 
     switch(c) {
@@ -271,21 +277,7 @@ int getLikeDouble(int argc, char** argv) {
 
   int c;
   int option_index = 0;
-  static struct option long_options[] = {
-    {"bindata",no_argument, 0, 'b'},
-    {"histogram",no_argument,0,'H'},
-    {"meansub",no_argument,0,'$'},
-    {"fftsize",required_argument,0,'f'},
-    {"nedge",required_argument,0,'n'},
-    {"nbins",required_argument,0,'N'},
-    {"sigma_mult",required_argument,0,'s'},
-    {"ultraverbose",no_argument,0,'u'},
-    {"verbose",no_argument,0,'v'},
-    {"wisdom",required_argument,0,'w'},
-    {0,0,0,0}
-  };
-  
-  char optstring[] = "bH$f:n:N:s:uvw:";
+  optind = 1; //Reset parsing
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
 			    &option_index ) ) != -1 ) 
     switch(c) {
@@ -298,7 +290,7 @@ int getLikeDouble(int argc, char** argv) {
     case 'H' :
       histogram = true;
       break;
-    case 'n' :
+    case '1' :
       nedge = static_cast<unsigned int>(atoi(optarg));
       break;
     case 'N' :
@@ -532,13 +524,6 @@ int main( int argc, char** argv ) {
   // if this is 1D or 2D c) displaying the version number
   int c;
   int option_index = 0;
-  static struct option long_options[] = {
-    {"help", no_argument, 0, 'h'},
-    {"double",no_argument,0,'d'},
-    {"version",no_argument,0,'V'},
-    {0,0,0,0}
-  };
-  char optstring[] = "hdv";
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
 			    &option_index ) ) != -1 ) 
     switch(c) {
@@ -639,7 +624,7 @@ int main( int argc, char** argv ) {
       std::cerr << "\t\tNumber of interpolation points in R calculation" 
 		<< " (def: 1024)" << std::endl;
       std::cerr << "TWO-D ONLY OPTIONS" << std::endl;
-      std::cerr << "\t-n, --nedge nedge" << std::endl;
+      std::cerr << "\t--nedge nedge" << std::endl;
       std::cerr << "\t\tNumber of edge integral points in R calculation" 
 		<< " (def: 256)" << std::endl;
       return 0;

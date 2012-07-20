@@ -14,6 +14,21 @@
 #include<utility.h>
 #include<affineExcept.h>
 
+//All sub-parses have to have the same options to avoid
+// getting warnings.  So we give them all the same long_options,
+// but then only process the appropriate ones, ignoring the rest
+//Yes, this is a bit complicated and error prone, but such is life
+char optstring[] = "dhHnpV";
+static struct option long_options[] = {
+  {"help", no_argument, 0, 'h'},
+  {"double",no_argument,0,'d'},
+  {"version",no_argument,0,'V'}, //Below here, not parsed in main routine
+  {"histogram",no_argument,0,'H'},
+  {"negonly",no_argument,0,'n'},
+  {"posonly",no_argument,0,'p'},
+  {0,0,0,0}
+};
+
 //One-D version
 int getRSingle( int argc, char** argv ) {
   
@@ -30,14 +45,7 @@ int getRSingle( int argc, char** argv ) {
 
   int c;
   int option_index = 0;
-  static struct option long_options[] = {
-    {"histogram",no_argument,0,'H'},
-    {"negonly",no_argument,0,'n'},
-    {"posonly",no_argument,0,'p'},
-    {0,0,0,0}
-  };
-
-  char optstring[] = "Hnp";
+  optind = 1; //!< Reset parse
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
 			    &option_index ) ) != -1 ) 
     switch(c) {
@@ -165,13 +173,7 @@ int getRDouble(int argc, char** argv) {
 
   int c;
   int option_index = 0;
-  static struct option long_options[] = {
-    {"histogram",no_argument,0,'H'},
-    {"posonly",no_argument,0,'p'},
-    {0,0,0,0}
-  };
-
-  char optstring[] = "Hp";
+  optind = 1; //Reset parse
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
 			    &option_index ) ) != -1 ) 
     switch(c) {
@@ -364,13 +366,6 @@ int main( int argc, char** argv ) {
   // if this is 1D or 2D c) displaying the version number
   int c;
   int option_index = 0;
-  static struct option long_options[] = {
-    {"help", no_argument, 0, 'h'},
-    {"double",no_argument,0,'d'},
-    {"version",no_argument,0,'V'},
-    {0,0,0,0}
-  };
-  char optstring[] = "hdv";
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
 			    &option_index ) ) != -1 ) 
     switch(c) {

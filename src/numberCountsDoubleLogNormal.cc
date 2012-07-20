@@ -538,11 +538,11 @@ getNumberCountsInner(double f1, double f2) const {
   //This is the n_1 bit
   double cnts = exp2( gsl_spline_eval( splinelog, log2(f1), acc ) ); 
 
-  //Counts in band 2, Log Normal in f2/f1
+  //Counts in band 2, Log Normal in f2/f1, multiply them onto n_1
   double if1 = 1.0/f1;
   double isigma = 1.0/getSigmaInner( f1 );
   double tfac = (log(f2*if1) - getOffsetInner( f1 ))*isigma;
-  cnts *= normfac * isigma * exp( -0.5*tfac*tfac ) / f2;
+  cnts *= normfac * isigma * exp( -0.5*tfac*tfac ) / f2; //yes, it's 1/f2 here
   return cnts;
 }
 

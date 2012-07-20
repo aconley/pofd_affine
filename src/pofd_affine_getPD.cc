@@ -16,6 +16,28 @@
 #include<paramSet.h>
 #include<affineExcept.h>
 
+//See pofd_affine_getdNdS comment to explain why I do this as a global
+static struct option long_options[] = {
+  {"help", no_argument, 0, 'h'},
+  {"double",no_argument,0,'d'},
+  {"version",no_argument,0,'V'}, //Below here not parsed in main routine
+  {"fits", no_argument, 0, 'f'},
+  {"histogram", no_argument, 0, 'H'},
+  {"maxflux",required_argument,0,'2'},
+  {"nflux",required_argument,0,'n'},
+  {"ninterp",required_argument,0,'N'},
+  {"sigmanoise",required_argument,0,'s'},
+  {"verbose",no_argument,0,'v'},
+  {"wisdom",required_argument,0,'w'},
+  {"maxflux1",required_argument,0,'3'},
+  {"maxflux2",required_argument,0,'4'},
+  {"nedge",required_argument,0,'5'},
+  {"sigma1",required_argument,0,'6'},
+  {"sigma2",required_argument,0,'7'},
+  {0,0,0,0}
+};
+char optstring[] = "hdVfH2:nN:s:vw:3:4:5:6:7:";
+
 int getPDSingle(int argc, char **argv) {
 
   double sigma_noise; //Noise
@@ -42,19 +64,7 @@ int getPDSingle(int argc, char **argv) {
 
   int c;
   int option_index = 0;
-  static struct option long_options[] = {
-    {"fits", no_argument, 0, 'f'},
-    {"histogram", no_argument, 0, 'H'},
-    {"maxflux",required_argument,0,'2'},
-    {"nflux",required_argument,0,'n'},
-    {"ninterp",required_argument,0,'N'},
-    {"sigmanoise",required_argument,0,'s'},
-    {"verbose",no_argument,0,'v'},
-    {"wisdom",required_argument,0,'w'},
-    {0,0,0,0}
-  };
-  
-  char optstring[] = "fH2:n:N:s:vw:";
+  optind = 1; //Reset parse
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
 			    &option_index ) ) != -1 ) 
     switch(c) {
@@ -261,21 +271,6 @@ int getPDDouble(int argc, char** argv) {
 
   int c;
   int option_index = 0;
-  static struct option long_options[] = {
-    {"fits", no_argument, 0, 'f'},
-    {"histogram", no_argument, 0, 'H'},
-    {"maxflux1",required_argument,0,'2'},
-    {"maxflux2",required_argument,0,'3'},
-    {"nflux",required_argument,0,'n'},
-    {"nedge",required_argument,0,'N'},
-    {"sigma1",required_argument,0,'s'},
-    {"sigma2",required_argument,0,'S'},
-    {"verbose",no_argument,0,'v'},
-    {"wisdom",required_argument,0,'w'},
-    {0,0,0,0}
-  };
-  
-  char optstring[] = "fH2:3:n:N:s:S:vw:";
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
 			    &option_index ) ) != -1 ) 
     switch(c) {
@@ -285,24 +280,21 @@ int getPDDouble(int argc, char** argv) {
     case 'H' :
       histogram = true;
       break;
-    case '2' :
+    case '3' :
       maxflux1 = atof(optarg);
       has_user_maxflux1 = true;
       break;
-    case '3' :
+    case '4' :
       maxflux2 = atof(optarg);
       has_user_maxflux2 = true;
       break;
-    case 'n' :
-      nflux = static_cast<unsigned int>( atoi(optarg) );
-      break;
-    case 'N' :
+    case '5' :
       nedge = static_cast<unsigned int>( atoi(optarg) );
       break;
-    case 's' :
+    case '6' :
       sigma1 = atof(optarg);
       break;
-    case 'S' :
+    case '7' :
       sigma2 = atof(optarg);
       break;
     case 'v' :
@@ -437,7 +429,7 @@ int getPDDouble(int argc, char** argv) {
     if (! has_user_maxflux2) {
       double meanFluxPerBeam = model.getMeanFluxPerArea(1) * 
 	bm.getEffectiveArea2();
-      maxflux2 = model.getMaxFlux(1) + 5*sigmapos[ns-1] - meanFluxPerBeam;
+      maxflux2 = model.getMaxFlux(1) - meanFluxPerBeam;
     }
 
     if (verbose) {
@@ -507,13 +499,6 @@ int main( int argc, char** argv ) {
   // if this is 1D or 2D c) displaying the version number
   int c;
   int option_index = 0;
-  static struct option long_options[] = {
-    {"help", no_argument, 0, 'h'},
-    {"double",no_argument,0,'d'},
-    {"version",no_argument,0,'V'},
-    {0,0,0,0}
-  };
-  char optstring[] = "hdv";
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
 			    &option_index ) ) != -1 ) 
     switch(c) {
@@ -622,6 +607,24 @@ int main( int argc, char** argv ) {
 		<< std::endl;
       std::cerr << "\t-s, --sigmanoise noise" << std::endl;
       std::cerr << "\t\tThe assumed per-pixel noise (assumed Gaussian, "
+		<< "def: 0.002)" << std::endl;
+      std::cerr << "TWO-D ONLY OPTIONS" << std::endl;
+      std::cerr << "\t--maxflux1 value" << std::endl;
+      std::cerr << "\t\tMaximum flux value, band 1. (def: Largest knot minus "
+		<< "the" << std::endl;
+      std::cerr << "\t\tmean flux from the model)" << std::endl;
+      std::cerr << "\t--maxflux2 value" << std::endl;
+      std::cerr << "\t\tMaximum flux value, band 1. (def: approximate max minus"
+		<< std::endl;
+      std::cerr << "\t\tmean flux from the model)" << std::endl;
+      std::cerr << "\t--nedge value" << std::endl;
+      std::cerr << "\t\tNumber of bins in edge integrals for R."
+		<< std::endl;
+      std::cerr << "\t--sigma1 noise" << std::endl;
+      std::cerr << "\t\tThe assumed per-pixel noise, band 1 (assumed Gaussian, "
+		<< "def: 0.002)" << std::endl;
+      std::cerr << "\t--sigma2 noise" << std::endl;
+      std::cerr << "\t\tThe assumed per-pixel noise, band 2 (assumed Gaussian, "
 		<< "def: 0.002)" << std::endl;
       return 0;
       break;

@@ -12,6 +12,29 @@
 #include<utility.h>
 #include<affineExcept.h>
 
+//All sub-parses have to have the same options to avoid
+// getting warnings.  So we give them all the same long_options,
+// but then only process the appropriate ones, ignoring the rest
+//Yes, this is a bit complicated and error prone, but such is life
+static struct option long_options[] = {
+  {"help", no_argument, 0, 'h'},
+  {"double",no_argument,0,'d'},
+  {"version",no_argument,0,'V'}, //After this, not parsed here
+  {"logspace",no_argument,0,'l'},
+  {"minflux",required_argument,0,'m'},
+  {"maxflux",required_argument,0,'M'},
+  {"nflux",required_argument,0,'n'},
+  {"verbose",no_argument,0,'v'},
+  {"minflux1",required_argument,0,'1'},
+  {"minflux2",required_argument,0,'2'},
+  {"maxflux1",required_argument,0,'3'},
+  {"maxflux2",required_argument,0,'4'},
+  {"nflux1",required_argument,0,'5'},
+  {"nflux2",required_argument,0,'6'},
+  {0,0,0,0}
+};
+char optstring[] = "hdVlm:M:n:v1:2:3:4:5:6:"; 
+
 //One-D version
 int getNSingle( int argc, char** argv ) {
   
@@ -30,17 +53,6 @@ int getNSingle( int argc, char** argv ) {
 
   int c;
   int option_index = 0;
-  static struct option long_options[] = {
-    {"logspace",no_argument,0,'l'},
-    {"minflux",required_argument,0,'m'},
-    {"maxflux",required_argument,0,'M'},
-    {"nflux",required_argument,0,'n'},
-    {"verbose",no_argument,0,'v'},
-    {0,0,0,0}
-  };
-
-  //Have to have global options here, even if ignored
-  char optstring[] = "hdlm:M:n:vV"; 
   optind = 1; //Resets parsing
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
 			    &option_index ) ) != -1 ) 
@@ -210,40 +222,28 @@ int getNDouble( int argc, char** argv ) {
 
   int c;
   int option_index = 0;
-  static struct option long_options[] = {
-    {"minflux1",required_argument,0,'m'},
-    {"minflux2",required_argument,0,'1'},
-    {"maxflux1",required_argument,0,'M'},
-    {"maxflux1",required_argument,0,'2'},
-    {"nflux1",required_argument,0,'n'},
-    {"nflux2",required_argument,0,'N'},
-    {"verbose",no_argument,0,'v'},
-    {0,0,0,0}
-  };
-
-  char optstring[] = "hdm:1:M:2:n:N:vV";
   optind = 1; //Resets parsing
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
 			    &option_index ) ) != -1 ) 
     switch(c) {
-    case 'm' :
+    case '1' :
       minflux1 = atof(optarg);
       break;
-    case '1' :
+    case '2' :
       minflux2 = atof(optarg);
       break;
-    case 'M' :
+    case '3' :
       has_user_maxflux1 = true;
       maxflux1 = atof(optarg);
       break;
-    case '2' :
+    case '4' :
       has_user_maxflux2 = true;
       maxflux2 = atof(optarg);
       break;
-    case 'n' :
+    case '5' :
       nflux1 = static_cast<unsigned int>(atoi(optarg));
       break;
-    case 'N' :
+    case '6' :
       nflux2 = static_cast<unsigned int>(atoi(optarg));
       break;
     case 'v' :
@@ -387,8 +387,8 @@ int getNDouble( int argc, char** argv ) {
     fprintf(fp,"%u %12.6e %12.6e\n",nflux1,minflux1,dflux1);
     fprintf(fp,"%u %12.6e %12.6e\n",nflux2,minflux2,dflux2);
     for (unsigned int i = 0; i < nflux1; ++i) {
-      for (unsigned int j = 0; j < nflux2; ++j)
-	fprintf(fp,"%13.7e",dNdS[i*nflux2+j]);
+      for (unsigned int j = 0; j < nflux2-1; ++j)
+	fprintf(fp,"%13.7e ",dNdS[i*nflux2+j]);
       fprintf(fp,"%13.7e\n",dNdS[i*nflux2+nflux2-1]);
     }
     fclose(fp);
@@ -416,15 +416,6 @@ int main( int argc, char** argv ) {
   // if this is 1D or 2D c) displaying the version number
   int c;
   int option_index = 0;
-  static struct option long_options[] = {
-    {"help", no_argument, 0, 'h'},
-    {"double",no_argument,0,'d'},
-    {"version",no_argument,0,'V'},
-    {0,0,0,0}
-  };
-  //Also have to include options for 1D/2D in this string, although
-  // we ignore them
-  char optstring[] = "hdlm:1:M:2:n:N:v";
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
 			    &option_index ) ) != -1 ) 
     switch(c) {
