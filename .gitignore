@@ -34,4 +34,5 @@ pofd_affine_getPD
 pofd_affine_getR
 pofd_affine_getLike
 pofd_affine_getdNdS
+m4
 *.m4
