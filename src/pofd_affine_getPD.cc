@@ -36,7 +36,7 @@ static struct option long_options[] = {
   {"sigma2",required_argument,0,'7'},
   {0,0,0,0}
 };
-char optstring[] = "hdVfH2:nN:s:vw:3:4:5:6:7:";
+char optstring[] = "hdVfH2:n:N:s:vw:3:4:5:6:7:";
 
 int getPDSingle(int argc, char **argv) {
 
@@ -79,7 +79,7 @@ int getPDSingle(int argc, char **argv) {
       has_user_maxflux = true;
       break;
     case 'n' :
-      nflux = static_cast<unsigned int>( atoi(optarg) );
+      nflux = static_cast< unsigned int >( atoi(optarg) );
       break;
     case 'N' :
       ninterp = static_cast<unsigned int>( atoi(optarg) );
@@ -206,7 +206,7 @@ int getPDSingle(int argc, char **argv) {
       printf("  Interpolation length:  %u\n",ninterp);
       printf("  Positions and initial values:\n");
       for (unsigned int i = 0; i < nknots; ++i)
-	printf("  %11.5e  %11.5e\n",knotpos[i],knotval[i]);
+	printf("   %11.5e  %11.5e\n",knotpos[i],knotval[i]);
     }
 
     //Get P(D)
@@ -448,13 +448,13 @@ int getPDDouble(int argc, char** argv) {
 	printf("  Using beam histogramming to reduce beam size\n");
       printf("  Knot Positions and initial values:\n");
       for (unsigned int i = 0; i < nk; ++i)
-	printf("  %11.5e  %11.5e\n",knotpos[i],wvec2[i]);
+	printf("   %11.5e  %11.5e\n",knotpos[i],wvec2[i]);
       printf("  Sigma Positions and initial values:\n");
       for (unsigned int i = 0; i < ns; ++i)
-	printf("  %11.5e  %11.5e\n",sigmapos[i],wvec2[i+nk]);
+	printf("   %11.5e  %11.5e\n",sigmapos[i],wvec2[i+nk]);
       printf("  Offset Positions and initial values:\n");
       for (unsigned int i = 0; i < no; ++i)
-	printf("  %11.5e  %11.5e\n",offsetpos[i],wvec2[i+nk+ns]);
+	printf("   %11.5e  %11.5e\n",offsetpos[i],wvec2[i+nk+ns]);
     }
 
     //Get P(D)
@@ -621,11 +621,13 @@ int main( int argc, char** argv ) {
       std::cerr << "\t\tNumber of bins in edge integrals for R."
 		<< std::endl;
       std::cerr << "\t--sigma1 noise" << std::endl;
-      std::cerr << "\t\tThe assumed per-pixel noise, band 1 (assumed Gaussian, "
-		<< "def: 0.002)" << std::endl;
+      std::cerr << "\t\tThe assumed per-pixel noise, band 1 (assumed Gaussian,"
+		<< std::endl;
+      std::cerr << "\t\tdef: 0.002)" << std::endl;
       std::cerr << "\t--sigma2 noise" << std::endl;
-      std::cerr << "\t\tThe assumed per-pixel noise, band 2 (assumed Gaussian, "
-		<< "def: 0.002)" << std::endl;
+      std::cerr << "\t\tThe assumed per-pixel noise, band 2 (assumed Gaussian,"
+		<< std::endl;
+      std::cerr << "\t\tdef: 0.002)" << std::endl;
       return 0;
       break;
     case 'd' :

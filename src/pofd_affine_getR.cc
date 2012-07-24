@@ -18,16 +18,17 @@
 // getting warnings.  So we give them all the same long_options,
 // but then only process the appropriate ones, ignoring the rest
 //Yes, this is a bit complicated and error prone, but such is life
-char optstring[] = "dhHnpV";
 static struct option long_options[] = {
   {"help", no_argument, 0, 'h'},
   {"double",no_argument,0,'d'},
+  {"verbose",no_argument,0,'v'},
   {"version",no_argument,0,'V'}, //Below here, not parsed in main routine
   {"histogram",no_argument,0,'H'},
   {"negonly",no_argument,0,'n'},
   {"posonly",no_argument,0,'p'},
   {0,0,0,0}
 };
+char optstring[] = "dhHnpvV";
 
 //One-D version
 int getRSingle( int argc, char** argv ) {
@@ -35,13 +36,14 @@ int getRSingle( int argc, char** argv ) {
   std::string initfile; //Init file (having model we want)
   std::string outfile; //File to write to
   std::string psffile; //Beam file
-  bool histogram, posonly, negonly; //Histogram beam
+  bool histogram, posonly, negonly, verbose; 
   double minflux, maxflux;
   unsigned int nflux;
 
   histogram = false;
   posonly   = false;
   negonly   = false;
+  verbose   = false;
 
   int c;
   int option_index = 0;
@@ -57,6 +59,9 @@ int getRSingle( int argc, char** argv ) {
       break;
     case 'p' :
       posonly = true;
+      break;
+    case 'v' :
+      verbose = true;
       break;
     }
 
@@ -125,11 +130,15 @@ int getRSingle( int argc, char** argv ) {
     else if (negonly) 
       rt = numberCounts::BEAMNEG;
     
-    std::cout << "Mean flux per sq degree: " << model.getMeanFluxPerArea()
-	      << std::endl;
-    std::cout << "Beam area: " << bm.getEffectiveArea() << std::endl;
-    if (bm.hasPos()) std::cout << " Beam has positive components" << std::endl;
-    if (bm.hasNeg()) std::cout << " Beam has negative components" << std::endl;
+    if (verbose) {
+      std::cout << "Mean flux per sq degree: " << model.getMeanFluxPerArea()
+		<< std::endl;
+      std::cout << "Beam area: " << bm.getEffectiveArea() << std::endl;
+      if (bm.hasPos()) std::cout << " Beam has positive components" 
+				 << std::endl;
+      if (bm.hasNeg()) std::cout << " Beam has negative components" 
+				 << std::endl;
+    }
     fluxes = new double[nflux];
     for (unsigned int i = 0; i < nflux; ++i)
       fluxes[i] = minflux + static_cast<double>(i)*dflux;
@@ -143,7 +152,7 @@ int getRSingle( int argc, char** argv ) {
       std::cerr << "Failed to open output file" << std::endl;
       return 128;
     }
-    fprintf(fp,"%12s   %12s\n","Flux","R");
+    fprintf(fp,"#%-11s   %-12s\n","Flux","R");
     for (unsigned int i = 0; i < nflux; ++i) 
       fprintf(fp,"%12.6e   %15.9e\n",fluxes[i],R[i]);
     fclose(fp);
@@ -164,12 +173,13 @@ int getRDouble(int argc, char** argv) {
   std::string initfile; //Init file (having model we want)
   std::string outfile; //File to write to
   std::string psffile1, psffile2; //Beam file
-  bool histogram, posonly; //Histogram beam, use only positive part
+  bool histogram, posonly, verbose;
   double minflux1, maxflux1, minflux2, maxflux2;
   unsigned int nflux1, nflux2;
 
   histogram = false;
   posonly   = false;
+  verbose   = false;
 
   int c;
   int option_index = 0;
@@ -182,6 +192,9 @@ int getRDouble(int argc, char** argv) {
       break;
     case 'p' :
       posonly = true;
+      break;
+    case 'v' :
+      verbose = true;
       break;
     }
 
@@ -305,14 +318,17 @@ int getRDouble(int argc, char** argv) {
     else
       rt = numberCountsDouble::BEAMALL;
     
-    std::cout << "Mean flux per sq degree, band 1: " 
-	      << model.getMeanFluxPerArea(0)
-	      << std::endl;
-    std::cout << "Beam area, band 1: " << bm.getEffectiveArea1() << std::endl;
-    std::cout << "Mean flux per sq degree, band 2: " 
-	      << model.getMeanFluxPerArea(1)
-	      << std::endl;
-    std::cout << "Beam area, band 2: " << bm.getEffectiveArea2() << std::endl;
+    if (verbose) {
+      std::cout << "Mean flux per sq degree, band 1: " 
+		<< model.getMeanFluxPerArea(0)
+		<< std::endl;
+      std::cout << "Beam area, band 1: " << bm.getEffectiveArea1() << std::endl;
+      std::cout << "Mean flux per sq degree, band 2: " 
+		<< model.getMeanFluxPerArea(1)
+		<< std::endl;
+      std::cout << "Beam area, band 2: " << bm.getEffectiveArea2() << std::endl;
+    }
+
     fluxes1 = new double[nflux1];
     for (unsigned int i = 0; i < nflux1; ++i)
       fluxes1[i] = minflux1 + static_cast<double>(i)*dflux1;
@@ -329,9 +345,9 @@ int getRDouble(int argc, char** argv) {
       std::cerr << "Failed to open output file" << std::endl;
       return 128;
     }
-    fprintf(fp,"%4u %4u\n",nflux1,nflux2);
-    fprintf(fp,"minflux1: %12.6e dflux1: %12.6e\n",minflux1,dflux1);
-    fprintf(fp,"minflux2: %12.6e dflux2: %12.6e\n",minflux2,dflux2);
+    fprintf(fp,"#%4u %4u\n",nflux1,nflux2);
+    fprintf(fp,"#minflux1: %12.6e dflux1: %12.6e\n",minflux1,dflux1);
+    fprintf(fp,"#minflux2: %12.6e dflux2: %12.6e\n",minflux2,dflux2);
     for (unsigned int i = 0; i < nflux1; ++i) {
       for (unsigned int j = 0; j < nflux2-1; ++j)
         fprintf(fp,"%13.7e ",R[nflux2*i+j]);

@@ -276,7 +276,11 @@ void PDFactory::initPD(unsigned int n, double sigma,
 
   if (has_pos) {
     double mininterpflux = modelmin * subedgemult;
-    double maxinterpflux = modelmax*bm.getMaxPos();
+    double maxinterpflux = modelmax * bm.getMaxPos();
+    //R[maxinterpflux] = 0.0, which we don't want to include in our
+    // log/log interpolation, so step it back slightly
+    double dinterp = 0.001*(maxinterpflux-mininterpflux)*ininterpm1;
+    maxinterpflux -= dinterp;
 
     //Note that the interpolation is in log space
     double dinterpflux = (log2(maxinterpflux/mininterpflux))*ininterpm1;
@@ -297,7 +301,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
     for (unsigned int i = 0; i < ninterp; ++i) {
       val = RinterpVals[i];
       if (val > 0) RinterpVals[i] = log2(val); //log2 is faster than ln
-      else val = pofd_mcmc::smalllogval;
+      else RinterpVals[i] = pofd_mcmc::smalllogval;
     }
     //Load the Spline
     gsl_spline_init( spline, RinterpFlux, RinterpVals, 
@@ -327,6 +331,8 @@ void PDFactory::initPD(unsigned int n, double sigma,
     //And now, we do basically the same thing for the negative beam
     double mininterpflux = modelmin * subedgemult;
     double maxinterpflux = modelmax*bm.getMinAbsNeg();
+    double dinterp = 0.001*(maxinterpflux-mininterpflux)*ininterpm1;
+    maxinterpflux -= dinterp;
     double dinterpflux = (log2(maxinterpflux/mininterpflux))*ininterpm1;
     for (unsigned int i = 0; i < ninterp; ++i)
       RinterpFlux[i] = 
@@ -344,7 +350,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
     for (unsigned int i = 0; i < ninterp; ++i) {
       val = RinterpVals[i];
       if (val > 0) RinterpVals[i] = log2(val); //log2 is faster
-      else val = pofd_mcmc::smalllogval;
+      else RinterpVals[i] = pofd_mcmc::smalllogval;
     }
     gsl_spline_init( spline, RinterpFlux, RinterpVals, 
                      static_cast<size_t>(ninterp) );
@@ -370,7 +376,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
 	rvals[i] = 0.0;
       double cflux, splval;
       for (unsigned int i = minitidx; i <= maxitidx; ++i) {
-	cflux = static_cast<double>(i)*dflux; //Min is always 0 in R
+	cflux = static_cast<double>(i)*dflux; //Min flux is always 0 in R
 	splval = gsl_spline_eval( spline, cflux, acc );
 	rvals[i] = exp2(splval);
       }
@@ -386,7 +392,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
     mn += rvals[i]*static_cast<double>(i);
   mn += 0.5*rvals[n-1]*static_cast<double>(n-1);
   mn *= dflux*dflux;  //Once for x, once for the bin size in the integral
-  
+
   // var = \int x^2 R dx
   var_noi= rvals[1]; //Again, using the fact that RFlux[0] = 0
   double idbl;
@@ -394,8 +400,8 @@ void PDFactory::initPD(unsigned int n, double sigma,
     idbl = static_cast<double>(i);
     var_noi += rvals[i]*idbl*idbl;
   }
-  var_noi += 0.5*rvals[n-1]*static_cast<double>(n-1)*
-    static_cast<double>(n-1);
+  idbl = static_cast<double>(n-1);
+  var_noi += 0.5*rvals[n-1]*idbl*idbl;
   var_noi *= dflux*dflux*dflux;
 
   //Now, compute the sigma for the maximum instrumental sigma
@@ -444,7 +450,6 @@ void PDFactory::initPD(unsigned int n, double sigma,
       n << std::endl;
     throw affineExcept("PDFactory","initPD",str.str(),64);
   }
-
 
   //Decide if we will shift and pad, and if so by how much
   //Only do shift if the noise is larger than one actual step size
@@ -644,7 +649,7 @@ void PDFactory::getPD( double sigma, PD& pd, bool setLog,
   normTime += std::clock() - starttime;
 #endif
 
-  //Fix up the edge
+  //Fix up the edge.  Must be done after normalization
 #ifdef TIMING
   starttime = std::clock();
 #endif

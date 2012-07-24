@@ -248,40 +248,57 @@ void PD::getMeanAndVar(double& mean, double& var,
   double normfac = 1.0;
   if (donorm) normfac = 1.0/getIntegral();
   
-  //We do this as a <x^2> - <x>^2 calculation
+  //It is more efficient to do this as a <x^2> - <x>^2 calculation
+  //The problem is that that way results on fine cancellations.
+  //So we do this in two steps -- get the mean, then compute the
+  // variance.  This is a lot more expensive, especially if the
+  // PD is stored as a log, but is more accurate.
   //Why not just call getMeans?  To avoid calling getIntegral
   // twice.  After this, mean1 and mean2 will be the actual
   // means/dflux - minflux.
-  var = mean = 0.0;
+  mean = 0.0;
   if (logflat) {
     //i=0 has weight 0
     for (unsigned int i = 1; i < n-1; ++i)
-      mean += i*exp2(pd_[i]);
-    mean += 0.5*(n-1)*exp2(pd_[n-1]);
-    for (unsigned int i = 1; i < n-1; ++i)
-      var += i*i*exp2(pd_[i]);
-    var += 0.5*(n-1)*(n-1)*exp2(pd_[n-1]);
+      mean += static_cast<double>(i)*exp2(pd_[i]);
+    mean += 0.5*static_cast<double>(n-1)*exp2(pd_[n-1]); //0.5 since last trap
   } else {
     for (unsigned int i = 1; i < n-1; ++i)
-      mean += i*pd_[i];
-    mean += 0.5*(n-1)*pd_[n-1];
-    for (unsigned int i = 1; i < n-1; ++i)
-      var += i*i*pd_[i];
-    var += 0.5*(n-1)*(n-1)*pd_[n-1];
+      mean += static_cast<double>(i)*pd_[i];
+    mean += 0.5*static_cast<double>(n-1)*pd_[n-1]; //0.5 since last trap
   }
 
-  //Multiply flux bits in
-  mean *= dflux*dflux;
-  var  *= dflux*dflux*dflux;
+  //We need two factors of dflux -- one for xval=dflux*i and one for the
+  // step in the integration
+  mean   *= dflux*dflux;
 
   //Apply normalization
-  if (donorm) {
-    mean *= normfac;
-    var  *= normfac;
+  if (donorm) mean *= normfac;
+
+  //Now, compute the variance
+  var = 0.0;
+  double xval;
+  if (logflat) {
+    //i=0 has weight 0
+    for (unsigned int i = 1; i < n-1; ++i) {
+      xval = static_cast<double>(i)*dflux - mean;
+      var += xval*xval*exp2(pd_[i]);
+    }
+    xval = static_cast<double>(n-1)*dflux - mean;
+    var += 0.5*xval*xval*exp2(pd_[n-1]);
+  } else {
+    for (unsigned int i = 1; i < n-1; ++i) {
+      xval = static_cast<double>(i)*dflux - mean;
+      var += xval*xval*pd_[i];
+    }
+    xval = static_cast<double>(n-1)*dflux - mean;
+    var += 0.5*xval*xval*pd_[n-1];
   }
-  
-  //Form real var
-  var = var - mean*mean;
+
+  //This time only one factor of dflux, for the integral step
+  var *= dflux;
+  if (donorm) var *= normfac;
+
   //Correct mean for offset
   mean += minflux;
 }
