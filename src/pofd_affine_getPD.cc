@@ -195,8 +195,8 @@ int getPDSingle(int argc, char **argv) {
     }
 
     if (verbose) {
-      printf("  Beam area: %f\n",bm.getEffectiveArea());
-      printf("  Mean flux per area: %0.8f\n",
+      printf("  Beam area: %0.3e\n",bm.getEffectiveArea());
+      printf("  Mean flux per area: %0.3f\n",
 	     model.getMeanFluxPerArea());
       printf("  Nknots: %u\n",nknots);
       printf("  Sigma:  %0.5f\n",sigma_noise);
@@ -271,6 +271,7 @@ int getPDDouble(int argc, char** argv) {
 
   int c;
   int option_index = 0;
+  optind = 1;
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
 			    &option_index ) ) != -1 ) 
     switch(c) {
@@ -433,11 +434,11 @@ int getPDDouble(int argc, char** argv) {
     }
 
     if (verbose) {
-      printf("  Beam area, band 1: %f\n",bm.getEffectiveArea1());
-      printf("  Mean flux per area, band 1: %0.8f\n",
+      printf("  Beam area, band 1: %0.3e\n",bm.getEffectiveArea1());
+      printf("  Mean flux per area, band 1: %0.3f\n",
 	     model.getMeanFluxPerArea(0));
-      printf("  Beam area, band 2: %f\n",bm.getEffectiveArea2());
-      printf("  Mean flux per area, band 2: %0.8f\n",
+      printf("  Beam area, band 2: %0.3e\n",bm.getEffectiveArea2());
+      printf("  Mean flux per area, band 2: %0.3f\n",
 	     model.getMeanFluxPerArea(1));
       printf("  Nknots: %u\n",nk);
       printf("  Nsigma: %u\n",ns);
@@ -462,7 +463,7 @@ int getPDDouble(int argc, char** argv) {
 			   << nflux << std::endl;
     pfactory.initPD(nflux,sigma1,sigma2,maxflux1,maxflux2,model,bm,doedge);
     pfactory.getPD( sigma1, sigma2, pd, false, true );
-    
+
     //Write it
     if (verbose) std::cout << "Writing P(D) to file " << outputfile 
 			   << std::endl;

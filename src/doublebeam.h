@@ -83,6 +83,11 @@ class doublebeam {
   bool hasSign(unsigned int i) const { return hassign[i]; } //!< Do beams have certain sign combinations? (pp,pn,np,nn)
   bool hasWeights(unsigned int i) const { return has_weights[i]; } //!< Has beam weights in sign combination (pp,pn,np,nn)
 
+  /*! \brief Get max values for pp,pn,np,nn pieces of beam 1*/
+  double getMax1(unsigned int) const;
+  /*! \brief Get max values for pp,pn,np,nn pieces of beam 2*/
+  double getMax2(unsigned int) const;
+
   /*! \brief Get min/max values for pp,pn,np,nn pieces of beam 1*/
   void getMinMax1(unsigned int, double&, double&) const;
   /*! \brief Get min/max values for pp,pn,np,nn pieces of beam 2*/

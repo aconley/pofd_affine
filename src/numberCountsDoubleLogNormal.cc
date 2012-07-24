@@ -755,6 +755,8 @@ getRInternal(unsigned int n1, const double* const f1,
   double minknot = knots[0];
   double maxknot = knots[nknots-1];
 
+  double maxf1 = maxknot / bm.getMax1(sgn); //!< Max non-zero flux, band 1
+
   unsigned int npsf = bm.getNPix(sgn);
   setRWorkSize( npsf );
 
@@ -771,7 +773,8 @@ getRInternal(unsigned int n1, const double* const f1,
     for (unsigned int i = 0; i < n1; ++i) {
       rowptr = R+i*n2;
       f1val = f1[i];
-      if (f1val > maxknot) { //Beam always <= 1
+      if (f1val <= 0 || f1val >= maxf1) { 
+	//R always zero at these boundaries or outside them
 	//Do nothing
       } else {
 	//Precompute f1 related values
@@ -808,8 +811,8 @@ getRInternal(unsigned int n1, const double* const f1,
     for (unsigned int i = 0; i < n1; ++i) {
       rowptr = R+i*n2;
       f1val = f1[i];
-      if (f1val > maxknot) { 
-	//Beam always <= 1, so do nothing
+      if (f1val <= 0.0 || f1val >= maxf1) { 
+	//Do nothing
       } else {
 	for (unsigned int j = 0; j < npsf; ++j) {
 	  ieta1 = iparr1[j];
@@ -967,7 +970,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 	vals[i] = std::numeric_limits<double>::quiet_NaN();
       return;
     }
-    getRInternal(n1,f1,n2,f2,bm,2,vals);
+    getRInternal(n1,f1,n2,f2,bm,3,vals);
     break;
   case BEAMALL :
     for (unsigned int k = 0; k < 4; ++k) {

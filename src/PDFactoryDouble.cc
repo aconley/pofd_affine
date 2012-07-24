@@ -8,7 +8,7 @@
 #include<PDFactoryDouble.h>
 #include<affineExcept.h>
 
-const double PDFactoryDouble::lowEdgeRMult=1e-10;
+const double PDFactoryDouble::lowEdgeRMult=1e-9;
 //Control of how we do the edge integrals -- linear or log?
 const bool PDFactoryDouble::use_edge_log_x = true;
 const bool PDFactoryDouble::use_edge_log_y = false;
@@ -383,7 +383,24 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
 			     const numberCountsDouble& model,
 			     const doublebeam& bm,
 			     bool setEdge) {
-  
+
+  if (n == 0)
+    throw affineExcept("PDFactoryDouble","initPD",
+		       "Invalid (non-positive) n",1);  
+
+  if (sigma1 < 0.0)
+    throw affineExcept("PDFactoryDouble","initPD",
+		       "Invalid (negative) sigma1",2);
+  if (sigma2 < 0.0)
+    throw affineExcept("PDFactoryDouble","initPD",
+		       "Invalid (negative) sigma2",4);
+  if (maxflux1 <= 0.0)
+    throw affineExcept("PDFactoryDouble","initPD",
+		       "Invalid (non-positive) maxflux1",8);
+  if (maxflux2 <= 0.0)
+    throw affineExcept("PDFactoryDouble","initPD",
+		       "Invalid (non-positive) maxflux2",16);
+
   //Make sure we have enough room
   bool did_resize = resize(n);
 
@@ -401,46 +418,11 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
   for (unsigned int i = 0; i < n; ++i)
     RFlux2[i] = static_cast<double>(i)*dflux2;
 
-  //Edge bits
-  //Minimum values in integral; maximum are dflux1, dflux2
-  double minedge1 = dflux1 *  PDFactoryDouble::lowEdgeRMult;
-  double minedge2 = dflux2 *  PDFactoryDouble::lowEdgeRMult;
-  double inedgem1 = 1.0/static_cast<double>(nedge-1);
-  double dinterpfluxedge1, dinterpfluxedge2;
-  double iRxnorm = 0.0, iRynorm = 0.0, iR00norm = 0.0;
-
-  if (setEdge) {
-    if (!edgevars_allocated) allocateEdgevars();
-    if (use_edge_log_x) {
-      dinterpfluxedge1 = -log(PDFactoryDouble::lowEdgeRMult)*inedgem1;
-      for (unsigned int i = 0; i < nedge; ++i)
-	REdgeFlux1[i] = minedge1*exp(static_cast<double>(i)*dinterpfluxedge1);
-    } else {
-      dinterpfluxedge1 = (dflux1-minedge1)*inedgem1;
-      for (unsigned int i = 0; i < nedge; ++i)
-	REdgeFlux1[i] = minedge1 + static_cast<double>(i)*dinterpfluxedge1;
-    }
-    if (use_edge_log_y) {
-      dinterpfluxedge2 = -log(PDFactoryDouble::lowEdgeRMult)*inedgem1;
-      for (unsigned int i = 0; i < nedge; ++i)
-	REdgeFlux2[i] = minedge2*exp(static_cast<double>(i)*dinterpfluxedge2);
-    } else {
-      dinterpfluxedge2 = (dflux2-minedge2)*inedgem1;
-      for (unsigned int i = 0; i < nedge; ++i)
-	REdgeFlux2[i] = minedge2 + static_cast<double>(i)*dinterpfluxedge2;
-    }
-    iRxnorm  = dinterpfluxedge1/(dflux1-minedge1);
-    iRynorm  = dinterpfluxedge2/(dflux2-minedge2);
-    iR00norm = dinterpfluxedge1*dinterpfluxedge2/
-      ( (dflux1-minedge1) * (dflux2-minedge2) );
-  }
-
-  double *rptr;
-  //Main R setting loop
-
-  //Now fill in R.  The edges require special care
-  //This will fill nonsense values into the lower edges, which
+  //Now fill in R.  The edges require special care.  This
+  // first call will fill nonsense values into the lower edges, which
   // we will later overwrite
+  double *rptr;  
+
 #ifdef TIMING
   std::clock_t starttime = std::clock();
 #endif
@@ -454,6 +436,42 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
     // and setting to the mean value inside that.
     //Use the trapezoidal rule in either log or linear flux
     // space
+
+
+    //Edge bits
+    //Minimum values in integral; maximum are dflux1, dflux2
+    double minedge1 = dflux1 *  PDFactoryDouble::lowEdgeRMult;
+    double minedge2 = dflux2 *  PDFactoryDouble::lowEdgeRMult;
+    double inedgem1 = 1.0/static_cast<double>(nedge-1);
+    double dinterpfluxedge1, dinterpfluxedge2;
+    double iRxnorm = 0.0, iRynorm = 0.0, iR00norm = 0.0;
+    
+    if (setEdge) {
+      if (!edgevars_allocated) allocateEdgevars();
+      if (use_edge_log_x) {
+	dinterpfluxedge1 = -log(PDFactoryDouble::lowEdgeRMult)*inedgem1;
+	for (unsigned int i = 0; i < nedge; ++i)
+	  REdgeFlux1[i] = minedge1*exp(static_cast<double>(i)*dinterpfluxedge1);
+      } else {
+	dinterpfluxedge1 = (dflux1-minedge1)*inedgem1;
+	for (unsigned int i = 0; i < nedge; ++i)
+	  REdgeFlux1[i] = minedge1 + static_cast<double>(i)*dinterpfluxedge1;
+      }
+      if (use_edge_log_y) {
+	dinterpfluxedge2 = -log(PDFactoryDouble::lowEdgeRMult)*inedgem1;
+	for (unsigned int i = 0; i < nedge; ++i)
+	  REdgeFlux2[i] = minedge2*exp(static_cast<double>(i)*dinterpfluxedge2);
+      } else {
+	dinterpfluxedge2 = (dflux2-minedge2)*inedgem1;
+	for (unsigned int i = 0; i < nedge; ++i)
+	  REdgeFlux2[i] = minedge2 + static_cast<double>(i)*dinterpfluxedge2;
+      }
+      iRxnorm  = dinterpfluxedge1/(dflux1-minedge1);
+      iRynorm  = dinterpfluxedge2/(dflux2-minedge2);
+      iR00norm = dinterpfluxedge1*dinterpfluxedge2/
+	( (dflux1-minedge1) * (dflux2-minedge2) );
+    }
+
     //First, do r[0,0]
     double scriptr;
 #ifdef TIMING
@@ -595,11 +613,12 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
   //Make sure that maxflux is large enough that we don't get
   // bad aliasing wrap from the top around into the lower P(D) values.
   if (maxflux1 <= pofd_mcmc::n_sigma_pad*sg1)
-    throw affineExcept("PDFactory","initPD","Top wrap problem, dimension 1",
-		     128);
+    throw affineExcept("PDFactoryDouble","initPD",
+		       "Top wrap problem, dimension 1",128);
   if (maxflux2 <= pofd_mcmc::n_sigma_pad*sg2)
-    throw affineExcept("PDFactory","initPD","Top wrap problem, dimension 2",
-		     256);
+    throw affineExcept("PDFactoryDouble","initPD",
+		       "Top wrap problem, dimension 2",
+		       256);
 
   //The other side of the equation is that we want to zero-pad the
   // top, and later discard that stuff.  The idea is as follows:
@@ -994,10 +1013,10 @@ void PDFactoryDouble::getPD( double sigma1, double sigma2,
     throw affineExcept("PDFactoryDouble","getPD",str.str(),8);
   }
   if (verbose) {
-    std::cerr << " Expected mean band1: " << std::fixed 
+    std::cout << " Expected mean band1: " << std::fixed 
 	      << std::setprecision(6) << shift1+mn1 << " band2: "
 	      << shift2 + mn2 << std::endl;
-    std::cerr << " Realized mean band1: " << std::fixed 
+    std::cout << " Realized mean band1: " << std::fixed 
 	      << std::setprecision(6) << tmn1 << " band2: "
 	      << tmn2 << std::endl;
   }

@@ -577,7 +577,7 @@ double doublebeam::getEffectiveArea1() const {
   for (unsigned int i = 1; i < 4; ++i) hasval |= hassign[i];
   if (!hasval) return std::numeric_limits<double>::quiet_NaN();
   double convfac = pixsize / 3600.0;
-  return totsm1 * convfac;
+  return totsm1 * convfac * convfac;
 }
 
 double doublebeam::getEffectiveArea2() const {
@@ -585,7 +585,7 @@ double doublebeam::getEffectiveArea2() const {
   for (unsigned int i = 1; i < 4; ++i) hasval |= hassign[i];
   if (!hasval) return std::numeric_limits<double>::quiet_NaN();
   double convfac = pixsize / 3600.0;
-  return totsm2 * convfac;
+  return totsm2 * convfac * convfac;
 }
 
 double doublebeam::getEffectiveAreaPixGeoMean() const {
@@ -632,10 +632,44 @@ double doublebeam::getEffectiveAreaSqSign2(unsigned int idx) const {
 
 /*!
   \param[in] bnd Index into [pp,pn,np,nn] bits of beam 1
+  \returns Maximum beam value in band 1
+*/
+double doublebeam::getMax1(unsigned int sgn) const {
+  if ( ! hassign[sgn] )
+    return std::numeric_limits<double>::quiet_NaN();
+  double* parr = pixarr1[sgn];
+  double max, val;
+  max = parr[0];
+  for (unsigned int i = 0; i < npix[sgn]; ++i) {
+    val = parr[i];
+    if (val > max) max = val;
+  }
+  return max;
+}
+
+/*!
+  \param[in] bnd Index into [pp,pn,np,nn] bits of beam 2
+  \returns Maximum beam value in band 2
+*/
+double doublebeam::getMax2(unsigned int sgn) const {
+  if ( ! hassign[sgn] )
+    return std::numeric_limits<double>::quiet_NaN();
+  double* parr = pixarr2[sgn];
+  double max, val;
+  max = parr[0];
+  for (unsigned int i = 0; i < npix[sgn]; ++i) {
+    val = parr[i];
+    if (val > max) max = val;
+  }
+  return max;
+}
+
+/*!
+  \param[in] bnd Index into [pp,pn,np,nn] bits of beam 1
   \param[out] min Minimum value
   \param[out] max Maximum value
   
-  Returns NaN if the beam doesn't have that piece
+  Returns NaNs if the beam doesn't have that piece
 */
 void doublebeam::getMinMax1(unsigned int bnd, double& min,
 			    double& max) const {
