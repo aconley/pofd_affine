@@ -188,6 +188,9 @@ class calcLike {
   /*! \brief Set positions of knots in model */
   void setKnotPositions(std::vector<double>& knts) 
   { model.setKnotPositions(knts); }
+  /*! \brief Set positions of knots in model */
+  void setKnotPositions(const initFileKnots& ifile)
+  { ifile.getKnotPos(model); }
 
   //Sigma prior
   /*! \brief Activates the sigma prior with width set to value */

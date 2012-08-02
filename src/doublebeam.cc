@@ -631,7 +631,7 @@ double doublebeam::getEffectiveAreaSqSign2(unsigned int idx) const {
 }
 
 /*!
-  \param[in] bnd Index into [pp,pn,np,nn] bits of beam 1
+  \param[in] sgn Index into [pp,pn,np,nn] bits of beam 1
   \returns Maximum beam value in band 1
 */
 double doublebeam::getMax1(unsigned int sgn) const {
@@ -648,7 +648,7 @@ double doublebeam::getMax1(unsigned int sgn) const {
 }
 
 /*!
-  \param[in] bnd Index into [pp,pn,np,nn] bits of beam 2
+  \param[in] sgn Index into [pp,pn,np,nn] bits of beam 2
   \returns Maximum beam value in band 2
 */
 double doublebeam::getMax2(unsigned int sgn) const {

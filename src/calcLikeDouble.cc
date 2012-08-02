@@ -255,7 +255,8 @@ void calcLikeDoubleSingle::setSigmaBase2(unsigned int n,const double* const s) {
 
 /*
   \param[in] model   Model parameters must already be set
-  \param[in] sigmult Sigma multiplier, same for both bands
+  \param[in] sigmult1 Sigma multiplier in band 1
+  \param[in] sigmult2 Sigma multiplier in band 2
   \param[in] fftsize Size of FFT to use
   \param[in] edgefix Apply edge fix to P(D) for wrapping
   \param[in] setedge Fill in edges of R with integral average
@@ -269,8 +270,9 @@ void calcLikeDoubleSingle::setSigmaBase2(unsigned int n,const double* const s) {
 */
 double 
 calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model, 
-				 double sigmult, unsigned int fftsize, 
-				 bool edgefix, bool setedge) const {
+				 double sigmult1, double sigmult2,
+				 unsigned int fftsize, bool edgefix, 
+				 bool setedge) const {
 
   if (!data_read)
     throw affineExcept("calcLikeDoubleSingle","getNegLogLike",
@@ -280,9 +282,9 @@ calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
 		       "Beam not read",2);
 
   //Maximum noise value with multiplier 
-  double max_sigma1 = maxsigma_base1 * sigmult;
+  double max_sigma1 = maxsigma_base1 * sigmult1;
   if (max_sigma1 < 0.0) return calcLikeDoubleSingle::bad_like;
-  double max_sigma2 = maxsigma_base2 * sigmult;
+  double max_sigma2 = maxsigma_base2 * sigmult2;
   if (max_sigma2 < 0.0) return calcLikeDoubleSingle::bad_like;
 
   //Initialize P(D)
@@ -295,7 +297,7 @@ calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
   LogLike = 0.0;
   for (unsigned int i = 0; i < ndatasets; ++i) {
     //Get PD for this particuar set of sigmas
-    pdfac.getPD( sigmult*sigma_base1[i], sigmult*sigma_base2[i],
+    pdfac.getPD( sigmult1*sigma_base1[i], sigmult2*sigma_base2[i],
 		 pd, true, edgefix );
 
     //Get log like
@@ -403,8 +405,8 @@ calcLikeDouble::calcLikeDouble(unsigned int FFTSIZE, unsigned int NEDGE,
   edgeFix(EDGEFIX), bin_data(BINNED), nbins(NBINS), 
   has_cfirb_prior1(false), cfirb_prior_mean1(0.0), cfirb_prior_sigma1(0.0), 
   has_cfirb_prior2(false), cfirb_prior_mean2(0.0), cfirb_prior_sigma2(0.0), 
-  has_sigma_prior(false), sigma_prior_width(0.0),
-  verbose(false) {
+  has_sigma_prior1(false), sigma_prior_width1(0.0), has_sigma_prior2(false), 
+  sigma_prior_width2(0.0), verbose(false) {
 
   nbeamsets = 0;
   beamsets  = NULL;
@@ -538,13 +540,20 @@ void calcLikeDouble::setCFIRBPrior2( double mn, double sg ) {
   cfirb_prior_sigma2 = sg;
 }
 
+/*!
+  \param[in] ifile Object holding information from model initializaiton file
+ */
+void calcLikeDouble::setPositions(const initFileDoubleLogNormal& ifile) {
+  ifile.getModelPositions(model);
+}
+
 double calcLikeDouble::getLogLike(const paramSet& p) const {
   const double half_log_2pi = 0.918938517570495605469;
 
   if (nbeamsets == 0) return std::numeric_limits<double>::quiet_NaN();
   unsigned int npar = p.getNParams();
   unsigned int nmodelpars = model.getNParams();
-  if (npar < (nmodelpars+1)) //+1 for the sigma multiplier
+  if (npar < (nmodelpars+2)) //+2 for the sigma multiplier in each band
     throw affineExcept("calcLikeDouble","getLogLike",
 		       "Not enough elements in params",1);
 
@@ -554,19 +563,23 @@ double calcLikeDouble::getLogLike(const paramSet& p) const {
   double LogLike = 0.0;
 
   //Do the datasets likelihood
-  double sigmult = p[nmodelpars]; //Sigma multiplier is after knot values
+  double sigmult1 = p[nmodelpars]; //Sigma multiplier is after knot values
+  double sigmult2 = p[nmodelpars+1]; 
   for (unsigned int i = 0; i < nbeamsets; ++i)
-    LogLike += beamsets[i].getLogLike(model,sigmult,fftsize,edgeFix,
-				      edgeInteg);
+    LogLike += beamsets[i].getLogLike(model,sigmult1,sigmult2,fftsize,
+				      edgeFix,edgeInteg);
 
   //Add on cfirb prior and sigma prior if needed
   //Only do this once for all data sets so as not to multi-count the prior
-  if (has_sigma_prior) {
+  if (has_sigma_prior1) {
     //Assume the mean is always at 1 -- otherwise, the
     // user would have specified different noise level
-    double val = (sigmult-1.0) / sigma_prior_width;
-    LogLike -= half_log_2pi + log(sigma_prior_width) + 
-      0.5*val*val;
+    double val = (sigmult1-1.0) / sigma_prior_width1;
+    LogLike -= half_log_2pi + log(sigma_prior_width1) + 0.5*val*val;
+  }
+  if (has_sigma_prior2) {
+    double val = (sigmult2-1.0) / sigma_prior_width2;
+    LogLike -= half_log_2pi + log(sigma_prior_width2) + 0.5*val*val;
   }
 
   if (has_cfirb_prior1) {
@@ -623,10 +636,16 @@ void calcLikeDouble::SendSelf(MPI::Comm& comm, int dest) const {
   }
 
   //Sigma prior
-  comm.Send(&has_sigma_prior,1,MPI::BOOL,dest,pofd_mcmc::CLDSENDHASSIGMAPRIOR);
-  if (has_sigma_prior)
-    comm.Send(&sigma_prior_width,1,MPI::DOUBLE,dest,
-	      pofd_mcmc::CLDSENDSIGMAPRIORWIDTH);
+  comm.Send(&has_sigma_prior1,1,MPI::BOOL,dest,
+	    pofd_mcmc::CLDSENDHASSIGMAPRIOR1);
+  if (has_sigma_prior1)
+    comm.Send(&sigma_prior_width1,1,MPI::DOUBLE,dest,
+	      pofd_mcmc::CLDSENDSIGMAPRIORWIDTH1);
+  comm.Send(&has_sigma_prior2,1,MPI::BOOL,dest,
+	    pofd_mcmc::CLDSENDHASSIGMAPRIOR2);
+  if (has_sigma_prior2)
+    comm.Send(&sigma_prior_width2,1,MPI::DOUBLE,dest,
+	      pofd_mcmc::CLDSENDSIGMAPRIORWIDTH2);
 
 }
 
@@ -675,9 +694,13 @@ void calcLikeDouble::RecieveCopy(MPI::Comm& comm, int src) {
   }
 
   //Sigma prior
-  comm.Recv(&has_sigma_prior,1,MPI::BOOL,src,pofd_mcmc::CLSENDHASSIGMAPRIOR);
-  if (has_sigma_prior) 
-    comm.Recv(&sigma_prior_width,1,MPI::DOUBLE,src,
-	      pofd_mcmc::CLSENDSIGMAPRIORWIDTH);
+  comm.Recv(&has_sigma_prior1,1,MPI::BOOL,src,pofd_mcmc::CLDSENDHASSIGMAPRIOR1);
+  if (has_sigma_prior1) 
+    comm.Recv(&sigma_prior_width1,1,MPI::DOUBLE,src,
+	      pofd_mcmc::CLDSENDSIGMAPRIORWIDTH1);
+  comm.Recv(&has_sigma_prior2,1,MPI::BOOL,src,pofd_mcmc::CLDSENDHASSIGMAPRIOR2);
+  if (has_sigma_prior2) 
+    comm.Recv(&sigma_prior_width2,1,MPI::DOUBLE,src,
+	      pofd_mcmc::CLDSENDSIGMAPRIORWIDTH2);
 
 }

@@ -107,9 +107,9 @@ class calcLikeDoubleSingle { //Odd name...
   unsigned int getNData(unsigned int i) const { return data[i].getN(); } //!< Number of data points in given data set
 
   /*! \brief Returns \f$\log L\f$ over all data sets.  Model must be set */
-  double getLogLike(const numberCountsDouble&, double sigmult=1.0, 
-		    unsigned int fftsize=4096, bool edgefix=true,
-		    bool edgeinteg=true) const;
+  double getLogLike(const numberCountsDouble&, double sigmult1=1.0, 
+		    double sigmult2=1.0, unsigned int fftsize=4096, 
+		    bool edgefix=true, bool edgeinteg=true) const;
 
   void writePDToStream( std::ostream& os ) const; //!< Write out computed P(D)
 
@@ -164,8 +164,10 @@ class calcLikeDouble {
   bool has_cfirb_prior2; //!< Are we using CFIRB prior, band 2
   double cfirb_prior_mean2; //!< Value of CFIRB prior mean, band 2
   double cfirb_prior_sigma2; //!< Value of CFIRB prior error, band 2
-  bool has_sigma_prior; //!< Sigma multiplier value, both bands
-  double sigma_prior_width; //!< Sigma multiplier width, both bands
+  bool has_sigma_prior1; //!< Sigma multiplier value, band 1
+  double sigma_prior_width1; //!< Sigma multiplier width, band 1
+  bool has_sigma_prior2; //!< Sigma multiplier value, band 2
+  double sigma_prior_width2; //!< Sigma multiplier width, band 2
 
   //Model
   mutable numberCountsDoubleLogNormal model; //!< Number counts model
@@ -227,13 +229,20 @@ class calcLikeDouble {
 		    std::vector<double>& O) {
     model.setPositions(K,S,O);
   }
+  /*! \brief Set positions of all knots */
+  void setPositions(const initFileDoubleLogNormal&);
 
   //Sigma prior
-  /*! \brief Activates the sigma prior with width set to value*/
-  void setSigmaPrior( double val ) { 
-    has_sigma_prior=true; sigma_prior_width = val;}
-  /*! \brief De-activate the sigma prior*/
-  void unsetSigmaPrior() { has_sigma_prior = false; }
+  /*! \brief Activates the sigma prior with width set to value, band 1*/
+  void setSigmaPrior1( double val ) { 
+    has_sigma_prior1 = true; sigma_prior_width1 = val;}
+  /*! \brief De-activate the sigma prior, band 1*/
+  void unsetSigmaPrior1() { has_sigma_prior1 = false; }
+  /*! \brief Activates the sigma prior with width set to value, band 2*/
+  void setSigmaPrior2( double val ) { 
+    has_sigma_prior2 = true; sigma_prior_width2 = val;}
+  /*! \brief De-activate the sigma prior, band 2*/
+  void unsetSigmaPrior2() { has_sigma_prior2 = false; }
 
   //CFIRB prior
   /*! \brief Activates the CFIRB prior with the specified values, band 1 */

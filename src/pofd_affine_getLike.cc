@@ -210,16 +210,13 @@ int getLikeSingle(int argc, char **argv) {
       }
     }
   
-    //Read out knotpos
-    std::vector<double> knotpos;
-    model_info.getKnotPos(knotpos);
-
-    //And, get that likelihood
-    likeSet.setKnotPositions(knotpos);
+    //Set up model parameters
+    likeSet.setKnotPositions(model_info);
     paramSet pars(nknots+1);
     model_info.getParams(pars);
     pars[nknots] = sigma_mult;
 
+    //And, get that likelihood
     double LogLike = likeSet.getLogLike(pars);
 
     std::cout << "log Likelihoood is: "
@@ -441,18 +438,13 @@ int getLikeDouble(int argc, char** argv) {
       }
     }
 
-    std::vector<double> knotpos, sigmapos, offsetpos;
-    model_info.getKnotPos(knotpos);
-    model_info.getSigmaPos(sigmapos);
-    model_info.getOffsetPos(offsetpos);
-  
-    //And, get that likelihood
-    likeSet.setPositions(knotpos, offsetpos, sigmapos);
-
+    //Set up model
+    likeSet.setPositions(model_info);
     paramSet pars(ntot+1);
     model_info.getParams(pars);
     pars[ntot] = sigma_mult;
 
+    //Get likelihood
     double LogLike = likeSet.getLogLike(pars);
 
     std::cout << "log Likelihoood is: "

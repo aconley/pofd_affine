@@ -236,6 +236,7 @@ class initFileDoubleLogNormal {
 
   void readFile(const std::string&, bool=false, bool=false); //!< Read file
 
+  /*! \brief Set seed of random number generator */
   void setSeed( unsigned long long int seed ) const { rangen.setSeed(seed); }
 
   void getKnotPos(std::vector<double>&) const; //!< Gets the knot positions for band 1
