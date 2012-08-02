@@ -1,7 +1,4 @@
 #include<iostream>
-#include<fstream>
-#include<sstream>
-#include<vector>
 
 #include<getopt.h>
 
@@ -83,46 +80,19 @@ int getRSingle( int argc, char** argv ) {
 
   double dflux = (maxflux-minflux)/static_cast<double>(nflux-1);
 
-  //Read in the params
-  std::ifstream initfs( initfile.c_str() );
-  if (!initfs) {
-    std::cerr << "Error readining in initialization file: "
-	      << initfile << std::endl;
-    return 1;
-  }
-  std::vector<double> knotpos, knotval;
-  std::string line;
-  std::vector<std::string> words;
-  std::stringstream str;
-  double currpos, currval;
-  while (!initfs.eof()) {
-    std::getline(initfs,line);
-    if (line[0] == '#') continue;
-
-    //Parse into words, stipping spaces
-    utility::stringwords(line,words);
-    if (words.size() == 0) continue; //Nothing on line (with spaces removed)
-    if (words[0][0] == '#') continue; //Comment line
-    if (words.size() < 2) continue; //Has wrong number of entries
-    str.str(words[0]); str.clear(); str >> currpos;
-    str.str(words[1]); str.clear(); str >> currval;
-    knotpos.push_back( currpos );
-    knotval.push_back( currval ); 
-  }
-  initfs.close();
-  if (knotpos.size() == 0) {
-    std::cerr << "No knot positions or values found in " << initfile
-	      << std::endl;
-    return 1;
-  }
-
   double *fluxes = NULL;
   double *R = NULL;
   try {
-    numberCountsKnotsSpline model(knotpos);
-    beam bm( psffile, histogram );
-    paramSet pars( knotval );
-    model.setParams( pars );
+    initFileKnots model_info;
+    model_info.readFile(initfile, false, false);
+
+    numberCountsKnotsSpline model;
+    model_info.getKnotPos(model);
+
+    beam bm(psffile, histogram);
+    paramSet pars(model_info.getNKnots());
+    model_info.getParams(pars);
+    model.setParams(pars);
 
     numberCounts::rtype rt = numberCounts::BEAMBOTH;
     if (posonly)
@@ -241,76 +211,20 @@ int getRDouble(int argc, char** argv) {
   else
     dflux2 = maxflux2-minflux2;
   
-  //Read in the params
-  std::ifstream initfs( initfile.c_str() );
-  if (!initfs) {
-    std::cerr << "Error readining in initialization file: "
-	      << initfile << std::endl;
-    return 1;
-  }
-  unsigned int nk, ns, no;
-  std::vector<double> wvec1, wvec2;
-  std::string line;
-  std::vector<std::string> words;
-  std::stringstream str;
-  double currpos, currval;
-
-  //Read in number
-  initfs >> nk >> ns >> no;
-  if ( nk < 2 ) {
-    initfs.close();
-    std::cerr << "Need at least 2 knots!" << std::endl;
-    return 4;
-  }
-  if ( ns < 1 ) {
-    initfs.close();
-    std::cerr << "Need at least 1 sigma knots!" << std::endl;
-    return 4;
-  }
-  if ( no < 1 ) {
-    initfs.close();
-    std::cerr << "Need at least 1 offset knots!" << std::endl;
-    return 4;
-  }
-
-  //Read in values
-  while (!initfs.eof()) {
-    std::getline(initfs,line);
-    if (line[0] == '#') continue; //Comment
-    utility::stringwords(line,words);
-    if (words.size() == 0) continue; //Nothing on line (with spaces removed)
-    if (words[0][0] == '#') continue; //Comment line
-    if (words.size() < 2) continue; //Has wrong number of entries
-    str.str(words[0]); str.clear(); str >> currpos;
-    str.str(words[1]); str.clear(); str >> currval;
-    wvec1.push_back( currpos );
-    wvec2.push_back( currval ); 
-  }
-  initfs.close();
-  if (wvec1.size() != nk+ns+no) {
-   std::cerr << "Expected " << nk+ns+no << " values, got: " 
-              << wvec1.size() << std::endl;
-    return 8;
-  }
-
-  //Parse out into knot positions, etc.
-  //Keep values in wvec2
-  std::vector<double> knotpos(nk), sigmapos(ns), offsetpos(no);
-  for (unsigned int i = 0; i < nk; ++i)
-    knotpos[i] = wvec1[i];
-  for (unsigned int i = nk; i < ns+nk; ++i)
-    sigmapos[i-nk] = wvec1[i];
-  for (unsigned int i = nk+ns; i < no+ns+nk; ++i)
-    offsetpos[i-nk-ns] = wvec1[i];
-
   //Main computation
   double *fluxes1, *fluxes2, *R;
   fluxes1 = fluxes2 = R = NULL;
   try {
-    numberCountsDoubleLogNormal model(knotpos,sigmapos,offsetpos);
+    initFileDoubleLogNormal model_info;
+    model_info.readFile(initfile, false, false);
+
+    numberCountsDoubleLogNormal model;
+    model_info.getModelPositions(model);
+
     doublebeam bm( psffile1, psffile2, histogram );
-    paramSet pars( wvec2 );
-    model.setParams( pars );
+    paramSet pars(model_info.getNTot());
+    model_info.getParams(pars);
+    model.setParams(pars);
 
     numberCountsDouble::rtype rt; 
     if (posonly)

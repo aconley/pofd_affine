@@ -28,18 +28,11 @@ affineEnsemble::affineEnsemble( unsigned int NWALKERS, unsigned int NPARAMS,
 				double BURN_MULTIPLE, double SCALEFAC ) :
   nwalkers(NWALKERS), nparams(NPARAMS), has_any_names(false), 
   scalefac(SCALEFAC), init_steps(INIT_STEPS), min_burn(MIN_BURN), 
-  burn_multiple( BURN_MULTIPLE ), pstep(NPARAMS), chains(NWALKERS,NPARAMS) {
-  
-  has_name.resize(nparams);
-  for (unsigned int i = 0; i < nparams; ++i) has_name[i] = false;
-  parnames.resize(nparams);
-
-  nignore = 0;
+  burn_multiple(BURN_MULTIPLE), pstep(NPARAMS), chains(NWALKERS,NPARAMS) {
 
   //Set number of steps per walker, which won't quite match nsamples
   nsteps = static_cast<unsigned int>( NSAMPLES/static_cast<double>(nwalkers)
 				      + 0.999999999999 );
-
 
   acor_set = false;
 
@@ -50,15 +43,20 @@ affineEnsemble::affineEnsemble( unsigned int NWALKERS, unsigned int NPARAMS,
 
   rank = MPI::COMM_WORLD.Get_rank();  
   if (rank == 0) {
+    has_name.resize(nparams);
+    for (unsigned int i = 0; i < nparams; ++i) has_name[i] = false;
+    parnames.resize(nparams);
+
     //Reserve room for queues
     procqueue.setCapacity(nproc);
     stepqueue.setCapacity(nwalkers/2+1);  //Only store one half at a time
 
     //Master node; slaves don't need this
     naccept.resize(nwalkers);
-    naccept.assign( naccept.size(), 0 );
+    naccept.assign(naccept.size(), 0);
     ignore_params.resize(nparams);
-    ignore_params.assign( ignore_params.size(), false );
+    ignore_params.assign(ignore_params.size(), false);
+    nignore = 0;
 
     //Set random number generator seed from time
     unsigned long long int seed;
@@ -70,6 +68,27 @@ affineEnsemble::affineEnsemble( unsigned int NWALKERS, unsigned int NPARAMS,
 }
 
 affineEnsemble::~affineEnsemble() {}
+
+/*!
+  Will destroy all contents if the size changes
+ */
+void affineEnsemble::setNParams(unsigned int NPAR) {
+  if (NPAR == nparams) return;
+  nparams = NPAR;
+
+  if (rank == 0) {
+    nignore = 0;
+    ignore_params.resize(nparams);
+    ignore_params.assign(ignore_params.size(), false);
+    has_name.resize(nparams);
+    has_name.assign(has_name.size(), false);
+    parnames.resize(nparams);
+    chains.clear();
+    naccept.assign(naccept.size(), 0);
+    procqueue.clear();
+    stepqueue.clear();
+  }
+}
 
 /*!
   Only meaningful for the master node, always return true for slaves

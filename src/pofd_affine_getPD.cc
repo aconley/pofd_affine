@@ -1,9 +1,6 @@
 #include<iostream>
 #include<string>
 #include<iomanip>
-#include<vector>
-#include<fstream>
-#include<sstream>
 
 #include<getopt.h>
 
@@ -131,48 +128,20 @@ int getPDSingle(int argc, char **argv) {
     return 1;
   }
 
-  //Read in the initialization file knot positions, values, errors
-  std::ifstream initfs( initfile.c_str() );
-  if (!initfs) {
-    std::cerr << "Error readining in initialization file: "
-	      << initfile << std::endl;
-    return 2;
-  }
-  std::vector<double> knotpos, knotval, knoterr;
-  unsigned int nknots;
-  std::string line;
-  std::vector<std::string> words;
-  std::stringstream str;
-  double currpos, currval;
-  while (!initfs.eof()) {
-    std::getline(initfs,line);
-    if (line[0] == '#') continue;
-
-    //Parse into words, stipping spaces
-    utility::stringwords(line,words);
-    if (words.size() == 0) continue; //Nothing on line (with spaces removed)
-    if (words[0][0] == '#') continue; //Comment line
-    if (words.size() < 2) continue; //Has wrong number of entries
-    str.str(words[0]); str.clear(); str >> currpos;
-    str.str(words[1]); str.clear(); str >> currval;
-    knotpos.push_back(currpos);
-    knotval.push_back( currval );
-  }
-  initfs.close();
-  if (knotpos.size() == 0) {
-    std::cerr << "No knot positions or values found in " << initfile
-	      << std::endl;
-    return 2;
-  }
-  nknots = knotpos.size();
-
   //Actual PD computation
   try {
+    initFileKnots model_info;
+    model_info.readFile(initfile, false, false);
+    numberCountsKnotsSpline model;
+    model_info.getKnotPos(model);
+
     PDFactory pfactory(ninterp);
-    beam bm( psffile, histogram );
-    numberCountsKnotsSpline model(knotpos);
-    paramSet params(knotval);
-    model.setParams(params);
+    beam bm(psffile, histogram);
+
+    paramSet pars(model_info.getNKnots());
+    model_info.getParams(pars);
+
+    model.setParams(pars);
     PD pd;
 
     bool success;
@@ -198,15 +167,18 @@ int getPDSingle(int argc, char **argv) {
       printf("  Beam area: %0.3e\n",bm.getEffectiveArea());
       printf("  Mean flux per area: %0.3f\n",
 	     model.getMeanFluxPerArea());
-      printf("  Nknots: %u\n",nknots);
+      printf("  Nknots: %u\n",model_info.getNKnots());
       printf("  Sigma:  %0.5f\n",sigma_noise);
       if (histogram)
 	printf("  Using beam histogramming to reduce beam size to: %u %u\n",
 	       bm.getNPos(),bm.getNNeg());
       printf("  Interpolation length:  %u\n",ninterp);
       printf("  Positions and initial values:\n");
-      for (unsigned int i = 0; i < nknots; ++i)
-	printf("   %11.5e  %11.5e\n",knotpos[i],knotval[i]);
+      std::pair<double,double> pr;
+      for (unsigned int i = 0; i < model_info.getNKnots(); ++i) {
+	pr = model_info.getKnot(i);
+	printf("   %11.5e  %11.5e\n",pr.first,pr.second);
+      }
     }
 
     //Get P(D)
@@ -339,74 +311,20 @@ int getPDDouble(int argc, char** argv) {
   }
   if (nedge == 0) doedge = false;
 
-  //Read in the initialization file knot positions, values, errors
-  std::ifstream initfs( initfile.c_str() );
-  if (!initfs) {
-    std::cerr << "Error readining in initialization file: "
-	      << initfile << std::endl;
-    return 2;
-  }
-  unsigned int nk, ns, no; //Number of knots, sigmas, offsets
-  std::vector<double> wvec1, wvec2;
-  std::string line;
-  std::vector<std::string> words;
-  std::stringstream str;
-  double currpos, currval;
-
-  //Read in number
-  initfs >> nk >> ns >> no;
-  if ( nk < 2 ) {
-    initfs.close();
-    std::cerr << "Need at least 2 knots!" << std::endl;
-    return 4;
-  }
-  if ( ns < 1 ) {
-    initfs.close();
-    std::cerr << "Need at least 1 sigma knots!" << std::endl;
-    return 4;
-  }
-  if ( no < 1 ) {
-    initfs.close();
-    std::cerr << "Need at least 1 offset knots!" << std::endl;
-    return 4;
-  }
-  //Read in values
-  while (!initfs.eof()) {
-    std::getline(initfs,line);
-    if (line[0] == '#') continue; //Comment
-    utility::stringwords(line,words);
-    if (words.size() == 0) continue; //Nothing on line (with spaces removed)
-    if (words[0][0] == '#') continue; //Comment line
-    if (words.size() < 2) continue; //Has wrong number of entries
-    str.str(words[0]); str.clear(); str >> currpos;
-    str.str(words[1]); str.clear(); str >> currval;
-    wvec1.push_back( currpos );
-    wvec2.push_back( currval ); 
-  }
-  initfs.close();
-  if (wvec1.size() != nk+ns+no) {
-   std::cerr << "Expected " << nk+ns+no << " values, got: " 
-              << wvec1.size() << std::endl;
-    return 8;
-  }
-
-  //Parse out into knot positions, etc.
-  //Keep values in wvec2
-  std::vector<double> knotpos(nk), sigmapos(ns), offsetpos(no);
-  for (unsigned int i = 0; i < nk; ++i)
-    knotpos[i] = wvec1[i];
-  for (unsigned int i = nk; i < ns+nk; ++i)
-    sigmapos[i-nk] = wvec1[i];
-  for (unsigned int i = nk+ns; i < no+ns+nk; ++i)
-    offsetpos[i-nk-ns] = wvec1[i];
-
   //Actual PD computation
   try {
+    initFileDoubleLogNormal model_info;
+    model_info.readFile(initfile, false, false);
+
+    numberCountsDoubleLogNormal model;
+    model_info.getModelPositions(model);
+    paramSet pars(model_info.getNTot());
+    model_info.getParams(pars);
+    model.setParams(pars);
+
     PDFactoryDouble pfactory(nedge);
     doublebeam bm( psffile1, psffile2, histogram );
-    numberCountsDoubleLogNormal model(knotpos,sigmapos,offsetpos);
-    paramSet params(wvec2);
-    model.setParams(params);
+
     PDDouble pd;
 
     bool success;
@@ -440,22 +358,29 @@ int getPDDouble(int argc, char** argv) {
       printf("  Beam area, band 2: %0.3e\n",bm.getEffectiveArea2());
       printf("  Mean flux per area, band 2: %0.3f\n",
 	     model.getMeanFluxPerArea(1));
-      printf("  Nknots: %u\n",nk);
-      printf("  Nsigma: %u\n",ns);
-      printf("  Noffset: %u\n",no);
+      printf("  Nknots: %u\n",model_info.getNKnots());
+      printf("  Nsigma: %u\n",model_info.getNSigmas());
+      printf("  Noffset: %u\n",model_info.getNOffsets());
       printf("  Sigma, band 1:  %0.5f\n",sigma1);
       printf("  Sigma, band 2:  %0.5f\n",sigma2);
       if (histogram)
 	printf("  Using beam histogramming to reduce beam size\n");
       printf("  Knot Positions and initial values:\n");
-      for (unsigned int i = 0; i < nk; ++i)
-	printf("   %11.5e  %11.5e\n",knotpos[i],wvec2[i]);
+      std::pair<double,double> pr;
+      for (unsigned int i = 0; i < model_info.getNKnots(); ++i) {
+	pr = model_info.getKnot(i);
+	printf("   %11.5e  %11.5e\n",pr.first,pr.second);
+      }
       printf("  Sigma Positions and initial values:\n");
-      for (unsigned int i = 0; i < ns; ++i)
-	printf("   %11.5e  %11.5e\n",sigmapos[i],wvec2[i+nk]);
+      for (unsigned int i = 0; i < model_info.getNSigmas(); ++i) {
+	pr = model_info.getSigma(i);
+	printf("   %11.5e  %11.5e\n",pr.first,pr.second);
+      }
       printf("  Offset Positions and initial values:\n");
-      for (unsigned int i = 0; i < no; ++i)
-	printf("   %11.5e  %11.5e\n",offsetpos[i],wvec2[i+nk+ns]);
+      for (unsigned int i = 0; i < model_info.getNOffsets(); ++i) {
+	pr = model_info.getOffset(i);
+	printf("   %11.5e  %11.5e\n",pr.first,pr.second);
+      }
     }
 
     //Get P(D)
@@ -521,14 +446,14 @@ int main( int argc, char** argv ) {
       std::cerr << std::endl;
       std::cerr << "\t pofd_mcmc_getPD -d [options] initfile beamfile1"
 		<< " beamfile2" << std::endl;
-      std::cerr << "\t  outfile" << std::endl;
+      std::cerr << "\t  outputfile" << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tfor the 2D case." << std::endl;
       std::cerr << std::endl;
       std::cerr << "DESCRIPTION" << std::endl;
       std::cerr << "\tEvaluates P(D) for the model in initfile and write it"
 		<< " to" << std::endl;
-      std::cerr << "\toutfile.  The 1D model is a log-space spline model for"
+      std::cerr << "\toutputfile.  The 1D model is a log-space spline model for"
 		<< " the" << std::endl;
       std::cerr << "\tnumber counts, and the 2D model is the 1D spline model" 
 		<< " times" << std::endl;
@@ -570,8 +495,8 @@ int main( int argc, char** argv ) {
 		<< "in each" << std::endl;
       std::cerr << "\t of the two bands in the 2D case." << std::endl;
       std::cerr << std::endl;
-      std::cerr << "\tIn both cases the output PD is written to outfile either"
-		<< " as" << std::endl;
+      std::cerr << "\tIn both cases the output PD is written to outputfile "
+		<< "either as" << std::endl;
       std::cerr << "\ttext or as a FITS file." << std::endl;
       std::cerr << std::endl;
       std::cerr << "OPTIONS" << std::endl;

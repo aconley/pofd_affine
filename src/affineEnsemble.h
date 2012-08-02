@@ -84,6 +84,7 @@ public:
 
   unsigned int getNWalkers() const { return nwalkers; } //!< Get number of walkers
   unsigned int getNParams() const { return nparams; } //!< Get number of params
+  void setNParams(unsigned int); //!< Change number of parameters
   unsigned int getNChunks() const { return chains.getNChunks(); } //!< Get number of chunks
   unsigned int getMinNIters() const { return chains.getMinNIters(); } //!< Get minimum number of iterations across all walkers
   unsigned int getNSteps() const { return nsteps; } //!< Get number of steps

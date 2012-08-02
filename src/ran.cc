@@ -9,6 +9,10 @@ void ran::setSeed(unsigned long long int seed) {
   w = v; int64();
 }
 
+/*
+  \returns A random unformly distributed 64 bit unsigned integer in the 
+  range between 0 and the 2^64-1
+ */
 unsigned long long int ran::int64() {
   u = u * 2862933555777941757LL + 7046029254386353087LL;
   v ^= v >> 17; 

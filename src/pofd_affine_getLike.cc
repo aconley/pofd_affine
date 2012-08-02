@@ -1,8 +1,8 @@
 #include<iostream>
 #include<string>
 #include<vector>
-#include<fstream>
 #include<iomanip>
+#include<fstream>
 #include<sstream>
 
 #include<getopt.h>
@@ -124,43 +124,6 @@ int getLikeSingle(int argc, char **argv) {
 	      << std::endl;
   }
 
-  //Read in the initialization file knot positions, values, errors
-  if (verbose || ultraverbose)
-    std::cout << "Reading initialization file: " << initfile << std::endl;
-  std::ifstream initfs( initfile.c_str() );
-  if (!initfs) {
-    std::cerr << "Error readining in initialization file: "
-	      << initfile << std::endl;
-    return 1;
-  }
-  std::vector<double> knotpos, knotval;
-  unsigned int nknots;
-  std::string line;
-  std::stringstream str;
-  std::vector<std::string> words;
-  double currpos, currval;
-  while (!initfs.eof()) {
-    std::getline(initfs,line);
-    if (line[0] == '#') continue;
-
-    //Parse into words, stipping spaces
-    utility::stringwords(line,words);
-    if (words.size() == 0) continue; //Nothing on line (with spaces removed)
-    if (words[0][0] == '#') continue; //Comment line
-    if (words.size() < 2) continue; //Has wrong number of entries
-    str.str(words[0]); str.clear(); str >> currpos;
-    str.str(words[1]); str.clear(); str >> currval;
-    knotpos.push_back(currpos);
-    knotval.push_back(currval);
-  }
-  initfs.close();
-  if (knotpos.size() == 0) {
-    std::cerr << "No knot positions or values found in " << initfile
-	      << std::endl;
-    return 1;
-  }
-  nknots = knotpos.size();
-
   //Process the spec file
   if (ultraverbose)
     std::cout << "Reading spec file: " << specfile << std::endl;
@@ -169,9 +132,12 @@ int getLikeSingle(int argc, char **argv) {
     std::cerr << "Error reading spec file: " << specfile << std::endl;
     return 1;
   }
+  std::string line;
+  std::vector<std::string> words;
   std::vector< std::string > datafiles;
   std::vector< double > sigmas, like_norm;
   std::vector< std::string > psffiles;
+  std::stringstream str;
   double lnorm;
   while (! ifs.eof() ) {
     std::getline(ifs,line);
@@ -206,6 +172,17 @@ int getLikeSingle(int argc, char **argv) {
   }
 
   try {
+    //Read in the initialization file knot positions, values
+    if (verbose || ultraverbose)
+    std::cout << "Reading initialization file: " << initfile << std::endl;
+    initFileKnots model_info;
+    model_info.readFile(initfile, false, false);
+
+    unsigned int nknots = model_info.getNKnots();
+    if (nknots == 0)
+      throw affineExcept("pofd_affine_getLike","getLikeSingle",
+			 "No info read in",1);
+
     calcLike likeSet( fftsize, ninterp, true, bindata, nbins );
 
     //Read data
@@ -219,28 +196,34 @@ int getLikeSingle(int argc, char **argv) {
     if (ultraverbose) likeSet.setVerbose();
       
     if ( ultraverbose ) {
-      printf("  FFTsize:       %u\n",fftsize);
-      printf("  Nknots:        %u\n",nknots);
+      printf("  FFTsize:       %u\n", fftsize);
+      printf("  Nknots:        %u\n", model_info.getNKnots());
       if (histogram)
 	printf("  Using histogramming to reduce beam size\n");  
       if (bindata)
 	printf("  Using histogramming to reduce data size to: %u\n",nbins);  
       printf("  Positions and initial values:\n");
-      for (unsigned int i = 0; i < nknots; ++i)
-	printf("  %11.5e  %11.5e\n",knotpos[i],knotval[i]);
+      std::pair<double,double> pr;
+      for (unsigned int i = 0; i < nknots; ++i) {
+	pr = model_info.getKnot(i);
+	printf("   %11.5e  %11.5e\n",pr.first,pr.second);
+      }
     }
   
-    //And, get that likelihood
-    likeSet.setKnotPositions( knotpos );
-    paramSet params(nknots+1);
-    for (unsigned int i = 0; i < nknots; ++i)
-      params[i] = knotval[i];
-    params[nknots] = sigma_mult;
+    //Read out knotpos
+    std::vector<double> knotpos;
+    model_info.getKnotPos(knotpos);
 
-    double LogLike = likeSet.getLogLike(params);
+    //And, get that likelihood
+    likeSet.setKnotPositions(knotpos);
+    paramSet pars(nknots+1);
+    model_info.getParams(pars);
+    pars[nknots] = sigma_mult;
+
+    double LogLike = likeSet.getLogLike(pars);
 
     std::cout << "log Likelihoood is: "
-	      << std::setprecision(10) << LogLike << std::endl;
+	      << std::setprecision(7) << LogLike << std::endl;
   } catch (const affineExcept& ex) {
     std::cerr << ex << std::endl;
     return 4;
@@ -343,70 +326,6 @@ int getLikeDouble(int argc, char** argv) {
 	      << std::endl;
   }
 
-  //////////////////////////////
-  //Read in the initialization file knot positions, values, errors
-  if (verbose || ultraverbose)
-    std::cout << "Reading initialization file: " << initfile << std::endl;
-  std::ifstream initfs( initfile.c_str() );
-  if (!initfs) {
-    std::cerr << "Error readining in initialization file: "
-	      << initfile << std::endl;
-    return 2;
-  }
-  unsigned int nk, ns, no; //Number of knots, sigmas, offsets
-  std::vector<double> wvec1, wvec2;
-  std::string line;
-  std::vector<std::string> words;
-  std::stringstream str;
-  double currpos, currval;
-
-  //Read in number
-  initfs >> nk >> ns >> no;
-  if ( nk < 2 ) {
-    initfs.close();
-    std::cerr << "Need at least 2 knots!" << std::endl;
-    return 4;
-  }
-  if ( ns < 1 ) {
-    initfs.close();
-    std::cerr << "Need at least 1 sigma knots!" << std::endl;
-    return 4;
-  }
-  if ( no < 1 ) {
-    initfs.close();
-    std::cerr << "Need at least 1 offset knots!" << std::endl;
-    return 4;
-  }
-  //Read in values
-  while (!initfs.eof()) {
-    std::getline(initfs,line);
-    if (line[0] == '#') continue; //Comment
-    utility::stringwords(line,words);
-    if (words.size() == 0) continue; //Nothing on line (with spaces removed)
-    if (words[0][0] == '#') continue; //Comment line
-    if (words.size() < 2) continue; //Has wrong number of entries
-    str.str(words[0]); str.clear(); str >> currpos;
-    str.str(words[1]); str.clear(); str >> currval;
-    wvec1.push_back( currpos );
-    wvec2.push_back( currval ); 
-  }
-  initfs.close();
-  if (wvec1.size() != nk+ns+no) {
-   std::cerr << "Expected " << nk+ns+no << " values, got: " 
-              << wvec1.size() << std::endl;
-    return 8;
-  }
-
-  //Parse out into knot positions, etc.
-  //Keep values in wvec2
-  std::vector<double> knotpos(nk), sigmapos(ns), offsetpos(no);
-  for (unsigned int i = 0; i < nk; ++i)
-    knotpos[i] = wvec1[i];
-  for (unsigned int i = nk; i < ns+nk; ++i)
-    sigmapos[i-nk] = wvec1[i];
-  for (unsigned int i = nk+ns; i < no+ns+nk; ++i)
-    offsetpos[i-nk-ns] = wvec1[i];
-
   ////////////////////////
   //Process the spec file
   if (ultraverbose)
@@ -416,9 +335,14 @@ int getLikeDouble(int argc, char** argv) {
     std::cerr << "Error reading spec file: " << specfile << std::endl;
     return 1;
   }
+
+  std::string line;
+  std::vector<std::string> words;
   std::vector< std::string > datafiles1, datafiles2;
   std::vector< double > sigmas1, sigmas2, like_norm;
   std::vector< std::string > psffiles1, psffiles2;
+  std::stringstream str;
+
   double lnorm;
   while (! ifs.eof() ) {
     std::getline(ifs,line);
@@ -466,6 +390,18 @@ int getLikeDouble(int argc, char** argv) {
   /////////////////////////////////////
   // Actual calculation
   try {
+    //Read in the initialization file knot positions, values
+    if (verbose || ultraverbose)
+      std::cout << "Reading initialization file: " << initfile << std::endl;
+    initFileDoubleLogNormal model_info;
+    model_info.readFile(initfile, false, false);
+
+    unsigned int ntot = model_info.getNTot();
+    if (ntot == 0)
+      throw affineExcept("pofd_affine_getLike","getLikeDouble",
+			 "No info read in",1);
+
+
     calcLikeDouble likeSet( fftsize, nedge, true, edgeInterp,
 			    bindata, nbins );
 
@@ -473,8 +409,8 @@ int getLikeDouble(int argc, char** argv) {
     if (verbose || ultraverbose)
       std::cout << "Reading in data files" << std::endl;
     likeSet.readDataFromFiles( datafiles1, datafiles2, psffiles1, psffiles2,
-			       sigmas1, sigmas2, like_norm,
-			       false, meansub, histogram );
+			       sigmas1, sigmas2, like_norm, false, meansub, 
+			       histogram );
     
     if (has_wisdom) likeSet.addWisdom(wisdom_file);
 
@@ -488,24 +424,39 @@ int getLikeDouble(int argc, char** argv) {
 	printf("  Using histogramming to reduce data size to: %u by %u\n",
 	       nbins,nbins);  
       printf("  Knot Positions and initial values:\n");
-      for (unsigned int i = 0; i < nk; ++i)
-	printf("  %11.5e  %11.5e\n",knotpos[i],wvec2[i]);
+      std::pair<double,double> pr;
+      for (unsigned int i = 0; i < model_info.getNKnots(); ++i) {
+	pr = model_info.getKnot(i);
+	printf("   %11.5e  %11.5e\n",pr.first,pr.second);
+      }
       printf("  Sigma Positions and initial values:\n");
-      for (unsigned int i = 0; i < ns; ++i)
-	printf("  %11.5e  %11.5e\n",sigmapos[i],wvec2[i+nk]);
+      for (unsigned int i = 0; i < model_info.getNSigmas(); ++i) {
+	pr = model_info.getSigma(i);
+	printf("   %11.5e  %11.5e\n",pr.first,pr.second);
+      }
       printf("  Offset Positions and initial values:\n");
-      for (unsigned int i = 0; i < no; ++i)
-	printf("  %11.5e  %11.5e\n",offsetpos[i],wvec2[i+nk+ns]);
+      for (unsigned int i = 0; i < model_info.getNOffsets(); ++i) {
+	pr = model_info.getOffset(i);
+	printf("   %11.5e  %11.5e\n",pr.first,pr.second);
+      }
     }
+
+    std::vector<double> knotpos, sigmapos, offsetpos;
+    model_info.getKnotPos(knotpos);
+    model_info.getSigmaPos(sigmapos);
+    model_info.getOffsetPos(offsetpos);
   
     //And, get that likelihood
-    likeSet.setPositions( knotpos, offsetpos, sigmapos );
-    paramSet params(wvec2);
+    likeSet.setPositions(knotpos, offsetpos, sigmapos);
 
-    double LogLike = likeSet.getLogLike(params);
+    paramSet pars(ntot+1);
+    model_info.getParams(pars);
+    pars[ntot] = sigma_mult;
+
+    double LogLike = likeSet.getLogLike(pars);
 
     std::cout << "log Likelihoood is: "
-	      << std::setprecision(10) << LogLike << std::endl;
+	      << std::setprecision(7) << LogLike << std::endl;
   } catch (const affineExcept& ex) {
     std::cerr << ex << std::endl;
     return 4;

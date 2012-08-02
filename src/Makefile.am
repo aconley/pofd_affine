@@ -1,20 +1,20 @@
-bin_PROGRAMS = pofd_affine_getR pofd_affine_getPD pofd_affine_getLike \
-	pofd_affine_getdNdS
+bin_PROGRAMS = pofd_affine_getdNdS pofd_affine_getR pofd_affine_getPD \
+	pofd_affine_getLike
 
 pofd_affine_getdNdS_SOURCES =global_settings.h numberCounts.h \
 	numberCountsKnots.h numberCountsKnotsSpline.h paramSet.h \
 	affineExcept.h beam.h utility.h numberCountsDouble.h \
-	numberCountsDoubleLogNormal.h doublebeam.h \
+	numberCountsDoubleLogNormal.h doublebeam.h ran.h \
 	numberCounts.cc numberCountsKnots.cc beam.cc utility.cc \
-	numberCountsKnotsSpline.cc paramSet.cc affineExcept.cc \
+	numberCountsKnotsSpline.cc paramSet.cc affineExcept.cc ran.cc \
 	numberCountsDouble.cc numberCountsDoubleLogNormal.cc doublebeam.cc \
 	pofd_affine_getdNdS.cc
 
 pofd_affine_getR_SOURCES =global_settings.h numberCounts.h numberCountsKnots.h \
 	numberCountsKnotsSpline.h paramSet.h affineExcept.h beam.h utility.h \
-	numberCountsDouble.h numberCountsDoubleLogNormal.h doublebeam.h \
+	numberCountsDouble.h numberCountsDoubleLogNormal.h doublebeam.h ran.h \
 	numberCounts.cc numberCountsKnots.cc beam.cc utility.cc \
-	numberCountsKnotsSpline.cc paramSet.cc affineExcept.cc \
+	numberCountsKnotsSpline.cc paramSet.cc affineExcept.cc ran.cc \
 	numberCountsDouble.cc numberCountsDoubleLogNormal.cc doublebeam.cc \
 	pofd_affine_getR.cc
 
@@ -22,11 +22,11 @@ pofd_affine_getPD_SOURCES = global_settings.h numberCounts.h \
 	numberCountsKnots.h numberCountsKnotsSpline.h paramSet.h \
 	affineExcept.h beam.h utility.h PD.h PDFactory.h fitsData.h \
 	numberCountsDouble.h numberCountsDoubleLogNormal.h doublebeam.h \
-	PDDouble.h PDFactoryDouble.h fitsDataDouble.h \
+	PDDouble.h PDFactoryDouble.h fitsDataDouble.h ran.h \
 	numberCounts.cc numberCountsKnots.cc beam.cc utility.cc \
 	numberCountsKnotsSpline.cc paramSet.cc affineExcept.cc \
 	PD.cc PDFactory.cc fitsData.cc numberCountsDouble.cc \
-	 numberCountsDoubleLogNormal.cc doublebeam.cc \
+	 numberCountsDoubleLogNormal.cc doublebeam.cc ran.cc \
 	PDDouble.cc PDFactoryDouble.cc fitsDataDouble.cc \
 	pofd_affine_getPD.cc 
 
@@ -35,9 +35,9 @@ pofd_affine_getLike_SOURCES = global_settings.h numberCounts.h \
 	affineExcept.h beam.h utility.h PD.h PDFactory.h fitsData.h \
 	calcLike.h numberCountsDouble.h numberCountsDoubleLogNormal.h \
 	doublebeam.h PDDouble.h PDFactoryDouble.h fitsDataDouble.h \
-	calcLikeDouble.h \
+	calcLikeDouble.h ran.h \
 	numberCounts.cc numberCountsKnots.cc beam.cc utility.cc \
-	numberCountsKnotsSpline.cc paramSet.cc affineExcept.cc \
+	numberCountsKnotsSpline.cc paramSet.cc affineExcept.cc ran.cc \
 	PD.cc PDFactory.cc fitsData.cc calcLike.cc numberCountsDouble.cc \
 	numberCountsDoubleLogNormal.cc doublebeam.cc PDDouble.cc \
 	PDFactoryDouble.cc fitsDataDouble.cc calcLikeDouble.cc \

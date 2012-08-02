@@ -4,6 +4,8 @@
 #include<iomanip>
 #include<limits>
 #include<cstdlib>
+#include<ctime>
+#include<sstream>
 
 #include<global_settings.h>
 #include<numberCountsKnots.h>
@@ -189,4 +191,430 @@ bool numberCountsKnots::writeToStream(std::ostream& os) const {
 std::ostream& operator<<(std::ostream& os, const numberCountsKnots& b) {
   b.writeToStream(os);
   return os;
+}
+
+////////////////////////////////////////
+
+initFileKnots::initFileKnots() : nknots(0), has_sigma(false), 
+				 has_lower_limits(false),
+				 has_upper_limits(false) {
+
+  knotpos = knotval = sigma = lowlim = uplim = NULL;
+  has_lowlim = has_uplim = NULL;
+
+  //Set random number generator seed from time
+  unsigned long long int seed;
+  seed = static_cast<unsigned long long int>(time(NULL));
+  seed += static_cast<unsigned long long int>(clock());
+  rangen.setSeed(seed);
+}
+
+initFileKnots::~initFileKnots() {
+  if (knotpos != NULL) delete[] knotpos;
+  if (knotval != NULL) delete[] knotval;
+  if (sigma != NULL) delete[] sigma;
+  if (has_lowlim != NULL) delete[] has_lowlim;
+  if (lowlim != NULL) delete[] lowlim;
+  if (has_uplim != NULL) delete[] has_uplim;
+  if (uplim != NULL) delete[] uplim;
+}
+
+/*!
+  \param[in] flname File to read from
+  \param[in] read_sigma      Read in (and require) knot sigmas
+  \param[in] read_limits     Try to read limits; this will turn on require_sigma
+
+  The file format is a bunch of lines of the form
+  knotpos   knotval   [sigma [ lowlim [ uplim ]]
+  So knotpos, knotval are always required
+  sigma is optionally required if read_sigma is set
+  lowlim and uplim may be present, and are looked for if read_limits is set.
+    sigma must also be present, and the first element found is lowlim.
+    If another is also found, it is interpreted as uplim
+ */
+void initFileKnots::readFile(const std::string& flname, 
+			     bool read_sigma, bool read_limits) {
+  if (read_limits) read_sigma = true;
+
+  //Clear old data
+  nknots = 0;
+  if (knotpos != NULL) delete[] knotpos;
+  if (knotval != NULL) delete[] knotval;
+  if (sigma != NULL) delete[] sigma;
+  if (has_lowlim != NULL) delete[] has_lowlim;
+  if (lowlim != NULL) delete[] lowlim;
+  if (has_uplim != NULL) delete[] has_uplim;
+  if (uplim != NULL) delete[] uplim;
+  knotpos = knotval = sigma = lowlim = uplim = NULL;
+  has_lowlim = has_uplim = NULL;
+  has_sigma = has_lower_limits = has_upper_limits = false;
+
+  //Figure out how many elements we require
+  unsigned int nreq = 2; //Pos, value
+  if (read_sigma) nreq += 1; //Sigma -- read limits not required ever
+
+  std::ifstream initfs( flname.c_str() );
+  if (!initfs) {
+    initfs.close();
+    std::stringstream errmsg;
+    errmsg << "Unable to open file:" << flname << std::endl;
+    throw affineExcept("initFileKnots","readFile",errmsg.str(),1);
+  }
+
+  //Do the read into temporary vectors, then copy
+  std::string line;
+  std::vector<std::string> words;
+  std::stringstream str;
+  double currval;
+  std::vector<double> kp, kv, ks, kl, ku;
+  std::vector<bool> hl, hu;
+
+  while (!initfs.eof()) {
+    std::getline(initfs,line);
+    if (line[0] == '#') continue; //Skip comments
+
+    //Parse into words, stipping spaces
+    utility::stringwords(line,words);
+    if (words.size() == 0) continue; //Nothing on line (with spaces removed)
+    if (words[0][0] == '#') continue; //Comment line
+    if (words.size() < nreq) continue; //Has wrong number of entries
+    str.str(words[0]); str.clear(); str >> currval;
+    kp.push_back(currval);
+    str.str(words[1]); str.clear(); str >> currval;
+    kv.push_back(currval);
+    if (read_sigma) {
+      has_sigma = true;
+      str.str(words[2]); str.clear(); str >> currval;
+      ks.push_back(currval);
+    }
+    if (read_limits) { 
+      if (words.size() > 3) {
+	has_lower_limits = true;
+	str.str(words[3]); str.clear(); str >> currval;
+	hl.push_back(true);
+	kl.push_back(currval);
+	if (words.size() > 4) {
+	  has_upper_limits = true;
+	  str.str(words[4]); str.clear(); str >> currval;
+	  hu.push_back(true);
+	  ku.push_back(currval);
+	} else {
+	  hu.push_back(false);
+	  ku.push_back(std::numeric_limits<double>::quiet_NaN());
+	}
+      } else {
+	hl.push_back(false);
+	kl.push_back( std::numeric_limits<double>::quiet_NaN() );
+	hu.push_back(false);
+	ku.push_back( std::numeric_limits<double>::quiet_NaN() );
+      }
+    }
+  }
+  initfs.close();
+  
+  nknots = kp.size();
+  if (nknots == 0) {
+    std::stringstream errstr;
+    errstr << "No knot positions or values found in " << flname;
+    throw affineExcept("initFileKnots","readFiles",errstr.str(),2);
+  }
+
+  //Copy into vectors
+  knotpos = new double[nknots];
+  for (unsigned int i = 0; i < nknots; ++i) knotpos[i] = kp[i];
+  knotval = new double[nknots];
+  for (unsigned int i = 0; i < nknots; ++i) knotval[i] = kv[i];
+  if (has_sigma) {
+    sigma = new double[nknots];
+    for (unsigned int i = 0; i < nknots; ++i) sigma[i] = ks[i];
+  }
+  if (has_lower_limits) {
+    has_lowlim = new bool[nknots];
+    lowlim = new double[nknots];
+    for (unsigned int i = 0; i < nknots; ++i) has_lowlim[i] = hl[i];
+    for (unsigned int i = 0; i < nknots; ++i) lowlim[i] = kl[i];
+  }
+  if (has_upper_limits) {
+    has_uplim = new bool[nknots];
+    uplim = new double[nknots];
+    for (unsigned int i = 0; i < nknots; ++i) has_uplim[i] = hl[i];
+    for (unsigned int i = 0; i < nknots; ++i) uplim[i] = kl[i];
+  }
+
+  //Make sure lower/upper limits don't cross
+  if (has_lower_limits && has_upper_limits)
+    for (unsigned int i = 0; i < nknots; ++i) {
+      if ( !(has_uplim[i] && has_lowlim[i]) ) continue;
+      if (uplim[i] < lowlim[i])
+	throw affineExcept("initFileKnots","readFiles",
+			   "Lower/Upper limits cross",4);
+      if (uplim[i] == lowlim[i])
+	if (sigma[i] > 0.)
+	  throw affineExcept("initFileKnots","readFiles",
+			     "Lower/Upper limits meet but sigma is not 0",8);
+    }
+}
+
+std::pair<double,double> initFileKnots::getKnot(unsigned int idx) const {
+  if (nknots == 0)
+    throw affineExcept("initFileKnots","getKnot",
+		       "No knot information read in",1);
+  if (idx >= nknots)
+    throw affineExcept("initFileKnots","getKnot",
+		       "Invalid knot index",2);
+  return std::make_pair(knotpos[idx],knotval[idx]);
+}
+
+/*
+  \param[out] kp Set to knot positions on output
+ */
+void initFileKnots::getKnotPos(std::vector<double>& kp) const {
+  if (nknots == 0)
+    throw affineExcept("initFileKnots","getKnotPos",
+		       "No knot information read in",1);
+  kp.resize(nknots);
+  for (unsigned int i = 0; i < nknots; ++i)
+    kp[i] = knotpos[i];
+}
+
+/*
+  \param[inout] model Modified on output; knot positions are set
+
+  This will change the number of knots in the model if they
+  don't match.
+ */
+void initFileKnots::getKnotPos(numberCountsKnots& model) const {
+  if (nknots == 0)
+    throw affineExcept("initFileKnots","getKnotPos",
+		       "No knot information read in",1);
+  model.setKnotPositions(nknots, knotpos);
+}
+
+/*
+  \param[out] kp Set to knot positions on output
+ */
+void initFileKnots::getKnotVals(std::vector<double>& kv) const {
+  if (nknots == 0)
+    throw affineExcept("initFileKnots","getKnotVals",
+		       "No knot information read in",1);
+  kv.resize(nknots);
+  for (unsigned int i = 0; i < nknots; ++i)
+    kv[i] = knotval[i];
+}
+
+/*
+  This only fills the first nknots parameters
+ */
+void initFileKnots::getParams(paramSet& p) const {
+  if (nknots == 0)
+    throw affineExcept("initFileKnots","getParams",
+		       "No information loaded",1);
+  if (p.getNParams() < nknots)
+    throw affineExcept("initFileKnots","getParams",
+		       "Not enough space in provided paramSet",2);
+  for (unsigned int i = 0; i < nknots; ++i)
+    p[i] = knotval[i];
+}
+
+/*
+  This only fills the first nknots parameters
+ */
+void initFileKnots::generateRandomKnotValues(paramSet& p) const {
+  const unsigned int maxiters = 1000; //Maximum number of generation attempts
+  if (nknots == 0)
+    throw affineExcept("initFileKnots","generateRandomKnotValues",
+		       "No knot information read in",1);
+    
+  //Make sure p is big enough; don't resize, complain
+  if (p.getNParams() < nknots)
+    throw affineExcept("initFileKnots","generateRandomKnotValues",
+		       "Not enough space in provided paramSet",2);
+
+  //Deal with simple case -- everything fixed
+  //So just return central values
+  if (!has_sigma) {
+    for (unsigned int i = 0; i < nknots; ++i)
+      p[i] = knotval[i];
+    return;
+  }
+
+  //Now we have at least some sigmas
+  //The simple case is if there are no limits.  If there are, we will
+  // have to do trials.
+  if (!(has_lower_limits || has_upper_limits)) {
+    for (unsigned int i = 0; i < nknots; ++i)
+      p[i] = rangen.gauss() * sigma[i] + knotval[i];
+  } else {
+    //Both sigmas and limits
+    bool goodval;
+    double trialval;
+    unsigned int iters;
+    for (unsigned int i = 0; i < nknots; ++i) {
+      //Some sanity checks
+      if (has_lowlim[i] && (lowlim[i] > knotval[i]+sigma[i]*4.0)) {
+	std::stringstream errstr;
+	errstr << "Lower limit is too far above central value; will take too"
+	       << " long to " << std::endl << "generate value for param idx: "
+	       << i;
+	throw affineExcept("initFileKnots","generateRandomKnotValues",
+			   errstr.str(),4);
+      }
+      if (has_uplim[i] && (uplim[i] < knotval[i]-sigma[i]*4.0)) {
+	std::stringstream errstr;
+	errstr << "Upper limit is too far below central value; will take too"
+	       << " long to " << std::endl << "generate value for param idx: "
+	       << i;
+	throw affineExcept("initFileKnots","generateRandomKnotValues",
+			   errstr.str(),8);
+      }
+
+      if (has_lowlim[i] && has_uplim[i]) {
+	//If range between them is much smaller than
+	// sigma, just chose uniformly to save time
+	double rng = uplim[i] - lowlim[i];
+	if (rng < 1e-4*sigma[i]) {
+	  p[i] = lowlim[i] + rng*rangen.doub();
+	} else {
+	  //Trial
+	  goodval = false;
+	  iters = 0;
+	  while (!goodval) {
+	    if (iters >= maxiters) {
+	      std::stringstream errstr;
+	      errstr << "Failed to generate acceptable value for param "
+		     << i << " after " << iters << " attempts";
+	      throw affineExcept("initFileKnots","generateRandomKnotValues",
+				 errstr.str(),16);
+	    }
+	    trialval = rangen.gauss() * sigma[i] + knotval[i];
+	    if ( (trialval >= lowlim[i]) && (trialval <= uplim[i]) ) 
+	      goodval = true;
+	    ++iters;
+	  }
+	  p[i] = trialval;
+	}
+      } else if (has_lowlim[i]) {
+	//Lower limit only
+	goodval = false;
+	iters = 0;
+	while (!goodval) {
+	  if (iters >= maxiters) {
+	    std::stringstream errstr;
+	    errstr << "Failed to generate acceptable value for param "
+		   << i << " after " << iters << " attempts";
+	    throw affineExcept("initFileKnots","generateRandomKnotValues",
+			       errstr.str(),16);
+	  }
+	  trialval = rangen.gauss() * sigma[i] + knotval[i];
+	  if (trialval >= lowlim[i]) goodval = true;
+	  ++iters;
+	}
+	p[i] = trialval;
+      } else if (has_uplim[i]) {
+	//Upper limit only
+	goodval = false;
+	iters = 0;
+	while (!goodval) {
+	  if (iters >= maxiters) {
+	    std::stringstream errstr;
+	    errstr << "Failed to generate acceptable value for param "
+		   << i << " after " << iters << " attempts";
+	    throw affineExcept("initFileKnots","generateRandomKnotValues",
+			       errstr.str(),16);
+	  }
+	  trialval = rangen.gauss() * sigma[i] + knotval[i];
+	  if (trialval <= uplim[i]) goodval = true;
+	  ++iters;
+	}
+	p[i] = trialval;
+      } else {
+	//No limit, easy cakes
+	p[i] = rangen.gauss() * sigma[i] + knotval[i];
+      }
+    }
+  }
+
+}
+
+bool initFileKnots::isKnotFixed(unsigned int idx) const {
+  if (idx >= nknots)
+    throw affineExcept("initFileKnots","isKnotFixed","Invalid knot index",1);
+  if (!has_sigma) return false;
+  if (sigma[idx] == 0) return true;
+  return false;
+}
+
+bool initFileKnots::isValid(const paramSet& p) const {
+  if (! (has_lower_limits || has_upper_limits) ) return true;
+  if (p.getNParams() < nknots)
+    throw affineExcept("initFileKnots","isValid",
+		       "Not enough params in paramSet to test validity",1);
+  double val;
+  for (unsigned int i = 0; i < nknots; ++i) {
+    val = p[i];
+    if (has_lowlim[i] && (val < lowlim[i])) return false;
+    if (has_uplim[i] && (val < uplim[i])) return false;
+  }
+  return true;
+}
+
+void initFileKnots::SendSelf(MPI::Comm& comm, int dest) const {
+  comm.Send(&nknots,1,MPI::UNSIGNED,dest,pofd_mcmc::IFKSENDNKNOTS);
+  if (nknots != 0) {
+    comm.Send(knotpos,nknots,MPI::DOUBLE,dest,pofd_mcmc::IFKSENDKNOTPOS);
+    comm.Send(knotval,nknots,MPI::DOUBLE,dest,pofd_mcmc::IFKSENDKNOTVAL);
+    comm.Send(&has_sigma,1,MPI::BOOL,dest,pofd_mcmc::IFKHASSIGMA);
+    if (has_sigma)
+      comm.Send(sigma,nknots,MPI::DOUBLE,dest,pofd_mcmc::IFKSENDSIGMA);
+    comm.Send(&has_lower_limits,1,MPI::BOOL,dest,pofd_mcmc::IFKHASLOWERLIMITS);
+    if (has_lower_limits) {
+      comm.Send(has_lowlim,nknots,MPI::BOOL,dest,pofd_mcmc::IFKSENDHASLOWLIM);
+      comm.Send(lowlim,nknots,MPI::DOUBLE,dest,pofd_mcmc::IFKSENDLOWLIM);
+    }
+    comm.Send(&has_upper_limits,1,MPI::BOOL,dest,pofd_mcmc::IFKHASUPPERLIMITS);
+    if (has_lower_limits) {
+      comm.Send(has_lowlim,nknots,MPI::BOOL,dest,pofd_mcmc::IFKSENDHASLOWLIM);
+      comm.Send(lowlim,nknots,MPI::DOUBLE,dest,pofd_mcmc::IFKSENDLOWLIM);
+    }
+  }
+}
+
+void initFileKnots::RecieveCopy(MPI::Comm& comm, int src) {
+  //Delete everything for simplicity
+  if (knotpos != NULL) delete[] knotpos;
+  if (knotval != NULL) delete[] knotval;
+  if (sigma != NULL) delete[] sigma;
+  if (has_lowlim != NULL) delete[] has_lowlim;
+  if (lowlim != NULL) delete[] lowlim;
+  if (has_uplim != NULL) delete[] has_uplim;
+  if (uplim != NULL) delete[] uplim;
+  knotpos = knotval = sigma = lowlim = uplim = NULL;
+  has_lowlim = has_uplim = NULL;
+
+  comm.Recv(&nknots,1,MPI::UNSIGNED,src,pofd_mcmc::IFKSENDNKNOTS);
+  if (nknots > 0) {
+    knotpos = new double[nknots];
+    comm.Recv(knotpos,nknots,MPI::DOUBLE,src,pofd_mcmc::IFKSENDKNOTPOS);
+    knotval = new double[nknots];
+    comm.Recv(knotval,nknots,MPI::DOUBLE,src,pofd_mcmc::IFKSENDKNOTVAL);
+    comm.Recv(&has_sigma,1,MPI::BOOL,src,pofd_mcmc::IFKHASSIGMA);
+    if (has_sigma) {
+      sigma = new double[nknots];
+      comm.Recv(sigma,nknots,MPI::DOUBLE,src,pofd_mcmc::IFKSENDSIGMA);
+    }
+    comm.Recv(&has_lower_limits,1,MPI::BOOL,src,pofd_mcmc::IFKHASLOWERLIMITS);
+    if (has_lower_limits) {
+      has_lowlim = new bool[nknots];
+      comm.Recv(has_lowlim,nknots,MPI::BOOL,src,pofd_mcmc::IFKSENDHASLOWLIM);
+      lowlim = new double[nknots];
+      comm.Recv(lowlim,nknots,MPI::DOUBLE,src,pofd_mcmc::IFKSENDLOWLIM);
+    }
+    comm.Recv(&has_upper_limits,1,MPI::BOOL,src,pofd_mcmc::IFKHASUPPERLIMITS);
+    if (has_upper_limits) {
+      has_uplim = new bool[nknots];
+      comm.Recv(has_uplim,nknots,MPI::BOOL,src,pofd_mcmc::IFKSENDHASUPLIM);
+      uplim = new double[nknots];
+      comm.Recv(uplim,nknots,MPI::DOUBLE,src,pofd_mcmc::IFKSENDUPLIM);
+    }
+  }
 }

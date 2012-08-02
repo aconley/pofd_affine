@@ -4,8 +4,11 @@
 #define __numberCountsKnots__
 
 #include<vector>
+#include<utility>
 
 #include<numberCounts.h>
+#include<ran.h>
+#include<paramSet.h>
 
 /*!
   \brief Number counts with knots abstract base class
@@ -64,5 +67,53 @@ class numberCountsKnots : public numberCounts {
 
 /*! \brief Write to stream operator */
 std::ostream& operator<<(std::ostream& os, const numberCountsKnots& b);
+
+/*!
+  \brief A class to read in model specifications from init files
+ */
+class initFileKnots {
+ private:
+  //These are all c arrays rather than vectors for ease of compatability
+  // with MPI
+
+  //The first two (knotpos, knotval) are required
+  unsigned int nknots; //!< Number of knots
+  double* knotpos; //!< Positions of knots
+  double* knotval; //!< Initial value center for knot value
+
+  //These are optional
+  bool has_sigma; //!< Has initial value sigma
+  double* sigma; //!< Sigma value for initial positions
+  bool has_lower_limits; //!< Has some lower limit information
+  bool* has_lowlim; //!< Knots have lower limit
+  double* lowlim; //!< Value of lower limit
+  bool has_upper_limits; //!< Has some upper limit information
+  bool* has_uplim; //!< Knots have upper limit
+  double* uplim; //!< Value of upper limit
+
+  mutable ran rangen; //!< Random number generator
+
+ public:
+  initFileKnots();
+  ~initFileKnots();
+
+  unsigned int getNKnots() const { return nknots; } //!< Get number of knots
+  std::pair<double,double> getKnot(unsigned int idx) const; //!< Get knot pos and value
+
+  void readFile(const std::string&, bool=false, bool=false); //!< Read file
+
+  void setSeed( unsigned long long int seed ) const { rangen.setSeed(seed); }
+  void getKnotPos(std::vector<double>&) const; //!< Gets the knot positions
+  void getKnotVals(std::vector<double>&) const; //!< Gets the knot values
+  void getKnotPos(numberCountsKnots&) const; //!< Sets knot locations in model
+  void getParams(paramSet& p) const; //!< Sets knot values to central values
+  void generateRandomKnotValues(paramSet& p) const; //!< Seed knot values
+  
+  bool isKnotFixed(unsigned int) const; //!< Is a knot fixed?
+  bool isValid(const paramSet&) const; //!< Checks if parameters are within allowed ranges
+  
+  void SendSelf(MPI::Comm&, int dest) const; //!< Send self
+  void RecieveCopy(MPI::Comm&, int src); //!< Recieve
+};
 
 #endif

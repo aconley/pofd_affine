@@ -9,7 +9,7 @@
 #include<gsl/gsl_integration.h>
 
 #include<numberCountsDouble.h>
-
+#include<ran.h>
 
 /*!
   \brief Spline number counts model for 2D, where counts
@@ -34,7 +34,22 @@
     \f]
     Note that \f$\sigma\f$ and \f$\mu\f$ are not the mean and square root
     of the variance of the actual distribution, but rather the mean
-    and square root of the variance of the log quantities.
+    and square root of the variance of the log quantities.  These
+    are related by
+    \f[
+       \left< S_2/S_1 \right> = \exp \left[ \mu\left(S_1\right) +
+             \frac{1}{2}\sigma^2\left(S_1\right) \right]
+    \f]
+    and
+    \f[
+       Var[ S_2/S_1 ] = \exp \left( 2 \mu \left( S_1 \right) +
+           \sigma^2\left(S_1\right) \right) 
+          \left[ \exp \left( \sigma^2\left(S_1\right) \right) - 1 \right]
+    \f].
+    Note that the number counts require that \f$S_2/S_1 > 0\f$.
+    We also explicitly require that \f$S_1 > 0\f$.  Both are justified
+    on physical grounds.
+    
 
   \ingroup Models
 */
@@ -174,5 +189,68 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
 //Function to pass to GSL integrator
 /*! \brief Evaluates flux1^power1 * exp(const1*mu + const2*sigma^2) dN/dS1 */
 double evalPowfNDoubleLogNormal(double,void*); 
+
+//////////////////////////////
+
+/*!
+  \brief A class to read in model specifications from init files
+ */
+class initFileDoubleLogNormal {
+ private:
+  //These are all c arrays rather than vectors for ease of compatability
+  // with MPI.  We also store everything as one vector
+
+  //The first two (knotpos, knotval) are required
+  unsigned int nknots; //!< Number of knots in band 1 number counts
+  unsigned int nsigmas; //!< Number of knots in color sigma
+  unsigned int noffsets; //!< Number of knots in color offset
+  unsigned int sigmaidx; //!< Index of first sigma value
+  unsigned int offsetidx; //!< Index of first offset value
+  double* knotpos; //!< Positions of knots (all)
+  double* knotval; //!< Initial value center for knot value (all)
+
+  //These are optional
+  bool has_sigma; //!< Has initial value sigma
+  double* sigma; //!< Sigma value for initial positions
+  bool has_lower_limits; //!< Has some lower limit information
+  bool* has_lowlim; //!< Knots have lower limit
+  double* lowlim; //!< Value of lower limit
+  bool has_upper_limits; //!< Has some upper limit information
+  bool* has_uplim; //!< Knots have upper limit
+  double* uplim; //!< Value of upper limit
+
+  mutable ran rangen; //!< Random number generator
+
+ public:
+  initFileDoubleLogNormal();
+  ~initFileDoubleLogNormal();
+
+  unsigned int getNKnots() const { return nknots; } //!< Get number of knots in band 1
+  unsigned int getNSigmas() const { return nsigmas; } //!< Get number of knots in color model sigma
+  unsigned int getNOffsets() const { return noffsets; } //!< Get number of knots in color model offset
+  unsigned int getNTot() const { return nknots+nsigmas+noffsets; } //!< Get total number of model knots
+
+  std::pair<double,double> getKnot(unsigned int idx) const; //!< Get band 1 knot pos and value
+  std::pair<double,double> getSigma(unsigned int idx) const; //!< Get color sigma pos and value
+  std::pair<double,double> getOffset(unsigned int idx) const; //!< Get color offset pos and value
+
+  void readFile(const std::string&, bool=false, bool=false); //!< Read file
+
+  void setSeed( unsigned long long int seed ) const { rangen.setSeed(seed); }
+
+  void getKnotPos(std::vector<double>&) const; //!< Gets the knot positions for band 1
+  void getKnotVals(std::vector<double>&) const; //!< Gets the knot values for band 1
+  void getSigmaPos(std::vector<double>&) const; //!< Gets the knot positions for color model sigma
+  void getOffsetPos(std::vector<double>&) const; //!< Gets the knot positions for color model offset
+  void getModelPositions(numberCountsDoubleLogNormal&) const; //!< Sets knot locations in model for all model components
+  void getParams(paramSet& p) const; //!< Sets knot values to central values
+  void generateRandomKnotValues(paramSet& p) const; //!< Seed knot values
+  
+  bool isKnotFixed(unsigned int) const; //!< Is a knot fixed?
+  bool isValid(const paramSet&) const; //!< Checks if parameters are within allowed ranges
+  
+  void SendSelf(MPI::Comm&, int dest) const; //!< Send self
+  void RecieveCopy(MPI::Comm&, int src); //!< Recieve
+};
 
 #endif
