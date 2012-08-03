@@ -24,11 +24,20 @@ pofdMCMC(const std::string& INITFILE, const std::string& SPECFILE,
   //Note that we set NPARAMS to a bogus value (1) above, then 
   // have to change it later once we know how many model params we have
   // All of this is done in initChains
+}
 
-  if (rank == 0) {
-    //Master node
-    ifile.readFile(initfile);
-    specFileKnots spec(
-  }
+void pofdMCMC::initChainsMaster() {
+  if (rank != 0)
+    throw affineExcept("pofdMCMC","initChainsMaster",
+		       "Should not be called except on master node",1);
+  //Read in input files
+  ifile.readFile(initfile,true,true);
+  specFile(specfile);
 
+  //Use that to initialize likelihood file
+
+}
+
+void pofdMCMC::initChains() {
+  if (rank == 0) initChainsMaster(); else initChainsSlave();
 }
