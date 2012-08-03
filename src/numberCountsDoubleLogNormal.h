@@ -222,8 +222,10 @@ class initFileDoubleLogNormal {
   mutable ran rangen; //!< Random number generator
 
  public:
-  initFileDoubleLogNormal();
-  ~initFileDoubleLogNormal();
+  initFileDoubleLogNormal(); //!< Basic constructor
+  /*! \brief Constructor with file read */
+  initFileDoubleLogNormal(const std::string&, bool=false, bool=false);
+  ~initFileDoubleLogNormal(); //!< Destructor
 
   unsigned int getNKnots() const { return nknots; } //!< Get number of knots in band 1
   unsigned int getNSigmas() const { return nsigmas; } //!< Get number of knots in color model sigma

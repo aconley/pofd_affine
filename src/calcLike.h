@@ -217,4 +217,57 @@ class calcLike {
   void RecieveCopy(MPI::Comm&, int dest);
 };
 
+/*!
+  \brief Structure to read in spec files for fits
+
+  Lines in the spec file control the likelihood calculations and fits.
+  The format is: identifier= values
+  The appropriate entries for values depends upon identifier=
+
+  The valid values for identifier= and their associated values are:
+   dataset=     datafile inst_sigma psffile [like_norm]
+                  datafile is the name of a fits data file
+		  inst_sigma is the instrumental noise (Gaussian) in the same
+		   units as the data in datafile (e.g., Jy)
+		  psffile is a FITS file giving the beam
+		  like_norm is an optional input controlling how the
+		   likelihood is normalized for the beam area (def: 1)
+   sigmaprior=  stdev
+                  This activates the Gaussian prior on the instrumental noise
+		  multiplier.  It has mean one and standard deviation stdev
+   cfirbprior=  mean stdev
+                  This activates a Gaussian prior on the integrated CFIRB 
+		  luminoisty. It has a mean of mean and a standard deviation 
+		  stdev expressed in the same flux and area units as the model.
+		  So if your model dN/dS is in Jy^-1 deg^-2,
+		  then your CFIRB prior should be in Jy deg^-2
+  
+  Having multiple lines with dataset= is additive.
+  Having multiple lines with sigmaprior= or cfirbprior= results in only
+  the values from the final such line being used.
+
+  Including a space after= is important.
+*/
+struct specFile {
+  //dataset
+  std::vector<std::string> datafiles; //!< Data files
+  std::vector<double> sigmas; //!< Instrumental noise values
+  std::vector<std::string> psffiles; //!< Beam file
+  std::vector<double> like_norm; //!< Likelihood normalization
+  
+  //sigma prior
+  bool has_sigprior; //!< Is the sigma prior on
+  double sigprior_stdev; //!< Stdev of sigma prior
+
+  //cfirb_prior
+  bool has_cfirbprior; //!< Is cfirb prior on
+  double cfirbprior_mean; //!< Mean value of prior
+  double cfirbprior_stdev; //!< Stdev of prior
+
+  specFile(); //!< Default constructor
+  specFile(const std::string&); //!< Constructor with file read
+
+  void readFile(const std::string&); //!< Read in file
+};
+
 #endif

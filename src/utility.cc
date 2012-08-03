@@ -42,6 +42,38 @@ void utility::stringwords(const std::string &ins,
   words.push_back(tmp);
 }
 
+void utility::stringwords_eq(const std::string &ins,
+			     std::vector<std::string> &words) {
+  std::string s,tmp;
+  unsigned int i,p;
+  int first,last;
+
+  s = ins;
+
+  // Trim spaces from beginning and end
+
+  first=s.find_first_not_of(" ");
+  if (first==-1) {
+    s="";
+  } else {
+    last=s.find_last_not_of(" ");
+    s=s.substr(first,last-first+1);
+  }
+
+  words.clear();
+
+  p=s.find_first_not_of(" =\t\r\n");
+  if (p>=s.size()) return;
+  while ((i=s.find_first_of(" =\t\r\n",p))) {
+    tmp=s.substr(p,i-p);
+    words.push_back(tmp);
+    p=s.find_first_not_of(" =\t\r\n",i);
+    if (p>=s.size()) return;
+  }
+  tmp=s.substr(p);
+  words.push_back(tmp);
+}
+
 /*!
   Finds the position in a sorted array of the last element
   less than a specified value. ndata is returned if a problem is

@@ -130,8 +130,8 @@ int getPDSingle(int argc, char **argv) {
 
   //Actual PD computation
   try {
-    initFileKnots model_info;
-    model_info.readFile(initfile, false, false);
+    initFileKnots model_info(initfile, false, false);
+
     numberCountsKnotsSpline model;
     model_info.getKnotPos(model);
 
@@ -313,8 +313,7 @@ int getPDDouble(int argc, char** argv) {
 
   //Actual PD computation
   try {
-    initFileDoubleLogNormal model_info;
-    model_info.readFile(initfile, false, false);
+    initFileDoubleLogNormal model_info(initfile, false, false);
 
     numberCountsDoubleLogNormal model;
     model_info.getModelPositions(model);

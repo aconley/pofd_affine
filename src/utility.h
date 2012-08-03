@@ -11,9 +11,13 @@
 */
 namespace utility {
 
-  /* \brief Break input string up into words */
+  /* \brief Break input string up into words breaking on spaces */
   void stringwords(const std::string &ins,
 		   std::vector<std::string> &words);
+
+  /* \brief Break input string up into words, also breaking on = */
+  void stringwords_eq(const std::string &ins,
+		      std::vector<std::string> &words);
 
   /* \brief Binary search for last value less than specified amount */
   unsigned int binary_search_lt(double value, double* data, unsigned int ndata);

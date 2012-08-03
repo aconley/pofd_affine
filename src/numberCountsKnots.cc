@@ -209,6 +209,30 @@ initFileKnots::initFileKnots() : nknots(0), has_sigma(false),
   rangen.setSeed(seed);
 }
 
+/*
+  \param[in] flname File to read from
+  \param[in] read_sigma      Read in (and require) knot sigmas
+  \param[in] read_limits     Try to read limits; this will turn on require_sigma
+  
+  see initFileKnots::readFile for more details of the file format
+*/
+initFileKnots::initFileKnots(const std::string& flname, 
+			     bool read_sigma, bool read_limits) :
+  nknots(0), has_sigma(false), has_lower_limits(false), 
+  has_upper_limits(false) {
+  
+  knotpos = knotval = sigma = lowlim = uplim = NULL;
+  has_lowlim = has_uplim = NULL;
+
+  //Set random number generator seed from time
+  unsigned long long int seed;
+  seed = static_cast<unsigned long long int>(time(NULL));
+  seed += static_cast<unsigned long long int>(clock());
+  rangen.setSeed(seed);
+
+  readFile(flname, read_sigma, read_limits);
+}
+
 initFileKnots::~initFileKnots() {
   if (knotpos != NULL) delete[] knotpos;
   if (knotval != NULL) delete[] knotval;

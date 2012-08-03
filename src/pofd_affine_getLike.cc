@@ -124,74 +124,42 @@ int getLikeSingle(int argc, char **argv) {
 	      << std::endl;
   }
 
-  //Process the spec file
-  if (ultraverbose)
-    std::cout << "Reading spec file: " << specfile << std::endl;
-  std::ifstream ifs( specfile.c_str() );
-  if ( ! ifs ) {
-    std::cerr << "Error reading spec file: " << specfile << std::endl;
-    return 1;
-  }
-  std::string line;
-  std::vector<std::string> words;
-  std::vector< std::string > datafiles;
-  std::vector< double > sigmas, like_norm;
-  std::vector< std::string > psffiles;
-  std::stringstream str;
-  double lnorm;
-  while (! ifs.eof() ) {
-    std::getline(ifs,line);
-    if (line[0] == '#') continue;
-    utility::stringwords(line,words);
-    if (words.size() == 0) continue; //Nothing on line (with spaces removed)
-    if (words[0][0] == '#') continue; //Comment line
-    if (words.size() < 3) continue; //Has wrong number of entries
-    
-    double curr_sigma;
-    datafiles.push_back( words[0] );
-    str.str(words[1]); str.clear(); str >> curr_sigma;
-    if (curr_sigma < 0.0) {
-      std::cerr << "Invalid (negative) sigma " << curr_sigma 
-		<< " from line: " << line << std::endl;
-      return 1;
-    }
-    sigmas.push_back( curr_sigma );
-    
-
-    psffiles.push_back( words[2] );
-    if (words.size() >= 4) {
-      str.str(words[3]); str.clear(); str >> lnorm;
-      like_norm.push_back(lnorm);
-    } else like_norm.push_back(1.0);
-  }
-  ifs.close();
-  unsigned int ndata = datafiles.size();
-  if (ndata == 0) {
-    std::cerr << "No datafiles loaded" << std::endl;
-    return 1;
-  }
 
   try {
     //Read in the initialization file knot positions, values
     if (verbose || ultraverbose)
-    std::cout << "Reading initialization file: " << initfile << std::endl;
-    initFileKnots model_info;
-    model_info.readFile(initfile, false, false);
+      std::cout << "Reading initialization file: " << initfile << std::endl;
+    initFileKnots model_info(initfile, false, false);
+
+    if (ultraverbose)
+      std::cout << "Reading spec file: " << specfile << std::endl;
+    specFile spec_info(specfile);
+
+    //Make sure we got some data
+    if (spec_info.datafiles.size() == 0) 
+      throw affineExcept("pofd_affine_getLike","getLikeSingle",
+			 "No datafiles loaded",1);
 
     unsigned int nknots = model_info.getNKnots();
     if (nknots == 0)
       throw affineExcept("pofd_affine_getLike","getLikeSingle",
-			 "No info read in",1);
+			 "No info read in",2);
 
     calcLike likeSet( fftsize, ninterp, true, bindata, nbins );
 
     //Read data
     if (verbose || ultraverbose)
       std::cout << "Reading in data files" << std::endl;
-    likeSet.readDataFromFiles( datafiles, psffiles, sigmas, like_norm,
+    likeSet.readDataFromFiles( spec_info.datafiles, spec_info.psffiles, 
+			       spec_info.sigmas, spec_info.like_norm,
 			       false, meansub, histogram );
     
     if (has_wisdom) likeSet.addWisdom(wisdom_file);
+
+    //Set prior -- ignore sigmult prior, since we aren't really fitting
+    if (spec_info.has_cfirbprior)
+      likeSet.setCFIRBPrior( spec_info.cfirbprior_mean,
+			     spec_info.cfirbprior_stdev );
 
     if (ultraverbose) likeSet.setVerbose();
       
@@ -323,80 +291,28 @@ int getLikeDouble(int argc, char** argv) {
 	      << std::endl;
   }
 
-  ////////////////////////
-  //Process the spec file
-  if (ultraverbose)
-    std::cout << "Reading spec file: " << specfile << std::endl;
-  std::ifstream ifs( specfile.c_str() );
-  if ( ! ifs ) {
-    std::cerr << "Error reading spec file: " << specfile << std::endl;
-    return 1;
-  }
-
-  std::string line;
-  std::vector<std::string> words;
-  std::vector< std::string > datafiles1, datafiles2;
-  std::vector< double > sigmas1, sigmas2, like_norm;
-  std::vector< std::string > psffiles1, psffiles2;
-  std::stringstream str;
-
-  double lnorm;
-  while (! ifs.eof() ) {
-    std::getline(ifs,line);
-    if (line[0] == '#') continue;
-    utility::stringwords(line,words);
-    if (words.size() == 0) continue; //Nothing on line (with spaces removed)
-    if (words[0][0] == '#') continue; //Comment line
-    if (words.size() < 6) continue; //Has wrong number of entries
-
-    datafiles1.push_back( words[0] );
-    datafiles2.push_back( words[1] );
-    
-    double curr_sigma;
-    str.str(words[2]); str.clear(); str >> curr_sigma;
-    if (curr_sigma < 0.0) {
-      std::cerr << "Invalid (negative) sigma1 " << curr_sigma 
-		<< " from line: " << line << std::endl;
-      return 1;
-    }
-    sigmas1.push_back( curr_sigma );
-    str.str(words[3]); str.clear(); str >> curr_sigma;
-    if (curr_sigma < 0.0) {
-      std::cerr << "Invalid (negative) sigma2 " << curr_sigma 
-		<< " from line: " << line << std::endl;
-      return 1;
-    }
-    sigmas2.push_back( curr_sigma );
-    
-    psffiles1.push_back( words[4] );
-    psffiles2.push_back( words[5] );
-
-    //like_norm (optional)
-    if (words.size() >= 7) {
-      str.str(words[6]); str.clear(); str >> lnorm;
-      like_norm.push_back(lnorm);
-    } else like_norm.push_back(1.0);
-  }
-  ifs.close();
-  unsigned int ndata = datafiles1.size();
-  if (ndata == 0) {
-    std::cerr << "No datafiles loaded" << std::endl;
-    return 1;
-  }
-
   /////////////////////////////////////
   // Actual calculation
   try {
     //Read in the initialization file knot positions, values
     if (verbose || ultraverbose)
       std::cout << "Reading initialization file: " << initfile << std::endl;
-    initFileDoubleLogNormal model_info;
-    model_info.readFile(initfile, false, false);
+    initFileDoubleLogNormal model_info(initfile, false, false);
+    
+    if (ultraverbose)
+      std::cout << "Reading spec file: " << specfile << std::endl;
+    specFileDouble spec_info(specfile);
+    
+    //Make sure we got some data
+    if (spec_info.datafiles1.size() == 0) 
+      throw affineExcept("pofd_affine_getLike","getLikeDouble",
+			 "No datafiles loaded",1);
+    
 
     unsigned int ntot = model_info.getNTot();
     if (ntot == 0)
       throw affineExcept("pofd_affine_getLike","getLikeDouble",
-			 "No info read in",1);
+			 "No info read in",2);
 
 
     calcLikeDouble likeSet( fftsize, nedge, true, edgeInterp,
@@ -405,11 +321,22 @@ int getLikeDouble(int argc, char** argv) {
     //Read data
     if (verbose || ultraverbose)
       std::cout << "Reading in data files" << std::endl;
-    likeSet.readDataFromFiles( datafiles1, datafiles2, psffiles1, psffiles2,
-			       sigmas1, sigmas2, like_norm, false, meansub, 
+    likeSet.readDataFromFiles( spec_info.datafiles1, spec_info.datafiles2, 
+			       spec_info.psffiles1, spec_info.psffiles2,
+			       spec_info.sigmas1, spec_info.sigmas2, 
+			       spec_info.like_norm, false, meansub, 
 			       histogram );
-    
+
     if (has_wisdom) likeSet.addWisdom(wisdom_file);
+
+    //Set prior -- ignore sigmult prior, since we aren't really fitting
+    if (spec_info.has_cfirbprior1)
+      likeSet.setCFIRBPrior1( spec_info.cfirbprior_mean1,
+			      spec_info.cfirbprior_stdev1 );
+    if (spec_info.has_cfirbprior2)
+      likeSet.setCFIRBPrior2( spec_info.cfirbprior_mean2,
+			      spec_info.cfirbprior_stdev2 );
+
 
     if (ultraverbose) likeSet.setVerbose();
       
@@ -524,7 +451,7 @@ int main( int argc, char** argv ) {
       std::cerr << std::endl;
       std::cerr << "\tspecfile is a text file containing the beam(s), "
 		<< "datafile(s), sigma(s)," << std::endl;
-      std::cerr << "\tetc. using the same format as pofd_affine."
+      std::cerr << "\tetc. using the same format as pofd_affine_mcmc."
 		<< std::endl;
       std::cerr << std::endl;
       std::cerr << "OPTIONS" << std::endl;

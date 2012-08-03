@@ -92,8 +92,7 @@ int getNSingle( int argc, char** argv ) {
 
   double *dNdS = NULL;
   try {
-    initFileKnots model_info;
-    model_info.readFile(initfile, false, false);
+    initFileKnots model_info(initfile, false, false);
 
     numberCountsKnotsSpline model;
     model_info.getKnotPos(model);
@@ -249,8 +248,7 @@ int getNDouble( int argc, char** argv ) {
 
   double *dNdS = NULL;
   try {
-    initFileDoubleLogNormal model_info;
-    model_info.readFile(initfile, false, false);
+    initFileDoubleLogNormal model_info(initfile, false, false);
     
     numberCountsDoubleLogNormal model;
     model_info.getModelPositions(model);

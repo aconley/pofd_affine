@@ -2,7 +2,9 @@
 #include<cmath>
 #include<map>
 #include<sstream>
+#include<fstream>
 
+#include<utility.h>
 #include<calcLike.h>
 #include<affineExcept.h>
 
@@ -545,5 +547,142 @@ void calcLike::RecieveCopy(MPI::Comm& comm, int src) {
   if (has_sigma_prior) 
     comm.Recv(&sigma_prior_width,1,MPI::DOUBLE,src,
 	      pofd_mcmc::CLSENDSIGMAPRIORWIDTH);
+}
 
+///////////////////////////////////////////
+
+specFile::specFile() : has_sigprior(false), sigprior_stdev(0.0),
+		       has_cfirbprior(false), cfirbprior_mean(0.0),
+		       cfirbprior_stdev(0.0) { }
+
+/*!
+  \param[in] flname Name of file to read
+ */
+specFile::specFile(const std::string& flname) : 
+  has_sigprior(false), sigprior_stdev(0.0), has_cfirbprior(false), 
+  cfirbprior_mean(0.0), cfirbprior_stdev(0.0) {
+  
+  readFile(flname);
+}
+
+/*!
+  \param[in] flname Name of file to read
+ */
+void specFile::readFile(const std::string& flname) {
+  std::string line;
+  std::vector<std::string> words;
+  std::stringstream str;
+  double lnorm;
+
+  std::ifstream ifs( flname.c_str() );
+  if ( ! ifs ) {
+    ifs.close();
+    std::stringstream errstr;
+    errstr << "Error reading spec file: " << flname;
+    throw affineExcept("specFile","readFile",errstr.str(),1);
+  }
+
+  //Do read
+  double dblval;
+  while (! ifs.eof() ) {
+
+    std::getline(ifs,line);
+    
+    //Comment line
+    if (line[0] == '#') continue;
+
+    //Break up line
+    utility::stringwords_eq(line,words);
+    if (words.size() == 0) continue; //Nothing on line (with spaces removed)
+    if (words[0][0] == '#') continue; //Comment line, leading spaces removed
+
+    //Figure out what type of line
+    if (words[0] == "dataset") {
+
+      if (words.size() < 4) {
+	std::stringstream errstr;
+	errstr << "dataset line doesn't have right number of entries: "
+	       << line;
+	throw affineExcept("specFile", "readFile", errstr.str(), 2);
+      }
+
+      //Datafile
+      datafiles.push_back( words[1] );
+
+      //Sigma
+      str.str(words[2]); str.clear(); str >> dblval;
+      if (dblval < 0.0) {
+	std::stringstream errstr;
+	errstr << "Invalid (negative) sigma " << dblval
+	       << " from line: " << line;
+	throw affineExcept("specFile", "readFile", errstr.str(), 4);
+      }
+      sigmas.push_back( dblval );
+    
+      //Psffile
+      psffiles.push_back( words[3] );
+
+      //Optional like norm
+      if (words.size() >= 5) {
+	str.str(words[4]); str.clear(); str >> lnorm;
+	like_norm.push_back(lnorm);
+      } else like_norm.push_back(1.0);
+
+    } else if (words[0] == "sigmaprior") {
+      if (words.size() < 2) {
+	std::stringstream errstr;
+	errstr << "sigmaprior line doesn't have right number of entries: "
+	       << line;
+	throw affineExcept("specFile", "readFile", errstr.str(), 8);
+      }
+
+      str.str(words[1]); str.clear(); str >> dblval;
+      if (dblval <= 0.0) {
+	std::stringstream errstr;
+	errstr << "Invalid (non positive) sigma prior stdev " << dblval
+	       << " from line: " << line;
+	throw affineExcept("specFile", "readFile", errstr.str(), 16);
+      }
+
+      has_sigprior = true;
+      sigprior_stdev = dblval;
+
+    } else if (words[0] == "cfirbprior") {
+
+      if (words.size() < 3) {
+	std::stringstream errstr;
+	errstr << "cfirbprior line doesn't have right number of entries: "
+	       << line;
+	throw affineExcept("specFile", "readFile", errstr.str(), 32);
+      }
+
+      has_cfirbprior = true;
+
+      str.str(words[1]); str.clear(); str >> dblval;
+      if (dblval <= 0.0) {
+	std::stringstream errstr;
+	errstr << "Invalid (non positive) cfirb prior mean " << dblval
+	       << " from line: " << line;
+	throw affineExcept("specFile", "readFile", errstr.str(), 64);
+      }
+      cfirbprior_mean = dblval;
+
+      str.str(words[2]); str.clear(); str >> dblval;
+      if (dblval <= 0.0) {
+	std::stringstream errstr;
+	errstr << "Invalid (non positive) cfirb prior stdev " << dblval
+	       << " from line: " << line;
+	throw affineExcept("specFile", "readFile", errstr.str(), 128);
+      }
+      cfirbprior_stdev = dblval;
+
+
+    } else {
+      std::stringstream errstr;
+      errstr << "Couldn't determine line type for: " << line;
+      throw affineExcept("specFile","readFile",errstr.str(),256);
+    }
+  }
+
+  ifs.close();
 }

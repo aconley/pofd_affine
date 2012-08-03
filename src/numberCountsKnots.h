@@ -94,8 +94,9 @@ class initFileKnots {
   mutable ran rangen; //!< Random number generator
 
  public:
-  initFileKnots();
-  ~initFileKnots();
+  initFileKnots(); //!< Basic constructor
+  initFileKnots(const std::string&, bool=false, bool=false); //!< Constructor with file read
+  ~initFileKnots(); //!< Destructor
 
   unsigned int getNKnots() const { return nknots; } //!< Get number of knots
   std::pair<double,double> getKnot(unsigned int idx) const; //!< Get knot pos and value
