@@ -35,10 +35,11 @@ pofd_affine_getLike_SOURCES = global_settings.h numberCounts.h \
 	affineExcept.h beam.h utility.h PD.h PDFactory.h fitsData.h \
 	calcLike.h numberCountsDouble.h numberCountsDoubleLogNormal.h \
 	doublebeam.h PDDouble.h PDFactoryDouble.h fitsDataDouble.h \
-	calcLikeDouble.h ran.h \
+	calcLikeDouble.h ran.h specFile.h specFileDouble.h \
 	numberCounts.cc numberCountsKnots.cc beam.cc utility.cc \
 	numberCountsKnotsSpline.cc paramSet.cc affineExcept.cc ran.cc \
 	PD.cc PDFactory.cc fitsData.cc calcLike.cc numberCountsDouble.cc \
 	numberCountsDoubleLogNormal.cc doublebeam.cc PDDouble.cc \
 	PDFactoryDouble.cc fitsDataDouble.cc calcLikeDouble.cc \
+	specFile.cc specFileDouble.cc \
 	pofd_affine_getLike.cc 

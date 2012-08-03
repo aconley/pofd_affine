@@ -5,11 +5,11 @@
 #include<algorithm>
 
 #include<utility.h>
-/*! 
-  Breaks an input string up into a vector of string, which correspond
-  to the input string split on spaces.  Cheerfully stolen from Rob
-  Knop.
+/*!
+  \param[in] ins Input string
+  \param[out] words String split up into substrings
 */
+//Cheerfully stolen from Rob Knop
 void utility::stringwords(const std::string &ins,
 			  std::vector<std::string> &words) {
   std::string s,tmp;
@@ -42,6 +42,10 @@ void utility::stringwords(const std::string &ins,
   words.push_back(tmp);
 }
 
+/*!
+  \param[in] ins Input string
+  \param[out] words String split up into substrings
+ */
 void utility::stringwords_eq(const std::string &ins,
 			     std::vector<std::string> &words) {
   std::string s,tmp;
@@ -72,6 +76,21 @@ void utility::stringwords_eq(const std::string &ins,
   }
   tmp=s.substr(p);
   words.push_back(tmp);
+}
+
+/*
+  \param[in] ins String to check
+  \returns True if lowercase(ins) is 'true', 't', 'yes', or 'y'.
+    Otherwise false.
+ */
+bool utility::string_true(const std::string& ins) {
+  std::string strlow; //Lowercase version of string
+  std::transform(ins.begin(),ins.end(),
+		 strlow.begin(),::tolower);
+  if ( (strlow == "true") || (strlow == "t") ||
+       (strlow == "yes") || (strlow == "y") )
+    return true;
+  else return false;
 }
 
 /*!

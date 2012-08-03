@@ -15,9 +15,12 @@ namespace utility {
   void stringwords(const std::string &ins,
 		   std::vector<std::string> &words);
 
-  /* \brief Break input string up into words, also breaking on = */
+  /* \brief Break input string up into words, also breaking on equals sign */
   void stringwords_eq(const std::string &ins,
 		      std::vector<std::string> &words);
+
+  /* \brief Checks to see if a string should be interpreted as true */
+  bool string_true(const std::string &ins);
 
   /* \brief Binary search for last value less than specified amount */
   unsigned int binary_search_lt(double value, double* data, unsigned int ndata);

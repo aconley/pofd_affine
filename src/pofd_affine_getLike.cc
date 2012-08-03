@@ -8,7 +8,9 @@
 #include<getopt.h>
 
 #include<calcLike.h>
+#include<specFile.h>
 #include<calcLikeDouble.h>
+#include<specFileDouble.h>
 #include<affineExcept.h>
 
 //See pofd_affine_getdNdS for explanation of why this is global
