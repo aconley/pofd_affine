@@ -25,6 +25,24 @@
                       band
 	            like_norm is an optional input controlling how the
 	              likelihood is normalized for the beam area (def: 1)
+   bin_data=    nbins
+                  Turns on binning of data files with specified number 
+                  of bins.
+   mean_sub=    bool
+                  Do mean subtraction on input data if value is true
+   ignore_mask= bool
+                  Ignore mask information in data files
+   fftsize=     nfft
+                  Sets fft transform length along each dimension (def: 4096)
+   edge_set=    bool
+                  Turn on R edge integration if true (on by default, so this
+                  is only useful for turning it off)
+   nedge=       value
+                  Set size of edge interpolation (def: 256).
+   beam_histogram= bool
+                  Activates beam histogramming
+   edge_fix=    bool
+                  Apply edge fix to P(D). On by default.
    fit_sigma1=  value
                   If value is true, this turns on fitting for sigma in band 1
    fit_sigma2=  value
@@ -43,12 +61,16 @@
 		  then your CFIRB prior should be in Jy deg^-2
    cfirbprior2= mean stdev
                   Same as cfirbprior1 but in band 2
+   wisdom_file= filename
+                  Uses filename as a FFTW wisdom file		  
+   verbose=     bool
+                  Turns on verbose mode
+   ultraverbose= bool
+                  Turns on ultraverbose mode
   
   Having multiple lines with dataset= is additive.
-  Having multiple lines with sigmaprior= or cfirbprior= results in only
+  Having multiple lines of the others results in only
   the values from the final such line being used.
-
-  Including a space after= is important.
 */
 struct specFileDouble {
   //dataset
@@ -60,26 +82,37 @@ struct specFileDouble {
   std::vector<std::string> psffiles2; //!< Beam file, band 2
   std::vector<double> like_norm; //!< Likelihood normalization
 
-  //Fit sigmas
+  //Various fit options
+  bool bin_data; //!< Bin input data
+  unsigned int nbins; //!< Number of data bins
+  bool ignore_mask;
+  bool mean_sub; //!< Mean subtract data
+  unsigned int fftsize; //!< Length of fft
+  bool edge_set; //!< Do edge setting integration
+  unsigned int nedge; //!< Number of edge integration points
+  bool edge_fix; //!< Apply edge fix to P(D)
+  bool beam_histogram; //!< Do beam histogramming
   bool fit_sigma1; //!< Do fit to sigma in band 1
   bool fit_sigma2; //!< Do fit to sigma in band 2
-
-  //sigma prior
   bool has_sigprior1; //!< Is the sigma prior on, band 1
   double sigprior_stdev1; //!< Stdev of sigma prior, band 1
   bool has_sigprior2; //!< Is the sigma prior on, band 2
   double sigprior_stdev2; //!< Stdev of sigma prior, band 2
-
-  //cfirb_prior
   bool has_cfirbprior1; //!< Is cfirb prior on, band 1
   double cfirbprior_mean1; //!< Mean value of prior, band 1
   double cfirbprior_stdev1; //!< Stdev of prior, band 1
   bool has_cfirbprior2; //!< Is cfirb prior on, band 2
   double cfirbprior_mean2; //!< Mean value of prior, band 2
   double cfirbprior_stdev2; //!< Stdev of prior, band 2
+  bool has_wisdom_file; //!< Has FFTW wisdom file
+  std::string wisdom_file; //!< Name of wisdom file
+  bool verbose; //!< Run in verbose mode
+  bool ultraverbose; //!< Run in ultraverbose mode
 
   specFileDouble(); //!< Default constructor
   specFileDouble(const std::string&); //!< Constructor with file read
+
+  void init(); //!< Reset values
 
   void readFile(const std::string&); //!< Read in file
 };

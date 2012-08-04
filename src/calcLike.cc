@@ -101,7 +101,7 @@ readDataFromFiles(const std::vector<std::string>& datafiles,
 		  unsigned int NBINS) {
   unsigned int n = datafiles.size();
   if (n == 0)
-    throw affineExcept("calcLikeSingle","readDataFromFiles",
+    throw affineExcept("calcLikeSingle","readDataFromFile",
 		       "No data sets",1);
   resize(n);
 

@@ -13,128 +13,13 @@
 #include<specFileDouble.h>
 #include<affineExcept.h>
 
-//See pofd_affine_getdNdS for explanation of why this is global
-static struct option long_options[] = {
-  {"help", no_argument, 0, 'h'},
-  {"double",no_argument,0,'d'},
-  {"version",no_argument,0,'V'}, //Below here not parsed in main routine
-  {"bindata",no_argument, 0, 'b'},
-  {"histogram",no_argument,0,'H'},
-  {"meansub",no_argument,0,'$'},
-  {"fftsize",required_argument,0,'f'},
-  {"ninterp",required_argument,0,'n'},
-  {"nbins",required_argument,0,'N'},
-  {"sigma_mult",required_argument,0,'s'},
-  {"ultraverbose",no_argument,0,'u'},
-  {"verbose",no_argument,0,'v'},
-  {"wisdom",required_argument,0,'w'},
-  {"nedge",required_argument,0,'1'},
-  {0,0,0,0}
-};
-char optstring[] = "hdVbH$f:n:N:s:uvw:1:";
-
-int getLikeSingle(int argc, char **argv) {
-  double sigma_mult;
-  unsigned int ninterp, fftsize, nbins;
-
-  bool meansub, histogram, bindata;
-  bool verbose, ultraverbose, has_wisdom;
-  std::string wisdom_file;
-  
-  std::string specfile; //Input file
-  std::string initfile; //Init file (having model we want)
-
-  //Defaults
-  sigma_mult          = 1.0;
-  ninterp             = 1024;
-  fftsize             = 131072;
-  nbins               = 1000;
-  meansub             = false;
-  histogram           = false;
-  bindata             = false;
-  verbose             = false;
-  ultraverbose        = false;
-  has_wisdom          = false;
-
-  int c;
-  int option_index = 0;
-  optind = 1; //Reset parsing
-  while ( ( c = getopt_long(argc,argv,optstring,long_options,
-			    &option_index ) ) != -1 ) 
-    switch(c) {
-    case 'b' :
-      bindata = true;
-      break;
-    case 'f' :
-      fftsize = static_cast< unsigned int >( atoi(optarg) );
-      break;
-    case 'H' :
-      histogram = true;
-      break;
-    case 'n' :
-      ninterp = static_cast<unsigned int>(atoi(optarg));
-      break;
-    case 'N' :
-      nbins =  static_cast<unsigned int>(atoi(optarg));
-      break;
-    case '$' :
-      meansub = true;
-      break;
-    case 's' :
-      sigma_mult = atof(optarg);
-      break;
-    case 'u' :
-      verbose=ultraverbose=true;
-      break;
-    case 'v' :
-      verbose = true;
-      break;
-    case 'w' :
-      has_wisdom = true;
-      wisdom_file = std::string( optarg );
-      break;
-    }
-
-  if (optind >= argc-1 ) {
-    std::cerr << "Some required arguments missing" << std::endl;
-    std::cerr << " Use --help for description of inputs and options"
-	      << std::endl;
-    return 1;
-  }
-  specfile = std::string( argv[optind] );
-  initfile = std::string( argv[optind+1] );
-
-  //Input tests
-  if (fftsize < 32768) {
-    std::cerr << "Inadvisably small minimum fft size" << std::endl;
-    return 1;
-  }
-  if (fftsize & (fftsize-1)) {
-    std::cerr << "fftsize must be power of 2" << std::endl;
-    return 1;
-  }
-  if (ninterp == 0) {
-    std::cerr << "Invalid ninterp -- must be positive" << std::endl;
-    return 1;
-  }
-  if (sigma_mult < 0) {
-    std::cerr << "Invalid (non-positive) sigma mult" << std::endl;
-    return 1;
-  }
-  if (bindata && (nbins == 0)) {
-    std::cerr << "Invalid number of bins (non-positive)"
-	      << std::endl;
-  }
-
+int getLikeSingle(const std::string& initfile, const std::string specfile) {
 
   try {
     //Read in the initialization file knot positions, values
-    if (verbose || ultraverbose)
-      std::cout << "Reading initialization file: " << initfile << std::endl;
     initFileKnots model_info(initfile, false, false);
 
-    if (ultraverbose)
-      std::cout << "Reading spec file: " << specfile << std::endl;
+    //Data files, evaulation specifications
     specFile spec_info(specfile);
 
     //Make sure we got some data
@@ -147,31 +32,35 @@ int getLikeSingle(int argc, char **argv) {
       throw affineExcept("pofd_affine_getLike","getLikeSingle",
 			 "No info read in",2);
 
-    calcLike likeSet( fftsize, ninterp, true, bindata, nbins );
+    calcLike likeSet( spec_info.fftsize, spec_info.ninterp, 
+		      spec_info.edge_fix, spec_info.bin_data, 
+		      spec_info.nbins );
 
     //Read data
-    if (verbose || ultraverbose)
+    if (spec_info.verbose || spec_info.ultraverbose)
       std::cout << "Reading in data files" << std::endl;
     likeSet.readDataFromFiles( spec_info.datafiles, spec_info.psffiles, 
 			       spec_info.sigmas, spec_info.like_norm,
-			       false, meansub, histogram );
+			       spec_info.ignore_mask, spec_info.meansub, 
+			       spec_info.beam_histogram );
     
-    if (has_wisdom) likeSet.addWisdom(wisdom_file);
+    if (spec_info.has_wisdom_file) likeSet.addWisdom(spec_info.wisdom_file);
 
     //Set prior -- ignore sigmult prior, since we aren't really fitting
     if (spec_info.has_cfirbprior)
       likeSet.setCFIRBPrior( spec_info.cfirbprior_mean,
 			     spec_info.cfirbprior_stdev );
 
-    if (ultraverbose) likeSet.setVerbose();
+    if (spec_info.ultraverbose) likeSet.setVerbose();
       
-    if ( ultraverbose ) {
-      printf("  FFTsize:       %u\n", fftsize);
+    if ( spec_info.verbose || spec_info.ultraverbose) {
+      printf("  FFTsize:       %u\n", spec_info.fftsize);
       printf("  Nknots:        %u\n", model_info.getNKnots());
-      if (histogram)
+      if (spec_info.beam_histogram)
 	printf("  Using histogramming to reduce beam size\n");  
-      if (bindata)
-	printf("  Using histogramming to reduce data size to: %u\n",nbins);  
+      if (spec_info.bin_data)
+	printf("  Using histogramming to reduce data size to: %u\n",
+	       spec_info.nbins);  
       printf("  Positions and initial values:\n");
       std::pair<double,double> pr;
       for (unsigned int i = 0; i < nknots; ++i) {
@@ -184,7 +73,7 @@ int getLikeSingle(int argc, char **argv) {
     likeSet.setKnotPositions(model_info);
     paramSet pars(nknots+1);
     model_info.getParams(pars);
-    pars[nknots] = sigma_mult;
+    pars[nknots] = 1.0;
 
     //And, get that likelihood
     double LogLike = likeSet.getLogLike(pars);
@@ -201,108 +90,13 @@ int getLikeSingle(int argc, char **argv) {
 
 /////////////////////////////////////
 
-int getLikeDouble(int argc, char** argv) {
+int getLikeDouble(const std::string& initfile, const std::string& breakfile) {
 
-  double sigma_mult;
-  unsigned int nedge, fftsize, nbins;
-
-  bool meansub, histogram, bindata, edgeInterp;
-  bool verbose, ultraverbose, has_wisdom;
-  std::string wisdom_file;
-  
-  std::string specfile; //Input file
-  std::string initfile; //Init file (having model we want)
-
-  //Defaults
-  sigma_mult          = 1.0;
-  nedge               = 256;
-  fftsize             = 2048;
-  nbins               = 100;
-  meansub             = false;
-  histogram           = false;
-  bindata             = false;
-  verbose             = false;
-  ultraverbose        = false;
-  has_wisdom          = false;
-
-  int c;
-  int option_index = 0;
-  optind = 1; //Reset parsing
-  while ( ( c = getopt_long(argc,argv,optstring,long_options,
-			    &option_index ) ) != -1 ) 
-    switch(c) {
-    case 'b' :
-      bindata = true;
-      break;
-    case 'f' :
-      fftsize = static_cast< unsigned int >( atoi(optarg) );
-      break;
-    case 'H' :
-      histogram = true;
-      break;
-    case '1' :
-      nedge = static_cast<unsigned int>(atoi(optarg));
-      break;
-    case 'N' :
-      nbins =  static_cast<unsigned int>(atoi(optarg));
-      break;
-    case '$' :
-      meansub = true;
-      break;
-    case 's' :
-      sigma_mult = atof(optarg);
-      break;
-    case 'u' :
-      verbose=ultraverbose=true;
-      break;
-    case 'v' :
-      verbose = true;
-      break;
-    case 'w' :
-      has_wisdom = true;
-      wisdom_file = std::string( optarg );
-      break;
-    }
-
-  if (optind >= argc-1 ) {
-    std::cerr << "Some required arguments missing" << std::endl;
-    std::cerr << " Use --help for description of inputs and options"
-	      << std::endl;
-    return 1;
-  }
-  specfile = std::string( argv[optind] );
-  initfile = std::string( argv[optind+1] );
-
-  //Input tests
-  if (fftsize < 512) {
-    std::cerr << "Inadvisably small minimum fft size " << fftsize << std::endl;
-    return 1;
-  }
-  if (fftsize & (fftsize-1)) {
-    std::cerr << "fftsize must be power of 2" << std::endl;
-    return 1;
-  }
-  if (nedge == 0) edgeInterp = false;
-
-  if (sigma_mult < 0) {
-    std::cerr << "Invalid (non-positive) sigma mult" << std::endl;
-    return 1;
-  }
-  if (bindata && (nbins == 0)) {
-    std::cerr << "Invalid number of bins (non-positive)"
-	      << std::endl;
-  }
-
-  /////////////////////////////////////
-  // Actual calculation
   try {
     //Read in the initialization file knot positions, values
-    if (verbose || ultraverbose)
-      std::cout << "Reading initialization file: " << initfile << std::endl;
     initFileDoubleLogNormal model_info(initfile, false, false);
     
-    if (ultraverbose)
-      std::cout << "Reading spec file: " << specfile << std::endl;
+    //data, likelihood params
     specFileDouble spec_info(specfile);
     
     //Make sure we got some data
@@ -317,19 +111,18 @@ int getLikeDouble(int argc, char** argv) {
 			 "No info read in",2);
 
 
-    calcLikeDouble likeSet( fftsize, nedge, true, edgeInterp,
-			    bindata, nbins );
+    calcLikeDouble likeSet( spec_info.fftsize, spec_info.nedge, 
+			    spec_info.edge_fix, spec_info.edge_set,
+			    spec_info.bin_data, spec_info.nbins );
 
     //Read data
-    if (verbose || ultraverbose)
-      std::cout << "Reading in data files" << std::endl;
     likeSet.readDataFromFiles( spec_info.datafiles1, spec_info.datafiles2, 
 			       spec_info.psffiles1, spec_info.psffiles2,
 			       spec_info.sigmas1, spec_info.sigmas2, 
-			       spec_info.like_norm, false, meansub, 
-			       histogram );
+			       spec_info.like_norm, spec_info.ignore_mask, 
+			       spec_info.mean_sub, spec_info.beam_histogram );
 
-    if (has_wisdom) likeSet.addWisdom(wisdom_file);
+    if (spec_info.has_wisdom) likeSet.addWisdom(spec_info.wisdom_file);
 
     //Set prior -- ignore sigmult prior, since we aren't really fitting
     if (spec_info.has_cfirbprior1)
@@ -340,15 +133,15 @@ int getLikeDouble(int argc, char** argv) {
 			      spec_info.cfirbprior_stdev2 );
 
 
-    if (ultraverbose) likeSet.setVerbose();
+    if (spec_info.ultraverbose) likeSet.setVerbose();
       
-    if ( ultraverbose ) {
-      printf("  FFTsize:       %u\n",fftsize);
-      if (histogram)
+    if (spec_info.verbose || spec_info.ultraverbose) {
+      printf("  FFTsize:       %u\n",spec_info.fftsize);
+      if (spec_info.beam_histogram)
 	printf("  Using histogramming to reduce beam size\n");  
-      if (bindata)
+      if (spec_info.bin_data)
 	printf("  Using histogramming to reduce data size to: %u by %u\n",
-	       nbins,nbins);  
+	       spec_info.nbins,spec_info.nbins);  
       printf("  Knot Positions and initial values:\n");
       std::pair<double,double> pr;
       for (unsigned int i = 0; i < model_info.getNKnots(); ++i) {
@@ -369,9 +162,10 @@ int getLikeDouble(int argc, char** argv) {
 
     //Set up model
     likeSet.setPositions(model_info);
-    paramSet pars(ntot+1);
+    paramSet pars(ntot+2);
     model_info.getParams(pars);
-    pars[ntot] = sigma_mult;
+    pars[ntot] = 1.0;
+    pars[ntot+1] = 1.0;
 
     //Get likelihood
     double LogLike = likeSet.getLogLike(pars);
@@ -389,13 +183,20 @@ int getLikeDouble(int argc, char** argv) {
 
 int main( int argc, char** argv ) {
   bool twod;
+  std::string initfile, specfile;
 
   twod = false;
 
-  //Only interested in a) displaying help and b) figuring out
-  // if this is 1D or 2D c) displaying the version number
+  static struct option long_options[] = {
+    {"help", no_argument, 0, 'h'},
+    {"double",no_argument,0,'d'},
+    {"version",no_argument,0,'V'}, //Below here not parsed in main routine
+    {0,0,0,0}
+  };
+  char optstring[] = "hdV";
   int c;
   int option_index = 0;
+
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
 			    &option_index ) ) != -1 ) 
     switch(c) {
@@ -409,7 +210,7 @@ int main( int argc, char** argv ) {
 		<< std::endl;
       std::cerr << std::endl;
       std::cerr << "SYNOPSIS" << std::endl;
-      std::cerr << "\t pofd_mcmc_getLike [options] initfile specfile outputfile"
+      std::cerr << "\t pofd_mcmc_getLike [options] initfile specfile"
 		<< std::endl;
       std::cerr << std::endl;
       std::cerr << "DESCRIPTION" << std::endl;
@@ -453,52 +254,14 @@ int main( int argc, char** argv ) {
       std::cerr << std::endl;
       std::cerr << "\tspecfile is a text file containing the beam(s), "
 		<< "datafile(s), sigma(s)," << std::endl;
-      std::cerr << "\tetc. using the same format as pofd_affine_mcmc."
-		<< std::endl;
+      std::cerr << "\tetc. using the same format as pofd_affine_mcmc.  It also"
+		<< " controls" << std::endl;
+      std::cerr << "\thow the likelihood is evaluated "
+		<< "(beam histogramming, etc.)." << std::endl;
       std::cerr << std::endl;
       std::cerr << "OPTIONS" << std::endl;
-      std::cerr << "\t-b, --bindata" << std::endl;
-      std::cerr << "\t\tBin the data when computing the likelihood."
-		<< std::endl;
       std::cerr << "\t-d, --double" << std::endl;
       std::cerr << "\t\tUse the 2D model." << std::endl;
-      std::cerr << "\t-f, --fftsize minsize" << std::endl;
-      std::cerr << "\t\tFFT size Must be a power of 2. The size along each"
-		<< " dimension" << std::endl;
-      std::cerr << "\t\tfor the 2D model. (def: 131072 for 1D, 2048 for 2D)"
-		<< std::endl;
-      std::cerr << "\t-H, --histogram" << std::endl;
-      std::cerr << "\t\tUse beam histogramming." << std::endl;
-      std::cerr << "\t--meansub" << std::endl;
-      std::cerr << "\t\tMean-subtract the input data."
-		<< std::endl;
-      std::cerr << "\t-N, --nbins VAL" << std::endl;
-      std::cerr << "\t\tNumber of bins if binning data, along each dimension in"
-		<< " the" << std::endl;
-      std::cerr << "\t\t2D model case. (def: 1000 in 1D, 100 in 2D)."
-		<< std::endl;
-      std::cerr << "\t-s, --sigma_mult value" << std::endl;
-      std::cerr << "\t\tAmount to multiply noise in spec file by (def: 1.0)."
-		<< std::endl;
-      std::cerr << "\t-u, --ultraverbose" << std::endl;
-      std::cerr << "\t\tLike verbose, but more so." << std::endl;
-      std::cerr << "\t-v, --verbose" << std::endl;
-      std::cerr << "\t\tPrint informational messages while running"
-		<< std::endl;
-      std::cerr << "\t-V, --version" << std::endl;
-      std::cerr << "\t\tOutput the version number and exit." << std::endl;
-      std::cerr << "\t-w, --wisdom wisdomfile" << std::endl;
-      std::cerr << "\t\tName of FFTW wisdom file (prepared with fftw-wisdom)." 
-		<< std::endl;
-      std::cerr << std::endl;
-      std::cerr << "ONE-D ONLY OPTIONS" << std::endl;
-      std::cerr << "\t-n, --ninterp ninterp" << std::endl;
-      std::cerr << "\t\tNumber of interpolation points in R calculation" 
-		<< " (def: 1024)" << std::endl;
-      std::cerr << "TWO-D ONLY OPTIONS" << std::endl;
-      std::cerr << "\t--nedge nedge" << std::endl;
-      std::cerr << "\t\tNumber of edge integral points in R calculation" 
-		<< " (def: 256)" << std::endl;
       return 0;
       break;
     case 'd' :
@@ -511,10 +274,20 @@ int main( int argc, char** argv ) {
       break;
     }
 
+  if (optind >= argc-1 ) {
+    std::cerr << "Some required arguments missing" << std::endl;
+    std::cerr << " Use --help for description of inputs and options"
+	      << std::endl;
+    return 1;
+  }
+  specfile = std::string( argv[optind] );
+  initfile = std::string( argv[optind+1] );
+
+
   if (! twod)
-    return getLikeSingle(argc,argv);
+    return getLikeSingle(initfile, specfile);
   else
-    return getLikeDouble(argc,argv);
+    return getLikeDouble(initfile, specfile);
 }
 
 

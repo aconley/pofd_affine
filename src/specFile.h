@@ -26,10 +26,16 @@
    bin_data=    nbins
                   Turns on binning of data files with specified number 
                   of bins
-   meansub=     bool
+   mean_sub=    bool
                   Do mean subtraction on input data if value is true
+   ignore_mask= bool
+                  Ignore mask information in input files
    fftsize=     nfft
                   Sets fft transform length (def: 131072)
+   nitnerp=     value
+                  Number of R interpolation points (def: 1024)
+   edge_fix=    bool
+                  Apply edge fix to P(D).  On by default.		  
    beam_histogram= bool
                   Activates beam histogramming
    fit_sigma=   value
@@ -66,8 +72,11 @@ struct specFile {
   //Various fit options
   bool bin_data; //!< Bin input data
   unsigned int nbins; //!< Number of data bins
-  bool meansub; //!< Mean subtract data
+  bool mean_sub; //!< Mean subtract data
+  bool ignore_mask; //!< Ignore mask info in input files
   unsigned int fftsize; //!< Length of fft
+  unsigned int ninterp; //!< Size of R interpolation
+  bool edge_fix; //!< Apply edge fix to P(D)
   bool beam_histogram; //!< Do beam histogramming
   bool fit_sigma; //!< Are we fitting for sigma
   bool has_sigprior; //!< Is the sigma prior on
@@ -76,7 +85,7 @@ struct specFile {
   double cfirbprior_mean; //!< Mean value of prior
   double cfirbprior_stdev; //!< Stdev of prior
   bool has_wisdom_file; //!< Has FFTW wisdom file
-  std::string wisfile; //!< Name of wisdom file
+  std::string wisdom_file; //!< Name of wisdom file
   bool verbose; //!< Run in verbose mode
   bool ultraverbose; //!< Run in ultraverbose mode
 
