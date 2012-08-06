@@ -21,7 +21,6 @@ libtool
 ltmain.sh
 missing
 doc
-test
 src/Makefile
 src/Makefile.in
 src/chain_test

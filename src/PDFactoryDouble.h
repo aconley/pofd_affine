@@ -61,7 +61,6 @@ class PDFactoryDouble {
   void allocateRvars(); //!< Allocates R variables if needed
   void freeRvars(); //!< Free R variables
 
-
   //Edge variables
   bool edgevars_allocated; //!< Are Edge variables (this block) allocated
   unsigned int nedge; //!< Number of edge integral steps
@@ -101,6 +100,7 @@ class PDFactoryDouble {
 #endif
 
  public :
+
   PDFactoryDouble(unsigned int nedge=256); //!< Default constructor
   PDFactoryDouble(const std::string&, unsigned int nedge=256 ); //!< Constructor with wisdom file
   ~PDFactoryDouble(); //!< Destructor
@@ -110,6 +110,10 @@ class PDFactoryDouble {
 
   /*! \brief Get size of last FFT */
   unsigned int getLastFFTLen() const { return lastfftlen; }
+
+  /*! \brief Returns edge integration length */
+  unsigned int getNEdge() const { return nedge; }
+  void setNEdge(unsigned int); //!< Set nedge
 
   /*! \brief Adds FFTW wisdom file*/
   bool addWisdom(const std::string& filename);

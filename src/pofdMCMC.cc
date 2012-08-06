@@ -30,12 +30,50 @@ void pofdMCMC::initChainsMaster() {
   if (rank != 0)
     throw affineExcept("pofdMCMC","initChainsMaster",
 		       "Should not be called except on master node",1);
-  //Read in input files
+
+  //Model initialization file
   ifile.readFile(initfile,true,true);
-  specFile(specfile);
+  unsigned int nknots = ifile.getNKnots();
+  if (nknots == 0)
+    throw affineExcept("pofdMCMC","initChainsMaster",
+		       "No model knots read in",2);
+  
+  //Data/fit initialization file
+  specFile spec_info(specfile);
+  if (spec_info.datafiles.size() == 0)
+      throw affineExcept("pofdMCMC","initChainsMaster",
+			 "No data files read",3);
 
-  //Use that to initialize likelihood file
+  //Use that to initialize likelihood 
+  likeSet.setFFTSize( spec_info.fftsize );
+  if (spec_info.edge_fix) likeSet.setEdgeFix(); else likeSet.unSetEdgeFix();
+  likeSet.setNInterp( spec_info.ninterp );
+  if (spec_info.bin_data) likeSet.setBinData(); else likeSet.unSetBinData();
+  likeSet.setNBins( spec_info.nbins );
+  if (spec_info.has_wisdom_file) likeSet.addWisdom(spec_info.wisdom_file);
 
+  //Set priors 
+  if (spec_info.has_cfirbprior)
+    likeSet.setCFIRBPrior( spec_info.cfirbprior_mean,
+			   spec_info.cfirbprior_stdev );
+  if (spec_info.fit_sigma && spec_info.has_sigprior)
+    likeSet.setSigmaPrior(spec_info.sigprior_stdev);
+
+  //Read in data files
+  if (spec_info.verbose || spec_info.ultraverbose)
+      std::cout << "Reading in data files" << std::endl;
+  likeSet.readDataFromFiles( spec_info.datafiles, spec_info.psffiles, 
+			     spec_info.sigmas, spec_info.like_norm,
+			     spec_info.ignore_mask, spec_info.mean_sub, 
+			     spec_info.beam_histogram );
+
+  //Now, copy that information over to slaves
+}
+
+void pofdMCMC::initChainsSlave() {
+  //Send message to master saying we are ready
+
+  //Copy info
 }
 
 void pofdMCMC::initChains() {

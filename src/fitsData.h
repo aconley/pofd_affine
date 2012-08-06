@@ -34,6 +34,7 @@ class fitsData {
 
   bool isBinned() const { return is_binned; } //!< Is data binned?
   void applyBinning(unsigned int); //!< Takes an unbinned image and bins it
+  void removeBinning(); //!< Removes binning
   unsigned int getNBins() const { return nbins; } //!< Gets number of bins
   double getBinCent0() const { return bincent0; } //!< Gets center of 0th bin
   double getBinDelta() const { return bindelta; } //!< Gets size of bins

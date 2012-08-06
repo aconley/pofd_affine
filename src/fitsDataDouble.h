@@ -46,6 +46,7 @@ class fitsDataDouble {
 
   bool isBinned() const { return is_binned; } //!< Is data binned
   void applyBinning(unsigned int, unsigned int); //!< Takes an unbinned image and bins it
+  void removeBinning(); //!< Removes binning
   std::pair<unsigned int, unsigned int> getNBins() const; //!< Get number of bins along each dimension
   std::pair<double,double> getBinCent0() const; //!< Gets center of 0th bin along each dimension
   std::pair<double,double> getBinDelta() const; //!< Gets size of bins along each dimension

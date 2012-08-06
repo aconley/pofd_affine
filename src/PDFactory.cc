@@ -152,8 +152,12 @@ void PDFactory::freeRvars() {
   if (pval != NULL) { fftw_free(pval); pval = NULL; }
   if (pofd != NULL) { fftw_free(pofd); pofd = NULL; }
   rvars_allocated = false;
+  initialized = false;
 }
 
+/*!
+  \param[in] NINTERP New interpolation length
+ */
 void PDFactory::setNInterp(unsigned int NINTERP) {
   if (NINTERP == ninterp) return;
   ninterp = NINTERP;
@@ -182,6 +186,7 @@ void PDFactory::freeInterp() {
   if (RinterpFlux != NULL) { delete[] RinterpFlux; RinterpFlux = NULL; }
   if (RinterpVals != NULL) { delete[] RinterpVals; RinterpVals = NULL; }
   interpvars_allocated = false;
+  initialized = false;
 }
 
 /*!

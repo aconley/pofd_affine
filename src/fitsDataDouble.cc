@@ -513,6 +513,8 @@ void fitsDataDouble::applyBinning(unsigned int NBINS1, unsigned int NBINS2) {
 				      "Trying to bin with no bins, band 1",1);
   if (NBINS2 == 0) throw affineExcept("fitsDataDouble","applyBinning",
 				      "Trying to bin with no bins, band 2",2);
+  if (is_binned && (NBINS1 == nbins1) && (NBINS2 == nbins2)) return;
+
   if ( (NBINS1 != nbins1) || (NBINS2 != nbins2) ) {
     if (binval != NULL) fftw_free(binval);
     binval = (unsigned int*) fftw_malloc( sizeof(unsigned int)*NBINS1*NBINS2 );
@@ -554,6 +556,13 @@ void fitsDataDouble::applyBinning(unsigned int NBINS1, unsigned int NBINS2) {
      binval[idx1*nbins2+idx2] += 1;
    }
    is_binned = true;
+}
+
+void fitsDataDouble::removeBinning() {
+  if (!is_binned) return;
+  if (binval != NULL) fftw_free(binval);
+  nbins1 = nbins2 = 0;
+  is_binned = false;
 }
 
 std::pair<unsigned int, unsigned int> fitsDataDouble::getNBins() const {

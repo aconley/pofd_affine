@@ -86,6 +86,19 @@ void PDFactoryDouble::init(unsigned int NEDGE) {
   initialized = false;
 }
 
+/*!
+  \param[in] nedg Edge integration size
+ */
+void PDFactoryDouble::setNEdge(unsigned int nedg) {
+  if (nedg == nedge) return;
+  nedge = nedg;
+  if (edgevars_allocated) {
+    freeEdgevars();
+    allocateEdgevars();
+  }
+}
+
+
 #ifdef TIMING
 void PDFactoryDouble::resetTime() {
   RTime = RStatsTime = p0Time = fftTime = posTime = copyTime = normTime = 0;
@@ -163,6 +176,7 @@ void PDFactoryDouble::allocateRvars() {
   pval = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*fsize);
 
   rvars_allocated = true;
+  initialized = false;
 }
 
 void PDFactoryDouble::freeRvars() {
@@ -173,6 +187,7 @@ void PDFactoryDouble::freeRvars() {
   if (pval != NULL)       { fftw_free(pval); pval = NULL; }
   if (pofd != NULL)       { fftw_free(pofd); pofd = NULL; }
   rvars_allocated = false;
+  initialized = false;
 }
 
 void PDFactoryDouble::allocateEdgevars() {
@@ -186,6 +201,7 @@ void PDFactoryDouble::allocateEdgevars() {
     REdgeWork = REdgeFlux1 = REdgeFlux2 = NULL;
     edgevars_allocated = false;
   }
+  initialized = false;
 }
 
 void PDFactoryDouble::freeEdgevars() {
@@ -193,6 +209,7 @@ void PDFactoryDouble::freeEdgevars() {
   if (REdgeFlux2 != NULL) { fftw_free(REdgeFlux2); REdgeFlux2 = NULL; }
   if (REdgeWork != NULL)  { fftw_free(REdgeWork); REdgeWork = NULL; }
   edgevars_allocated = false;
+  initialized = false;
 }
 
 /*!

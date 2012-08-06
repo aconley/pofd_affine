@@ -136,7 +136,7 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
       throw affineExcept("calcLikeDoubleSingle","readDataFromFiles",
 			 errstr.str(),4);
     }
-    if (BINDATA) data[0].applyBinning(NBINS,NBINS);
+    if (BINDATA) data[i].applyBinning(NBINS,NBINS);
 
     //log(N!)
     like_offset[i] = nd*log(nd) - nd + 0.5*log(2.0*M_PI*nd) + 
@@ -179,6 +179,23 @@ void calcLikeDoubleSingle::readBeam(const std::string& fl1,
   bm.readFiles(fl1,fl2,histogram,histogramlogstep);
   has_beam = true;
 }
+
+/*!
+  \param[in] nbins Number of bins
+ */
+void calcLikeDoubleSingle::applyBinning(unsigned int nbins) {
+  if ((!data_read) || ndatasets == 0) return;
+  //Does nothing if the data is already binned at the same size
+  for (unsigned int i = 0; i < ndatasets; ++i)
+    data[i].applyBinning(nbins,nbins);
+}
+
+void calcLikeDoubleSingle::removeBinning() {
+  if ((!data_read) || ndatasets == 0) return;
+  for (unsigned int i = 0; i < ndatasets; ++i)
+    data[i].removeBinning();
+}
+
 
 void calcLikeDoubleSingle::setLikeNorm(const std::vector<double>& lnorm) {
   unsigned int n = lnorm.size();
@@ -498,12 +515,13 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
   unsigned int newnbeamsets = grpmap.size();
   if (newnbeamsets != nbeamsets) {
     if (beamsets != NULL) delete[] beamsets;
-    if (newnbeamsets > 0) new calcLikeDoubleSingle[newnbeamsets];
+    if (newnbeamsets > 0) beamsets = new calcLikeDoubleSingle[newnbeamsets];
     else beamsets = NULL;
     nbeamsets = newnbeamsets;
   }
   grpmap_it = grpmap.begin();
   for (unsigned int i=0; grpmap_it != grpmap.end(); ++grpmap_it, ++i) {
+    beamsets[i].setNEdge( nedge );
     beamsets[i].readDataFromFiles( grpmap_it->second.datafiles1,
 				   grpmap_it->second.datafiles2,
 				   IGNOREMASK, MEANSUB, bin_data, nbins );
@@ -515,6 +533,63 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
     beamsets[i].setLikeNorm( grpmap_it->second.like_norms );
   }
 }
+
+/*! 
+  \param[in] nedg New edge integration size
+ */
+void calcLikeDouble::setNEdge(unsigned int nedg) {
+  if (nedg == nedge) return;
+  if (beamsets != NULL)
+    for (unsigned int i = 0; i < nbeamsets; ++i)
+      beamsets[i].setNEdge(nedg);
+  nedge = nedg;
+}
+
+void calcLikeDouble::setBinData() {
+  if (bin_data) return;
+
+  //Easy if no data is read.
+  if (nbeamsets == 0) {
+    bin_data = true;
+    return;
+  }
+
+  //Now we have to actually bin
+  for (unsigned int i = 0; i < nbeamsets; ++i)
+    beamsets[i].applyBinning(nbins);
+  bin_data = true;
+
+}
+
+void calcLikeDouble::unSetBinData() {
+  if (!bin_data) return;
+
+  if (nbeamsets == 0) {
+    bin_data = false;
+    return;
+  }
+
+  for (unsigned int i = 0; i < nbeamsets; ++i)
+    beamsets[i].removeBinning();
+  bin_data = false;
+}
+
+void calcLikeDouble::setNBins(unsigned int nbns) {
+  if (nbns == nbins) return;
+  
+  if (nbeamsets == 0) {
+    nbins = nbns;
+    return;
+  }
+
+  if (bin_data) //rebin
+    for (unsigned int i = 0; i < nbeamsets; ++i)
+      beamsets[i].applyBinning(nbns);
+
+  nbins = nbns;
+}
+
+
 
 /*!
   \param[in] mn Mean value of CFIRB prior, band 1

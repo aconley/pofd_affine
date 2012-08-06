@@ -63,6 +63,9 @@ class calcLikeSingle {
   /*!\brief Add wisdom information */
   void addWisdom(const std::string& filename) { pdfac.addWisdom(filename); }
 
+  void setNInterp(unsigned int n) { pdfac.setNInterp(n); } //!< Set interpolation length
+  unsigned int getNInterp() const { return pdfac.getNInterp(); } //!< Get interpolation length
+
   /*! \brief Reads data to compute likelihood for a single file*/
   void readDataFromFile(const std::string&, bool IGNOREMASK=false,
 			bool MEANSUB=false,bool BINDATA=false,
@@ -82,6 +85,9 @@ class calcLikeSingle {
 
   void setVerbose() { verbose=true; } //!< Activate verbose mode
   void unSetVerbose() { verbose = false; } //!< Turn off verbose mode
+
+  void applyBinning(unsigned int); //!< Bins data
+  void removeBinning(); //!< Remove binning of data
 
   void setLikeNorm(unsigned int i, double val) { like_norm[i]=val;} //!< Set likelihood normalization factor relative to beam area; set to zero to nor normalize
   void setLikeNorm(const std::vector<double>&); //!< Set likelihood normalization factor
@@ -178,6 +184,13 @@ class calcLike {
 
   void setFFTSize(unsigned int val) { fftsize = val; } //!< Set FFT size
   unsigned int getFFTSize() const { return fftsize; } //!< Get FFT size
+
+  void setNInterp(unsigned int); //!< Set interpolation size
+  unsigned int getNInterp() const { return ninterp; } //!< Get interpolation size
+
+  void setBinData(); //!< Turn on binning of data
+  void unSetBinData(); //!< Turn off binning of data
+  void setNBins(unsigned int); //!< Change number of bins
 
   void setEdgeFix() { edgeFix=true; } //!< Turn on edge fixing
   void unSetEdgeFix() { edgeFix=false; } //!< Turn off edge fixing

@@ -21,6 +21,9 @@ calcLikeSingle::~calcLikeSingle() {
   if (like_offset != NULL) delete[] like_offset;
 }
 
+/*
+  \param[in] n Number of datasets
+*/
 void calcLikeSingle::resize(unsigned int n) {
   if (ndatasets == n) return;  //Don't have to do anything
 
@@ -115,7 +118,7 @@ readDataFromFiles(const std::vector<std::string>& datafiles,
       throw affineExcept("calcLikeSingle","readDataFromFile",
 			 errstr.str(),4);
     }
-    if (BINDATA) data[0].applyBinning(NBINS);
+    if (BINDATA) data[i].applyBinning(NBINS);
 
     //log(N!)
     like_offset[i] = nd*log(nd) - nd + 0.5*log(2.0*M_PI*nd) + 
@@ -146,6 +149,22 @@ void calcLikeSingle::readBeam(const std::string& fl, bool histogram,
 			double histogramlogstep) {
   bm.readFile(fl,histogram,histogramlogstep);
   has_beam = true;
+}
+
+/*!
+  \param[in] nbins Number of bins
+ */
+void calcLikeSingle::applyBinning(unsigned int nbins) {
+  if ((!data_read) || ndatasets == 0) return;
+  //Does nothing if the data is already binned at the same size
+  for (unsigned int i = 0; i < ndatasets; ++i)
+    data[i].applyBinning(nbins);
+}
+
+void calcLikeSingle::removeBinning() {
+  if ((!data_read) || ndatasets == 0) return;
+  for (unsigned int i = 0; i < ndatasets; ++i)
+    data[i].removeBinning();
 }
 
 void calcLikeSingle::setLikeNorm(const std::vector<double>& lnorm) {
@@ -320,7 +339,7 @@ void calcLikeSingle::RecieveCopy(MPI::Comm& comm, int src) {
 /////////////////////////////////////////////////////////////////
 
 calcLike::calcLike(unsigned int FFTSIZE, unsigned int NINTERP, 
-		   bool EDGEFIX, bool BINNED, unsigned int NBINS) :
+		   bool EDGEFIX, bool BINNED, unsigned int NBINS):
   fftsize(FFTSIZE), ninterp(NINTERP), edgeFix(EDGEFIX), bin_data(BINNED),
   nbins(NBINS), has_cfirb_prior(false), cfirb_prior_mean(0.0),
   cfirb_prior_sigma(0.0), has_sigma_prior(false), sigma_prior_width(0.0),
@@ -397,12 +416,14 @@ void calcLike::readDataFromFiles(const std::vector<std::string>& datafiles,
   unsigned int newnbeamsets = grpmap.size();
   if (newnbeamsets != nbeamsets) {
     if (beamsets != NULL) delete[] beamsets;
-    if (newnbeamsets > 0) new calcLikeSingle[newnbeamsets];
+    if (newnbeamsets > 0) beamsets = new calcLikeSingle[newnbeamsets];
     else beamsets = NULL;
     nbeamsets = newnbeamsets;
   }
+
   grpmap_it = grpmap.begin();
   for (unsigned int i=0; grpmap_it != grpmap.end(); ++grpmap_it, ++i) {
+    beamsets[i].setNInterp( ninterp );
     beamsets[i].readDataFromFiles( grpmap_it->second.datafiles,
 				   IGNOREMASK, MEANSUB, bin_data, nbins );
     beamsets[i].readBeam( grpmap_it->second.beamfile, 
@@ -411,6 +432,62 @@ void calcLike::readDataFromFiles(const std::vector<std::string>& datafiles,
     beamsets[i].setLikeNorm( grpmap_it->second.like_norms );
   }
 }
+
+/*! 
+  \param[in] nint New interpolation length
+ */
+void calcLike::setNInterp(unsigned int nint) {
+  if (nint == ninterp) return;
+  if (beamsets != NULL)
+    for (unsigned int i = 0; i < nbeamsets; ++i)
+      beamsets[i].setNInterp( nint );
+  ninterp = nint;
+}
+
+void calcLike::setBinData() {
+  if (bin_data) return;
+
+  //Easy if no data is read.
+  if (nbeamsets == 0) {
+    bin_data = true;
+    return;
+  }
+
+  //Now we have to actually bin
+  for (unsigned int i = 0; i < nbeamsets; ++i)
+    beamsets[i].applyBinning(nbins);
+  bin_data = true;
+
+}
+
+void calcLike::unSetBinData() {
+  if (!bin_data) return;
+
+  if (nbeamsets == 0) {
+    bin_data = false;
+    return;
+  }
+
+  for (unsigned int i = 0; i < nbeamsets; ++i)
+    beamsets[i].removeBinning();
+  bin_data = false;
+}
+
+void calcLike::setNBins(unsigned int nbns) {
+  if (nbns == nbins) return;
+  
+  if (nbeamsets == 0) {
+    nbins = nbns;
+    return;
+  }
+
+  if (bin_data)
+    for (unsigned int i = 0; i < nbeamsets; ++i)
+      beamsets[i].applyBinning(nbns);
+
+  nbins = nbns;
+}
+
 
 /*!
   \param[in] mn Mean value of CFIRB prior

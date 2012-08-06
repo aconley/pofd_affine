@@ -9,8 +9,9 @@ private:
   std::string initfile; //!< File to read initilaization from
   std::string specfile; //!< File to read spec from
 
-  calcLike like; //!< Does likelihood calculation
   initFileKnots ifile; //!< Stores initial values and limits on parameters
+
+  calcLike likeSet; //!< Does likelihood calculation
   
   void initChainsMaster(); //!< Initialization routine for master node
   void initChainsSlave(); //!< Initialization routine for slave node

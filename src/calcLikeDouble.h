@@ -66,6 +66,12 @@ class calcLikeDoubleSingle { //Odd name...
   /*!\brief Add wisdom information */
   void addWisdom(const std::string& filename) { pdfac.addWisdom(filename); }
 
+  void setNEdge(unsigned int n) { pdfac.setNEdge(n); } //!< Set interpolation length
+  unsigned int getNEdge() const { return pdfac.getNEdge(); } //!< Get interpolation length
+
+  void applyBinning(unsigned int); //!< Bin data
+  void removeBinning(); //!< Remove binning
+
   /*! \brief Reads data to compute likelihood for a single file*/
   void readDataFromFile(const std::string&, const std::string&,
 			bool IGNOREMASK=false,
@@ -204,10 +210,15 @@ class calcLikeDouble {
   void unSetEdgeFix() { edgeFix=false; } //!< Turn off edge fixing
   bool getEdgeFix() const { return edgeFix; } //!< Are we using edge fixing?
 
-  //Note -- you can't set the edge integration size except at construction
   void setEdgeInteg() { edgeInteg=true; } //!< Turn on edge integration
   void unSetEdgeInteg() { edgeInteg=false; } //!< Turn off edge integration
   bool getEdgeInteg() const { return edgeInteg; } //!< Are we doing edge integration?
+  void setNEdge(unsigned int); //!< Set edge integration size
+  unsigned int getNEdge() const { return nedge; } //!< Get edge integration size
+
+  void setBinData(); //!< Turn on binning of data
+  void unSetBinData(); //!< Turn off binning of data
+  void setNBins(unsigned int); //!< Change number of bins
 
   /*! \brief Return number of knots for 1st band spline*/
   unsigned int getNKnots() const { return model.getNKnots(); }

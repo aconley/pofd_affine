@@ -381,6 +381,7 @@ void fitsData::applyBinning(unsigned int NBINS) {
   if (n == 0) return;
   if (NBINS == 0) throw affineExcept("fitsData","applyBinning",
 				     "Trying to bin with no bins",1);
+  if (is_binned && NBINS==nbins) return;
   if (NBINS != nbins) {
     if (binval != NULL) fftw_free(binval);
     binval = (unsigned int*) fftw_malloc( sizeof(unsigned int)*NBINS );
@@ -410,6 +411,12 @@ void fitsData::applyBinning(unsigned int NBINS) {
    is_binned = true;
 }
 
+void fitsData::removeBinning() {
+  if (!is_binned) return;
+  if (binval != NULL) fftw_free(binval);
+  nbins = 0;
+  is_binned = false;
+}
 
 void fitsData::SendSelf(MPI::Comm& comm, int dest) const {
 
