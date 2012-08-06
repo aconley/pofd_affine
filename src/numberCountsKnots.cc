@@ -361,8 +361,8 @@ void initFileKnots::readFile(const std::string& flname,
   if (has_upper_limits) {
     has_uplim = new bool[nknots];
     uplim = new double[nknots];
-    for (unsigned int i = 0; i < nknots; ++i) has_uplim[i] = hl[i];
-    for (unsigned int i = 0; i < nknots; ++i) uplim[i] = kl[i];
+    for (unsigned int i = 0; i < nknots; ++i) has_uplim[i] = hu[i];
+    for (unsigned int i = 0; i < nknots; ++i) uplim[i] = ku[i];
   }
 
   //Make sure lower/upper limits don't cross
