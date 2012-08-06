@@ -41,7 +41,7 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
       std::cout << "Reading in data files" << std::endl;
     likeSet.readDataFromFiles( spec_info.datafiles, spec_info.psffiles, 
 			       spec_info.sigmas, spec_info.like_norm,
-			       spec_info.ignore_mask, spec_info.meansub, 
+			       spec_info.ignore_mask, spec_info.mean_sub, 
 			       spec_info.beam_histogram );
     
     if (spec_info.has_wisdom_file) likeSet.addWisdom(spec_info.wisdom_file);
@@ -90,7 +90,7 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
 
 /////////////////////////////////////
 
-int getLikeDouble(const std::string& initfile, const std::string& breakfile) {
+int getLikeDouble(const std::string& initfile, const std::string& specfile) {
 
   try {
     //Read in the initialization file knot positions, values
@@ -122,7 +122,7 @@ int getLikeDouble(const std::string& initfile, const std::string& breakfile) {
 			       spec_info.like_norm, spec_info.ignore_mask, 
 			       spec_info.mean_sub, spec_info.beam_histogram );
 
-    if (spec_info.has_wisdom) likeSet.addWisdom(spec_info.wisdom_file);
+    if (spec_info.has_wisdom_file) likeSet.addWisdom(spec_info.wisdom_file);
 
     //Set prior -- ignore sigmult prior, since we aren't really fitting
     if (spec_info.has_cfirbprior1)

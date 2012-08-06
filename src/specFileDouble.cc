@@ -59,7 +59,7 @@ void specFileDouble::init() {
 void specFileDouble::readFile(const std::string& flname) {
   std::string line;
   std::vector<std::string> words;
-  std::stringstream str;
+  std::stringstream str, errstr;
   double lnorm;
 
   init();
@@ -67,13 +67,13 @@ void specFileDouble::readFile(const std::string& flname) {
   std::ifstream ifs( flname.c_str() );
   if ( ! ifs ) {
     ifs.close();
-    std::stringstream errstr;
     errstr << "Error reading spec file: " << flname;
     throw affineExcept("specFileDouble","readFile",errstr.str(),1);
   }
 
   //Do read
   double dblval;
+  int ival;
   while (! ifs.eof() ) {
 
     std::getline(ifs,line);
@@ -90,7 +90,6 @@ void specFileDouble::readFile(const std::string& flname) {
     if (words[0] == "dataset") {
 
       if (words.size() < 7) {
-	std::stringstream errstr;
 	errstr << "dataset line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFileDouble", "readFile", errstr.str(), 2);
@@ -103,7 +102,6 @@ void specFileDouble::readFile(const std::string& flname) {
       //Sigmas
       str.str(words[3]); str.clear(); str >> dblval;
       if (dblval < 0.0) {
-	std::stringstream errstr;
 	errstr << "Invalid (negative) sigma1 " << dblval
 	       << " from line: " << line;
 	throw affineExcept("specFileDouble", "readFile", errstr.str(), 3);
@@ -111,7 +109,6 @@ void specFileDouble::readFile(const std::string& flname) {
       sigmas1.push_back( dblval );
       str.str(words[4]); str.clear(); str >> dblval;
       if (dblval < 0.0) {
-	std::stringstream errstr;
 	errstr << "Invalid (negative) sigma2 " << dblval
 	       << " from line: " << line;
 	throw affineExcept("specFileDouble", "readFile", errstr.str(), 4);
@@ -129,7 +126,6 @@ void specFileDouble::readFile(const std::string& flname) {
       } else like_norm.push_back(1.0);
     } else if (words[0] == "fit_sigma1") {
       if (words.size() < 2) {
-	std::stringstream errstr;
 	errstr << "fit_sigma1 line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 5);
@@ -138,7 +134,6 @@ void specFileDouble::readFile(const std::string& flname) {
       fit_sigma1 = utility::string_true(words[1]);
     } else if (words[0] == "fit_sigma2") {
       if (words.size() < 2) {
-	std::stringstream errstr;
 	errstr << "fit_sigma2 line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 6);
@@ -148,7 +143,6 @@ void specFileDouble::readFile(const std::string& flname) {
 
     } else if (words[0] == "sigmaprior1") {
       if (words.size() < 2) {
-	std::stringstream errstr;
 	errstr << "sigmaprior1 line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFileDouble", "readFile", errstr.str(), 7);
@@ -156,7 +150,6 @@ void specFileDouble::readFile(const std::string& flname) {
 
       str.str(words[1]); str.clear(); str >> dblval;
       if (dblval <= 0.0) {
-	std::stringstream errstr;
 	errstr << "Invalid (non positive) sigma prior1 stdev " << dblval
 	       << " from line: " << line;
 	throw affineExcept("specFileDouble", "readFile", errstr.str(), 8);
@@ -167,7 +160,6 @@ void specFileDouble::readFile(const std::string& flname) {
       sigprior_stdev1 = dblval;
     } else if (words[0] == "sigmaprior2") {
       if (words.size() < 2) {
-	std::stringstream errstr;
 	errstr << "sigmaprior2 line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFileDouble", "readFile", errstr.str(), 9);
@@ -175,7 +167,6 @@ void specFileDouble::readFile(const std::string& flname) {
 
       str.str(words[1]); str.clear(); str >> dblval;
       if (dblval <= 0.0) {
-	std::stringstream errstr;
 	errstr << "Invalid (non positive) sigma prior2 stdev " << dblval
 	       << " from line: " << line;
 	throw affineExcept("specFileDouble", "readFile", errstr.str(), 10);
@@ -188,7 +179,6 @@ void specFileDouble::readFile(const std::string& flname) {
     } else if (words[0] == "cfirbprior1") {
 
       if (words.size() < 3) {
-	std::stringstream errstr;
 	errstr << "cfirbprior1 line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFileDouble", "readFile", errstr.str(), 11);
@@ -198,7 +188,6 @@ void specFileDouble::readFile(const std::string& flname) {
 
       str.str(words[1]); str.clear(); str >> dblval;
       if (dblval <= 0.0) {
-	std::stringstream errstr;
 	errstr << "Invalid (non positive) cfirb prior1 mean " << dblval
 	       << " from line: " << line;
 	throw affineExcept("specFileDouble", "readFile", errstr.str(), 12);
@@ -207,7 +196,6 @@ void specFileDouble::readFile(const std::string& flname) {
 
       str.str(words[2]); str.clear(); str >> dblval;
       if (dblval <= 0.0) {
-	std::stringstream errstr;
 	errstr << "Invalid (non positive) cfirb prior1 stdev " << dblval
 	       << " from line: " << line;
 	throw affineExcept("specFileDouble", "readFile", errstr.str(), 13);
@@ -217,7 +205,6 @@ void specFileDouble::readFile(const std::string& flname) {
     } else if (words[0] == "cfirbprior2") {
 
       if (words.size() < 3) {
-	std::stringstream errstr;
 	errstr << "cfirbprior2 line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFileDouble", "readFile", errstr.str(), 14);
@@ -227,7 +214,6 @@ void specFileDouble::readFile(const std::string& flname) {
 
       str.str(words[1]); str.clear(); str >> dblval;
       if (dblval <= 0.0) {
-	std::stringstream errstr;
 	errstr << "Invalid (non positive) cfirb prior2 mean " << dblval
 	       << " from line: " << line;
 	throw affineExcept("specFileDouble", "readFile", errstr.str(), 15);
@@ -236,7 +222,6 @@ void specFileDouble::readFile(const std::string& flname) {
 
       str.str(words[2]); str.clear(); str >> dblval;
       if (dblval <= 0.0) {
-	std::stringstream errstr;
 	errstr << "Invalid (non positive) cfirb prior2 stdev " << dblval
 	       << " from line: " << line;
 	throw affineExcept("specFileDouble", "readFile", errstr.str(), 16);
@@ -261,7 +246,6 @@ void specFileDouble::readFile(const std::string& flname) {
       nbins = static_cast<unsigned int>(ival);
     } else if (words[0] == "mean_sub") {
       if (words.size() < 2) {
-	std::stringstream errstr;
 	errstr << "mean_sub line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 19);
@@ -287,7 +271,6 @@ void specFileDouble::readFile(const std::string& flname) {
 
     } else if (words[0] == "edge_set") {
       if (words.size() < 2) {
-	std::stringstream errstr;
 	errstr << "edge_set line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 22);
@@ -313,7 +296,6 @@ void specFileDouble::readFile(const std::string& flname) {
 
     } else if (words[0] == "edge_fix") {
       if (words.size() < 2) {
-	std::stringstream errstr;
 	errstr << "edge_fix line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 25);
@@ -323,7 +305,6 @@ void specFileDouble::readFile(const std::string& flname) {
 
     } else if (words[0] == "beam_histogram") {
       if (words.size() < 2) {
-	std::stringstream errstr;
 	errstr << "beam_histogram line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 26);
@@ -333,7 +314,6 @@ void specFileDouble::readFile(const std::string& flname) {
 
     } else if (words[0] == "wisdom_file") {
       if (words.size() < 2) {
-	std::stringstream errstr;
 	errstr << "wisdom_file line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 27);
@@ -344,7 +324,6 @@ void specFileDouble::readFile(const std::string& flname) {
 
     } else if (words[0] == "verbose") {
       if (words.size() < 2) {
-	std::stringstream errstr;
 	errstr << "verbose line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 28);
@@ -354,7 +333,6 @@ void specFileDouble::readFile(const std::string& flname) {
 
     } else if (words[0] == "ultraverbose") {
       if (words.size() < 2) {
-	std::stringstream errstr;
 	errstr << "ultraverbose line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 29);
@@ -363,7 +341,6 @@ void specFileDouble::readFile(const std::string& flname) {
       ultraverbose = utility::string_true(words[1]);
 
     } else {
-      std::stringstream errstr;
       errstr << "Couldn't determine line type for: " << line;
       throw affineExcept("specFileDouble", "readFile", errstr.str(), 30);
     }

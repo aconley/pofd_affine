@@ -48,13 +48,12 @@ void specFile::readFile(const std::string& flname) {
 
   std::string line;
   std::vector<std::string> words;
-  std::stringstream str;
+  std::stringstream str, errstr;
   double lnorm;
 
   std::ifstream ifs( flname.c_str() );
   if ( ! ifs ) {
     ifs.close();
-    std::stringstream errstr;
     errstr << "Error reading spec file: " << flname;
     throw affineExcept("specFile","readFile",errstr.str(),1);
   }
@@ -62,7 +61,6 @@ void specFile::readFile(const std::string& flname) {
   //Do read
   double dblval;
   int ival;
-  std::stringstream errstr;
   while (! ifs.eof() ) {
 
     std::getline(ifs,line);
@@ -121,7 +119,6 @@ void specFile::readFile(const std::string& flname) {
       nbins = static_cast<unsigned int>(ival);
     } else if (words[0] == "mean_sub") {
       if (words.size() < 2) {
-	std::stringstream errstr;
 	errstr << "mean_sub line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 6);
@@ -131,7 +128,6 @@ void specFile::readFile(const std::string& flname) {
 
     } else if (words[0] == "ignore_mask") {
       if (words.size() < 2) {
-	std::stringstream errstr;
 	errstr << "ignore_mask line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 8);
@@ -174,7 +170,6 @@ void specFile::readFile(const std::string& flname) {
 
     } else if (words[0] == "edge_fix") {
       if (words.size() < 2) {
-	std::stringstream errstr;
 	errstr << "edge_fix line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 13);
@@ -184,7 +179,6 @@ void specFile::readFile(const std::string& flname) {
 
     } else if (words[0] == "beam_histogram") {
       if (words.size() < 2) {
-	std::stringstream errstr;
 	errstr << "beam_histogram line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 14);
@@ -194,7 +188,6 @@ void specFile::readFile(const std::string& flname) {
 
     } else if (words[0] == "fit_sigma") {
       if (words.size() < 2) {
-	std::stringstream errstr;
 	errstr << "fit_sigma line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 15);
@@ -204,7 +197,6 @@ void specFile::readFile(const std::string& flname) {
 
     } else if (words[0] == "sigmaprior") {
       if (words.size() < 2) {
-	std::stringstream errstr;
 	errstr << "sigmaprior line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 16);
@@ -212,7 +204,6 @@ void specFile::readFile(const std::string& flname) {
 
       str.str(words[1]); str.clear(); str >> dblval;
       if (dblval <= 0.0) {
-	std::stringstream errstr;
 	errstr << "Invalid (non positive) sigma prior stdev " << dblval
 	       << " from line: " << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 17);
@@ -225,7 +216,6 @@ void specFile::readFile(const std::string& flname) {
     } else if (words[0] == "cfirbprior") {
 
       if (words.size() < 3) {
-	std::stringstream errstr;
 	errstr << "cfirbprior line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 18);
@@ -235,7 +225,6 @@ void specFile::readFile(const std::string& flname) {
 
       str.str(words[1]); str.clear(); str >> dblval;
       if (dblval <= 0.0) {
-	std::stringstream errstr;
 	errstr << "Invalid (non positive) cfirb prior mean " << dblval
 	       << " from line: " << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 19);
@@ -244,7 +233,6 @@ void specFile::readFile(const std::string& flname) {
 
       str.str(words[2]); str.clear(); str >> dblval;
       if (dblval <= 0.0) {
-	std::stringstream errstr;
 	errstr << "Invalid (non positive) cfirb prior stdev " << dblval
 	       << " from line: " << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 20);
@@ -253,7 +241,6 @@ void specFile::readFile(const std::string& flname) {
 
     } else if (words[0] == "wisdom_file") {
       if (words.size() < 2) {
-	std::stringstream errstr;
 	errstr << "wisdom_file line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 21);
@@ -264,7 +251,6 @@ void specFile::readFile(const std::string& flname) {
 
     } else if (words[0] == "verbose") {
       if (words.size() < 2) {
-	std::stringstream errstr;
 	errstr << "verbose line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 22);
@@ -274,7 +260,6 @@ void specFile::readFile(const std::string& flname) {
 
     } else if (words[0] == "ultraverbose") {
       if (words.size() < 2) {
-	std::stringstream errstr;
 	errstr << "ultraverbose line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 23);
@@ -283,7 +268,6 @@ void specFile::readFile(const std::string& flname) {
       ultraverbose = utility::string_true(words[1]);
 
     } else {
-      std::stringstream errstr;
       errstr << "Couldn't determine line type for: " << line;
       throw affineExcept("specFile","readFile",errstr.str(),24);
     }
