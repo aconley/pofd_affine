@@ -85,7 +85,7 @@ struct specFileDouble {
   //Various fit options
   bool bin_data; //!< Bin input data
   unsigned int nbins; //!< Number of data bins
-  bool ignore_mask;
+  bool ignore_mask; //!< Ignore mask information in data files
   bool mean_sub; //!< Mean subtract data
   unsigned int fftsize; //!< Length of fft
   bool edge_set; //!< Do edge setting integration

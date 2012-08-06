@@ -4,6 +4,9 @@
 #include<affineEnsemble.h>
 #include<calcLike.h>
 
+/*!
+  \brief Class for doing 1D P(D) fits
+*/
 class pofdMCMC : public affineEnsemble {
 private:
   std::string initfile; //!< File to read initilaization from
