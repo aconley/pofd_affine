@@ -252,6 +252,17 @@ void specFileDouble::readFile(const std::string& flname) {
       }
 
       mean_sub = utility::string_true(words[1]);
+
+    } else if (words[0] == "ignore_mask") {
+      if (words.size() < 2) {
+	errstr << "ignore_mask line doesn't have right number of entries: "
+	       << line;
+	throw affineExcept("specFile", "readFile", errstr.str(), 8);
+      }
+
+      ignore_mask = utility::string_true(words[1]);
+
+
     } else if (words[0] == "fftsize") {
       if (words.size() < 2) {
 	errstr << "fftsize line doesn't have right number of entries: "
