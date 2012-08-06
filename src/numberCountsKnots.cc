@@ -380,7 +380,7 @@ void initFileKnots::readFile(const std::string& flname,
 	std::stringstream errstr;
 	errstr << "Lower/Upper limits meet at index: " << i 
 	       << " but sigma is not zero" << std::endl;
-	errstr << " Lower limit: " << lowlim << " Upper limit: " << uplim
+	errstr << " Lower limit: " << lowlim[i] << " Upper limit: " << uplim[i]
 	       << " sigma: " << sigma[i];
 	throw affineExcept("initFileKnots", "readFiles", errstr.str(), 4);
       }
