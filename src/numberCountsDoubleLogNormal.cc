@@ -1420,13 +1420,21 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
   if (has_lower_limits && has_upper_limits)
     for (unsigned int i = 0; i < nknots; ++i) {
       if ( !(has_uplim[i] && has_lowlim[i]) ) continue;
-      if (uplim[i] < lowlim[i])
-	throw affineExcept("initFileDoubleLogNormal","readFiles",
-			   "Lower/Upper limits cross",16);
-      if (uplim[i] == lowlim[i])
-	if (sigma[i] > 0.)
-	  throw affineExcept("initFileDoubleLogNormal","readFiles",
-			     "Lower/Upper limits meet but sigma is not 0",32);
+      if (uplim[i] < lowlim[i]) {
+	std::stringstream errstr;
+	errstr << "Lower/Upper limits cross at index: " << i << std::endl;
+	errstr << " Lower limit: " << lowlim[i] 
+	       << " Upper limit: " << uplim[i];
+	throw affineExcept("initFileKnots", "readFiles", errstr.str(), 3);
+      }
+      if ( (sigma[i] > 0.) && (uplim[i] == lowlim[i]) ) {
+	std::stringstream errstr;
+	errstr << "Lower/Upper limits meet at index: " << i 
+	       << " but sigma is not zero" << std::endl;
+	errstr << " Lower limit: " << lowlim << " Upper limit: " << uplim
+	       << " sigma: " << sigma[i];
+	throw affineExcept("initFileKnots", "readFiles", errstr.str(), 4);
+      }
     }
 }
 
