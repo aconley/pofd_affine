@@ -1667,6 +1667,15 @@ void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
 
 }
 
+double initFileDoubleLogNormal::getKnotSigma(unsigned int idx) const {
+  if (idx >= nknots+nsigmas+noffsets)
+    throw affineExcept("initFileDoubleLogNormal",
+		       "getKnotSigma","Invalid knot index",1);
+  if (!has_sigma) return std::numeric_limits<double>::quiet_NaN();
+  return sigma[idx];
+}
+
+
 bool initFileDoubleLogNormal::isKnotFixed(unsigned int idx) const {
   if (idx >= nknots+nsigmas+noffsets)
     throw affineExcept("initFileDoubleLogNormal","isKnotFixed",
@@ -1675,6 +1684,58 @@ bool initFileDoubleLogNormal::isKnotFixed(unsigned int idx) const {
   if (sigma[idx] == 0) return true;
   return false;
 }
+
+/*
+  \param[in] idx Knot index
+  \returns Whether knot has a lower limit
+ */
+bool initFileDoubleLogNormal::knotHasLowerLimit(unsigned int idx) const {
+  if (!has_lower_limits) return false;
+  if (idx >= nknots+nsigmas+noffsets)
+    throw affineExcept("initFileDoubleLogNormal","knotHasLowerLimit",
+		       "Invalid knot index",1);
+  return has_lowlim[idx];
+}
+
+/*
+  \param[in] idx Knot index
+  \returns Lower limit on knot, or NaN if none
+ */
+double initFileDoubleLogNormal::getLowerLimit(unsigned int idx) const {
+  if (!has_lower_limits) return std::numeric_limits<double>::quiet_NaN();
+  if (idx >= nknots+nsigmas+noffsets)
+    throw affineExcept("initFileDoubleLogNormal","getLowerLimit",
+		       "Invalid knot index",1);
+  if (!has_lowlim[idx]) return std::numeric_limits<double>::quiet_NaN();
+  return lowlim[idx];
+}
+
+/*
+  \param[in] idx Knot index
+  \returns Whether knot has a upper limit
+ */
+bool initFileDoubleLogNormal::knotHasUpperLimit(unsigned int idx) const {
+  if (!has_upper_limits) return false;
+  if (idx >= nknots+nsigmas+noffsets)
+    throw affineExcept("initFileDoubleLogNormal","knotHasUpperLimit",
+		       "Invalid knot index",1);
+  return has_uplim[idx];
+}
+
+
+/*
+  \param[in] idx Knot index
+  \returns Upper limit on knot, or NaN if none
+ */
+double initFileDoubleLogNormal::getUpperLimit(unsigned int idx) const {
+  if (!has_upper_limits) return std::numeric_limits<double>::quiet_NaN();
+  if (idx >= nknots+nsigmas+noffsets)
+    throw affineExcept("initFileDoubleLogNormal","getUpperLimit",
+		       "Invalid knot index",1);
+  if (!has_uplim[idx]) return std::numeric_limits<double>::quiet_NaN();
+  return uplim[idx];
+}
+
 
 bool initFileDoubleLogNormal::isValid(const paramSet& p) const {
   if (! (has_lower_limits || has_upper_limits) ) return true;

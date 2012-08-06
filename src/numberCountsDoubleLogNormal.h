@@ -249,9 +249,17 @@ class initFileDoubleLogNormal {
   void getParams(paramSet& p) const; //!< Sets knot values to central values
   void generateRandomKnotValues(paramSet& p) const; //!< Seed knot values
   
+  double getKnotSigma(unsigned int) const; //!< Get knot sigma
   bool isKnotFixed(unsigned int) const; //!< Is a knot fixed?
+
+  bool knotHasLowerLimit(unsigned int) const; //!< Does knot have a lower limit
+  double getLowerLimit(unsigned int) const; //!< Get knot lower limit
+
+  bool knotHasUpperLimit(unsigned int) const; //!< Does knot have a lower limit
+  double getUpperLimit(unsigned int) const; //!< Get knot lower limit
+
   bool isValid(const paramSet&) const; //!< Checks if parameters are within allowed ranges
-  
+
   void SendSelf(MPI::Comm&, int dest) const; //!< Send self
   void RecieveCopy(MPI::Comm&, int src); //!< Recieve
 };

@@ -105,13 +105,25 @@ class initFileKnots {
 
   /*! \brief Set seed of random number generator */
   void setSeed( unsigned long long int seed ) const { rangen.setSeed(seed); }
+
   void getKnotPos(std::vector<double>&) const; //!< Gets the knot positions
   void getKnotVals(std::vector<double>&) const; //!< Gets the knot values
   void getKnotPos(numberCountsKnots&) const; //!< Sets knot locations in model
+  double getKnotPos(unsigned int) const; //!< Get knot position
+  double getKnotValue(unsigned int) const; //!< Get knot value
+
   void getParams(paramSet& p) const; //!< Sets knot values to central values
   void generateRandomKnotValues(paramSet& p) const; //!< Seed knot values
-  
+
+  double getKnotSigma(unsigned int) const; //!< Get knot sigma
   bool isKnotFixed(unsigned int) const; //!< Is a knot fixed?
+  
+  bool knotHasLowerLimit(unsigned int) const; //!< Does knot have a lower limit
+  double getLowerLimit(unsigned int) const; //!< Get knot lower limit
+
+  bool knotHasUpperLimit(unsigned int) const; //!< Does knot have a lower limit
+  double getUpperLimit(unsigned int) const; //!< Get knot lower limit
+
   bool isValid(const paramSet&) const; //!< Checks if parameters are within allowed ranges
   
   void SendSelf(MPI::Comm&, int dest) const; //!< Send self

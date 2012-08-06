@@ -402,6 +402,20 @@ void initFileKnots::getKnotPos(std::vector<double>& kp) const {
 }
 
 /*
+  \param[in] idx Index of knot to get
+  \returns Knot position at that index
+*/
+double initFileKnots::getKnotPos(unsigned int idx) const {
+  if (nknots == 0)
+    throw affineExcept("initFileKnots","getKnotPos",
+		       "No knot information read in",1);
+  if (idx >= nknots)
+    throw affineExcept("initFileKnots","getKnotPos",
+		       "Invalid knot index",2);
+  return knotpos[idx];
+}
+
+/*
   \param[inout] model Modified on output; knot positions are set
 
   This will change the number of knots in the model if they
@@ -425,6 +439,21 @@ void initFileKnots::getKnotVals(std::vector<double>& kv) const {
   for (unsigned int i = 0; i < nknots; ++i)
     kv[i] = knotval[i];
 }
+
+/*
+  \param[in] idx Index of knot to get
+  \returns Knot value at that index
+*/
+double initFileKnots::getKnotValue(unsigned int idx) const {
+  if (nknots == 0)
+    throw affineExcept("initFileKnots","getKnotValue",
+		       "No knot information read in",1);
+  if (idx >= nknots)
+    throw affineExcept("initFileKnots","getKnotValue",
+		       "Invalid knot index",2);
+  return knotval[idx];
+}
+
 
 /*
   This only fills the first nknots parameters
@@ -560,6 +589,17 @@ void initFileKnots::generateRandomKnotValues(paramSet& p) const {
 
 }
 
+double initFileKnots::getKnotSigma(unsigned int idx) const {
+  if (idx >= nknots)
+    throw affineExcept("initFileKnots","getKnotSigma","Invalid knot index",1);
+  if (!has_sigma) return std::numeric_limits<double>::quiet_NaN();
+  return sigma[idx];
+}
+
+/*
+  \param[in] idx Knot index
+  \returns Whether knot is fixed
+ */
 bool initFileKnots::isKnotFixed(unsigned int idx) const {
   if (idx >= nknots)
     throw affineExcept("initFileKnots","isKnotFixed","Invalid knot index",1);
@@ -567,6 +607,58 @@ bool initFileKnots::isKnotFixed(unsigned int idx) const {
   if (sigma[idx] == 0) return true;
   return false;
 }
+
+/*
+  \param[in] idx Knot index
+  \returns Whether knot has a lower limit
+ */
+bool initFileKnots::knotHasLowerLimit(unsigned int idx) const {
+  if (!has_lower_limits) return false;
+  if (idx >= nknots)
+    throw affineExcept("initFileKnots","knotHasLowerLimit",
+		       "Invalid knot index",1);
+  return has_lowlim[idx];
+}
+
+/*
+  \param[in] idx Knot index
+  \returns Lower limit on knot, or NaN if none
+ */
+double initFileKnots::getLowerLimit(unsigned int idx) const {
+  if (!has_lower_limits) return std::numeric_limits<double>::quiet_NaN();
+  if (idx >= nknots)
+    throw affineExcept("initFileKnots","getLowerLimit",
+		       "Invalid knot index",1);
+  if (!has_lowlim[idx]) return std::numeric_limits<double>::quiet_NaN();
+  return lowlim[idx];
+}
+
+/*
+  \param[in] idx Knot index
+  \returns Whether knot has a upper limit
+ */
+bool initFileKnots::knotHasUpperLimit(unsigned int idx) const {
+  if (!has_upper_limits) return false;
+  if (idx >= nknots)
+    throw affineExcept("initFileKnots","knotHasUpperLimit",
+		       "Invalid knot index",1);
+  return has_uplim[idx];
+}
+
+
+/*
+  \param[in] idx Knot index
+  \returns Upper limit on knot, or NaN if none
+ */
+double initFileKnots::getUpperLimit(unsigned int idx) const {
+  if (!has_upper_limits) return std::numeric_limits<double>::quiet_NaN();
+  if (idx >= nknots)
+    throw affineExcept("initFileKnots","getUpperLimit",
+		       "Invalid knot index",1);
+  if (!has_uplim[idx]) return std::numeric_limits<double>::quiet_NaN();
+  return uplim[idx];
+}
+
 
 bool initFileKnots::isValid(const paramSet& p) const {
   if (! (has_lower_limits || has_upper_limits) ) return true;
