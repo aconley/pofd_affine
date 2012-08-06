@@ -76,7 +76,4 @@ class numberCountsKnotsSpline : public numberCountsKnots {
   virtual void RecieveCopy(MPI::Comm&, int src); //!< Recieve
 };
 
-//Function to pass to GSL integrator
-double evalPowfNKnotsSpline(double,void*); //!< Evaluates f^pow dN/dS
-
 #endif

@@ -186,10 +186,6 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
    void RecieveCopy(MPI::Comm&, int src); //!< Recieve
 };
 
-//Function to pass to GSL integrator
-/*! \brief Evaluates flux1^power1 * exp(const1*mu + const2*sigma^2) dN/dS1 */
-double evalPowfNDoubleLogNormal(double,void*); 
-
 //////////////////////////////
 
 /*!
@@ -244,7 +240,10 @@ class initFileDoubleLogNormal {
   void getKnotPos(std::vector<double>&) const; //!< Gets the knot positions for band 1
   void getKnotVals(std::vector<double>&) const; //!< Gets the knot values for band 1
   void getSigmaPos(std::vector<double>&) const; //!< Gets the knot positions for color model sigma
+  void getSigmaVals(std::vector<double>&) const; //!< Gets the knot values for color model sigma
   void getOffsetPos(std::vector<double>&) const; //!< Gets the knot positions for color model offset
+  void getOffsetVals(std::vector<double>&) const; //!< Gets the knot values for color model offset
+
   void getModelPositions(numberCountsDoubleLogNormal&) const; //!< Sets knot locations in model for all model components
   void getParams(paramSet& p) const; //!< Sets knot values to central values
   void generateRandomKnotValues(paramSet& p) const; //!< Seed knot values

@@ -6,6 +6,10 @@
 #include<global_settings.h>
 #include<affineExcept.h>
 
+//Function to pass to GSL integrator
+/*! \brief Evaluates flux1^power1 * exp(const1*mu + const2*sigma^2) dN/dS1 */
+static double evalPowfNDoubleLogNormal(double,void*); 
+
 const unsigned int numberCountsDoubleLogNormal::nvarr = 17;
 
 numberCountsDoubleLogNormal::numberCountsDoubleLogNormal() : 
@@ -22,6 +26,11 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal() :
   varr = new void*[nvarr];
 }
 
+/*!
+  \param[in] NKNOTS Number of model knots for band 1 counts model
+  \param[in] NSIGMA Number of model knots for band 2 color model sigma
+  \param[in] NOFFSET Number of model knots for band 2 color model offset
+*/
 numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
 							 unsigned int NSIGMA,
 							 unsigned int NOFFSET) :
@@ -77,6 +86,11 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
   varr = new void*[nvarr];
 }
   
+/*!
+  \param[in] KNOTS Model knots positions for band 1 counts model
+  \param[in] SIGMAS Model knots positions for band 2 color model sigma
+  \param[in] OFFSETS Model knots positions for band 2 color model offset
+*/
 numberCountsDoubleLogNormal::
 numberCountsDoubleLogNormal(const std::vector<double>& KNOTS,
 			    const std::vector<double>& SIGMAS,
@@ -101,6 +115,14 @@ numberCountsDoubleLogNormal(const std::vector<double>& KNOTS,
   varr = new void*[nvarr];
 }
 
+/*!
+  \param[in] nk Number of elements in K
+  \param[in] K Model knots positions for band 1 counts model
+  \param[in] ns Number of elements in S
+  \param[in] S Model knots positions for band 2 color model sigma  
+  \param[in] no Number of elements in O
+  \param[in] O Model knots positions for band 2 color model offset
+*/
 numberCountsDoubleLogNormal::
 numberCountsDoubleLogNormal( unsigned int nk, const double* const K,
 			     unsigned int ns, const double* const S,
@@ -124,6 +146,9 @@ numberCountsDoubleLogNormal( unsigned int nk, const double* const K,
   varr = new void*[nvarr];
 }
 
+/*!
+  \param[in] other Instance to copy from
+*/
 numberCountsDoubleLogNormal::
 numberCountsDoubleLogNormal( const numberCountsDoubleLogNormal& other ) {
   if ( this == &other ) return; //Self-copy
@@ -187,6 +212,9 @@ numberCountsDoubleLogNormal::~numberCountsDoubleLogNormal() {
   if (RWorkValid != NULL) delete[] RWorkValid;
 }
 
+/*!
+  \param[in] other Instance to copy from
+*/
 numberCountsDoubleLogNormal& numberCountsDoubleLogNormal::
 operator=(const numberCountsDoubleLogNormal& other) {
   if ( this == &other ) return *this; //Self-copy
@@ -224,6 +252,9 @@ operator=(const numberCountsDoubleLogNormal& other) {
   return *this;
 }
 
+/*!
+  \param[in] n Number of knots to set
+*/
 void numberCountsDoubleLogNormal::setNKnots(unsigned int n) {
   if ( nknots == n ) return;
   if ( knots != NULL ) delete[] knots;
@@ -247,6 +278,9 @@ void numberCountsDoubleLogNormal::setNKnots(unsigned int n) {
   knotvals_loaded = false;
 }
 
+/*!
+  \param[in] n Number of sigmas
+*/
 void numberCountsDoubleLogNormal::setNSigmas(unsigned int n) {
   if ( nsigmaknots == n ) return;
   if ( sigmaknots != NULL ) delete[] sigmaknots;
@@ -272,6 +306,9 @@ void numberCountsDoubleLogNormal::setNSigmas(unsigned int n) {
   knotvals_loaded = false;
 }
 
+/*!
+  \param[in] n Number of offsets
+*/
 void numberCountsDoubleLogNormal::setNOffsets(unsigned int n) {
   if ( noffsetknots == n ) return;
   if ( offsetknots != NULL ) delete[] offsetknots;
@@ -298,7 +335,7 @@ void numberCountsDoubleLogNormal::setNOffsets(unsigned int n) {
 }
 
 /*!
-  \param[in] S Input knot positions
+  \param[in] S Input knot positions for band 1 model
 */
 void numberCountsDoubleLogNormal::
 setKnotPositions(const std::vector<double>& S) {
@@ -315,7 +352,7 @@ setKnotPositions(const std::vector<double>& S) {
 }
 
 /*!
-  \param[in] n Number of knots
+  \param[in] n Number of knots in band 1 model
   \param[in] S Input knot positions
 */
 void numberCountsDoubleLogNormal::setKnotPositions(unsigned int n, 
@@ -332,7 +369,7 @@ void numberCountsDoubleLogNormal::setKnotPositions(unsigned int n,
 }
 
 /*!
-  \param[in] S Input knot positions
+  \param[in] S Input knot positions for band 2 color model sigma
 */
 void numberCountsDoubleLogNormal::
 setSigmaPositions(const std::vector<double>& S) {
@@ -347,7 +384,7 @@ setSigmaPositions(const std::vector<double>& S) {
 }
 
 /*!
-  \param[in] n Number of knots
+  \param[in] n Number of knots for band 2 color model sigma
   \param[in] S Input knot positions
 */
 void numberCountsDoubleLogNormal::setSigmaPositions(unsigned int n, 
@@ -363,7 +400,7 @@ void numberCountsDoubleLogNormal::setSigmaPositions(unsigned int n,
 
 
 /*!
-  \param[in] S Input knot positions
+  \param[in] S Input knot positions for band 2 color model offset
 */
 void numberCountsDoubleLogNormal::
 setOffsetPositions(const std::vector<double>& S) {
@@ -378,7 +415,7 @@ setOffsetPositions(const std::vector<double>& S) {
 }
 
 /*!
-  \param[in] n Number of knots
+  \param[in] n Number of knots for band 2 color model offset
   \param[in] S Input knot positions
 */
 void numberCountsDoubleLogNormal::setOffsetPositions(unsigned int n, 
@@ -392,7 +429,11 @@ void numberCountsDoubleLogNormal::setOffsetPositions(unsigned int n,
     offsetknots[i] = S[i];
 }
 
-
+/*!
+  \param[in] K Band 1 knot positions vector
+  \param[in] S Band 2 color model sigma knot positions vector 
+  \param[in] O Band 2 color model offset knot positions vector 
+*/
 void numberCountsDoubleLogNormal::
 setPositions(const std::vector<double>& K, const std::vector<double>& S,
 	     const std::vector<double>& O) {
@@ -401,8 +442,11 @@ setPositions(const std::vector<double>& K, const std::vector<double>& S,
   setOffsetPositions(O);
 }
 
-/*! Allocates R work arrays.  Only upsizes */
+/*! 
+  \param[in] sz New size of R work arrays
 
+  Allocates R work arrays.  Only upsizes 
+*/
 void numberCountsDoubleLogNormal::setRWorkSize( unsigned int sz ) const {
   if ( sz <= nRWork ) return;
   if ( RWork1 != NULL ) delete[] RWork1;
@@ -494,8 +538,12 @@ bool numberCountsDoubleLogNormal::isValid() const {
   return true;
 }
 
+/*!
+  \param[in] f1 Band 1 flux value to evaluate sigma for
+  \returns Value of band 2 color model sigma at f1
 
-//Assumes validity already checked
+  Assumes validity already checked
+*/
 double numberCountsDoubleLogNormal::getSigmaInner(double f1) const {
   if (nsigmaknots == 1) return sigmavals[0];
   if (f1 <= sigmaknots[0]) return sigmavals[0];
@@ -504,7 +552,12 @@ double numberCountsDoubleLogNormal::getSigmaInner(double f1) const {
 			  f1, accsigma );
 }
 
-//Assumes validity already checked
+/*!
+  \param[in] f1 Band 1 flux value to evaluate offset for
+  \returns Value of band 2 color model offset at f1
+
+  Assumes validity already checked
+*/
 double numberCountsDoubleLogNormal::getOffsetInner(double f1) const {
   if (noffsetknots == 1) return offsetvals[0];
   if (f1 <= offsetknots[0]) return offsetvals[0];
@@ -513,6 +566,12 @@ double numberCountsDoubleLogNormal::getOffsetInner(double f1) const {
 			  f1, accoffset );
 }
 
+/*!
+  \param[in] f1 Band 1 flux value to evaluate sigma for
+  \returns Value of band 2 color model sigma at f1
+
+  Does validity checks on model state.
+*/
 double numberCountsDoubleLogNormal::getSigma(double f1) const {
   if (! isValid() ) return std::numeric_limits<double>::quiet_NaN();
   if (nsigmaknots < 1 ) return std::numeric_limits<double>::quiet_NaN();
@@ -521,15 +580,27 @@ double numberCountsDoubleLogNormal::getSigma(double f1) const {
   return getSigmaInner(f1);
 }
 
+/*!
+  \param[in] f1 Band 1 flux value to evaluate offset for
+  \returns Value of band 2 color model offset at f1
+
+  Does validity checks on model state.
+*/
 double numberCountsDoubleLogNormal::getOffset(double f1) const {
   if (! isValid() ) return std::numeric_limits<double>::quiet_NaN();
-  if (nsigmaknots < 1) return std::numeric_limits<double>::quiet_NaN();
+  if (noffsetknots < 1) return std::numeric_limits<double>::quiet_NaN();
   if (std::isnan(f1) || std::isinf(f1)) 
     return std::numeric_limits<double>::quiet_NaN();
   return getOffsetInner(f1);
 }
 
-//Assumes validity already checked
+/*!
+  \param[in] f1 Flux density in band 1
+  \param[in] f2 Flux density in band 2
+  \returns Number counts at f1, f2
+
+  Assumes model validity already checked
+*/
 double numberCountsDoubleLogNormal::
 getNumberCountsInner(double f1, double f2) const {
   const double normfac = 1.0/sqrt(2*M_PI);
@@ -547,6 +618,13 @@ getNumberCountsInner(double f1, double f2) const {
   return cnts;
 }
 
+/*!
+  \param[in] f1 Flux density in band 1
+  \param[in] f2 Flux density in band 2
+  \returns Number counts at f1, f2
+
+  Does validity checks on input.
+*/
 double numberCountsDoubleLogNormal::getNumberCounts(double f1, double f2) 
   const {
   if ( (nknots < 2) || (nsigmaknots < 1) || (noffsetknots < 1) )
@@ -556,28 +634,29 @@ double numberCountsDoubleLogNormal::getNumberCounts(double f1, double f2)
     return std::numeric_limits<double>::quiet_NaN();
   if ( std::isnan(f2) || std::isinf(f2)) 
     return std::numeric_limits<double>::quiet_NaN();
+  if (nsigmaknots < 1 ) return std::numeric_limits<double>::quiet_NaN();
+  if (noffsetknots < 1) return std::numeric_limits<double>::quiet_NaN();
   return getNumberCountsInner(f1,f2);
 }
 
 /*
   \param[in] band Which band to select; 0 for band 1, 1 for band 2
-  \returns The minimum flux
+  \returns The minimum flux supported by the model.
 
-  Fluxes must be positive, so return smallest non-zero double value
-  for band 2.  Better defined for band 1.
+  Fluxes must be positive, so return smallest non-zero double value.
  */
 double numberCountsDoubleLogNormal::getMinFlux(unsigned int band) const {
   if (nknots == 0) return std::numeric_limits<double>::quiet_NaN();
   if (band == 0) return std::numeric_limits<double>::min();
-  else if (band == 1) return 0.0;
+  else if (band == 1) return std::numeric_limits<double>::min();
   else throw affineExcept("numberCountsDoubleLogNormal","getMinFlux",
 			  "Invalid band (must be 0 or 1)",1);
-return std::numeric_limits<double>::quiet_NaN();
+  return std::numeric_limits<double>::quiet_NaN();
 }
 
 /*
-   \param[in] band Which band to select; 0 for band 1, 1 for band 2
-  \returns The maximum flux
+  \param[in] band Which band to select; 0 for band 1, 1 for band 2
+  \returns The maximum flux supported by the model
 
   This is not entirely defined for band 2, so return a value a few sigma
   above the top value.  It is well defined for band 1.
@@ -681,10 +760,19 @@ double numberCountsDoubleLogNormal::splineInt(double alpha, double beta) const {
   return result;
 }
 
+/*!
+  \returns The Total number of sources per area, however area is defined
+           by the model.
+*/
 double numberCountsDoubleLogNormal::getNS() const {
   return splineInt(0.0,0.0);
 }
 
+/*!
+  \param[in] band Which band to select; 0 for band 1, 1 for band 2
+  \returns The mean flux per area -- however the model defines area and
+           flux
+*/
 double numberCountsDoubleLogNormal::
 getMeanFluxPerArea(unsigned int band) const {
   if (band == 0) return splineInt(1.0,0.0);
@@ -693,8 +781,6 @@ getMeanFluxPerArea(unsigned int band) const {
 			  "getMeanFluxPerArea","Band must be 0 or 1",1);
 }
 
-//Brute force internal function
-//Doesn't include prefac, nor check values
 /*!
   \param[in] f1   Flux 1
   \param[in] f2   Flux 2
@@ -702,7 +788,8 @@ getMeanFluxPerArea(unsigned int band) const {
   \param[in] sgn  Sign index [pp,pn,np,nn]
   \returns R but without the pixel area factor
 
- */
+  Does not check inputs for validity, and does not include area prefactor
+*/
 double numberCountsDoubleLogNormal::getRInternal(double f1,double f2,
 						 const doublebeam& bm, 
 						 unsigned int sgn) const {
@@ -731,8 +818,6 @@ double numberCountsDoubleLogNormal::getRInternal(double f1,double f2,
   return retval;
 }
 
-//Array internal function
-//Doesn't include prefac, nor check values
 /*!
   \param[in] n1   Number of fluxes, band 1
   \param[in] f1   Flux in band 1, length n1
@@ -744,6 +829,7 @@ double numberCountsDoubleLogNormal::getRInternal(double f1,double f2,
                   Does not include pixel area factor
 
   It is up to the caller to initialize R (to zeros, for example)
+  Does not check inputs for validity, and does not include area prefactor.
 */
 void numberCountsDoubleLogNormal::
 getRInternal(unsigned int n1, const double* const f1,
@@ -849,8 +935,8 @@ getRInternal(unsigned int n1, const double* const f1,
   \param[in] beam Beam
   \param[in] bmtype What type of R value to get (pos-pos, pos-neg, neg-pos,
                    neg-neg or the sum of all types that are present)
-  \returns R value
- */
+  \returns R value, including the beam pixel size area factor  
+*/
 double numberCountsDoubleLogNormal::getR(double f1, double f2, 
 					 const doublebeam& bm,
 					 const rtype bmtype) const {
@@ -915,10 +1001,13 @@ double numberCountsDoubleLogNormal::getR(double f1, double f2,
   \param[in]  n2 Number of fluxes along dimension 2
   \param[in]  f2 Fluxes along dimension 2
   \param[in]  bm Holds beam information
-  \param[out] vals Row major 2D array (n1xn2) giving values of R
+  \param[out] vals Row major array (n1xn2) giving values of R, including
+                    the beam pixel size prefactor
   \param[in]  bmtype What type of R value to get (pos-pos, pos-neg, neg-pos,
                    neg-neg or the sum of all types)
 
+  This does zero out vals, but it is up to the caller to allocate memory
+  for it.
  */ 
 void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 				       unsigned int n2, const double* const f2, 
@@ -1112,8 +1201,10 @@ bool numberCountsDoubleLogNormal::writeToStream(std::ostream& os) const {
 }
 
 
-
-double evalPowfNDoubleLogNormal(double s1, void* params) {
+/*!
+  Internal function for use in model integrations.
+ */
+static double evalPowfNDoubleLogNormal(double s1, void* params) {
   //Model is: ( f^power * exp( const1*mu + const2*sigma^2 ) ) * n1(f)
   // where f is the flux in the first band and n1 is the number
   // counts in band 1 -- see splineInt.
@@ -1472,19 +1563,6 @@ initFileDoubleLogNormal::getOffset(unsigned int idx) const {
 }
 
 
-
-/*
-  \param[out] kp Set to knot positions on output
- */
-void initFileDoubleLogNormal::getKnotPos(std::vector<double>& kp) const {
-  if (nknots == 0)
-    throw affineExcept("initFileDoubleLogNormal","getKnotPos",
-		       "No knot information read in",1);
-  kp.resize(nknots);
-  for (unsigned int i = 0; i < nknots; ++i)
-    kp[i] = knotpos[i];
-}
-
 /*
   \param[inout] model Modified on output; knot positions are set for
                       band 1 model and color model
@@ -1504,7 +1582,19 @@ initFileDoubleLogNormal::getModelPositions(numberCountsDoubleLogNormal& model)
 }
 
 /*
-  \param[out] kp Set to knot positions on output
+  \param[out] kp Set to knot positions on output for band 1 number counts
+ */
+void initFileDoubleLogNormal::getKnotPos(std::vector<double>& kp) const {
+  if (nknots == 0)
+    throw affineExcept("initFileDoubleLogNormal","getKnotPos",
+		       "No knot information read in",1);
+  kp.resize(nknots);
+  for (unsigned int i = 0; i < nknots; ++i)
+    kp[i] = knotpos[i];
+}
+
+/*
+  \param[out] kp Set to knot positions on output for band 1 number counts
  */
 void initFileDoubleLogNormal::getKnotVals(std::vector<double>& kv) const {
   if (nknots == 0)
@@ -1516,7 +1606,7 @@ void initFileDoubleLogNormal::getKnotVals(std::vector<double>& kv) const {
 }
 
 /*
-  \param[out] kp Set to knot positions on output
+  \param[out] kp Set to knot positions on output for color model sigma
  */
 void initFileDoubleLogNormal::getSigmaPos(std::vector<double>& kp) const {
   if (nsigmas == 0)
@@ -1528,7 +1618,19 @@ void initFileDoubleLogNormal::getSigmaPos(std::vector<double>& kp) const {
 }
 
 /*
-  \param[out] kp Set to knot positions on output
+  \param[out] kp Set to knot values on output for color model sigma
+ */
+void initFileDoubleLogNormal::getSigmaVals(std::vector<double>& kv) const {
+  if (nsigmas == 0)
+    throw affineExcept("initFileDoubleLogNormal","getSigmaVals",
+		       "No sigma information read in",1);
+  kv.resize(nsigmas);
+  for (unsigned int i = 0; i < nsigmas; ++i)
+    kv[i] = knotval[i+sigmaidx];
+}
+
+/*
+  \param[out] kp Set to knot positions on output for color model offset
  */
 void initFileDoubleLogNormal::getOffsetPos(std::vector<double>& kp) const {
   if (noffsets == 0)
@@ -1539,9 +1641,22 @@ void initFileDoubleLogNormal::getOffsetPos(std::vector<double>& kp) const {
     kp[i] = knotpos[i+offsetidx];
 }
 
+/*
+  \param[out] kp Set to knot values on output for color model offset
+ */
+void initFileDoubleLogNormal::getOffsetVals(std::vector<double>& kv) const {
+  if (noffsets == 0)
+    throw affineExcept("initFileDoubleLogNormal","getOffsetVals",
+		       "No sigma information read in",1);
+  kv.resize(noffsets);
+  for (unsigned int i = 0; i < noffsets; ++i)
+    kv[i] = knotval[i+offsetidx];
+}
 
 /*
-  This only fills the first nknots parameters
+  \param[out] p Filled on output with the mean knot values.
+
+  This only fills the first nknots + nsigmas + noffsets parameters
  */
 void initFileDoubleLogNormal::getParams(paramSet& p) const {
   if (nknots == 0)
@@ -1555,19 +1670,21 @@ void initFileDoubleLogNormal::getParams(paramSet& p) const {
 }
 
 /*
+  \param[out] p Filled on output with the mean knot values.
+
   This only fills the first nknots+nsigmas+noffsets parameters
  */
 void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
   const unsigned int maxiters = 1000; //Maximum number of generation attempts
   unsigned int ntot = nknots + noffsets + nsigmas;
   if (ntot == 0)
-    throw affineExcept("initFileDoubleLogNormal","generateRandomKnotValues",
-		       "No knot information read in",1);
+    throw affineExcept("initFileDoubleLogNormal", "generateRandomKnotValues",
+		       "No knot information read in", 1);
     
   //Make sure p is big enough; don't resize, complain
   if (p.getNParams() < ntot)
-    throw affineExcept("initFileDoubleLogNormal","generateRandomKnotValues",
-		       "Not enough space in provided paramSet",2);
+    throw affineExcept("initFileDoubleLogNormal", "generateRandomKnotValues",
+		       "Not enough space in provided paramSet", 2);
 
   //Deal with simple case -- everything fixed
   //So just return central values
@@ -1595,8 +1712,9 @@ void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
 	errstr << "Lower limit is too far above central value; will take too"
 	       << " long to " << std::endl << "generate value for param idx: "
 	       << i;
-	throw affineExcept("initFileDoubleLogNormal","generateRandomKnotValues",
-			   errstr.str(),4);
+	throw affineExcept("initFileDoubleLogNormal",
+			   "generateRandomKnotValues",
+			   errstr.str(), 4);
       }
       if (has_uplim[i] && (uplim[i] < knotval[i]-sigma[i]*4.0)) {
 	std::stringstream errstr;
@@ -1604,7 +1722,7 @@ void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
 	       << " long to " << std::endl << "generate value for param idx: "
 	       << i;
 	throw affineExcept("initFileDoubleLogNormal","generateRandomKnotValues",
-			   errstr.str(),8);
+			   errstr.str(), 8);
       }
 
       if (has_lowlim[i] && has_uplim[i]) {
@@ -1622,8 +1740,9 @@ void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
 	      std::stringstream errstr;
 	      errstr << "Failed to generate acceptable value for param "
 		     << i << " after " << iters << " attempts";
-	      throw affineExcept("initFileDoubleLogNormal","generateRandomKnotValues",
-				 errstr.str(),16);
+	      throw affineExcept("initFileDoubleLogNormal",
+				 "generateRandomKnotValues",
+				 errstr.str(), 16);
 	    }
 	    trialval = rangen.gauss() * sigma[i] + knotval[i];
 	    if ( (trialval >= lowlim[i]) && (trialval <= uplim[i]) ) 
@@ -1641,8 +1760,9 @@ void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
 	    std::stringstream errstr;
 	    errstr << "Failed to generate acceptable value for param "
 		   << i << " after " << iters << " attempts";
-	    throw affineExcept("initFileDoubleLogNormal","generateRandomKnotValues",
-			       errstr.str(),16);
+	    throw affineExcept("initFileDoubleLogNormal",
+			       "generateRandomKnotValues",
+			       errstr.str(), 16);
 	  }
 	  trialval = rangen.gauss() * sigma[i] + knotval[i];
 	  if (trialval >= lowlim[i]) goodval = true;
@@ -1658,8 +1778,9 @@ void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
 	    std::stringstream errstr;
 	    errstr << "Failed to generate acceptable value for param "
 		   << i << " after " << iters << " attempts";
-	    throw affineExcept("initFileDoubleLogNormal","generateRandomKnotValues",
-			       errstr.str(),16);
+	    throw affineExcept("initFileDoubleLogNormal",
+			       "generateRandomKnotValues",
+			       errstr.str(), 16);
 	  }
 	  trialval = rangen.gauss() * sigma[i] + knotval[i];
 	  if (trialval <= uplim[i]) goodval = true;
@@ -1675,6 +1796,13 @@ void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
 
 }
 
+/*!
+  \param[in] idx Which parameter index to get
+  \returns Knot sigma at idx
+  
+  Note that idx ranges over all the parameters -- including
+  the color model.  The valid range is thus [0,nknots + nsigmas + noffsets).
+*/
 double initFileDoubleLogNormal::getKnotSigma(unsigned int idx) const {
   if (idx >= nknots+nsigmas+noffsets)
     throw affineExcept("initFileDoubleLogNormal",
@@ -1683,6 +1811,14 @@ double initFileDoubleLogNormal::getKnotSigma(unsigned int idx) const {
   return sigma[idx];
 }
 
+/*!
+  \param[in] idx Which paraemter index to return value for
+  
+  \returns True if the knot is fixed, false if not.
+
+  Note that idx ranges over all the parameters -- including
+  the color model. The valid range is thus [0,nknots + nsigmas + noffsets).
+*/
 
 bool initFileDoubleLogNormal::isKnotFixed(unsigned int idx) const {
   if (idx >= nknots+nsigmas+noffsets)
@@ -1760,6 +1896,10 @@ bool initFileDoubleLogNormal::isValid(const paramSet& p) const {
   return true;
 }
 
+/*!
+  \param[in] comm MPIS communication handle
+  \param[in] dest Destination for send operation
+ */
 void initFileDoubleLogNormal::SendSelf(MPI::Comm& comm, int dest) const {
   comm.Send(&nknots,1,MPI::UNSIGNED,dest,pofd_mcmc::IFDLNSENDNKNOTS);
   comm.Send(&nsigmas,1,MPI::UNSIGNED,dest,pofd_mcmc::IFDLNSENDNSIGMAS);

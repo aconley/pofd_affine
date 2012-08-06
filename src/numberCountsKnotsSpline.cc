@@ -5,6 +5,9 @@
 #include<global_settings.h>
 #include<affineExcept.h>
 
+//Function to pass to GSL integrator
+static double evalPowfNKnotsSpline(double,void*); //!< Evaluates f^pow dN/dS
+
 
 numberCountsKnotsSpline::numberCountsKnotsSpline() : numberCountsKnots() {
   logknots = NULL;
@@ -529,7 +532,7 @@ void numberCountsKnotsSpline::RecieveCopy(MPI::Comm& comm, int src) {
   }
 }
 
-double evalPowfNKnotsSpline(double x, void* params) {
+static double evalPowfNKnotsSpline(double x, void* params) {
   //Params are:
   // parmas[0] power
   // params[1] spline (log2)
