@@ -84,9 +84,9 @@ void utility::stringwords_eq(const std::string &ins,
     Otherwise false.
  */
 bool utility::string_true(const std::string& ins) {
-  std::string strlow; //Lowercase version of string
-  std::transform(ins.begin(),ins.end(),
-		 strlow.begin(),::tolower);
+  std::string strlow(ins); //Lowercase version of string
+  std::transform(strlow.begin(), strlow.end(),
+		 strlow.begin(), ::tolower);
   if ( (strlow == "true") || (strlow == "t") ||
        (strlow == "yes") || (strlow == "y") )
     return true;

@@ -34,5 +34,6 @@ pofd_affine_getR
 pofd_affine_getLike
 pofd_affine_getdNdS
 test_initFile
+test_specFile
 m4
 *.m4
