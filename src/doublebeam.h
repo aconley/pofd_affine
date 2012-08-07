@@ -56,6 +56,7 @@ class doublebeam {
   doublebeam( const doublebeam& ); //!< Copy constructor
   ~doublebeam() { cleanup(); } //!< Destructor
 
+  void free() { cleanup(); } //!< Free all memory
 
   /*! \brief Read in files */
   void readFiles( const std::string&, const std::string& filename2,

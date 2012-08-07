@@ -213,6 +213,14 @@ void PDFactoryDouble::freeEdgevars() {
 }
 
 /*!
+  Frees all internal memory
+*/
+void PDFactoryDouble::free() {
+  freeRvars();
+  freeEdgevars();
+}
+
+/*!
   \param[in] filename Name of wisdom file
 */
 bool PDFactoryDouble::addWisdom(const std::string& filename) {

@@ -105,6 +105,8 @@ class PDFactoryDouble {
   PDFactoryDouble(const std::string&, unsigned int nedge=256 ); //!< Constructor with wisdom file
   ~PDFactoryDouble(); //!< Destructor
 
+  void free(); //!< Frees memory
+
   void setVerbose() { verbose = true; } //!< Sets verbose mode
   void unsetVerbose() { verbose = false; } //!< Unset verbose mode
 

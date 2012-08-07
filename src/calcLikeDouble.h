@@ -63,6 +63,8 @@ class calcLikeDoubleSingle { //Odd name...
   calcLikeDoubleSingle(unsigned int NEDGE=256); 
   ~calcLikeDoubleSingle(); //!< Destructor
 
+  void free(); //!< Frees all memory
+
   /*!\brief Add wisdom information */
   void addWisdom(const std::string& filename) { pdfac.addWisdom(filename); }
 
@@ -186,6 +188,8 @@ class calcLikeDouble {
 		 bool EDGEFIX=true, bool EDGEINTEG=true,
 		 bool BINNED=false, unsigned int NBINS=1000);
   ~calcLikeDouble(); //!< Destructor 
+
+  void freeData(); //!< Remove internal data
 
   void addWisdom(const std::string& filename); //!< Add FFTW wisdom information
 

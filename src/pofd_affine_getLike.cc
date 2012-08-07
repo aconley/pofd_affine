@@ -262,6 +262,10 @@ int main( int argc, char** argv ) {
       std::cerr << "OPTIONS" << std::endl;
       std::cerr << "\t-d, --double" << std::endl;
       std::cerr << "\t\tUse the 2D model." << std::endl;
+      std::cerr << "\t-h, --help" << std::endl;
+      std::cerr << "\t\tOutput this help message and exit." << std::endl;
+      std::cerr << "\t-V, --version" << std::endl;
+      std::cerr << "\t\tOutput the version number and exit" << std::endl;
       return 0;
       break;
     case 'd' :

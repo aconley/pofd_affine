@@ -1537,7 +1537,7 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
       if (sigma[i] > 0) {
 	if (has_lower_limits && has_lowlim[i] && (knotval[i] < lowlim[i])) {
 	  std::stringstream errstr;
-	  errstr << "At knot " << i < " sigma is zero but mean value "
+	  errstr << "At knot " << i << " sigma is zero but mean value "
 		 << knotval[i] << std::endl << " lies below lower limit "
 		 << lowlim[i];
 	  throw affineExcept("initFileDoubleLogNormal", "readFiles", 
@@ -1545,7 +1545,7 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
 	}
 	if (has_upper_limits && has_uplim[i] && (knotval[i] > uplim[i])) {
 	  std::stringstream errstr;
-	  errstr << "At knot " << i < " sigma is zero but mean value "
+	  errstr << "At knot " << i << " sigma is zero but mean value "
 		 << knotval[i] << std::endl << " lies above upper limit "
 		 << uplim[i];
 	  throw affineExcept("initFileDoubleLogNormal", "readFiles", 
@@ -1822,7 +1822,7 @@ void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
       } else {
 	//Sigma is 0.  The read operation makes sure that, in this case,
 	// the limits include the mean.
-	p[i] = knotval[i]
+	p[i] = knotval[i];
       }
     }
   }

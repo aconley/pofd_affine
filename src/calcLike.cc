@@ -23,7 +23,6 @@ calcLikeSingle::~calcLikeSingle() {
 
 void calcLikeSingle::free() {
   if (data != NULL) { delete[] data; data = NULL; }
-  data = NULL;
   ndatasets = 0;
   data_read = false;
   maxflux = std::numeric_limits<double>::quiet_NaN();
@@ -377,7 +376,7 @@ calcLike::~calcLike() {
   This doesn't actually deallocate beamsets, just frees the internal
   data storage
  */
-void freeData() {
+void calcLike::freeData() {
   for (unsigned int i = 0; i < nbeamsets; ++i)
     beamsets[i].free();
 }

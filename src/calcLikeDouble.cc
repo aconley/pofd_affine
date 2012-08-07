@@ -23,6 +23,29 @@ calcLikeDoubleSingle::~calcLikeDoubleSingle() {
   if (like_offset != NULL) delete[] like_offset;
 }
 
+void calcLikeDoubleSingle::free() {
+  if (data != NULL) { delete[] data; data = NULL; }
+  ndatasets = 0;
+  data_read = false;
+  maxflux1 = std::numeric_limits<double>::quiet_NaN();
+  maxflux2 = std::numeric_limits<double>::quiet_NaN();
+
+  pd.strict_resize(0, 0);
+  pdfac.free();
+  
+  if (sigma_base1 != NULL) { delete[] sigma_base1; sigma_base1 = NULL; }
+  maxsigma_base1 = std::numeric_limits<double>::quiet_NaN();
+  if (sigma_base2 != NULL) { delete[] sigma_base2; sigma_base2 = NULL; }
+  maxsigma_base2 = std::numeric_limits<double>::quiet_NaN();
+
+  if (like_norm != NULL) { delete[] like_norm; like_norm = NULL; }
+  if (like_offset != NULL) { delete[] like_offset; like_offset = NULL; }
+
+  has_beam = false;
+  bm.free();
+}
+
+
 void calcLikeDoubleSingle::resize(unsigned int n) {
   if (ndatasets == n) return;  //Don't have to do anything
 
@@ -432,6 +455,16 @@ calcLikeDouble::calcLikeDouble(unsigned int FFTSIZE, unsigned int NEDGE,
 calcLikeDouble::~calcLikeDouble() {
   if (beamsets != NULL) delete[] beamsets;
 }
+
+/*!
+  This doesn't actually deallocate beamsets, just frees the internal
+  data storage
+ */
+void calcLikeDouble::freeData() {
+  for (unsigned int i = 0; i < nbeamsets; ++i)
+    beamsets[i].free();
+}
+
 
 /*!
   Don't do this before reading in the data files, or it will be overwritten
