@@ -385,6 +385,28 @@ void initFileKnots::readFile(const std::string& flname,
 	throw affineExcept("initFileKnots", "readFiles", errstr.str(), 4);
       }
     }
+
+  //Make sure that if sigmas is 0 then the mean value falls within
+  // the range of any limits
+  if (has_sigma && (has_lower_limits || has_upper_limits)) {
+    for (unsigned int i = 0; i < nknots; ++i)
+      if (sigma[i] > 0) {
+	if (has_lower_limits && has_lowlim[i] && (knotval[i] < lowlim[i])) {
+	  std::stringstream errstr;
+	  errstr << "At knot " << i < " sigma is zero but mean value "
+		 << knotval[i] << std::endl << " lies below lower limit "
+		 << lowlim[i];
+	  throw affineExcept("initFileKnots", "readFiles", errstr.str(), 5);
+	}
+	if (has_upper_limits && has_uplim[i] && (knotval[i] > uplim[i])) {
+	  std::stringstream errstr;
+	  errstr << "At knot " << i < " sigma is zero but mean value "
+		 << knotval[i] << std::endl << " lies above upper limit "
+		 << uplim[i];
+	  throw affineExcept("initFileKnots", "readFiles", errstr.str(), 6);
+	}
+      }
+  }
 }
 
 std::pair<double,double> initFileKnots::getKnot(unsigned int idx) const {
@@ -504,39 +526,62 @@ void initFileKnots::generateRandomKnotValues(paramSet& p) const {
   // have to do trials.
   if (!(has_lower_limits || has_upper_limits)) {
     for (unsigned int i = 0; i < nknots; ++i)
-      p[i] = rangen.gauss() * sigma[i] + knotval[i];
+      if (sigma[i] > 0)
+	p[i] = rangen.gauss() * sigma[i] + knotval[i];
+      else
+	p[i] = knotval[i];
   } else {
     //Both sigmas and limits
     bool goodval;
     double trialval;
     unsigned int iters;
     for (unsigned int i = 0; i < nknots; ++i) {
-      //Some sanity checks
-      if (has_lowlim[i] && (lowlim[i] > knotval[i]+sigma[i]*4.0)) {
-	std::stringstream errstr;
-	errstr << "Lower limit is too far above central value; will take too"
-	       << " long to " << std::endl << "generate value for param idx: "
-	       << i;
-	throw affineExcept("initFileKnots","generateRandomKnotValues",
-			   errstr.str(),4);
-      }
-      if (has_uplim[i] && (uplim[i] < knotval[i]-sigma[i]*4.0)) {
-	std::stringstream errstr;
-	errstr << "Upper limit is too far below central value; will take too"
-	       << " long to " << std::endl << "generate value for param idx: "
-	       << i;
-	throw affineExcept("initFileKnots","generateRandomKnotValues",
-			   errstr.str(),8);
-      }
-
-      if (has_lowlim[i] && has_uplim[i]) {
-	//If range between them is much smaller than
-	// sigma, just chose uniformly to save time
-	double rng = uplim[i] - lowlim[i];
-	if (rng < 1e-4*sigma[i]) {
-	  p[i] = lowlim[i] + rng*rangen.doub();
-	} else {
-	  //Trial
+      if (sigma[i] > 0) {
+	//Some sanity checks
+	if (has_lowlim[i] && (lowlim[i] > knotval[i]+sigma[i]*4.0)) {
+	  std::stringstream errstr;
+	  errstr << "Lower limit is too far above central value; will take too"
+		 << " long to " << std::endl << "generate value for param idx: "
+		 << i;
+	  throw affineExcept("initFileKnots","generateRandomKnotValues",
+			     errstr.str(),4);
+	}
+	if (has_uplim[i] && (uplim[i] < knotval[i]-sigma[i]*4.0)) {
+	  std::stringstream errstr;
+	  errstr << "Upper limit is too far below central value; will take too"
+		 << " long to " << std::endl << "generate value for param idx: "
+		 << i;
+	  throw affineExcept("initFileKnots","generateRandomKnotValues",
+			     errstr.str(),8);
+	}
+	
+	if (has_lowlim[i] && has_uplim[i]) {
+	  //If range between them is much smaller than
+	  // sigma, just chose uniformly to save time
+	  double rng = uplim[i] - lowlim[i];
+	  if (rng < 1e-4*sigma[i]) {
+	    p[i] = lowlim[i] + rng*rangen.doub();
+	  } else {
+	    //Trial
+	    goodval = false;
+	    iters = 0;
+	    while (!goodval) {
+	      if (iters >= maxiters) {
+		std::stringstream errstr;
+		errstr << "Failed to generate acceptable value for param "
+		       << i << " after " << iters << " attempts";
+		throw affineExcept("initFileKnots","generateRandomKnotValues",
+				   errstr.str(),16);
+	      }
+	      trialval = rangen.gauss() * sigma[i] + knotval[i];
+	      if ( (trialval >= lowlim[i]) && (trialval <= uplim[i]) ) 
+		goodval = true;
+	      ++iters;
+	    }
+	    p[i] = trialval;
+	  }
+	} else if (has_lowlim[i]) {
+	  //Lower limit only
 	  goodval = false;
 	  iters = 0;
 	  while (!goodval) {
@@ -548,49 +593,35 @@ void initFileKnots::generateRandomKnotValues(paramSet& p) const {
 				 errstr.str(),16);
 	    }
 	    trialval = rangen.gauss() * sigma[i] + knotval[i];
-	    if ( (trialval >= lowlim[i]) && (trialval <= uplim[i]) ) 
-	      goodval = true;
+	    if (trialval >= lowlim[i]) goodval = true;
 	    ++iters;
 	  }
 	  p[i] = trialval;
-	}
-      } else if (has_lowlim[i]) {
-	//Lower limit only
-	goodval = false;
-	iters = 0;
-	while (!goodval) {
-	  if (iters >= maxiters) {
-	    std::stringstream errstr;
-	    errstr << "Failed to generate acceptable value for param "
-		   << i << " after " << iters << " attempts";
-	    throw affineExcept("initFileKnots","generateRandomKnotValues",
-			       errstr.str(),16);
+	} else if (has_uplim[i]) {
+	  //Upper limit only
+	  goodval = false;
+	  iters = 0;
+	  while (!goodval) {
+	    if (iters >= maxiters) {
+	      std::stringstream errstr;
+	      errstr << "Failed to generate acceptable value for param "
+		     << i << " after " << iters << " attempts";
+	      throw affineExcept("initFileKnots","generateRandomKnotValues",
+				 errstr.str(),16);
+	    }
+	    trialval = rangen.gauss() * sigma[i] + knotval[i];
+	    if (trialval <= uplim[i]) goodval = true;
+	    ++iters;
 	  }
-	  trialval = rangen.gauss() * sigma[i] + knotval[i];
-	  if (trialval >= lowlim[i]) goodval = true;
-	  ++iters;
+	  p[i] = trialval;
+	} else {
+	  //No limit, easy cakes
+	  p[i] = rangen.gauss() * sigma[i] + knotval[i];
 	}
-	p[i] = trialval;
-      } else if (has_uplim[i]) {
-	//Upper limit only
-	goodval = false;
-	iters = 0;
-	while (!goodval) {
-	  if (iters >= maxiters) {
-	    std::stringstream errstr;
-	    errstr << "Failed to generate acceptable value for param "
-		   << i << " after " << iters << " attempts";
-	    throw affineExcept("initFileKnots","generateRandomKnotValues",
-			       errstr.str(),16);
-	  }
-	  trialval = rangen.gauss() * sigma[i] + knotval[i];
-	  if (trialval <= uplim[i]) goodval = true;
-	  ++iters;
-	}
-	p[i] = trialval;
       } else {
-	//No limit, easy cakes
-	p[i] = rangen.gauss() * sigma[i] + knotval[i];
+	//Sigma is 0.  The read operation makes sure that, in this case,
+	// the limits include the mean.
+	p[i] = knotval[i]
       }
     }
   }

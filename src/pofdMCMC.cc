@@ -26,7 +26,7 @@ pofdMCMC(const std::string& INITFILE, const std::string& SPECFILE,
   // All of this is done in initChains
 }
 
-void pofdMCMC::initChainsMaster() {
+bool pofdMCMC::initChainsMaster() {
   if (rank != 0)
     throw affineExcept("pofdMCMC","initChainsMaster",
 		       "Should not be called except on master node",1);
@@ -48,24 +48,24 @@ void pofdMCMC::initChainsMaster() {
   //Number of parameters is number of knots + 1 for the
   // sigma -- although that may be fixed
   unsigned int nknots = ifile.getNKnots();
-  nparams = nknots + 1;
-
-  //We need to resize a few things now
-  pstep.setNParams(nparams);
-  chains.setNParams(nparams);
+  unsigned int npar = nknots+1;
+  this->setNParams(npar);
 
   //Set up parameter names
-  has_name.resize(nparams);
-  for (unsigned int i = 0; i < nparams; ++i) has_name[i] = false;
-  parnames.resize(nparams);
+  std::stringstream parname;
+  for (unsigned int i = 0; i < nknots; ++i) {
+    parname.str("Knot");
+    parname << i;
+    this->setParamName(i, parname.str());
+  }
+  this->setParamName(nknots, "SigmaMult");
 
   //For now just ignore where fixed
-  ignore_params.resize(nparams);
-  for (unsigned int i = 0; i < nknots-1; ++i)
-    ignore_params[i] = ifile.isKnotFixed(i);
+  for (unsigned int i = 0; i < nknots; ++i)
+    if (ifile.isKnotFixed(i)) this->ignoreParam(i);
   //Ignore sigma if we aren't fitting it
-  ignore_params[nknots] = (! spec_file.fit_sigma);
-2
+  if (! spec_file.fit_sigma) this->ignoreParam(nknots);
+
   //Initialize likelihood information -- priors, data, etc.
   likeSet.setFFTSize( spec_info.fftsize );
   if (spec_info.edge_fix) likeSet.setEdgeFix(); else likeSet.unSetEdgeFix();
@@ -96,42 +96,118 @@ void pofdMCMC::initChainsMaster() {
   unsigned int ninitialized;
   std::vector<bool> initialized(false,nproc);
   initialized[0] = true; //Master is initialized
-  ninitialized = 1;
+  nnotinitialized = nproc-1;
 
   MPI::Status Info;
   int jnk;
-  while (ninitialized < nproc) {
-    //Wait for a message from a slave sayign they are ready
+  while (nnotinitialized > 0) {
+    //Wait for a message from a slave saying they are ready
     MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,MPI::ANY_SOURCE,
 			 MPI::ANY_SOURCE,Info);
     int this_tag = Info.Get_tag();
     int this_rank = Info.Get_source();
-    if (this_tag == pofd_affine::DONE) {
-      //An error was encountered
-      return; //Should maybe send DONE message to all others?
-    } else if (this_tag == pofd_affine::SENDINITFILE) {
+    if (this_tag == pofd_affine::ERROR) {
+      //An error was encountered -- the slave should have
+      // notified all others of failure
+      return false; 
+    } else if (this_tag == pofd_affine::PMCMCSENDINIT) {
+      MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, this_rank, 
+			   pofd_affine::PMCMCSENDINGINIT);
+      MPI::COMM_WORLD.Send(&npar, 1, MPI::UNSIGNED, this_rank, 
+			   pofd_affine::PMCMCSENDNPAR);
       ifile.sendSelf(MPI::COMM_WORLD, this_rank);
-    } else if (this_tag == pofd_affine::SENDLIKESET) {
       likeSet.sendSelf(MPI::COMM_WORLD, this_rank);
-    } else if (this_tag == pofd_affine::ISREADY) {
+      
+    } else if (this_tag == pofd_affine::PMCMCISREADY) {
       initialized[this_rank] = true;
     }
-    ninitialized = std::count(initialized.begin(), initialized.end(),
-			      true);
+    nnotinitialized = std::count(initialized.begin(), initialized.end(),
+				 false);
   }
 
   //We can free all the data storage, since master doesn't need
   // any of it
+  this->freeData();
   
-
   //Generate initial parameters for each walker
+  //Rather than generate actual likelihoods -- which would require some
+  // complicated stuff -- we will assign them -infinite likelihood so 
+  // that the first step is always taken
+  //First, make sure we have somewhere to store that first step!
+  chains.addChunk(nsteps);
+  chains.setSkipFirst(); //Don't output this first step
+
+  const unsigned int maxiter = 1000;
+  double trialval;
+  paramSet p(this->getNParams());
+  double sm_stdev = 0.1;
+  if (spec_info.has_sigmaprior) sm_stdev = spec_info.sigprior_stdev;
+  for (unsigned int i = 0; i < nwalkers; ++i) {
+    //Fill in knot values.  Note that fixed parameters (sigma==0)
+    // all get the same values for all walkers, which means all linear
+    // combinations get the same value, so the parameter stays fixed
+    ifile.generateRandomKnotValues(p);
+
+    //Sigma multiplier value
+    if (spec_info.fit_sigma) {
+      for (unsigned int j = 0; j < maxiter; ++j) {
+	trialval = 1.0 + sm_stdev * rangen.gauss(); 
+	if (trialval > 0) break;
+      }
+      if (j == maxiter) {
+	for (unsigned int k = 1; k < nproc; ++k) //Tell slaves to stop
+	  MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, k, mcmc_affine::STOP);
+	throw affineExcept("pofdMCMC", "initChainsMaster",
+			   "Couldn't generate sigma multiplier value", 4);
+      }
+      p[nknots] = trialval;
+    } else p[nknots] = 1.0;
+    
+    //Add to chain
+    //It's possible that -infinity will not be available on some
+    // architectures -- the c++ standard is oddly quiet about this.
+    //It seems to work on g++-4.7
+    chains.addNewStep(i, p, -std::numeric_limits<double>::infinity());
+  }
   
+  //That's it!
+  return true;
 }
 
-void pofdMCMC::initChainsSlave() {
+bool pofdMCMC::initChainsSlave() {
+  if (rank == 0)
+    throw affineExcept("pofdMCMC","initChainsSlave",
+		       "Should not be called on master node", 1);
   //Send message to master saying we are ready
+  int jnk;
+  MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, 0, pofd_affine::PMCMCSENDINIT);
 
-  //Copy info
+  //And wait...
+  MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,MPI::ANY_SOURCE,
+		       MPI::ANY_SOURCE,Info);
+  int this_tag = Info.Get_tag();
+  int this_rank = Info.Get_source();
+
+  if (this_rank != 0) {
+    //Got a message from another slave.  This is not allowed!
+    MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, 0, pofd_affine::ERROR);
+    return false;
+  } else {
+    if (this_tag == mcmc_affine::STOP)
+      return false;
+    else if (this_tag == pofd_affine::PMCMCSENDINGINIT) {
+      unsigned int npar;
+      MPI::COMM_WORLD.Recv(&npar, 1, MPI::UNSIGNED, 0, 
+			   pofd_affine::PMCMCSENDNPAR);
+      this->setNParams(npar);
+      ifile.recieveCopy(MPI::COMM_WORLD, 0);
+      likeSet.recieveCopy(MPI::COMM_WORLD, 0);
+
+      MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, 0, pofd_affine::PMCMCISREADY);
+    }
+  }
+
+  return true;
 }
 
 void pofdMCMC::initChains() {
