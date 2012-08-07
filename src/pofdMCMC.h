@@ -16,8 +16,8 @@ private:
 
   calcLike likeSet; //!< Does likelihood calculation
   
-  void initChainsMaster(); //!< Initialization routine for master node
-  void initChainsSlave(); //!< Initialization routine for slave node
+  bool initChainsMaster(); //!< Initialization routine for master node
+  bool initChainsSlave(); //!< Initialization routine for slave node
 
 public:
   pofdMCMC(const std::string& initfile, const std::string& specfile,

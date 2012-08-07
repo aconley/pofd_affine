@@ -1,4 +1,7 @@
+#include<sstream>
+
 #include<pofdMCMC.h>
+#include<specFile.h>
 #include<affineExcept.h>
 
 /*!
@@ -15,10 +18,10 @@
                             before checking burn-in again
   \param[in] SCALEFAC Scale factor of Z distribution			    
  */
-pofdMCMC(const std::string& INITFILE, const std::string& SPECFILE,
-	 unsigned int NWALKERS, unsigned int NSAMPLES, 
-	 unsigned int INIT_STEPS, unsigned int MIN_BURN, 
-	 double BURN_MULTIPLE, double SCALEFAC) :
+pofdMCMC::pofdMCMC(const std::string& INITFILE, const std::string& SPECFILE,
+		   unsigned int NWALKERS, unsigned int NSAMPLES, 
+		   unsigned int INIT_STEPS, unsigned int MIN_BURN, 
+		   double BURN_MULTIPLE, double SCALEFAC) :
   affineEnsemble(NWALKERS, 1, NSAMPLES, INIT_STEPS, MIN_BURN,
 		 BURN_MULTIPLE, SCALEFAC) {
   //Note that we set NPARAMS to a bogus value (1) above, then 
@@ -47,7 +50,6 @@ bool pofdMCMC::initChainsMaster() {
 
   //Number of parameters is number of knots + 1 for the
   // sigma -- although that may be fixed
-  unsigned int nknots = ifile.getNKnots();
   unsigned int npar = nknots+1;
   this->setNParams(npar);
 
@@ -64,7 +66,7 @@ bool pofdMCMC::initChainsMaster() {
   for (unsigned int i = 0; i < nknots; ++i)
     if (ifile.isKnotFixed(i)) this->ignoreParam(i);
   //Ignore sigma if we aren't fitting it
-  if (! spec_file.fit_sigma) this->ignoreParam(nknots);
+  if (! spec_info.fit_sigma) this->ignoreParam(nknots);
 
   //Initialize likelihood information -- priors, data, etc.
   likeSet.setFFTSize( spec_info.fftsize );
@@ -93,7 +95,7 @@ bool pofdMCMC::initChainsMaster() {
   //Now, copy that information over to slaves
   unsigned int nproc = MPI::COMM_WORLD.Get_size();
 
-  unsigned int ninitialized;
+  unsigned int nnotinitialized;
   std::vector<bool> initialized(false,nproc);
   initialized[0] = true; //Master is initialized
   nnotinitialized = nproc-1;
@@ -106,19 +108,19 @@ bool pofdMCMC::initChainsMaster() {
 			 MPI::ANY_SOURCE,Info);
     int this_tag = Info.Get_tag();
     int this_rank = Info.Get_source();
-    if (this_tag == pofd_affine::ERROR) {
+    if (this_tag == mcmc_affine::ERROR) {
       //An error was encountered -- the slave should have
       // notified all others of failure
       return false; 
-    } else if (this_tag == pofd_affine::PMCMCSENDINIT) {
+    } else if (this_tag == pofd_mcmc::PMCMCSENDINIT) {
       MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, this_rank, 
-			   pofd_affine::PMCMCSENDINGINIT);
+			   pofd_mcmc::PMCMCSENDINGINIT);
       MPI::COMM_WORLD.Send(&npar, 1, MPI::UNSIGNED, this_rank, 
-			   pofd_affine::PMCMCSENDNPAR);
-      ifile.sendSelf(MPI::COMM_WORLD, this_rank);
-      likeSet.sendSelf(MPI::COMM_WORLD, this_rank);
+			   pofd_mcmc::PMCMCSENDNPAR);
+      ifile.SendSelf(MPI::COMM_WORLD, this_rank);
+      likeSet.SendSelf(MPI::COMM_WORLD, this_rank);
       
-    } else if (this_tag == pofd_affine::PMCMCISREADY) {
+    } else if (this_tag == pofd_mcmc::PMCMCISREADY) {
       initialized[this_rank] = true;
     }
     nnotinitialized = std::count(initialized.begin(), initialized.end(),
@@ -127,22 +129,34 @@ bool pofdMCMC::initChainsMaster() {
 
   //We can free all the data storage, since master doesn't need
   // any of it
-  this->freeData();
+  likeSet.freeData();
   
   //Generate initial parameters for each walker
+  //First, set up space to hold that first parameter
+  chains.clear();
+  chains.addChunk(1);
+  chains.setSkipFirst();
+
   //Rather than generate actual likelihoods -- which would require some
   // complicated stuff -- we will assign them -infinite likelihood so 
   // that the first step is always taken
-  //First, make sure we have somewhere to store that first step!
-  chains.addChunk(nsteps);
-  chains.setSkipFirst(); //Don't output this first step
+  paramSet p(npar); //Generated parameter
 
-  const unsigned int maxiter = 1000;
-  double trialval;
-  paramSet p(this->getNParams());
-  double sm_stdev = 0.1;
-  if (spec_info.has_sigmaprior) sm_stdev = spec_info.sigprior_stdev;
-  for (unsigned int i = 0; i < nwalkers; ++i) {
+  //We may have to do trials to set up initial parameters, 
+  const unsigned int maxtrials = 1000; //!< Maximum number of trials
+  double trialval; //Test trial value
+
+  //If we are fitting for sigma we need to generate a range of values
+  // If there is a prior, we can use that as information for how to
+  // distribute the multiplier, if not we need a default.
+  double sm_stdev;
+  if (spec_info.has_sigprior) 
+    sm_stdev = spec_info.sigprior_stdev;
+  else
+    sm_stdev = 0.1;
+
+  unsigned int nwalk = getNWalkers();
+  for (unsigned int i = 0; i < nwalk; ++i) {
     //Fill in knot values.  Note that fixed parameters (sigma==0)
     // all get the same values for all walkers, which means all linear
     // combinations get the same value, so the parameter stays fixed
@@ -150,11 +164,12 @@ bool pofdMCMC::initChainsMaster() {
 
     //Sigma multiplier value
     if (spec_info.fit_sigma) {
-      for (unsigned int j = 0; j < maxiter; ++j) {
+      unsigned int j;
+      for (j = 0; j < maxtrials; ++j) {
 	trialval = 1.0 + sm_stdev * rangen.gauss(); 
 	if (trialval > 0) break;
       }
-      if (j == maxiter) {
+      if (j == maxtrials) {
 	for (unsigned int k = 1; k < nproc; ++k) //Tell slaves to stop
 	  MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, k, mcmc_affine::STOP);
 	throw affineExcept("pofdMCMC", "initChainsMaster",
@@ -166,7 +181,7 @@ bool pofdMCMC::initChainsMaster() {
     //Add to chain
     //It's possible that -infinity will not be available on some
     // architectures -- the c++ standard is oddly quiet about this.
-    //It seems to work on g++-4.7
+    //It seems to work on g++-4.7 though
     chains.addNewStep(i, p, -std::numeric_limits<double>::infinity());
   }
   
@@ -180,9 +195,10 @@ bool pofdMCMC::initChainsSlave() {
 		       "Should not be called on master node", 1);
   //Send message to master saying we are ready
   int jnk;
-  MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, 0, pofd_affine::PMCMCSENDINIT);
+  MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, 0, pofd_mcmc::PMCMCSENDINIT);
 
   //And wait...
+  MPI::Status Info;
   MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,MPI::ANY_SOURCE,
 		       MPI::ANY_SOURCE,Info);
   int this_tag = Info.Get_tag();
@@ -190,20 +206,20 @@ bool pofdMCMC::initChainsSlave() {
 
   if (this_rank != 0) {
     //Got a message from another slave.  This is not allowed!
-    MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, 0, pofd_affine::ERROR);
+    MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, 0, mcmc_affine::ERROR);
     return false;
   } else {
     if (this_tag == mcmc_affine::STOP)
       return false;
-    else if (this_tag == pofd_affine::PMCMCSENDINGINIT) {
+    else if (this_tag == pofd_mcmc::PMCMCSENDINGINIT) {
       unsigned int npar;
       MPI::COMM_WORLD.Recv(&npar, 1, MPI::UNSIGNED, 0, 
-			   pofd_affine::PMCMCSENDNPAR);
+			   pofd_mcmc::PMCMCSENDNPAR);
       this->setNParams(npar);
-      ifile.recieveCopy(MPI::COMM_WORLD, 0);
-      likeSet.recieveCopy(MPI::COMM_WORLD, 0);
+      ifile.RecieveCopy(MPI::COMM_WORLD, 0);
+      likeSet.RecieveCopy(MPI::COMM_WORLD, 0);
 
-      MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, 0, pofd_affine::PMCMCISREADY);
+      MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, 0, pofd_mcmc::PMCMCISREADY);
     }
   }
 
