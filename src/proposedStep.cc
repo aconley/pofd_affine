@@ -26,6 +26,16 @@ void proposedStep::clear() {
   newLogLike = std::numeric_limits<double>::quiet_NaN();
 }
 
+/*!
+  \param[in] n New number of parameters
+  
+  Generally will not preserve content, but doesn't clear it either
+ */
+void proposedStep::setNParams(unsigned int n) {
+  oldStep.setNParams(n);
+  newStep.setNParams(n);
+}
+
 proposedStep& proposedStep::operator=(const proposedStep& other) {
   if (this == &other) return *this; //Self copy
   update_idx = other.update_idx;

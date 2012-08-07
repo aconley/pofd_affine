@@ -22,6 +22,7 @@ struct proposedStep {
   ~proposedStep(); //!< Destructor
 
   void clear(); //!<Clear contents
+  void setNParams(unsigned int); //!< Set number of parameters
 
   proposedStep& operator=(const proposedStep&); //!< Copy operator
 

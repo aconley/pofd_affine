@@ -378,6 +378,44 @@ void affineChainSet::clearPreserveLast() throw (affineExcept) {
 }
 
 /*!
+  \param[in] n New number of walkers.  Must be positive.
+  
+  This generally will not preserve the contents unless the number
+  of walkers doesn't change
+ */
+void affineChainSet::setNWalkers(unsigned int n) throw (affineExcept) {
+  if (n == nwalkers) return;
+
+  if (n == 0)
+    throw affineExcept("affineChainSet", "setNWalkers",
+		       "n must be positive", 1);
+
+  //We have to delete all previous steps
+  clear();
+
+  nwalkers = n;
+}
+
+/*!
+  \param[in] n New number of parameters.  Must be positive.
+  
+  This generally will not preserve the contents unless the number
+  of parameters doesn't change
+ */
+void affineChainSet::setNParams(unsigned int n) throw (affineExcept) {
+  if (n == nparams) return;
+
+  if (n == 0)
+    throw affineExcept("affineChainSet", "setNParams",
+		       "n must be positive", 1);
+
+  //We have to delete all previous steps
+  clear();
+
+  nparams = n;
+}
+
+/*!
   \param[in] walker_idx Which walker to add the step to
   \param[in] p          Parameters to add
   \param[in] logLike    Log Likelihood of step

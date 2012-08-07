@@ -31,7 +31,7 @@ affineEnsemble::affineEnsemble( unsigned int NWALKERS, unsigned int NPARAMS,
   burn_multiple( BURN_MULTIPLE ), pstep(NPARAMS), chains(NWALKERS,NPARAMS) {
   
   has_name.resize(nparams);
-  for (unsigned int i = 0; i < nparams; ++i) has_name[i] = false;
+  has_name.assign(nparams, false);
   parnames.resize(nparams);
 
   nignore = 0;
@@ -56,9 +56,9 @@ affineEnsemble::affineEnsemble( unsigned int NWALKERS, unsigned int NPARAMS,
 
     //Master node; slaves don't need this
     naccept.resize(nwalkers);
-    naccept.assign( naccept.size(), 0 );
+    naccept.assign(nwalkers, 0);
     ignore_params.resize(nparams);
-    ignore_params.assign( ignore_params.size(), false );
+    ignore_params.assign(nparams, false);
 
     //Set random number generator seed from time
     unsigned long long int seed;
@@ -97,6 +97,59 @@ double affineEnsemble::generateZ() const {
   double val;
   val = (scalefac-1.0)*rangen.doub()+1.0;
   return val*val/scalefac;
+}
+
+/*!
+  \param[in] n New number of walkers
+  
+  Does not preserve contents unless new value is the same as current one.
+ */
+void affineEnsemble::setNWalkers(unsigned int n) {
+  if (nwalkers == n) return;
+  if (n == 0)
+    throw affineExcept("affineEnsemble", "setNWalkers",
+		       "n must be positive", 1);
+
+  chains.setNWalkers(n);
+  
+  unsigned int nsamples = nsteps * nwalkers;
+  nsteps = static_cast<unsigned int>( NSAMPLES/static_cast<double>(n)
+				      + 0.999999999999 );
+
+  if (rank == 0) {
+    stepqueue.setCapacity(n/2+1);  //Only store one half at a time
+
+    naccept.resize(n);
+    naccept.assign(n, 0);
+  }
+  
+  nwalkers = n;
+}
+
+/*!
+  \param[in] n New number of parameters
+  
+  Does not preserve contents unless new value is the same as current one.
+ */
+void affineEnsemble::setNParams(unsigned int n) {
+  if (nparams == n) return;
+  if (n == 0)
+    throw affineExcept("affineEnsemble", "setNParams",
+		       "n must be positive", 1);
+
+  chains.setNParams(n);
+  nignore = 0;
+
+  has_name.resize(n);
+  has_name.assign(n, false);
+  parnames.resize(n);
+
+  if (rank == 0) {
+    ignore_params.resize(n);
+    ignore_params.assign(n, false);
+  }
+
+  nparams = n;
 }
 
 double affineEnsemble::getMaxLogLike() const {
