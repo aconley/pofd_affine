@@ -113,7 +113,7 @@ void affineEnsemble::setNWalkers(unsigned int n) {
   chains.setNWalkers(n);
   
   unsigned int nsamples = nsteps * nwalkers;
-  nsteps = static_cast<unsigned int>( NSAMPLES/static_cast<double>(n)
+  nsteps = static_cast<unsigned int>( nsamples/static_cast<double>(n)
 				      + 0.999999999999 );
 
   if (rank == 0) {
