@@ -99,10 +99,14 @@ class affineChainSet {
   void clearPreserveLast() throw (affineExcept); //!< Clears the chain, preserving the last step of the old one as the first of the new
 
   unsigned int getNWalkers() const { return nwalkers; } //!< Get number of walkers
+  void setNWalkers(unsigned int) throw (affineExcept); //!< Change the number of walkers
+
+  unsigned int getNParams() const { return nparams; } //!< Get number of params
+  void setNParams(unsigned int) throw (affineExcept); //!< Change the number of parameters
   unsigned int getNIters() const; //!< Total number of iterations present across all walkers
   unsigned int getNIters(unsigned int) const throw (affineExcept); //!< Total number of iterations for given walker
   unsigned int getMinNIters() const; //!< Minimum number of iterations across all walkers
-  unsigned int getNParams() const { return nparams; } //!< Get number of params
+
   unsigned int getNChunks() const { return steps.size(); } //!< Get number of chunks
 
   bool doSkipFirst() const { return skipfirst; } //!< Are we skipping the first tep in any results?
