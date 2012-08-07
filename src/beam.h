@@ -50,6 +50,8 @@ class beam {
   beam( const beam& ); //!< Copy constructor
   ~beam() { cleanup(); } //!< Destructor
 
+  void free() { cleanup(); } //!< Free all memory
+
   bool readFile( const std::string& filename,
 		 bool histogram=false, 
 		 double histogramlogstep=0.2); //!< Read in file

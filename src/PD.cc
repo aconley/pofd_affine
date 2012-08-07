@@ -59,12 +59,11 @@ void PD::shrink() {
   Generally doesn't preserve data
  */
 void PD::strict_resize(unsigned int N) {
-  unsigned int newcap = n;
-  if ( newcap != capacity ) {
+  if ( N != capacity ) {
     if (pd_ != NULL) fftw_free(pd_);
-    if (newcap > 0) pd_ = (double*) fftw_malloc( sizeof(double)*newcap );
+    if (N > 0) pd_ = (double*) fftw_malloc( sizeof(double)*N );
     else pd_ = NULL;
-    capacity = newcap;
+    capacity = N;
   }
   n = N;
 }

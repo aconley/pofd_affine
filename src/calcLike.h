@@ -60,6 +60,8 @@ class calcLikeSingle {
   calcLikeSingle(unsigned int NINTERP=1024); 
   ~calcLikeSingle(); //!< Destructor
 
+  void free(); //!< Frees all memory
+
   /*!\brief Add wisdom information */
   void addWisdom(const std::string& filename) { pdfac.addWisdom(filename); }
 
@@ -168,6 +170,8 @@ class calcLike {
   calcLike(unsigned int FFTSIZE=262144, unsigned int NINTERP=1024, 
 	   bool EDGEFIX=true, bool BINNED=false, unsigned int NBINS=1000 );
   ~calcLike(); //!< Destuctor
+
+  void freeData(); //!< Remove internal data
 
   void addWisdom(const std::string& filename); //!< Add FFTW wisdom
 

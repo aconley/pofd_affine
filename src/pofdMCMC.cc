@@ -44,7 +44,29 @@ void pofdMCMC::initChainsMaster() {
       throw affineExcept("pofdMCMC","initChainsMaster",
 			 "No data files read",3);
 
-  //Use that to initialize likelihood 
+
+  //Number of parameters is number of knots + 1 for the
+  // sigma -- although that may be fixed
+  unsigned int nknots = ifile.getNKnots();
+  nparams = nknots + 1;
+
+  //We need to resize a few things now
+  pstep.setNParams(nparams);
+  chains.setNParams(nparams);
+
+  //Set up parameter names
+  has_name.resize(nparams);
+  for (unsigned int i = 0; i < nparams; ++i) has_name[i] = false;
+  parnames.resize(nparams);
+
+  //For now just ignore where fixed
+  ignore_params.resize(nparams);
+  for (unsigned int i = 0; i < nknots-1; ++i)
+    ignore_params[i] = ifile.isKnotFixed(i);
+  //Ignore sigma if we aren't fitting it
+  ignore_params[nknots] = (! spec_file.fit_sigma);
+2
+  //Initialize likelihood information -- priors, data, etc.
   likeSet.setFFTSize( spec_info.fftsize );
   if (spec_info.edge_fix) likeSet.setEdgeFix(); else likeSet.unSetEdgeFix();
   likeSet.setNInterp( spec_info.ninterp );
@@ -67,7 +89,43 @@ void pofdMCMC::initChainsMaster() {
 			     spec_info.ignore_mask, spec_info.mean_sub, 
 			     spec_info.beam_histogram );
 
+
   //Now, copy that information over to slaves
+  unsigned int nproc = MPI::COMM_WORLD.Get_size();
+
+  unsigned int ninitialized;
+  std::vector<bool> initialized(false,nproc);
+  initialized[0] = true; //Master is initialized
+  ninitialized = 1;
+
+  MPI::Status Info;
+  int jnk;
+  while (ninitialized < nproc) {
+    //Wait for a message from a slave sayign they are ready
+    MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,MPI::ANY_SOURCE,
+			 MPI::ANY_SOURCE,Info);
+    int this_tag = Info.Get_tag();
+    int this_rank = Info.Get_source();
+    if (this_tag == pofd_affine::DONE) {
+      //An error was encountered
+      return; //Should maybe send DONE message to all others?
+    } else if (this_tag == pofd_affine::SENDINITFILE) {
+      ifile.sendSelf(MPI::COMM_WORLD, this_rank);
+    } else if (this_tag == pofd_affine::SENDLIKESET) {
+      likeSet.sendSelf(MPI::COMM_WORLD, this_rank);
+    } else if (this_tag == pofd_affine::ISREADY) {
+      initialized[this_rank] = true;
+    }
+    ninitialized = std::count(initialized.begin(), initialized.end(),
+			      true);
+  }
+
+  //We can free all the data storage, since master doesn't need
+  // any of it
+  
+
+  //Generate initial parameters for each walker
+  
 }
 
 void pofdMCMC::initChainsSlave() {

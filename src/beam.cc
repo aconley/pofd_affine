@@ -120,18 +120,12 @@ beam& beam::operator=(const beam& other) {
 }
 
 void beam::cleanup() {
-  if (pospixarr != NULL) delete[] pospixarr;
-  pospixarr = NULL;
-  if (negpixarr != NULL) delete[] negpixarr;
-  negpixarr = NULL;
-  if (posinvpixarr != NULL) delete[] posinvpixarr;
-  posinvpixarr = NULL;
-  if (neginvpixarr != NULL) delete[] neginvpixarr;
-  neginvpixarr = NULL;
-  if (posweights != NULL) delete[] posweights;
-  posweights = NULL;
-  if (negweights != NULL) delete[] negweights;
-  negweights = NULL;
+  if (pospixarr != NULL) { delete[] pospixarr; pospixarr = NULL; }
+  if (negpixarr != NULL) { delete[] negpixarr; negpixarr = NULL; }
+  if (posinvpixarr != NULL) { delete[] posinvpixarr; posinvpixarr = NULL; }
+  if (neginvpixarr != NULL) { delete[] neginvpixarr; neginvpixarr = NULL; }
+  if (posweights != NULL) { delete[] posweights; posweights = NULL; }
+  if (negweights != NULL) { delete[] negweights; negweights = NULL; }
   haspos = hasneg = false;
   hasposweights = hasnegweights = false;
   npos = nneg = 0;

@@ -21,6 +21,26 @@ calcLikeSingle::~calcLikeSingle() {
   if (like_offset != NULL) delete[] like_offset;
 }
 
+void calcLikeSingle::free() {
+  if (data != NULL) { delete[] data; data = NULL; }
+  data = NULL;
+  ndatasets = 0;
+  data_read = false;
+  maxflux = std::numeric_limits<double>::quiet_NaN();
+
+  pd.strict_resize(0);
+  pdfac.free();
+  
+  if (sigma_base != NULL) { delete[] sigma_base; sigma_base = NULL; }
+  maxsigma_base = std::numeric_limits<double>::quiet_NaN();
+
+  if (like_norm != NULL) { delete[] like_norm; like_norm = NULL; }
+  if (like_offset != NULL) { delete[] like_offset; like_offset = NULL; }
+
+  has_beam = false;
+  bm.free();
+}
+
 /*
   \param[in] n Number of datasets
 */
@@ -351,6 +371,15 @@ calcLike::calcLike(unsigned int FFTSIZE, unsigned int NINTERP,
 
 calcLike::~calcLike() {
   if (beamsets != NULL) delete[] beamsets;
+}
+
+/*!
+  This doesn't actually deallocate beamsets, just frees the internal
+  data storage
+ */
+void freeData() {
+  for (unsigned int i = 0; i < nbeamsets; ++i)
+    beamsets[i].free();
 }
 
 /*!

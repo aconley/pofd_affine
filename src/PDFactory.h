@@ -87,6 +87,8 @@ class PDFactory {
   PDFactory(const std::string&,unsigned int NINTERP=1024); //!< Constructor with wisdom file
   ~PDFactory(); //!< Destructor
 
+  void free(); //!< Frees memory
+
   void setVerbose() { verbose = true; } //!< Sets verbose mode
   void unsetVerbose() { verbose = false; } //!< Unset verbose mode
 

@@ -190,6 +190,14 @@ void PDFactory::freeInterp() {
 }
 
 /*!
+  Frees all internal memory
+*/
+void PDFactory::free() {
+  freeRvars();
+  freeInterp();
+}
+
+/*!
   \param[in] filename Name of wisdom file
 */
 bool PDFactory::addWisdom(const std::string& filename) {
