@@ -229,3 +229,10 @@ bool pofdMCMC::initChainsSlave() {
 void pofdMCMC::initChains() {
   if (rank == 0) initChainsMaster(); else initChainsSlave();
 }
+
+/*!
+  \param[in] p Parameters to evaluate model for
+ */
+double pofdMCMC::getLogLike(const paramSet& p) {
+  return likeSet.getLogLike(p);
+}

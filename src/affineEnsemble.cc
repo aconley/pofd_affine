@@ -40,6 +40,7 @@ affineEnsemble::affineEnsemble( unsigned int NWALKERS, unsigned int NPARAMS,
   nsteps = static_cast<unsigned int>( NSAMPLES/static_cast<double>(nwalkers)
 				      + 0.999999999999 );
 
+
   acor_set = false;
 
   unsigned int nproc = MPI::COMM_WORLD.Get_size();
@@ -49,10 +50,6 @@ affineEnsemble::affineEnsemble( unsigned int NWALKERS, unsigned int NPARAMS,
 
   rank = MPI::COMM_WORLD.Get_rank();  
   if (rank == 0) {
-    has_name.resize(nparams);
-    for (unsigned int i = 0; i < nparams; ++i) has_name[i] = false;
-    parnames.resize(nparams);
-
     //Reserve room for queues
     procqueue.setCapacity(nproc);
     stepqueue.setCapacity(nwalkers/2+1);  //Only store one half at a time
@@ -73,27 +70,6 @@ affineEnsemble::affineEnsemble( unsigned int NWALKERS, unsigned int NPARAMS,
 }
 
 affineEnsemble::~affineEnsemble() {}
-
-/*!
-  Will destroy all contents if the size changes
- */
-void affineEnsemble::setNParams(unsigned int NPAR) {
-  if (NPAR == nparams) return;
-  nparams = NPAR;
-
-  if (rank == 0) {
-    nignore = 0;
-    ignore_params.resize(nparams);
-    ignore_params.assign(ignore_params.size(), false);
-    has_name.resize(nparams);
-    has_name.assign(has_name.size(), false);
-    parnames.resize(nparams);
-    chains.clear();
-    naccept.assign(naccept.size(), 0);
-    procqueue.clear();
-    stepqueue.clear();
-  }
-}
 
 /*!
   Only meaningful for the master node, always return true for slaves
