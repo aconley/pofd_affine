@@ -522,8 +522,11 @@ void numberCountsKnotsSpline::recieveCopy(MPI::Comm& comm, int src) {
 
   if (nknots != oldnknots) {
     if (splinelog != NULL) gsl_spline_free(splinelog);
-    if (nknots > 0) splinelog = gsl_spline_alloc( gsl_interp_cspline,
-						  static_cast<size_t>(nknots));
+    if (nknots > 0) 
+      splinelog = gsl_spline_alloc( gsl_interp_cspline,
+				    static_cast<size_t>(nknots));
+    else
+      splinelog = NULL;
   }
   if (knotvals_loaded) {
     comm.Recv(logknots,nknots,MPI::DOUBLE,src,pofd_mcmc::NCKSSENDLOGKNOTS);

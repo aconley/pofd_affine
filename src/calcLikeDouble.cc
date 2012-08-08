@@ -759,7 +759,7 @@ void calcLikeDouble::sendSelf(MPI::Comm& comm, int dest) const {
 
 void calcLikeDouble::recieveCopy(MPI::Comm& comm, int src) {
   //Transform
-  comm.Recv(&fftsize,1,MPI::DOUBLE,src,pofd_mcmc::CLDSENDFFTSIZE);
+  comm.Recv(&fftsize,1,MPI::UNSIGNED,src,pofd_mcmc::CLDSENDFFTSIZE);
   comm.Recv(&edgeFix,1,MPI::BOOL,src,pofd_mcmc::CLDSENDEDGEFIX);
   comm.Recv(&edgeInteg,1,MPI::BOOL,src,pofd_mcmc::CLDSENDEDGEINTEG);
   comm.Recv(&nedge,1,MPI::UNSIGNED,src,pofd_mcmc::CLDSENDNEDGE);

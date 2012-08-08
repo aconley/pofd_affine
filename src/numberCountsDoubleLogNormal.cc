@@ -2011,9 +2011,9 @@ void initFileDoubleLogNormal::sendSelf(MPI::Comm& comm, int dest) const {
     }
     comm.Send(&has_upper_limits,1,MPI::BOOL,dest,
 	      pofd_mcmc::IFDLNHASUPPERLIMITS);
-    if (has_lower_limits) {
-      comm.Send(has_lowlim,ntot,MPI::BOOL,dest,pofd_mcmc::IFDLNSENDHASLOWLIM);
-      comm.Send(lowlim,ntot,MPI::DOUBLE,dest,pofd_mcmc::IFDLNSENDLOWLIM);
+    if (has_upper_limits) {
+      comm.Send(has_uplim,ntot,MPI::BOOL,dest,pofd_mcmc::IFDLNSENDHASUPLIM);
+      comm.Send(uplim,ntot,MPI::DOUBLE,dest,pofd_mcmc::IFDLNSENDUPLIM);
     }
   }
 }
