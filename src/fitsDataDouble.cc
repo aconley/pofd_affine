@@ -578,7 +578,6 @@ std::pair<double,double> fitsDataDouble::getBinDelta() const {
 }
 
 void fitsDataDouble::sendSelf(MPI::Comm& comm, int dest) const {
-
   comm.Send(&n,1,MPI::UNSIGNED,dest,pofd_mcmc::FDDSENDN);
   if (n > 0) {
     comm.Send(data1,n,MPI::DOUBLE,dest,pofd_mcmc::FDDSENDDATA1);
@@ -604,6 +603,7 @@ void fitsDataDouble::recieveCopy(MPI::Comm& comm, int src) {
   comm.Recv(&newn,1,MPI::UNSIGNED,src,pofd_mcmc::FDDSENDN);
 
   if (newn != n) {
+    //Have to change sizes
     if (data1 != NULL) fftw_free(data1);
     if (data2 != NULL) fftw_free(data2);
     if (newn > 0) {
@@ -613,8 +613,9 @@ void fitsDataDouble::recieveCopy(MPI::Comm& comm, int src) {
     n = newn;
   }
   if (n > 0) {
+    //Data to recieve
     comm.Recv(data1,n,MPI::DOUBLE,src,pofd_mcmc::FDDSENDDATA1);
-    comm.Recv(data1,n,MPI::DOUBLE,src,pofd_mcmc::FDDSENDDATA2);
+    comm.Recv(data2,n,MPI::DOUBLE,src,pofd_mcmc::FDDSENDDATA2);
 
     bool recbin;
     comm.Recv(&recbin,1,MPI::BOOL,src,pofd_mcmc::FDDSENDISBINNED);
@@ -630,7 +631,7 @@ void fitsDataDouble::recieveCopy(MPI::Comm& comm, int src) {
 	    fftw_malloc( sizeof(unsigned int)*newnbins1*newnbins2 );
 	  nbins1 = newnbins1;
 	  nbins2 = newnbins2;
-	}
+	} else binval = NULL;
       }
       if ( (nbins1 > 0) && (nbins2 > 0) ) {
 	comm.Recv(binval,nbins1*nbins2,MPI::UNSIGNED,src,

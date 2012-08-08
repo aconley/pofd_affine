@@ -575,7 +575,7 @@ double calcLike::getLogLike(const paramSet& p) const {
 void calcLike::sendSelf(MPI::Comm& comm, int dest) const { 
   //Transform
   comm.Send(&fftsize,1,MPI::UNSIGNED,dest,pofd_mcmc::CLSENDFFTSIZE);
-  comm.Send(&ninterp,1,MPI::BOOL,dest,pofd_mcmc::CLSENDNINTERP);
+  comm.Send(&ninterp,1,MPI::UNSIGNED,dest,pofd_mcmc::CLSENDNINTERP);
   comm.Send(&edgeFix,1,MPI::BOOL,dest,pofd_mcmc::CLSENDEDGEFIX);
 
   //Data
@@ -613,7 +613,7 @@ void calcLike::sendSelf(MPI::Comm& comm, int dest) const {
 void calcLike::recieveCopy(MPI::Comm& comm, int src) {
   //Transform
   comm.Recv(&fftsize,1,MPI::DOUBLE,src,pofd_mcmc::CLSENDFFTSIZE);
-  comm.Recv(&ninterp,1,MPI::BOOL,src,pofd_mcmc::CLSENDNINTERP);
+  comm.Recv(&ninterp,1,MPI::UNSIGNED,src,pofd_mcmc::CLSENDNINTERP);
   comm.Recv(&edgeFix,1,MPI::BOOL,src,pofd_mcmc::CLSENDEDGEFIX);
 
   //Data

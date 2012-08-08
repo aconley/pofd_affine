@@ -419,7 +419,6 @@ void fitsData::removeBinning() {
 }
 
 void fitsData::sendSelf(MPI::Comm& comm, int dest) const {
-
   comm.Send(&n,1,MPI::UNSIGNED,dest,pofd_mcmc::FDSENDN);
   if (n > 0) 
     comm.Send(data,n,MPI::DOUBLE,dest,pofd_mcmc::FDSENDDATA);
@@ -451,24 +450,29 @@ void fitsData::recieveCopy(MPI::Comm& comm, int src) {
   bool recbin;
   comm.Recv(&recbin,1,MPI::BOOL,src,pofd_mcmc::FDSENDISBINNED);
   if (recbin) {
+    //Data inbound is binned
     unsigned int newnbins;
     comm.Recv(&newnbins,1,MPI::UNSIGNED,src,pofd_mcmc::FDSENDNBINS);
     if (newnbins != nbins) {
+      //Need to resize
+      nbins = newnbins;
       if (binval != NULL) fftw_free(binval);
-      if (newnbins > 0) {
-	binval = (unsigned int*) fftw_malloc( sizeof(unsigned int)*newnbins );
-	nbins = newnbins;
-	comm.Recv(binval,nbins,MPI::UNSIGNED,src,pofd_mcmc::FDSENDBINVAL);
-	comm.Recv(&bincent0,1,MPI::DOUBLE,src,pofd_mcmc::FDSENDBINCENT0);
-	comm.Recv(&bindelta,1,MPI::DOUBLE,src,pofd_mcmc::FDSENDBINDELTA);
-	is_binned = true;
-      } else is_binned = false;
+      if (nbins > 0) 
+	binval = (unsigned int*) fftw_malloc(sizeof(unsigned int) * nbins);
+      else
+	binval = NULL;
     }
+    if (nbins > 0) {
+      comm.Recv(binval,nbins,MPI::UNSIGNED,src,pofd_mcmc::FDSENDBINVAL);
+      comm.Recv(&bincent0,1,MPI::DOUBLE,src,pofd_mcmc::FDSENDBINCENT0);
+      comm.Recv(&bindelta,1,MPI::DOUBLE,src,pofd_mcmc::FDSENDBINDELTA);
+      is_binned = true;
+    } else is_binned = false;
   } else if (is_binned) {
+    //Previous data was binned, now it isn't
     if (binval != NULL) fftw_free(binval);
     binval = NULL;
     is_binned = false;
     nbins = 0;
   }
-
 }

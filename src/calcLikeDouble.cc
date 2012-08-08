@@ -709,7 +709,7 @@ void calcLikeDouble::sendSelf(MPI::Comm& comm, int dest) const {
   comm.Send(&fftsize,1,MPI::UNSIGNED,dest,pofd_mcmc::CLDSENDFFTSIZE);
   comm.Send(&edgeFix,1,MPI::BOOL,dest,pofd_mcmc::CLDSENDEDGEFIX);
   comm.Send(&edgeInteg,1,MPI::BOOL,dest,pofd_mcmc::CLDSENDEDGEINTEG);
-  comm.Send(&nedge,1,MPI::BOOL,dest,pofd_mcmc::CLDSENDNEDGE);
+  comm.Send(&nedge,1,MPI::UNSIGNED,dest,pofd_mcmc::CLDSENDNEDGE);
 
   //Data
   comm.Send(&nbeamsets,1,MPI::UNSIGNED,dest,pofd_mcmc::CLDSENDNBEAM);
@@ -762,7 +762,7 @@ void calcLikeDouble::recieveCopy(MPI::Comm& comm, int src) {
   comm.Recv(&fftsize,1,MPI::DOUBLE,src,pofd_mcmc::CLDSENDFFTSIZE);
   comm.Recv(&edgeFix,1,MPI::BOOL,src,pofd_mcmc::CLDSENDEDGEFIX);
   comm.Recv(&edgeInteg,1,MPI::BOOL,src,pofd_mcmc::CLDSENDEDGEINTEG);
-  comm.Recv(&nedge,1,MPI::BOOL,src,pofd_mcmc::CLDSENDNEDGE);
+  comm.Recv(&nedge,1,MPI::UNSIGNED,src,pofd_mcmc::CLDSENDNEDGE);
 
   //Data
   unsigned int newnbeamsets;
