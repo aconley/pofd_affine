@@ -1,7 +1,7 @@
 #include<sstream>
 
-#include<pofdMCMC.h>
-#include<specFile.h>
+#include<pofdMCMCDouble.h>
+#include<specFileDouble.h>
 #include<affineExcept.h>
 
 /*!
@@ -17,10 +17,11 @@
                             before checking burn-in again
   \param[in] SCALEFAC Scale factor of Z distribution			    
  */
-pofdMCMC::pofdMCMC(const std::string& INITFILE, const std::string& SPECFILE,
-		   unsigned int NWALKERS, unsigned int NSAMPLES, 
-		   unsigned int INIT_STEPS, unsigned int MIN_BURN, 
-		   double BURN_MULTIPLE, double SCALEFAC) :
+pofdMCMCDouble::pofdMCMCDouble(const std::string& INITFILE, 
+			       const std::string& SPECFILE,
+			       unsigned int NWALKERS, unsigned int NSAMPLES, 
+			       unsigned int INIT_STEPS, unsigned int MIN_BURN, 
+			       double BURN_MULTIPLE, double SCALEFAC) :
   affineEnsemble(NWALKERS, 1, NSAMPLES, INIT_STEPS, MIN_BURN,
 		 BURN_MULTIPLE, SCALEFAC) {
   //Note that we set NPARAMS to a bogus value (1) above, then 
@@ -28,67 +29,92 @@ pofdMCMC::pofdMCMC(const std::string& INITFILE, const std::string& SPECFILE,
   // All of this is done in initChains
 }
 
-bool pofdMCMC::initChainsMaster() {
+bool pofdMCMCDouble::initChainsMaster() {
   if (rank != 0)
-    throw affineExcept("pofdMCMC","initChainsMaster",
+    throw affineExcept("pofdMCMCDouble","initChainsMaster",
 		       "Should not be called except on master node",1);
 
   //Model initialization file
   ifile.readFile(initfile,true,true);
-  unsigned int nknots = ifile.getNKnots();
-  if (nknots == 0)
-    throw affineExcept("pofdMCMC","initChainsMaster",
-		       "No model knots read in",2);
+  unsigned int ntot = ifile.getNTot();
+  if (ntot == 0)
+    throw affineExcept("pofdMCMCDouble","initChainsMaster",
+		       "No model parameters read in",2);
   
   //Data/fit initialization file
-  specFile spec_info(specfile);
-  if (spec_info.datafiles.size() == 0)
-      throw affineExcept("pofdMCMC","initChainsMaster",
+  specFileDouble spec_info(specfile);
+  if (spec_info.datafiles1.size() == 0)
+      throw affineExcept("pofdMCMCDouble","initChainsMaster",
 			 "No data files read",3);
 
-
-  //Number of parameters is number of knots + 1 for the
-  // sigma -- although that may be fixed
-  unsigned int npar = nknots+1;
-  this->setNParams(npar);
+  //Number of parameters is number of knots (ntot) + 2 for the
+  // sigma in each band -- although some may be fixed
+  unsigned int npar = ntot+2;
+  setNParams(npar);
 
   //Set up parameter names
   std::stringstream parname;
+  unsigned int nknots = ifile.getNKnots();
   for (unsigned int i = 0; i < nknots; ++i) {
     parname.str("Knot");
     parname << i;
-    this->setParamName(i, parname.str());
+    setParamName(i, parname.str());
   }
-  this->setParamName(nknots, "SigmaMult");
+  unsigned int nsigmas = ifile.getNSigmas();
+  for (unsigned int i = 0; i < nsigmas; ++i) {
+    parname.str("SigmaKnot");
+    parname << i;
+    setParamName(i + nknots, parname.str());
+  }
+  unsigned int noffsets = ifile.getNOffsets();
+  for (unsigned int i = 0; i < noffsets; ++i) {
+    parname.str("OffsetKnot");
+    parname << i;
+    setParamName(i + nknots + nsigmas, parname.str());
+  }
+  setParamName(ntot, "SigmaMult1");
+  setParamName(ntot + 1, "SigmaMult2");
 
   //For now just ignore where fixed
-  for (unsigned int i = 0; i < nknots; ++i)
+  for (unsigned int i = 0; i < ntot; ++i)
     if (ifile.isKnotFixed(i)) this->ignoreParam(i);
   //Ignore sigma if we aren't fitting it
-  if (! spec_info.fit_sigma) this->ignoreParam(nknots);
+  if (! spec_info.fit_sigma1) this->ignoreParam(ntot);
+  if (! spec_info.fit_sigma2) this->ignoreParam(ntot + 1);
 
   //Initialize likelihood information -- priors, data, etc.
   likeSet.setFFTSize( spec_info.fftsize );
   if (spec_info.edge_fix) likeSet.setEdgeFix(); else likeSet.unSetEdgeFix();
-  likeSet.setNInterp( spec_info.ninterp );
-  if (spec_info.bin_data) likeSet.setBinData(); else likeSet.unSetBinData();
-  likeSet.setNBins( spec_info.nbins );
+  if (spec_info.edge_set) {
+    likeSet.setEdgeInteg();
+    likeSet.setNEdge(spec_info.nedge);
+  }
+  if (spec_info.bin_data) {
+    likeSet.setBinData(); 
+    likeSet.setNBins( spec_info.nbins );
+  } else likeSet.unSetBinData();
   if (spec_info.has_wisdom_file) likeSet.addWisdom(spec_info.wisdom_file);
 
   //Set priors 
-  if (spec_info.has_cfirbprior)
-    likeSet.setCFIRBPrior( spec_info.cfirbprior_mean,
-			   spec_info.cfirbprior_stdev );
-  if (spec_info.fit_sigma && spec_info.has_sigprior)
-    likeSet.setSigmaPrior(spec_info.sigprior_stdev);
+  if (spec_info.has_cfirbprior1)
+    likeSet.setCFIRBPrior1( spec_info.cfirbprior_mean1,
+			   spec_info.cfirbprior_stdev1 );
+  if (spec_info.has_cfirbprior2)
+    likeSet.setCFIRBPrior2( spec_info.cfirbprior_mean2,
+			   spec_info.cfirbprior_stdev2 );
+  if (spec_info.fit_sigma1 && spec_info.has_sigprior1)
+    likeSet.setSigmaPrior1(spec_info.sigprior_stdev1);
+  if (spec_info.fit_sigma2 && spec_info.has_sigprior2)
+    likeSet.setSigmaPrior2(spec_info.sigprior_stdev2);
 
   //Read in data files
   if (spec_info.verbose || spec_info.ultraverbose)
       std::cout << "Reading in data files" << std::endl;
-  likeSet.readDataFromFiles( spec_info.datafiles, spec_info.psffiles, 
-			     spec_info.sigmas, spec_info.like_norm,
-			     spec_info.ignore_mask, spec_info.mean_sub, 
-			     spec_info.beam_histogram );
+  likeSet.readDataFromFiles( spec_info.datafiles1, spec_info.datafiles2,
+			     spec_info.psffiles1, spec_info.psffiles2, 
+			     spec_info.sigmas1, spec_info.sigmas2,
+			     spec_info.like_norm, spec_info.ignore_mask, 
+			     spec_info.mean_sub, spec_info.beam_histogram );
 
 
   //Now, copy that information over to slaves
@@ -148,11 +174,15 @@ bool pofdMCMC::initChainsMaster() {
   //If we are fitting for sigma we need to generate a range of values
   // If there is a prior, we can use that as information for how to
   // distribute the multiplier, if not we need a default.
-  double sm_stdev;
-  if (spec_info.has_sigprior) 
-    sm_stdev = spec_info.sigprior_stdev;
+  double sm_stdev1, sm_stdev2;
+  if (spec_info.has_sigprior1) 
+    sm_stdev1 = spec_info.sigprior_stdev1;
   else
-    sm_stdev = 0.1;
+    sm_stdev1 = 0.1;
+  if (spec_info.has_sigprior2) 
+    sm_stdev2 = spec_info.sigprior_stdev2;
+  else
+    sm_stdev2 = 0.1;
 
   unsigned int nwalk = getNWalkers();
   for (unsigned int i = 0; i < nwalk; ++i) {
@@ -161,21 +191,36 @@ bool pofdMCMC::initChainsMaster() {
     // combinations get the same value, so the parameter stays fixed
     ifile.generateRandomKnotValues(p);
 
-    //Sigma multiplier value
-    if (spec_info.fit_sigma) {
+    //Sigma multiplier value, one copy for each band
+    if (spec_info.fit_sigma1) {
       unsigned int j;
       for (j = 0; j < maxtrials; ++j) {
-	trialval = 1.0 + sm_stdev * rangen.gauss(); 
+	trialval = 1.0 + sm_stdev1 * rangen.gauss(); 
 	if (trialval > 0) break;
       }
       if (j == maxtrials) {
 	for (unsigned int k = 1; k < nproc; ++k) //Tell slaves to stop
 	  MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, k, mcmc_affine::STOP);
-	throw affineExcept("pofdMCMC", "initChainsMaster",
-			   "Couldn't generate sigma multiplier value", 4);
+	throw affineExcept("pofdMCMCDouble", "initChainsMaster",
+			   "Couldn't generate sigma multiplier1 value", 4);
       }
-      p[nknots] = trialval;
-    } else p[nknots] = 1.0;
+      p[ntot] = trialval;
+    } else p[ntot] = 1.0;
+
+    if (spec_info.fit_sigma2) {
+      unsigned int j;
+      for (j = 0; j < maxtrials; ++j) {
+	trialval = 1.0 + sm_stdev2 * rangen.gauss(); 
+	if (trialval > 0) break;
+      }
+      if (j == maxtrials) {
+	for (unsigned int k = 1; k < nproc; ++k) //Tell slaves to stop
+	  MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, k, mcmc_affine::STOP);
+	throw affineExcept("pofdMCMCDouble", "initChainsMaster",
+			   "Couldn't generate sigma multiplier2 value", 5);
+      }
+      p[ntot + 1] = trialval;
+    } else p[ntot + 1] = 1.0;
     
     //Add to chain
     //It's possible that -infinity will not be available on some
@@ -188,9 +233,9 @@ bool pofdMCMC::initChainsMaster() {
   return true;
 }
 
-bool pofdMCMC::initChainsSlave() {
+bool pofdMCMCDouble::initChainsSlave() {
   if (rank == 0)
-    throw affineExcept("pofdMCMC","initChainsSlave",
+    throw affineExcept("pofdMCMCDouble","initChainsSlave",
 		       "Should not be called on master node", 1);
   //Send message to master saying we are ready
   int jnk;
@@ -225,13 +270,13 @@ bool pofdMCMC::initChainsSlave() {
   return true;
 }
 
-void pofdMCMC::initChains() {
+void pofdMCMCDouble::initChains() {
   if (rank == 0) initChainsMaster(); else initChainsSlave();
 }
 
 /*!
   \param[in] p Parameters to evaluate model for
  */
-double pofdMCMC::getLogLike(const paramSet& p) {
+double pofdMCMCDouble::getLogLike(const paramSet& p) {
   return likeSet.getLogLike(p);
 }

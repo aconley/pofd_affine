@@ -251,10 +251,21 @@ int main(int argc, char** argv) {
     MPI::Finalize();
 
   } else {
-    if (rank == 0)
-      std::cerr << "2D version not implemented" << std::endl;
+
+    pofdMCMCDouble engine(initfile, specfile, nwalkers, nsamples, init_steps,
+			  min_burn, burn_multiple, scalefac);
+    
+    if (rank == 0) std::cout << "Initializing chains" << std::endl;
+    engine.initChains();
+    
+    if (rank == 0) std::cout << "Starting main loop" << std::endl;
+    engine.sample();
+    
+    if (rank == 0) {
+      std::cout << "Done with sampling; writing to: " << outfile << std::endl;
+      engine.writeToFile(outfile);
+    }
     MPI::Finalize();
-    return 1;
   }
 
   return 0;
