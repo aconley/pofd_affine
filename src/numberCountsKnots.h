@@ -39,13 +39,16 @@ class numberCountsKnots : public numberCounts {
   numberCountsKnots( const numberCountsKnots& ); //!< Copy constructor
   ~numberCountsKnots(); //!< Destructor
 
+  /*! \brief Load knot positions into vector */
+  virtual void getKnotPositions(std::vector<double>&) const; 
   /*! \brief Set knot positions, vector version */
   virtual void setKnotPositions(const std::vector<double>&);
   /*! \brief Set knot positions, c array version */
   virtual void setKnotPositions(unsigned int, const double* const);
 
+  virtual void getParams(paramSet&) const; //!< Return current parameters
   virtual void setParams(const paramSet&); //!< Set parameters
-  
+
   unsigned int getNKnots() const { return nknots; } //!< Returns number of knots
   /*! \brief Get position of specified knot */
   double getKnotPos( unsigned int i ) const { return knots[i]; }

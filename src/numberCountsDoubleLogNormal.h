@@ -147,11 +147,14 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   void setOffsetPositions( unsigned int, const double* const );
   /*! \brief Gets total number of parameters */
   unsigned int getNParams() const { return nknots+nsigmaknots+noffsetknots; }
+  /*! \brief Gets positions of all knots */
+  void getPositions(std::vector<double>&, std::vector<double>&,
+		    std::vector<double>&) const; 
   /*! \brief Sets positions of all knots */
   void setPositions(const std::vector<double>&,const std::vector<double>&,
-		    const std::vector<double>&); //!< Set all positions
+		    const std::vector<double>&);
   
-
+  void getParams(paramSet&) const; //!< Get parameters
   void setParams(const paramSet&); //!< Set parameters
  
   /*! \brief Evaluates Sigma */

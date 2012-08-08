@@ -44,6 +44,12 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
     logknotvals = new double[NKNOTS]; 
     splinelog = gsl_spline_alloc( gsl_interp_cspline,
 				  static_cast<size_t>(NKNOTS));
+    for (unsigned int i = 0; i < NKNOTS; ++i)
+      knots[i] = std::numeric_limits<double>::quiet_NaN();
+    for (unsigned int i = 0; i < NKNOTS; ++i)
+      logknots[i] = std::numeric_limits<double>::quiet_NaN();
+    for (unsigned int i = 0; i < NKNOTS; ++i)
+      logknotvals[i] = std::numeric_limits<double>::quiet_NaN();
   } else {
     knots = logknots = logknotvals = NULL;
     splinelog = NULL;
@@ -60,6 +66,10 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
     else
       sigmainterp = gsl_interp_alloc( gsl_interp_linear,
 				      static_cast<size_t>(NSIGMA));
+    for (unsigned int i = 0; i < NSIGMA; ++i)
+      sigmaknots[i] = std::numeric_limits<double>::quiet_NaN();
+    for (unsigned int i = 0; i < NSIGMA; ++i)
+      sigmavals[i] = std::numeric_limits<double>::quiet_NaN();
   } else {
     sigmaknots = sigmavals = NULL;
     sigmainterp = NULL;
@@ -75,7 +85,10 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
     else
       offsetinterp = gsl_interp_alloc( gsl_interp_linear,
 				       static_cast<size_t>(NOFFSET));
-    
+    for (unsigned int i = 0; i < NOFFSET; ++i)
+      offsetknots[i] =  std::numeric_limits<double>::quiet_NaN();
+    for (unsigned int i = 0; i < NOFFSET; ++i)
+      offsetvals[i] =  std::numeric_limits<double>::quiet_NaN();
   } else {
     offsetknots = offsetvals = NULL;
     offsetinterp = NULL;
@@ -430,6 +443,28 @@ void numberCountsDoubleLogNormal::setOffsetPositions(unsigned int n,
 }
 
 /*!
+  \param[out] K Band 1 knot positions vector
+  \param[out] S Band 2 color model sigma knot positions vector 
+  \param[out] O Band 2 color model offset knot positions vector 
+*/
+void numberCountsDoubleLogNormal::
+getPositions(std::vector<double>& K, std::vector<double>& S,
+	     std::vector<double>& O) const {
+  K.resize(nknots);
+  if (nknots > 0)
+    for (unsigned int i = 0; i < nknots; ++i)
+      K[i] = knots[i];
+  S.resize(nsigmaknots);
+  if (nsigmaknots > 0)
+    for (unsigned int i = 0; i < nsigmaknots; ++i)
+      S[i] = sigmaknots[i];
+  O.resize(noffsetknots);
+  if (noffsetknots > 0)
+    for (unsigned int i = 0; i < noffsetknots; ++i)
+      O[i] = offsetknots[i];
+}
+
+/*!
   \param[in] K Band 1 knot positions vector
   \param[in] S Band 2 color model sigma knot positions vector 
   \param[in] O Band 2 color model offset knot positions vector 
@@ -470,12 +505,36 @@ void numberCountsDoubleLogNormal::setRWorkSize( unsigned int sz ) const {
 // may be useful for an abstract base class of band1 spline plus color models.
 // Currently this isn't implemented because we only really have this one model
 
+/*!
+  \param[out] F Parameters to get from model
+  
+  Will set the first nknot + nsigma + noffset parameters, ignoring any others.
+  If the knot values aren't loaded, sets them to NaN.
+ */
+void numberCountsDoubleLogNormal::getParams(paramSet& F) const {
+  unsigned int nneeded = nknots + nsigmaknots + noffsetknots;
+  if (F.getNParams() < nneeded)
+    throw affineExcept("numberCountsDoubleLogNormal", "getKnots",
+		       "Not enough space in output variable", 1);
+  if (! knotvals_loaded) 
+    for (unsigned int i = 0; i < nneeded; ++i)
+      F[i] = std::numeric_limits<double>::quiet_NaN();
+  else {
+    for (unsigned int i = 0; i < nknots; ++i)
+      F[i] = pofd_mcmc::ilogfac * logknotvals[i]; //Convert to base 10
+    for (unsigned int i = 0; i < nsigmaknots; ++i)
+      F[i + nknots] = sigmavals[i];
+    for (unsigned int i = 0; i < noffsetknots; ++i)
+      F[i + nknots + nsigmaknots] = offsetvals[i];
+  }
+}
 
 /*!
   \param[in] F Parameters to set in model
+
+  This will ignore any parameters beyond those it needs.
  */
 void numberCountsDoubleLogNormal::setParams(const paramSet& F) {
-  //This will ignore any parameters beyond those it needs.
   unsigned int nneeded = nknots + nsigmaknots + noffsetknots;
   if (nneeded > F.getNParams())
     throw affineExcept("numberCountsDoubleLogNormal","setKnots",

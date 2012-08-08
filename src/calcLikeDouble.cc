@@ -424,7 +424,7 @@ void calcLikeDoubleSingle::recieveCopy(MPI::Comm& comm, int src) {
 
   //Beam
   bool hsbm;
-  comm.Recv(&hsbm,1,MPI::BOOL,src,pofd_mcmc::CLSENDHASBEAM);
+  comm.Recv(&hsbm,1,MPI::BOOL,src,pofd_mcmc::CLDSENDHASBEAM);
   if (hsbm) {
     bm.recieveCopy(comm,src);
     has_beam = true;

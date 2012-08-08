@@ -24,7 +24,11 @@ numberCountsKnots::numberCountsKnots( unsigned int NKNOTS ) :
   nknots(NKNOTS) {
   if (nknots > 0) {
     knots = new double[nknots];
+    for (unsigned int i = 0; i < nknots; ++i)
+      knots[i] = std::numeric_limits<double>::quiet_NaN();
     logknotvals = new double[nknots];
+    for (unsigned int i = 0; i < nknots; ++i)
+      logknotvals[i] = std::numeric_limits<double>::quiet_NaN();
   } else
     knots = logknotvals = NULL;
   knotvals_loaded = false;
@@ -81,6 +85,16 @@ void numberCountsKnots::setNKnots(unsigned int n) {
 }
 
 /*!
+  \param[out] S Knot positions
+*/
+void numberCountsKnots::getKnotPositions(std::vector<double>& S) const {
+  S.resize(nknots);
+  if (nknots > 0)
+    for (unsigned int i = 0; i < nknots; ++i)
+      S[i] = knots[i];
+}
+
+/*!
   \param[in] S Input knot positions
 */
 void numberCountsKnots::setKnotPositions(const std::vector<double>& S) {
@@ -107,6 +121,25 @@ void numberCountsKnots::setKnotPositions(unsigned int n,
 			 "Negative knot positions not allowed",1);
   for (unsigned int i = 0; i < nknots; ++i)
     knots[i] = S[i];
+}
+
+
+/*!
+  \param[out] F Parameters from model
+
+  Will set the first nknot parameters, ignoring any others.
+  If the knot values aren't loaded, sets them to NaN.
+ */
+void numberCountsKnots::getParams(paramSet& F) const {
+  if (F.getNParams() < nknots)
+    throw affineExcept("numberCountsKnots","getKnots",
+		       "Not enough space in output variable",1);
+  if (! knotvals_loaded)
+    for (unsigned int i = 0; i < nknots; ++i)
+      F[i] = std::numeric_limits<double>::quiet_NaN();
+  else
+    for (unsigned int i = 0; i < nknots; ++i)
+      F[i] = pofd_mcmc::ilogfac * logknotvals[i]; //Convert to base 10
 }
 
 /*!
