@@ -292,14 +292,14 @@ void calcLikeSingle::writePDToStream( std::ostream& os ) const {
   os << cpy;
 }
 
-void calcLikeSingle::SendSelf(MPI::Comm& comm, int dest) const {
+void calcLikeSingle::sendSelf(MPI::Comm& comm, int dest) const {
   //Data
   comm.Send(&ndatasets,1,MPI::UNSIGNED,dest,pofd_mcmc::CLSENDNDATA);
   
   comm.Send(&data_read,1,MPI::BOOL,dest,pofd_mcmc::CLSENDDATAREAD);
   if (data_read) {
     for (unsigned int i = 0; i < ndatasets; ++i)
-      data[i].SendSelf(comm,dest);
+      data[i].sendSelf(comm,dest);
     comm.Send(sigma_base,ndatasets,MPI::DOUBLE,dest,
 	      pofd_mcmc::CLSENDSIGMABASE);
     comm.Send(&maxsigma_base,1,MPI::DOUBLE,dest,
@@ -313,16 +313,16 @@ void calcLikeSingle::SendSelf(MPI::Comm& comm, int dest) const {
 
   //Beam
   comm.Send(&has_beam,1,MPI::BOOL,dest,pofd_mcmc::CLSENDHASBEAM);
-  if (has_beam) bm.SendSelf(comm,dest);
+  if (has_beam) bm.sendSelf(comm,dest);
 
   //PDFactory
-  pdfac.SendSelf(comm,dest);
+  pdfac.sendSelf(comm,dest);
 
   //Note we don't send verbose
 }
 
 
-void calcLikeSingle::RecieveCopy(MPI::Comm& comm, int src) {
+void calcLikeSingle::recieveCopy(MPI::Comm& comm, int src) {
   //Data
   unsigned int newn;
   comm.Recv(&newn,1,MPI::UNSIGNED,src,pofd_mcmc::CLSENDNDATA);
@@ -332,7 +332,7 @@ void calcLikeSingle::RecieveCopy(MPI::Comm& comm, int src) {
   comm.Recv(&newread,1,MPI::BOOL,src,pofd_mcmc::CLSENDDATAREAD);
   if (newread) {
     for (unsigned int i = 0; i < newn; ++i)
-      data[i].RecieveCopy(comm,src);
+      data[i].recieveCopy(comm,src);
     comm.Recv(sigma_base,newn,MPI::DOUBLE,src,pofd_mcmc::CLSENDSIGMABASE);
     comm.Recv(&maxsigma_base,1,MPI::DOUBLE,src,pofd_mcmc::CLSENDMAXSIGMABASE);
     comm.Recv(like_offset,newn,MPI::DOUBLE,src,
@@ -346,12 +346,12 @@ void calcLikeSingle::RecieveCopy(MPI::Comm& comm, int src) {
   bool hsbm;
   comm.Recv(&hsbm,1,MPI::BOOL,src,pofd_mcmc::CLSENDHASBEAM);
   if (hsbm) {
-    bm.RecieveCopy(comm,src);
+    bm.recieveCopy(comm,src);
     has_beam = true;
   } else has_beam = false;
   
   //PDFactory
-  pdfac.RecieveCopy(comm,src);
+  pdfac.recieveCopy(comm,src);
 
 }
 
@@ -572,7 +572,7 @@ double calcLike::getLogLike(const paramSet& p) const {
   return LogLike;
 }
 
-void calcLike::SendSelf(MPI::Comm& comm, int dest) const { 
+void calcLike::sendSelf(MPI::Comm& comm, int dest) const { 
   //Transform
   comm.Send(&fftsize,1,MPI::UNSIGNED,dest,pofd_mcmc::CLSENDFFTSIZE);
   comm.Send(&ninterp,1,MPI::BOOL,dest,pofd_mcmc::CLSENDNINTERP);
@@ -583,14 +583,14 @@ void calcLike::SendSelf(MPI::Comm& comm, int dest) const {
   if (nbeamsets > 0) 
     for (unsigned int i = 0; i < nbeamsets; ++i) {
       comm.Send(&i,1,MPI::UNSIGNED,dest,pofd_mcmc::CLSENDSETNUM);
-      beamsets[i].SendSelf(comm,dest);
+      beamsets[i].sendSelf(comm,dest);
     }
 
   comm.Send(&bin_data,1,MPI::BOOL,dest,pofd_mcmc::CLSENDBINDATA);
   comm.Send(&nbins,1,MPI::UNSIGNED,dest,pofd_mcmc::CLSENDNBINS);
 
   //Model
-  model.SendSelf(comm,dest);
+  model.sendSelf(comm,dest);
 
   //CFIRB prior
   comm.Send(&has_cfirb_prior,1,MPI::BOOL,dest,
@@ -610,7 +610,7 @@ void calcLike::SendSelf(MPI::Comm& comm, int dest) const {
 
 }
 
-void calcLike::RecieveCopy(MPI::Comm& comm, int src) {
+void calcLike::recieveCopy(MPI::Comm& comm, int src) {
   //Transform
   comm.Recv(&fftsize,1,MPI::DOUBLE,src,pofd_mcmc::CLSENDFFTSIZE);
   comm.Recv(&ninterp,1,MPI::BOOL,src,pofd_mcmc::CLSENDNINTERP);
@@ -628,14 +628,14 @@ void calcLike::RecieveCopy(MPI::Comm& comm, int src) {
   unsigned int idx;
   for (unsigned int i = 0; i < nbeamsets; ++i) {
     comm.Recv(&idx,1,MPI::UNSIGNED,src,pofd_mcmc::CLSENDSETNUM);
-    beamsets[idx].RecieveCopy(comm,src);
+    beamsets[idx].recieveCopy(comm,src);
   }
 
   comm.Recv(&bin_data,1,MPI::BOOL,src,pofd_mcmc::CLSENDBINDATA);
   comm.Recv(&nbins,1,MPI::UNSIGNED,src,pofd_mcmc::CLSENDNBINS);
 
   //Model
-  model.RecieveCopy(comm,src);
+  model.recieveCopy(comm,src);
 
   //CFIRB prior
   comm.Recv(&has_cfirb_prior,1,MPI::BOOL,src,pofd_mcmc::CLSENDHASCFIRBPRIOR);

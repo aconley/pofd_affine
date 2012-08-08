@@ -716,7 +716,7 @@ void doublebeam::getMinMax2(unsigned int bnd, double& min,
 
 }
 
-void doublebeam::SendSelf(MPI::Comm& comm, int dest) const {
+void doublebeam::sendSelf(MPI::Comm& comm, int dest) const {
   comm.Send(&pixsize,1,MPI::DOUBLE,dest,pofd_mcmc::DOUBLEBEAMSENDPIXSIZE);
   comm.Send(npix,4,MPI::UNSIGNED,dest,pofd_mcmc::DOUBLEBEAMSENDN);
   comm.Send(has_weights,4,MPI::BOOL,dest,pofd_mcmc::DOUBLEBEAMSENDHASWEIGHTS);
@@ -743,7 +743,7 @@ void doublebeam::SendSelf(MPI::Comm& comm, int dest) const {
   comm.Send(&totsm2,1,MPI::DOUBLE,dest,pofd_mcmc::DOUBLEBEAMSENDTOTSM2);
 }
 
-void doublebeam::RecieveCopy(MPI::Comm& comm, int src) {
+void doublebeam::recieveCopy(MPI::Comm& comm, int src) {
   unsigned int new_n[4];
   comm.Recv(&pixsize,1,MPI::DOUBLE,src,pofd_mcmc::DOUBLEBEAMSENDPIXSIZE);
 

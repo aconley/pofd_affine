@@ -1061,7 +1061,7 @@ void PDFactoryDouble::getPD( double sigma1, double sigma2,
 #endif
 }
  
-void PDFactoryDouble::SendSelf(MPI::Comm& comm, int dest) const {
+void PDFactoryDouble::sendSelf(MPI::Comm& comm, int dest) const {
   comm.Send(&fftw_plan_style,1,MPI::UNSIGNED,dest,pofd_mcmc::PDFDSENDPLANSTYLE);
   comm.Send(&has_wisdom,1,MPI::UNSIGNED,dest,pofd_mcmc::PDFDHASWISDOM);
   if (has_wisdom) {
@@ -1078,7 +1078,7 @@ void PDFactoryDouble::SendSelf(MPI::Comm& comm, int dest) const {
 }
 
 //Note this doesn't copy over interal variables
-void PDFactoryDouble::RecieveCopy(MPI::Comm& comm, int src) {
+void PDFactoryDouble::recieveCopy(MPI::Comm& comm, int src) {
   comm.Recv(&fftw_plan_style,1,MPI::UNSIGNED,src,pofd_mcmc::PDFDSENDPLANSTYLE);
   comm.Recv(&has_wisdom,1,MPI::UNSIGNED,src,pofd_mcmc::PDFDHASWISDOM);
   if (has_wisdom) {

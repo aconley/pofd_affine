@@ -362,14 +362,14 @@ void calcLikeDoubleSingle::writePDToStream( std::ostream& os ) const {
   os << cpy;
 }
 
-void calcLikeDoubleSingle::SendSelf(MPI::Comm& comm, int dest) const {
+void calcLikeDoubleSingle::sendSelf(MPI::Comm& comm, int dest) const {
   //Data
   comm.Send(&ndatasets,1,MPI::UNSIGNED,dest,pofd_mcmc::CLDSENDNDATA);
   
   comm.Send(&data_read,1,MPI::BOOL,dest,pofd_mcmc::CLDSENDDATAREAD);
   if (data_read) {
     for (unsigned int i = 0; i < ndatasets; ++i)
-      data[i].SendSelf(comm,dest);
+      data[i].sendSelf(comm,dest);
     comm.Send(sigma_base1,ndatasets,MPI::DOUBLE,dest,
 	      pofd_mcmc::CLDSENDSIGMABASE1);
     comm.Send(sigma_base2,ndatasets,MPI::DOUBLE,dest,
@@ -388,16 +388,16 @@ void calcLikeDoubleSingle::SendSelf(MPI::Comm& comm, int dest) const {
 
   //Beam
   comm.Send(&has_beam,1,MPI::BOOL,dest,pofd_mcmc::CLDSENDHASBEAM);
-  if (has_beam) bm.SendSelf(comm,dest);
+  if (has_beam) bm.sendSelf(comm,dest);
 
   //PDFactory
-  pdfac.SendSelf(comm,dest);
+  pdfac.sendSelf(comm,dest);
 
   //Note we don't send verbose
 }
 
 
-void calcLikeDoubleSingle::RecieveCopy(MPI::Comm& comm, int src) {
+void calcLikeDoubleSingle::recieveCopy(MPI::Comm& comm, int src) {
   //Data
   unsigned int newn;
   comm.Recv(&newn,1,MPI::UNSIGNED,src,pofd_mcmc::CLDSENDNDATA);
@@ -407,7 +407,7 @@ void calcLikeDoubleSingle::RecieveCopy(MPI::Comm& comm, int src) {
   comm.Recv(&newread,1,MPI::BOOL,src,pofd_mcmc::CLDSENDDATAREAD);
   if (newread) {
     for (unsigned int i = 0; i < newn; ++i)
-      data[i].RecieveCopy(comm,src);
+      data[i].recieveCopy(comm,src);
     comm.Recv(sigma_base1,newn,MPI::DOUBLE,src,pofd_mcmc::CLDSENDSIGMABASE1);
     comm.Recv(sigma_base2,newn,MPI::DOUBLE,src,pofd_mcmc::CLDSENDSIGMABASE2);
     comm.Recv(&maxsigma_base1,1,MPI::DOUBLE,src,
@@ -426,12 +426,12 @@ void calcLikeDoubleSingle::RecieveCopy(MPI::Comm& comm, int src) {
   bool hsbm;
   comm.Recv(&hsbm,1,MPI::BOOL,src,pofd_mcmc::CLSENDHASBEAM);
   if (hsbm) {
-    bm.RecieveCopy(comm,src);
+    bm.recieveCopy(comm,src);
     has_beam = true;
   } else has_beam = false;
   
   //PDFactory
-  pdfac.RecieveCopy(comm,src);
+  pdfac.recieveCopy(comm,src);
 
 }
 
@@ -704,7 +704,7 @@ double calcLikeDouble::getLogLike(const paramSet& p) const {
   return LogLike;
 }
 
-void calcLikeDouble::SendSelf(MPI::Comm& comm, int dest) const { 
+void calcLikeDouble::sendSelf(MPI::Comm& comm, int dest) const { 
   //Transform
   comm.Send(&fftsize,1,MPI::UNSIGNED,dest,pofd_mcmc::CLDSENDFFTSIZE);
   comm.Send(&edgeFix,1,MPI::BOOL,dest,pofd_mcmc::CLDSENDEDGEFIX);
@@ -716,14 +716,14 @@ void calcLikeDouble::SendSelf(MPI::Comm& comm, int dest) const {
   if (nbeamsets > 0) 
     for (unsigned int i = 0; i < nbeamsets; ++i) {
       comm.Send(&i,1,MPI::UNSIGNED,dest,pofd_mcmc::CLDSENDSETNUM);
-      beamsets[i].SendSelf(comm,dest);
+      beamsets[i].sendSelf(comm,dest);
     }
 
   comm.Send(&bin_data,1,MPI::BOOL,dest,pofd_mcmc::CLDSENDBINDATA);
   comm.Send(&nbins,1,MPI::UNSIGNED,dest,pofd_mcmc::CLDSENDNBINS);
 
   //Model
-  model.SendSelf(comm,dest);
+  model.sendSelf(comm,dest);
 
   //CFIRB prior
   comm.Send(&has_cfirb_prior1,1,MPI::BOOL,dest,
@@ -757,7 +757,7 @@ void calcLikeDouble::SendSelf(MPI::Comm& comm, int dest) const {
 
 }
 
-void calcLikeDouble::RecieveCopy(MPI::Comm& comm, int src) {
+void calcLikeDouble::recieveCopy(MPI::Comm& comm, int src) {
   //Transform
   comm.Recv(&fftsize,1,MPI::DOUBLE,src,pofd_mcmc::CLDSENDFFTSIZE);
   comm.Recv(&edgeFix,1,MPI::BOOL,src,pofd_mcmc::CLDSENDEDGEFIX);
@@ -776,14 +776,14 @@ void calcLikeDouble::RecieveCopy(MPI::Comm& comm, int src) {
   unsigned int idx;
   for (unsigned int i = 0; i < nbeamsets; ++i) {
     comm.Recv(&idx,1,MPI::UNSIGNED,src,pofd_mcmc::CLDSENDSETNUM);
-    beamsets[idx].RecieveCopy(comm,src);
+    beamsets[idx].recieveCopy(comm,src);
   }
 
   comm.Recv(&bin_data,1,MPI::BOOL,src,pofd_mcmc::CLDSENDBINDATA);
   comm.Recv(&nbins,1,MPI::UNSIGNED,src,pofd_mcmc::CLDSENDNBINS);
 
   //Model
-  model.RecieveCopy(comm,src);
+  model.recieveCopy(comm,src);
 
   //CFIRB prior
   comm.Recv(&has_cfirb_prior1,1,MPI::BOOL,src,pofd_mcmc::CLDSENDHASCFIRBPRIOR1);

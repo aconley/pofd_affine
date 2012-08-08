@@ -150,7 +150,7 @@ double numberCountsKnots::getMaxFlux() const {
   return knots[nknots-1];
 }
 
-void numberCountsKnots::SendSelf(MPI::Comm& comm, int dest) const {
+void numberCountsKnots::sendSelf(MPI::Comm& comm, int dest) const {
   comm.Send(&nknots,1,MPI::UNSIGNED,dest,pofd_mcmc::NCKSENDNKNOTS);
   if (nknots != 0) {
     comm.Send(knots,nknots,MPI::DOUBLE,dest,pofd_mcmc::NCKSENDKNOTS);
@@ -161,7 +161,7 @@ void numberCountsKnots::SendSelf(MPI::Comm& comm, int dest) const {
   }
 }
 
-void numberCountsKnots::RecieveCopy(MPI::Comm& comm, int src) {
+void numberCountsKnots::recieveCopy(MPI::Comm& comm, int src) {
   unsigned int n;
   comm.Recv(&n,1,MPI::UNSIGNED,src,pofd_mcmc::NCKSENDNKNOTS);
   if (n != 0) {
@@ -713,7 +713,7 @@ bool initFileKnots::isValid(const paramSet& p) const {
   return true;
 }
 
-void initFileKnots::SendSelf(MPI::Comm& comm, int dest) const {
+void initFileKnots::sendSelf(MPI::Comm& comm, int dest) const {
   comm.Send(&nknots,1,MPI::UNSIGNED,dest,pofd_mcmc::IFKSENDNKNOTS);
   if (nknots != 0) {
     comm.Send(knotpos,nknots,MPI::DOUBLE,dest,pofd_mcmc::IFKSENDKNOTPOS);
@@ -734,7 +734,7 @@ void initFileKnots::SendSelf(MPI::Comm& comm, int dest) const {
   }
 }
 
-void initFileKnots::RecieveCopy(MPI::Comm& comm, int src) {
+void initFileKnots::recieveCopy(MPI::Comm& comm, int src) {
   //Delete everything for simplicity
   if (knotpos != NULL) delete[] knotpos;
   if (knotval != NULL) delete[] knotval;

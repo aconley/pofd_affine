@@ -72,8 +72,8 @@ class numberCountsKnotsSpline : public numberCountsKnots {
   void getR(unsigned int n,const double* const,
 	    const beam&,double*, rtype=BEAMPOS) const;
 
-  virtual void SendSelf(MPI::Comm&, int dest) const; //!< Send self
-  virtual void RecieveCopy(MPI::Comm&, int src); //!< Recieve
+  virtual void sendSelf(MPI::Comm&, int dest) const; //!< Send self
+  virtual void recieveCopy(MPI::Comm&, int src); //!< Recieve
 };
 
 #endif

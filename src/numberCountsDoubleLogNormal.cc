@@ -1079,7 +1079,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 }
 
 
-void numberCountsDoubleLogNormal::SendSelf(MPI::Comm& comm, int dest) const {
+void numberCountsDoubleLogNormal::sendSelf(MPI::Comm& comm, int dest) const {
 
   //Knots
   comm.Send(&nknots,1,MPI::UNSIGNED,dest,pofd_mcmc::NCDCSENDNKNOTS);
@@ -1117,7 +1117,7 @@ void numberCountsDoubleLogNormal::SendSelf(MPI::Comm& comm, int dest) const {
 
 }
 
-void numberCountsDoubleLogNormal::RecieveCopy(MPI::Comm& comm, int src) {
+void numberCountsDoubleLogNormal::recieveCopy(MPI::Comm& comm, int src) {
   unsigned int n;
   bool kloaded;
 
@@ -1933,7 +1933,7 @@ bool initFileDoubleLogNormal::isValid(const paramSet& p) const {
   \param[in] comm MPIS communication handle
   \param[in] dest Destination for send operation
  */
-void initFileDoubleLogNormal::SendSelf(MPI::Comm& comm, int dest) const {
+void initFileDoubleLogNormal::sendSelf(MPI::Comm& comm, int dest) const {
   comm.Send(&nknots,1,MPI::UNSIGNED,dest,pofd_mcmc::IFDLNSENDNKNOTS);
   comm.Send(&nsigmas,1,MPI::UNSIGNED,dest,pofd_mcmc::IFDLNSENDNSIGMAS);
   comm.Send(&noffsets,1,MPI::UNSIGNED,dest,pofd_mcmc::IFDLNSENDNOFFSETS);
@@ -1959,7 +1959,7 @@ void initFileDoubleLogNormal::SendSelf(MPI::Comm& comm, int dest) const {
   }
 }
 
-void initFileDoubleLogNormal::RecieveCopy(MPI::Comm& comm, int src) {
+void initFileDoubleLogNormal::recieveCopy(MPI::Comm& comm, int src) {
   //Delete everything for simplicity
   if (knotpos != NULL) delete[] knotpos;
   if (knotval != NULL) delete[] knotval;

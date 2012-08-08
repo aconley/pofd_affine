@@ -129,8 +129,8 @@ class PDFactoryDouble {
   void getPD(double, double, PDDouble&, bool setLog=true, 
 	     bool edgeFix=false);
 
-  void SendSelf(MPI::Comm&, int dest) const; //!< MPI copy send operation
-  void RecieveCopy(MPI::Comm&, int dest); //!< MPI copy recieve operation
+  void sendSelf(MPI::Comm&, int dest) const; //!< MPI copy send operation
+  void recieveCopy(MPI::Comm&, int dest); //!< MPI copy recieve operation
 
 
 #ifdef TIMING

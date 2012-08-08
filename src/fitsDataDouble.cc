@@ -577,7 +577,7 @@ std::pair<double,double> fitsDataDouble::getBinDelta() const {
   return std::make_pair(bindelta1,bindelta2);
 }
 
-void fitsDataDouble::SendSelf(MPI::Comm& comm, int dest) const {
+void fitsDataDouble::sendSelf(MPI::Comm& comm, int dest) const {
 
   comm.Send(&n,1,MPI::UNSIGNED,dest,pofd_mcmc::FDDSENDN);
   if (n > 0) {
@@ -599,7 +599,7 @@ void fitsDataDouble::SendSelf(MPI::Comm& comm, int dest) const {
   }
 }
 
-void fitsDataDouble::RecieveCopy(MPI::Comm& comm, int src) {
+void fitsDataDouble::recieveCopy(MPI::Comm& comm, int src) {
   unsigned int newn;
   comm.Recv(&newn,1,MPI::UNSIGNED,src,pofd_mcmc::FDDSENDN);
 

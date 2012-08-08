@@ -508,17 +508,17 @@ void numberCountsKnotsSpline::getR(unsigned int n,const double* const flux,
   return;
 }
 
-void numberCountsKnotsSpline::SendSelf(MPI::Comm& comm, int dest) const {
-  numberCountsKnots::SendSelf(comm,dest);
+void numberCountsKnotsSpline::sendSelf(MPI::Comm& comm, int dest) const {
+  numberCountsKnots::sendSelf(comm,dest);
   if (knotvals_loaded) {
     comm.Send(logknots,nknots,MPI::DOUBLE,dest,
 	      pofd_mcmc::NCKSSENDLOGKNOTS);
   }
 }
 
-void numberCountsKnotsSpline::RecieveCopy(MPI::Comm& comm, int src) {
+void numberCountsKnotsSpline::recieveCopy(MPI::Comm& comm, int src) {
   unsigned int oldnknots = nknots;
-  numberCountsKnots::RecieveCopy(comm,src);
+  numberCountsKnots::recieveCopy(comm,src);
 
   if (nknots != oldnknots) {
     if (splinelog != NULL) gsl_spline_free(splinelog);

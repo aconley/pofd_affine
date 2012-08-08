@@ -500,7 +500,7 @@ double beam::getEffectiveAreaSq() const {
   return area;
 }
 
-void beam::SendSelf(MPI::Comm& comm, int dest) const {
+void beam::sendSelf(MPI::Comm& comm, int dest) const {
   comm.Send(&pixsize,1,MPI::DOUBLE,dest,pofd_mcmc::BEAMSENDPIXSIZE);
   comm.Send(&npos,1,MPI::UNSIGNED,dest,pofd_mcmc::BEAMSENDNPOS);
 
@@ -533,7 +533,7 @@ void beam::SendSelf(MPI::Comm& comm, int dest) const {
   }
 }
 
-void beam::RecieveCopy(MPI::Comm& comm, int src) {
+void beam::recieveCopy(MPI::Comm& comm, int src) {
   unsigned int new_n;
   comm.Recv(&pixsize,1,MPI::DOUBLE,src,pofd_mcmc::BEAMSENDPIXSIZE);
 

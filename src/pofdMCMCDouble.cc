@@ -142,8 +142,8 @@ bool pofdMCMCDouble::initChainsMaster() {
 			   pofd_mcmc::PMCMCSENDINGINIT);
       MPI::COMM_WORLD.Send(&npar, 1, MPI::UNSIGNED, this_rank, 
 			   pofd_mcmc::PMCMCSENDNPAR);
-      ifile.SendSelf(MPI::COMM_WORLD, this_rank);
-      likeSet.SendSelf(MPI::COMM_WORLD, this_rank);
+      ifile.sendSelf(MPI::COMM_WORLD, this_rank);
+      likeSet.sendSelf(MPI::COMM_WORLD, this_rank);
       
     } else if (this_tag == pofd_mcmc::PMCMCISREADY) {
       initialized[this_rank] = true;
@@ -260,8 +260,8 @@ bool pofdMCMCDouble::initChainsSlave() {
       MPI::COMM_WORLD.Recv(&npar, 1, MPI::UNSIGNED, 0, 
 			   pofd_mcmc::PMCMCSENDNPAR);
       this->setNParams(npar);
-      ifile.RecieveCopy(MPI::COMM_WORLD, 0);
-      likeSet.RecieveCopy(MPI::COMM_WORLD, 0);
+      ifile.recieveCopy(MPI::COMM_WORLD, 0);
+      likeSet.recieveCopy(MPI::COMM_WORLD, 0);
 
       MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, 0, pofd_mcmc::PMCMCISREADY);
     }

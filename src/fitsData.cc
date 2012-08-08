@@ -418,7 +418,7 @@ void fitsData::removeBinning() {
   is_binned = false;
 }
 
-void fitsData::SendSelf(MPI::Comm& comm, int dest) const {
+void fitsData::sendSelf(MPI::Comm& comm, int dest) const {
 
   comm.Send(&n,1,MPI::UNSIGNED,dest,pofd_mcmc::FDSENDN);
   if (n > 0) 
@@ -434,7 +434,7 @@ void fitsData::SendSelf(MPI::Comm& comm, int dest) const {
   }
 }
 
-void fitsData::RecieveCopy(MPI::Comm& comm, int src) {
+void fitsData::recieveCopy(MPI::Comm& comm, int src) {
   unsigned int newn;
   comm.Recv(&newn,1,MPI::UNSIGNED,src,pofd_mcmc::FDSENDN);
 

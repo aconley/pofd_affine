@@ -110,9 +110,9 @@ class doublebeam {
   double getPixSize() const { return pixsize; } //!< Get pixel size (1d)
 
   /*! \brief MPI copy send operation */
-  void SendSelf(MPI::Comm&, int dest) const;
+  void sendSelf(MPI::Comm&, int dest) const;
   /*! \brief MPI copy recieve operation */
-  void RecieveCopy(MPI::Comm&, int dest);
+  void recieveCopy(MPI::Comm&, int dest);
 };
 
 /*! \brief Structure for beam histogramming */
