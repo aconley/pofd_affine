@@ -761,7 +761,7 @@ void initFileKnots::sendSelf(MPI::Comm& comm, int dest) const {
     }
     comm.Send(&has_upper_limits,1,MPI::BOOL,dest,pofd_mcmc::IFKHASUPPERLIMITS);
     if (has_upper_limits) {
-      comm.Send(has_uplim,nknots,MPI::BOOL,dest,pofd_mcmc::IFKSENDHAUPLIM);
+      comm.Send(has_uplim,nknots,MPI::BOOL,dest,pofd_mcmc::IFKSENDHASUPLIM);
       comm.Send(uplim,nknots,MPI::DOUBLE,dest,pofd_mcmc::IFKSENDUPLIM);
     }
   }
