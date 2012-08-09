@@ -67,11 +67,26 @@ affineExcept::affineExcept(const std::string errclass,
 
 std::string affineExcept::what() const {
   std::stringstream str;
-  if (err.classset) str << "Error Class/Namespace: " << err.errclass 
-			<< str::endl;
-  if (err.methodset) str << "Method: " << err.errmethod << std::endl;
-  if (err.strset) str << "Error Message: " << err.errstr << std::endl;
-  if (err.errset) str << "Error Code: " << err.errnum << std::endl;
+  bool first; //Last element won't have a linebreak at the end
+  first = true;
+  if (classset) {
+    str << "Error Class/Namespace: " << errclass;
+    first = false;
+  }
+  if (methodset) {
+    if (!first) str << std::endl;
+    str << "Method: " << errmethod;
+    first = false;
+  }
+  if (strset) {
+    if (!first) str << std::endl;
+    str << "Error Message: " << errstr;
+    first = false;
+  }
+  if (errset) {
+    if (!first) str << std::endl;
+    str << "Error Code: " << errnum;
+  }
   return str.str();
 }
 
