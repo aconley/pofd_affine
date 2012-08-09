@@ -674,9 +674,15 @@ void affineEnsemble::slaveSample() {
 	return;
       }
     }
-  } catch ( const affineExcept& ex ) {
+  } catch (const affineExcept& ex) {
     std::cerr << "Error encountered for process: " << rank << std::endl;
     std::cerr << ex << std::endl;
+    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,mcmc_affine::ERROR);
+    return;
+  } catch (const std::bad_alloc& ba) {
+    std::cerr << "Allocation error encountered for process: " << rank 
+	      << std::endl;
+    std::cerr << ba.what() << std::endl;
     MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,mcmc_affine::ERROR);
     return;
   }

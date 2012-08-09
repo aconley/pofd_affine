@@ -1,4 +1,6 @@
 #include <iostream>
+#include <sstream> 
+
 #include <affineExcept.h>
 
 using namespace std;
@@ -63,13 +65,20 @@ affineExcept::affineExcept(const std::string errclass,
   classset = methodset = strset = errset = true;
 }
 
+std::string affineExcept::what() const {
+  std::stringstream str;
+  if (err.classset) str << "Error Class/Namespace: " << err.errclass 
+			<< str::endl;
+  if (err.methodset) str << "Method: " << err.errmethod << std::endl;
+  if (err.strset) str << "Error Message: " << err.errstr << std::endl;
+  if (err.errset) str << "Error Code: " << err.errnum << std::endl;
+  return str.str();
+}
+
 /*
   Provides output capabilities, not outputting stuff not set.
  */
 ostream& operator<<(std::ostream& os, const affineExcept& err) {
-  if (err.classset) os << "Error Class/Namespace: " << err.errclass << endl;
-  if (err.methodset) os << "Method: " << err.errmethod << endl;
-  if (err.strset) os << "Error Message: " << err.errstr << endl;
-  if (err.errset) os << "Error Code: " << err.errnum << endl;
+  os << err.what();
   return os;
 }
