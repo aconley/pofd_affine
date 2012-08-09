@@ -165,6 +165,10 @@ int getNSingle( int argc, char** argv ) {
     std::cerr << ex << std::endl;
     if (dNdS != NULL) delete[] dNdS;
     return 8;
+  } catch ( const std::bad_alloc& ba ) {
+    std::cerr << "Bad allocation error: " << ba.what() << std::endl;
+    if (dNdS != NULL) delete[] dNdS;
+    return 16;
   }
   return 0;
 }
@@ -314,6 +318,10 @@ int getNDouble( int argc, char** argv ) {
     std::cerr << ex << std::endl;
     if (dNdS != NULL) delete[] dNdS;
     return 8;
+  } catch ( const std::bad_alloc& ba ) {
+    std::cerr << "Bad allocation error: " << ba.what() << std::endl;
+    if (dNdS != NULL) delete[] dNdS;
+    return 16;
   }
   return 0;
 }

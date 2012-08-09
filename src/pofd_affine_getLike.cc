@@ -83,6 +83,9 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
   } catch (const affineExcept& ex) {
     std::cerr << ex << std::endl;
     return 4;
+  } catch (const std::bad_alloc& ba) {
+    std::cerr << "Bad allocation error: " << ba.what() << std::endl;
+    return 8;
   }
   return 0;
 }
@@ -175,6 +178,9 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
   } catch (const affineExcept& ex) {
     std::cerr << ex << std::endl;
     return 4;
+  } catch (const std::bad_alloc& ba) {
+    std::cerr << "Bad allocation error: " << ba.what() << std::endl;
+    return 8;
   }
   return 0;
 }

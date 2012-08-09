@@ -233,39 +233,47 @@ int main(int argc, char** argv) {
     return 1;
   }
     
-
-  if (! twod) {
-    pofdMCMC engine(initfile, specfile, nwalkers, nsamples, init_steps,
-		    min_burn, burn_multiple, scalefac);
-    
-    if (rank == 0) std::cout << "Initializing chains" << std::endl;
-    engine.initChains();
-    
-    if (rank == 0) std::cout << "Starting main loop" << std::endl;
-    engine.sample();
-    
-    if (rank == 0) {
-      std::cout << "Done with sampling; writing to: " << outfile << std::endl;
-      engine.writeToFile(outfile);
+  try {
+    if (! twod) {
+      pofdMCMC engine(initfile, specfile, nwalkers, nsamples, init_steps,
+		      min_burn, burn_multiple, scalefac);
+      
+      if (rank == 0) std::cout << "Initializing chains" << std::endl;
+      engine.initChains();
+      
+      if (rank == 0) std::cout << "Starting main loop" << std::endl;
+      engine.sample();
+      
+      if (rank == 0) {
+	std::cout << "Done with sampling; writing to: " << outfile << std::endl;
+	engine.writeToFile(outfile);
+      }
+      MPI::Finalize();
+      
+    } else {
+      
+      pofdMCMCDouble engine(initfile, specfile, nwalkers, nsamples, init_steps,
+			    min_burn, burn_multiple, scalefac);
+      
+      if (rank == 0) std::cout << "Initializing chains" << std::endl;
+      engine.initChains();
+      
+      if (rank == 0) std::cout << "Starting main loop" << std::endl;
+      engine.sample();
+      
+      if (rank == 0) {
+	std::cout << "Done with sampling; writing to: " << outfile << std::endl;
+	engine.writeToFile(outfile);
+      }
+      MPI::Finalize();
     }
-    MPI::Finalize();
-
-  } else {
-
-    pofdMCMCDouble engine(initfile, specfile, nwalkers, nsamples, init_steps,
-			  min_burn, burn_multiple, scalefac);
-    
-    if (rank == 0) std::cout << "Initializing chains" << std::endl;
-    engine.initChains();
-    
-    if (rank == 0) std::cout << "Starting main loop" << std::endl;
-    engine.sample();
-    
-    if (rank == 0) {
-      std::cout << "Done with sampling; writing to: " << outfile << std::endl;
-      engine.writeToFile(outfile);
-    }
-    MPI::Finalize();
+  } catch (const affineExcept& ex) {
+    std::cerr << "Error encountered: " << ex << std::endl;
+    return 1;
+  } catch (const std::bad_alloc& ba) {
+    std::cerr << "Allocation error encountered: " << ba.what() 
+	      << std::endl;
+    return 2;
   }
 
   return 0;

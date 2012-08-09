@@ -128,12 +128,17 @@ int getRSingle( int argc, char** argv ) {
     
     delete[] fluxes;
     delete[] R; 
-  } catch ( const affineExcept& ex ) {
+  } catch (const affineExcept& ex) {
     std::cerr << "Error encountered" << std::endl;
     std::cerr << ex << std::endl;
     if (fluxes != NULL) delete[] fluxes;
     if (R != NULL) delete[] R;
     return 8;
+  } catch (const std::bad_alloc& ba) {
+    std::cerr << "Bad allocation error: " << ba.what() << std::endl;
+    if (fluxes != NULL) delete[] fluxes;
+    if (R != NULL) delete[] R;
+    return 16;
   }
   return 0;
 }
@@ -270,9 +275,15 @@ int getRDouble(int argc, char** argv) {
     delete[] fluxes1;
     delete[] fluxes2;
     delete[] R; 
-  } catch ( const affineExcept& ex ) {
+  } catch (const affineExcept& ex) {
     std::cerr << "Error encountered" << std::endl;
     std::cerr << ex << std::endl;
+    if (fluxes1 != NULL) delete[] fluxes1;
+    if (fluxes2 != NULL) delete[] fluxes2;
+    if (R != NULL) delete[] R;
+    return 16;
+  } catch (const std::bad_alloc& ba) {
+    std::cerr << "Bad allocation error: " << ba.what() << std::endl;
     if (fluxes1 != NULL) delete[] fluxes1;
     if (fluxes2 != NULL) delete[] fluxes2;
     if (R != NULL) delete[] R;

@@ -202,11 +202,13 @@ int getPDSingle(int argc, char **argv) {
       ofs << pd;
       ofs.close();
     }
-
-  } catch ( const affineExcept& ex ) {
+  } catch (const affineExcept& ex) {
     std::cerr << "Error encountered" << std::endl;
     std::cerr << ex << std::endl;
     return 8;
+  } catch (const std::bad_alloc& ba) {
+    std::cerr << "Bad allocation error: " << ba.what() << std::endl;
+    return 16;
   }
 
   return 0;
@@ -403,11 +405,13 @@ int getPDDouble(int argc, char** argv) {
       ofs << pd;
       ofs.close();
     }
-
-  } catch ( const affineExcept& ex ) {
+  } catch (const affineExcept& ex) {
     std::cerr << "Error encountered" << std::endl;
     std::cerr << ex << std::endl;
     return 8;
+  } catch (const std::bad_alloc& ba) {
+    std::cerr << "Bad allocation error: " << ba.what() << std::endl;
+    return 16;
   }
 
   return 0;
