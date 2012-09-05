@@ -115,7 +115,7 @@ void calcLikeDoubleSingle::readDataFromFile(const std::string& datafile1,
 		       "Problem with maxflux, band 1",2);
   if (std::isnan(maxflux2) || std::isinf(maxflux2))
     throw affineExcept("calcLikeDoubleSingle","readDataFromFile",
-		       "Problem with maxflux, band 2",2);
+		       "Problem with maxflux, band 2",3);
   maxflux1 *= calcLikeDoubleSingle::flux_safety;
   maxflux2 *= calcLikeDoubleSingle::flux_safety;
 
@@ -157,7 +157,7 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
       errstr << "No unmasked pixels in data files: "
 	     << datafiles1[i] << " " << datafiles2[i];
       throw affineExcept("calcLikeDoubleSingle","readDataFromFiles",
-			 errstr.str(),4);
+			 errstr.str(),3);
     }
     if (BINDATA) data[i].applyBinning(NBINS,NBINS);
 
@@ -173,18 +173,18 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
   maxflux1 = pr.first; maxflux2 = pr.second;
   if (std::isnan(maxflux1) || std::isinf(maxflux1))
     throw affineExcept("calcLikeDoubleSingle","readDataFromFiles",
-		       "Problem with maxflux, band 1",8);
+		       "Problem with maxflux, band 1",4);
   if (std::isnan(maxflux2) || std::isinf(maxflux2))
     throw affineExcept("calcLikeDoubleSingle","readDataFromFiles",
-		       "Problem with maxflux, band 2",8);
+		       "Problem with maxflux, band 2",5);
   for (unsigned int i = 1; i < n; ++i) {
     pr = data[i].getMax();
     if (std::isnan(pr.first) || std::isinf(pr.first))
       throw affineExcept("calcLikeDoubleSingle","readDataFromFiles",
-			 "Problem with maxflux, band 1",8);
+			 "Problem with maxflux, band 1",6);
     if (std::isnan(pr.second) || std::isinf(pr.second))
       throw affineExcept("calcLikeDoubleSingle","readDataFromFiles",
-			 "Problem with maxflux, band 2",8);
+			 "Problem with maxflux, band 2",7);
     if (pr.first > maxflux1) maxflux1 = pr.first;
     if (pr.second > maxflux2) maxflux2 = pr.second;
   }
@@ -285,7 +285,7 @@ void calcLikeDoubleSingle::setSigmaBase1(unsigned int n,const double* const s) {
 void calcLikeDoubleSingle::setSigmaBase2(unsigned int n,const double* const s) {
   if (n != ndatasets)
     throw affineExcept("calcLikeDoubleSingle","setSigmaBase2",
-		       "sigma arrays not same size as number of data sets",2);
+		       "sigma arrays not same size as number of data sets",1);
   if (n == 0) return;
   for (unsigned int i = 0; i < ndatasets; ++i)
     sigma_base2[i] = s[i];
@@ -499,19 +499,19 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
 		       "No datafiles",2);
   if (ndat != beamfiles1.size())
     throw affineExcept("calcLikeDouble","readDataFromFiles",
-		       "datafiles and beamfiles1 not same length",4);
+		       "datafiles and beamfiles1 not same length",3);
   if (ndat != beamfiles2.size())
     throw affineExcept("calcLikeDouble","readDataFromFiles",
-		       "datafiles and beamfiles2 not same length",8);
+		       "datafiles and beamfiles2 not same length",4);
   if (ndat != sigmas1.size())
     throw affineExcept("calcLikeDouble","readDataFromFiles",
-		       "datafiles and sigmas1 not same length",16);
+		       "datafiles and sigmas1 not same length",5);
   if (ndat != sigmas2.size())
     throw affineExcept("calcLikeDouble","readDataFromFiles",
-		       "datafiles and sigmas2 not same length",32);
+		       "datafiles and sigmas2 not same length",6);
   if (ndat != like_norms.size())
     throw affineExcept("calcLikeDouble","readDataFromFiles",
-		       "datafiles and like_norm not same length",64);
+		       "datafiles and like_norm not same length",7);
   
   //Use a map.  Could also use a multi-map, but meh
   //Key will be the combination of both beam file names

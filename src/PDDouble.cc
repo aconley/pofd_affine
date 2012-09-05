@@ -205,7 +205,7 @@ void PDDouble::edgeFix(bool donorm) {
        std::isnan( mn2 ) || std::isinf( mn2 ) ||
        std::isnan( var2 ) || std::isinf( var2 ) )
     throw affineExcept("PDDouble","edgeFix",
-		     "Problem with means/vars",2);
+		       "Problem with means/vars",2);
   
   double istdev1 = 1.0/sqrt(var1);
   double istdev2 = 1.0/sqrt(var2);
@@ -719,7 +719,7 @@ int PDDouble::writeToFits( const std::string& outputfile ) const {
   if (status) {
     fits_report_error(stderr,status);
     throw affineExcept("PDDouble","writeToFits",
-		     "Error creating FITS output file",1);
+		       "Error creating FITS output file",1);
   }
 
   long axissize[2];
@@ -789,14 +789,14 @@ int PDDouble::writeToFits( const std::string& outputfile ) const {
   if (status) {
     fits_report_error(stderr,status);
     throw affineExcept("PDDouble","writeToFits",
-		     "Error doing FITS write",2);
+		       "Error doing FITS write",2);
   }
   return status;
 }
 
 double PDDouble::getLogLike(const fitsDataDouble& data) const {
   if (pd_ == NULL) throw affineExcept("PDDouble","getLogLike",
-                                    "pd not filled before likelihood calc",1);
+				      "pd not filled before likelihood calc",1);
   unsigned int ndata = data.getN();
   if (ndata == 0) throw affineExcept("PDDouble","getLogLike",
 				     "No data present",2);
@@ -911,7 +911,7 @@ double PDDouble::getLogLikeUnbinned(const fitsDataDouble& data) const {
 double PDDouble::getLogLikeBinned(const fitsDataDouble& data) const {
   if (!data.isBinned())
     throw affineExcept("PDDouble","getLogLikeBinned",
-		     "Data is not binned",1);
+		       "Data is not binned",1);
 
   std::pair<unsigned int,unsigned int> nbins = data.getNBins();
   unsigned int nbins1 = nbins.first;

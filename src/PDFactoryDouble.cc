@@ -234,7 +234,7 @@ bool PDFactoryDouble::addWisdom(const std::string& filename) {
   if (fftw_import_wisdom_from_file(fp) == 0) {
     std::stringstream str;
     str << "Error reading wisdom file: " << wisdom_file;
-    throw affineExcept("PDFactoryDouble","addWisdom",str.str(),1);
+    throw affineExcept("PDFactoryDouble","addWisdom",str.str(),2);
   }
   fclose(fp);
   fftw_plan_style = FFTW_WISDOM_ONLY;
@@ -418,14 +418,14 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
 		       "Invalid (negative) sigma1",2);
   if (sigma2 < 0.0)
     throw affineExcept("PDFactoryDouble","initPD",
-		       "Invalid (negative) sigma2",4);
+		       "Invalid (negative) sigma2",3);
   if (maxflux1 <= 0.0)
     throw affineExcept("PDFactoryDouble","initPD",
-		       "Invalid (non-positive) maxflux1",8);
+		       "Invalid (non-positive) maxflux1",4);
   if (maxflux2 <= 0.0)
     throw affineExcept("PDFactoryDouble","initPD",
-		       "Invalid (non-positive) maxflux2",16);
-
+		       "Invalid (non-positive) maxflux2",5);
+  
   //Make sure we have enough room
   bool did_resize = resize(n);
 
@@ -613,17 +613,16 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
   sg1 = sqrt( var_noi1 + sigma1*sigma1 );
   sg2 = sqrt( var_noi2 + sigma2*sigma2 );
 
-
   //Decide if we will shift and pad, and if so by how much
   //Only do shifts if the noise is larger than one actual step size
   // Otherwise we can't represent it well.
   bool dopad1 = (sigma1 > dflux1);
   bool dopad2 = (sigma2 > dflux2);
-  doshift1 = ( dopad1 && ( mn1 < pofd_mcmc::n_sigma_shift2d*sg1) );
-  doshift2 = ( dopad2 && ( mn2 < pofd_mcmc::n_sigma_shift2d*sg2 ) );
-  if ( doshift1 ) shift1 = pofd_mcmc::n_sigma_shift2d*sg1 - mn1; else
+  doshift1 = (dopad1 && (mn1 < pofd_mcmc::n_sigma_shift2d*sg1));
+  doshift2 = (dopad2 && (mn2 < pofd_mcmc::n_sigma_shift2d*sg2));
+  if (doshift1) shift1 = pofd_mcmc::n_sigma_shift2d*sg1 - mn1; else
     shift1=0.0;
-  if ( doshift2 ) shift2 = pofd_mcmc::n_sigma_shift2d*sg2 - mn2; else
+  if (doshift2) shift2 = pofd_mcmc::n_sigma_shift2d*sg2 - mn2; else
     shift2=0.0;
 
   if (verbose) {
@@ -639,11 +638,10 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
   // bad aliasing wrap from the top around into the lower P(D) values.
   if (maxflux1 <= pofd_mcmc::n_sigma_pad*sg1)
     throw affineExcept("PDFactoryDouble","initPD",
-		       "Top wrap problem, dimension 1",128);
+		       "Top wrap problem, dimension 1",6);
   if (maxflux2 <= pofd_mcmc::n_sigma_pad*sg2)
     throw affineExcept("PDFactoryDouble","initPD",
-		       "Top wrap problem, dimension 2",
-		       256);
+		       "Top wrap problem, dimension 2",7);
 
   //The other side of the equation is that we want to zero-pad the
   // top, and later discard that stuff.  The idea is as follows:
@@ -660,12 +658,11 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
       double topflux = maxflux1 - contam;
       if (topflux < 0)
 	throw affineExcept("PDFactoryDouble","initPD",
-			 "Padding problem, dimension 1",512);
-      maxidx1 = static_cast< unsigned int>( topflux/dflux1 );
+			 "Padding problem, dimension 1",8);
+      maxidx1 = static_cast< unsigned int>(topflux / dflux1);
       if (maxidx1 > n)
 	throw affineExcept("PDFactoryDouble","initPD",
-			 "Padding problem, dimension 1",
-			 1024);
+			   "Padding problem, dimension 1",9);
       //Now pad!
       for (unsigned int i = maxidx1; i < n; ++i) {
 	rptr = rvals + n*i;
@@ -674,6 +671,9 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
       }
     }
   } else maxidx1 = n;
+  if (maxidx1 == 0) 
+    throw affineExcept("PDFactoryDouble","initPD",
+		       "maxidx1 is 0, which is a problem",10);
 
   if (dopad2) {
     double contam = pofd_mcmc::n_sigma_pad2d*sg2 - (mn2+shift2);
@@ -681,11 +681,11 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
       double topflux = maxflux2 - contam;
       if (topflux < 0)
 	throw affineExcept("PDFactoryDouble","initPD",
-			 "Padding problem, dimension 2",512);
-      maxidx2 = static_cast< unsigned int>( topflux/dflux2 );
+			 "Padding problem, dimension 2",11);
+      maxidx2 = static_cast< unsigned int>(topflux / dflux2);
       if (maxidx2 > n)
 	throw affineExcept("PDFactoryDouble","initPD",
-			 "Padding problem, dimension 2",1024);
+			 "Padding problem, dimension 2",12);
       for (unsigned int i = 0; i < maxidx1; ++i) {
 	rptr = rvals + n*i;
 	for (unsigned int j = maxidx2; j < n; ++j)
@@ -698,6 +698,9 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
       }
     }
   } else maxidx2 = n;
+  if (maxidx2 == 0) 
+    throw affineExcept("PDFactoryDouble","initPD",
+		       "maxidx2 is 0, which is a problem",13);
 
   //Multiply r by dflux factor to represent the actual
   // number of sources in each bin.  Note we do this
@@ -737,13 +740,13 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
     std::stringstream str;
     str << "Plan creation failed for forward transform of size: " << 
       n << std::endl;
-    throw affineExcept("PDFactoryDouble","initPD",str.str(),32);
+    throw affineExcept("PDFactoryDouble","initPD",str.str(),14);
   }
   if (plan_inv == NULL) {
     std::stringstream str;
     str << "Plan creation failed for inverse transform of size: " << 
       n << std::endl;
-    throw affineExcept("PDFactoryDouble","initPD",str.str(),64);
+    throw affineExcept("PDFactoryDouble","initPD",str.str(),15);
   }
 
   //Compute forward transform of this r value, store in rtrans
@@ -798,11 +801,11 @@ void PDFactoryDouble::getPD( double sigma1, double sigma2,
   }
   if (sigma2 > max_sigma2) {
     std::stringstream errstr("");
-    errstr << "Sigma 1 value " << sigma2 
+    errstr << "Sigma 2 value " << sigma2 
 	   << " larger than maximum prepared value " << max_sigma2
 	   << std::endl;
     errstr << "initPD should have been called with at least " << sigma2;
-    throw affineExcept("PDFactoryDouble","getPD",errstr.str(),2);
+    throw affineExcept("PDFactoryDouble","getPD",errstr.str(),3);
   }
 
   //Output array from 2D FFT is n * (n/2+1)
@@ -1035,7 +1038,7 @@ void PDFactoryDouble::getPD( double sigma1, double sigma2,
 	<< tmn2 << std::endl;
     str << "At length: " << n << " with noise: " << sigma1 << " "
 	<< sigma2;
-    throw affineExcept("PDFactoryDouble","getPD",str.str(),8);
+    throw affineExcept("PDFactoryDouble","getPD",str.str(),4);
   }
   if (verbose) {
     std::cout << " Expected mean band1: " << std::fixed 

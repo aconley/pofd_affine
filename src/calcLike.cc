@@ -135,7 +135,7 @@ readDataFromFiles(const std::vector<std::string>& datafiles,
       errstr << "No unmasked pixels in data file: "
 	     << datafiles[i];
       throw affineExcept("calcLikeSingle","readDataFromFile",
-			 errstr.str(),4);
+			 errstr.str(),3);
     }
     if (BINDATA) data[i].applyBinning(NBINS);
 
@@ -150,12 +150,12 @@ readDataFromFiles(const std::vector<std::string>& datafiles,
   maxflux = data[0].getMax();
   if (std::isnan(maxflux) || std::isinf(maxflux))
     throw affineExcept("calcLikeSingle","readDataFromFile",
-		       "Problem with maxflux",8);
+		       "Problem with maxflux",4);
   for (unsigned int i = 1; i < n; ++i) {
     cmaxflux = data[i].getMax();
     if (std::isnan(cmaxflux) || std::isinf(cmaxflux))
       throw affineExcept("calcLikeSingle","readDataFromFile",
-			 "Problem with maxflux",8);
+			 "Problem with maxflux",5);
     if (cmaxflux > maxflux) maxflux=cmaxflux;
   }
 
@@ -410,10 +410,10 @@ void calcLike::readDataFromFiles(const std::vector<std::string>& datafiles,
 		       "datafiles and beamfiles not same length",2);
   if (ndat != sigmas.size())
     throw affineExcept("calcLike","readDataFromFiles",
-		       "datafiles and sigma not same length",4);
+		       "datafiles and sigma not same length",3);
   if (ndat != like_norms.size())
     throw affineExcept("calcLike","readDataFromFiles",
-		       "datafiles and like_norm not same length",8);
+		       "datafiles and like_norm not same length",4);
   
   //Use a map.  Could also use a multi-map, but meh
   std::map< std::string, beam_group > grpmap;
@@ -542,7 +542,7 @@ double calcLike::getLogLike(const paramSet& p) const {
 		       "Model knot positions not loaded",2);
   if (nknots > (npar-1))
     throw affineExcept("calcLike","getLogLike",
-		       "Not enough elements in paramSet",4);
+		       "Not enough elements in paramSet",3);
 
   //Set the model
   model.setParams(p);

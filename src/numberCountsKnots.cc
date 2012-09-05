@@ -577,7 +577,7 @@ void initFileKnots::generateRandomKnotValues(paramSet& p) const {
 		 << " long to " << std::endl << "generate value for param idx: "
 		 << i;
 	  throw affineExcept("initFileKnots","generateRandomKnotValues",
-			     errstr.str(),4);
+			     errstr.str(),3);
 	}
 	if (has_uplim[i] && (uplim[i] < knotval[i]-sigma[i]*4.0)) {
 	  std::stringstream errstr;
@@ -585,7 +585,7 @@ void initFileKnots::generateRandomKnotValues(paramSet& p) const {
 		 << " long to " << std::endl << "generate value for param idx: "
 		 << i;
 	  throw affineExcept("initFileKnots","generateRandomKnotValues",
-			     errstr.str(),8);
+			     errstr.str(),4);
 	}
 	
 	if (has_lowlim[i] && has_uplim[i]) {
@@ -604,7 +604,7 @@ void initFileKnots::generateRandomKnotValues(paramSet& p) const {
 		errstr << "Failed to generate acceptable value for param "
 		       << i << " after " << iters << " attempts";
 		throw affineExcept("initFileKnots","generateRandomKnotValues",
-				   errstr.str(),16);
+				   errstr.str(),5);
 	      }
 	      trialval = rangen.gauss() * sigma[i] + knotval[i];
 	      if ( (trialval >= lowlim[i]) && (trialval <= uplim[i]) ) 
@@ -623,7 +623,7 @@ void initFileKnots::generateRandomKnotValues(paramSet& p) const {
 	      errstr << "Failed to generate acceptable value for param "
 		     << i << " after " << iters << " attempts";
 	      throw affineExcept("initFileKnots","generateRandomKnotValues",
-				 errstr.str(),16);
+				 errstr.str(),6);
 	    }
 	    trialval = rangen.gauss() * sigma[i] + knotval[i];
 	    if (trialval >= lowlim[i]) goodval = true;
@@ -640,7 +640,7 @@ void initFileKnots::generateRandomKnotValues(paramSet& p) const {
 	      errstr << "Failed to generate acceptable value for param "
 		     << i << " after " << iters << " attempts";
 	      throw affineExcept("initFileKnots","generateRandomKnotValues",
-				 errstr.str(),16);
+				 errstr.str(),7);
 	    }
 	    trialval = rangen.gauss() * sigma[i] + knotval[i];
 	    if (trialval <= uplim[i]) goodval = true;

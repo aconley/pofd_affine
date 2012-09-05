@@ -538,7 +538,7 @@ void numberCountsDoubleLogNormal::setParams(const paramSet& F) {
   unsigned int nneeded = nknots + nsigmaknots + noffsetknots;
   if (nneeded > F.getNParams())
     throw affineExcept("numberCountsDoubleLogNormal","setKnots",
-		       "Not enough parameters present to set",2);
+		       "Not enough parameters present to set",1);
 
   for (unsigned int i = 0; i < nknots; ++i)
     logknotvals[i] = pofd_mcmc::logfac*F[i]; //Convert to base 2
@@ -1465,7 +1465,7 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
     initfs.close();
     std::stringstream errmsg;
     errmsg << "Unable to open file:" << flname << std::endl;
-    throw affineExcept("initFileDoubleLogNormal","readFile",errmsg.str(),64);
+    throw affineExcept("initFileDoubleLogNormal","readFile",errmsg.str(),1);
   }
 
   //Read in number
@@ -1473,12 +1473,12 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
   if ( nk < 2 ) {
     initfs.close();
     throw affineExcept("initFileDoubleLogNormal","readFile",
-		       "Need at least 2 band 1 knots",1);
+		       "Need at least 2 band 1 knots",2);
   }
   if ( ns < 1 ) {
     initfs.close();
     throw affineExcept("initFileDoubleLogNormal","readFile",
-		       "Need at least one sigma color model knot",2);
+		       "Need at least one sigma color model knot",3);
 
   }
   if ( no < 1 ) {
@@ -1541,7 +1541,7 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
     errstr << "Expected " << ntot << " values, got: " 
 	   << wvec1.size();
     throw affineExcept("initFileDoubleLogNormal","readFile",
-		       errstr.str(),8);
+		       errstr.str(),5);
   }
 
   //Copy into vectors
@@ -1576,7 +1576,7 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
 	errstr << " Lower limit: " << lowlim[i] 
 	       << " Upper limit: " << uplim[i];
 	throw affineExcept("initFileDoubleLogNormal", "readFiles", 
-			   errstr.str(), 3);
+			   errstr.str(), 6);
       }
       if ( (sigma[i] > 0.) && (uplim[i] == lowlim[i]) ) {
 	std::stringstream errstr;
@@ -1585,7 +1585,7 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
 	errstr << " Lower limit: " << lowlim[i] << " Upper limit: " << uplim[i]
 	       << " sigma: " << sigma[i];
 	throw affineExcept("initFileDoubleLogNormal", "readFiles", 
-			   errstr.str(), 4);
+			   errstr.str(), 7);
       }
     }
 
@@ -1600,7 +1600,7 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
 		 << knotval[i] << std::endl << " lies below lower limit "
 		 << lowlim[i];
 	  throw affineExcept("initFileDoubleLogNormal", "readFiles", 
-			     errstr.str(), 5);
+			     errstr.str(), 8);
 	}
 	if (has_upper_limits && has_uplim[i] && (knotval[i] > uplim[i])) {
 	  std::stringstream errstr;
@@ -1608,7 +1608,7 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
 		 << knotval[i] << std::endl << " lies above upper limit "
 		 << uplim[i];
 	  throw affineExcept("initFileDoubleLogNormal", "readFiles", 
-			     errstr.str(), 6);
+			     errstr.str(), 9);
 	}
       }
   }
@@ -1800,7 +1800,7 @@ void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
 		 << i;
 	  throw affineExcept("initFileDoubleLogNormal",
 			     "generateRandomKnotValues",
-			     errstr.str(), 4);
+			     errstr.str(), 3);
 	}
 	if (has_uplim[i] && (uplim[i] < knotval[i]-sigma[i]*4.0)) {
 	  std::stringstream errstr;
@@ -1809,7 +1809,7 @@ void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
 		 << i;
 	  throw affineExcept("initFileDoubleLogNormal",
 			     "generateRandomKnotValues",
-			     errstr.str(), 8);
+			     errstr.str(), 4);
 	}
 	
 	if (has_lowlim[i] && has_uplim[i]) {
@@ -1829,7 +1829,7 @@ void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
 		       << i << " after " << iters << " attempts";
 		throw affineExcept("initFileDoubleLogNormal",
 				   "generateRandomKnotValues",
-				   errstr.str(), 16);
+				   errstr.str(), 5);
 	      }
 	      trialval = rangen.gauss() * sigma[i] + knotval[i];
 	      if ( (trialval >= lowlim[i]) && (trialval <= uplim[i]) ) 
@@ -1849,7 +1849,7 @@ void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
 		     << i << " after " << iters << " attempts";
 	      throw affineExcept("initFileDoubleLogNormal",
 				 "generateRandomKnotValues",
-				 errstr.str(), 16);
+				 errstr.str(), 6);
 	    }
 	    trialval = rangen.gauss() * sigma[i] + knotval[i];
 	    if (trialval >= lowlim[i]) goodval = true;
@@ -1867,7 +1867,7 @@ void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
 		     << i << " after " << iters << " attempts";
 	      throw affineExcept("initFileDoubleLogNormal",
 				 "generateRandomKnotValues",
-				 errstr.str(), 16);
+				 errstr.str(), 7);
 	    }
 	    trialval = rangen.gauss() * sigma[i] + knotval[i];
 	    if (trialval <= uplim[i]) goodval = true;

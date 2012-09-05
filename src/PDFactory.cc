@@ -211,7 +211,7 @@ bool PDFactory::addWisdom(const std::string& filename) {
   if (fftw_import_wisdom_from_file(fp) == 0) {
     std::stringstream str;
     str << "Error reading wisdom file: " << wisdom_file;
-    throw affineExcept("PDFactory","addWisdom",str.str(),1);
+    throw affineExcept("PDFactory","addWisdom",str.str(),2);
   }
   fclose(fp);
   fftw_plan_style = FFTW_WISDOM_ONLY || FFTW_ESTIMATE;
@@ -449,7 +449,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
     std::stringstream str;
     str << "Plan creation failed for forward transform of size: " << 
       n << std::endl;
-    throw affineExcept("PDFactory","initPD",str.str(),32);
+    throw affineExcept("PDFactory","initPD",str.str(),2);
   }
 
   if ( did_resize || (lastfftlen != n) || (plan_inv == NULL) ) {
@@ -461,7 +461,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
     std::stringstream str;
     str << "Plan creation failed for inverse transform of size: " << 
       n << std::endl;
-    throw affineExcept("PDFactory","initPD",str.str(),64);
+    throw affineExcept("PDFactory","initPD",str.str(),3);
   }
 
   //Decide if we will shift and pad, and if so by how much
@@ -482,8 +482,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
   //Make sure that maxflux is large enough that we don't get
   // bad aliasing wrap from the top around into the lower P(D) values.
   if (maxflux <= pofd_mcmc::n_sigma_pad*sg)
-    throw affineExcept("PDFactory","initPD","Top wrap problem",
-		       128);
+    throw affineExcept("PDFactory", "initPD", "Top wrap problem", 4);
 
   //The other side of the equation is that we want to zero-pad the
   // top, and later discard that stuff.
@@ -500,19 +499,17 @@ void PDFactory::initPD(unsigned int n, double sigma,
     if (contam < 0) maxidx = n; else {
       double topflux = maxflux - contam;
       if (topflux < 0)
-	throw affineExcept("PDFactory","initPD","Padding problem",
-			   256);
+	throw affineExcept("PDFactory","initPD","Padding problem",5);
       maxidx = static_cast< unsigned int>( topflux/dflux );
       if (maxidx > n)
-	throw affineExcept("PDFactory","initPD",
-			 "Padding problem",
-			 512);
+	throw affineExcept("PDFactory","initPD","Padding problem",6);
       //Actual padding
       for (unsigned int i = maxidx; i < n; ++i)
 	rvals[i] = 0.0;
     }
   } else maxidx = n;
-
+  if (maxidx == 0)
+    throw affineExcept("PDFactory","initPD","maxidx is 0, which is bad",7);
 
   //Compute forward transform of this r value, store in rtrans
   //Have to use argument version, since the address of rtrans can move
@@ -681,7 +678,7 @@ void PDFactory::getPD( double sigma, PD& pd, bool setLog,
     std::stringstream str;
     str << "Un-shift amounts not finite: " << tmn << " " << std::endl;
     str << "At length: " << n << " with noise: " << sigma;
-    throw affineExcept("PDFactory","getPD",str.str(),8);
+    throw affineExcept("PDFactory","getPD",str.str(),3);
   }
   if (verbose) {
     std::cerr << " Expected mean: " << shift+mn 
