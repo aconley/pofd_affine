@@ -2,6 +2,7 @@
 #include<cmath>
 #include<limits>
 #include<sstream>
+#include<unistd.h>
 #include<mpi.h>
 
 #include<global_settings.h>
@@ -544,6 +545,7 @@ void affineEnsemble::doMasterStep() throw (affineExcept) {
 void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
   //Step loop
   MPI::Status Info;
+  bool ismsg;
   int jnk, this_rank, this_tag;
   unsigned int ndone, nproc, nsteps;
   std::pair<unsigned int, unsigned int> pr;
@@ -573,18 +575,29 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
       }
 
     //No available procs, so wait for some sort of message
+    // We use Iprobe to see if a message is available, and if not
+    // sleep for 1/100th of a second and try again
+    ismsg = MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, MPI::ANY_TAG,
+				   Info);
+    while (ismsg == false) {
+      usleep(10000); //Sleep for 1/100th of a second
+      ismsg = MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, MPI::ANY_TAG,
+				     Info);
+    }
+
+    //There is a message, grab it and figure out what to do
     MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,MPI::ANY_SOURCE,
-			 MPI::ANY_SOURCE,Info);
+			 MPI::ANY_TAG,Info);
     this_tag = Info.Get_tag();
     this_rank = Info.Get_source();
-    if ( this_tag == mcmc_affine::ERROR ) {
+    if (this_tag == mcmc_affine::ERROR) {
       //Slave had a problem
       //Send stop message to all slaves
       for (unsigned int i = 1; i < nproc; ++i)
 	MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,mcmc_affine::STOP);
       throw affineExcept("affineEnsemble","emptyMasterQueue",
 			 "Problem encountered in slave",1);
-    } else if ( this_tag == mcmc_affine::SENDINGRESULT ) {
+    } else if (this_tag == mcmc_affine::SENDINGRESULT) {
       //Slave finished a computation, is sending us the result
       //Note we wait for a REQUESTPOINT to actually add it to the
       // list of available procs, which makes initialization easier
@@ -604,24 +617,24 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
       // chunk
       if (pstep.newLogLike > pstep.oldLogLike) {
 	//Accept
-	chains.addNewStep( pstep.update_idx, pstep.newStep,
-			   pstep.newLogLike );
+	chains.addNewStep(pstep.update_idx, pstep.newStep,
+			   pstep.newLogLike);
 	naccept[pstep.update_idx] += 1;
       } else {
 	prob = exp( pstep.newLogLike - pstep.oldLogLike );
 	if (rangen.doub() < prob) {
 	  //Also accept
-	  chains.addNewStep( pstep.update_idx, pstep.newStep,
-			     pstep.newLogLike );
+	  chains.addNewStep(pstep.update_idx, pstep.newStep,
+			     pstep.newLogLike);
 	  naccept[pstep.update_idx] += 1;
 	} else {
 	  //reject, keep old step
-	  chains.addNewStep( pstep.update_idx, pstep.oldStep,
-			     pstep.oldLogLike );
+	  chains.addNewStep(pstep.update_idx, pstep.oldStep,
+			    pstep.oldLogLike);
 	}
       }
       ndone += 1;
-    } else if ( this_tag == mcmc_affine::REQUESTPOINT ) {
+    } else if (this_tag == mcmc_affine::REQUESTPOINT) {
       procqueue.push(this_rank);
     } else {
       std::stringstream sstream;
