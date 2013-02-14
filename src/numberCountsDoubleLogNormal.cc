@@ -97,6 +97,11 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
 
   gsl_work = gsl_integration_workspace_alloc(1000);
   varr = new void*[nvarr];
+
+  if (!isValidLoaded())
+    throw affineExcept("numberCountsDoubleLogNormal",
+		       "numberCountsDoubleLogNormal",
+		       "Knot information not valid",1);
 }
   
 /*!
@@ -126,6 +131,11 @@ numberCountsDoubleLogNormal(const std::vector<double>& KNOTS,
 
   gsl_work = gsl_integration_workspace_alloc(1000);
   varr = new void*[nvarr];
+
+  if (!isValidLoaded())
+    throw affineExcept("numberCountsDoubleLogNormal",
+		       "numberCountsDoubleLogNormal",
+		       "Knot information not valid",1);
 }
 
 /*!
@@ -157,13 +167,18 @@ numberCountsDoubleLogNormal( unsigned int nk, const double* const K,
 
   gsl_work = gsl_integration_workspace_alloc(1000);
   varr = new void*[nvarr];
+
+  if (!isValidLoaded())
+    throw affineExcept("numberCountsDoubleLogNormal",
+		       "numberCountsDoubleLogNormal",
+		       "Knot information not valid",1);
 }
 
 /*!
   \param[in] other Instance to copy from
 */
 numberCountsDoubleLogNormal::
-numberCountsDoubleLogNormal( const numberCountsDoubleLogNormal& other ) {
+numberCountsDoubleLogNormal(const numberCountsDoubleLogNormal& other) {
   if ( this == &other ) return; //Self-copy
   nknots = nsigmaknots = noffsetknots = 0;
   knots = logknots = logknotvals = sigmaknots = 
@@ -199,26 +214,45 @@ numberCountsDoubleLogNormal( const numberCountsDoubleLogNormal& other ) {
       offsetvals[i] = other.offsetvals[i];
     gsl_spline_init( splinelog, logknots, logknotvals,
 		     static_cast<size_t>(other.nknots) );
-    gsl_interp_init( sigmainterp, sigmaknots, sigmavals,
-		     static_cast<size_t>(other.nsigmaknots) );
-    gsl_interp_init( offsetinterp, offsetknots, offsetvals,
-		     static_cast<size_t>(other.noffsetknots) );
+    if (nsigmaknots > 1)
+      gsl_interp_init(sigmainterp, sigmaknots, sigmavals,
+		      static_cast<size_t>(other.nsigmaknots));
+    if (noffsetknots > 1)
+      gsl_interp_init(offsetinterp, offsetknots, offsetvals,
+		      static_cast<size_t>(other.noffsetknots) );
   }
 
   knotvals_loaded = other.knotvals_loaded;
   gsl_work = gsl_integration_workspace_alloc(1000);
   varr = new void*[nvarr];
+
+  if (!isValidLoaded())
+    throw affineExcept("numberCountsDoubleLogNormal",
+		       "numberCountsDoubleLogNormal",
+		       "Knot information not valid",1);
 }
 
 numberCountsDoubleLogNormal::~numberCountsDoubleLogNormal() {
-  gsl_interp_accel_free(acc);
-  gsl_interp_accel_free(accsigma);
-  gsl_interp_accel_free(accoffset);
+  if (knots != NULL) delete[] knots;
+  if (logknots != NULL) delete[] logknots;
+  if (logknotvals != NULL) delete[] logknotvals;
   if (splinelog != NULL) gsl_spline_free(splinelog);
+  gsl_interp_accel_free(acc);
+
+  if (sigmaknots != NULL) delete[] sigmaknots;
+  if (sigmavals != NULL) delete[] sigmavals;
   if (sigmainterp != NULL) gsl_interp_free(sigmainterp);
+  gsl_interp_accel_free(accsigma);
+
+  if (offsetknots != NULL) delete[] offsetknots;
+  if (offsetvals != NULL) delete[] offsetvals;
   if (offsetinterp != NULL) gsl_interp_free(offsetinterp);
+  if (offsetinterp != NULL) gsl_interp_free(offsetinterp);
+  gsl_interp_accel_free(accoffset);
+
   gsl_integration_workspace_free(gsl_work);
   delete[] varr;
+
   if (RWork1 != NULL) delete[] RWork1;
   if (RWork2 != NULL) delete[] RWork2;
   if (RWork3 != NULL) delete[] RWork3;
@@ -254,13 +288,20 @@ operator=(const numberCountsDoubleLogNormal& other) {
       offsetvals[i] = other.offsetvals[i];
     gsl_spline_init( splinelog, logknots, logknotvals,
 		     static_cast<size_t>(nknots) );
-    gsl_interp_init( sigmainterp, sigmaknots, sigmavals,
-		     static_cast<size_t>(nsigmaknots) );
-    gsl_interp_init( offsetinterp, offsetknots, offsetvals,
-		     static_cast<size_t>(noffsetknots) );
+    if (nsigmaknots > 1)
+      gsl_interp_init(sigmainterp, sigmaknots, sigmavals,
+		      static_cast<size_t>(nsigmaknots));
+    if (noffsetknots > 1)
+      gsl_interp_init(offsetinterp, offsetknots, offsetvals,
+		      static_cast<size_t>(noffsetknots));
   }
 
   knotvals_loaded = other.knotvals_loaded;
+
+  if (knotvals_loaded && !isValidLoaded())
+    throw affineExcept("numberCountsDoubleLogNormal",
+		       "operator=",
+		       "Knot information not valid",1);
 
   return *this;
 }
@@ -563,10 +604,13 @@ void numberCountsDoubleLogNormal::setParams(const paramSet& F) {
 }
 
 /*!
-  \returns True if the model parameters are valid
- */
-bool numberCountsDoubleLogNormal::isValid() const {
-  if (!knotvals_loaded) return false;
+  \returns True if a valid set of knots has been loaded
+
+  This is a check we only run on input, rather than re-doing
+  it every time.
+*/
+bool numberCountsDoubleLogNormal::isValidLoaded() const {
+  if (!knots_loaded) return false;
   if (nknots < 2) return false;
   if (nsigmaknots == 0) return false;
   if (noffsetknots == 0) return false;
@@ -594,6 +638,15 @@ bool numberCountsDoubleLogNormal::isValid() const {
     if (offsetknots[i] <= offsetknots[i-1] ) return false;
   for (unsigned int i = 0; i < noffsetknots; ++i)
     if ( std::isnan(offsetvals[i]) ) return false;
+  return true;
+}
+
+/*!
+  \returns True if the model parameters are valid
+ */
+bool numberCountsDoubleLogNormal::isValid() const {
+  if (!knotvals_loaded) return false;
+
   return true;
 }
 
@@ -686,15 +739,13 @@ getNumberCountsInner(double f1, double f2) const {
 */
 double numberCountsDoubleLogNormal::getNumberCounts(double f1, double f2) 
   const {
-  if ( (nknots < 2) || (nsigmaknots < 1) || (noffsetknots < 1) )
+  if ((nknots < 2) || (nsigmaknots < 1) || (noffsetknots < 1))
     return std::numeric_limits<double>::quiet_NaN();
   if (! isValid() ) return std::numeric_limits<double>::quiet_NaN();
   if ( std::isnan(f1) || std::isinf(f1)) 
     return std::numeric_limits<double>::quiet_NaN();
   if ( std::isnan(f2) || std::isinf(f2)) 
     return std::numeric_limits<double>::quiet_NaN();
-  if (nsigmaknots < 1 ) return std::numeric_limits<double>::quiet_NaN();
-  if (noffsetknots < 1) return std::numeric_limits<double>::quiet_NaN();
   return getNumberCountsInner(f1,f2);
 }
 

@@ -162,9 +162,9 @@ void doublebeam::cleanup() {
   Will ignore pixels that are zero or with an absolute value
   larger than one.  Also may histogram beams, depending on settings
  */
-void doublebeam::setBeams( unsigned int n, const double* const bm1,
-			   const double* const bm2, double pixscale,
-			   bool histogram, double histogramlogstep ) {
+void doublebeam::setBeams(unsigned int n, const double* const bm1,
+			  const double* const bm2, double pixscale,
+			  bool histogram, double histogramlogstep ) {
   cleanup();  //Free arrays, etc.
   if (n == 0) return;
 
@@ -565,7 +565,7 @@ void doublebeam::readFiles(const std::string& filename1,
 		       errstr.str(),4096);
   } 
 
-  setBeams( n, rpixarr1, rpixarr2, pixsize1, histogram, histogramlogstep );
+  setBeams(n, rpixarr1, rpixarr2, pixsize1, histogram, histogramlogstep);
 
   delete[] rpixarr1;
   delete[] rpixarr2;

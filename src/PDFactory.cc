@@ -292,18 +292,19 @@ void PDFactory::initPD(unsigned int n, double sigma,
     double maxinterpflux = modelmax * bm.getMaxPos();
     //R[maxinterpflux] = 0.0, which we don't want to include in our
     // log/log interpolation, so step it back slightly
-    double dinterp = 0.001*(maxinterpflux-mininterpflux)*ininterpm1;
+    double dinterp = 0.001 * (maxinterpflux - mininterpflux) * ininterpm1;
     maxinterpflux -= dinterp;
 
     //Note that the interpolation is in log space
     double dinterpflux = (log2(maxinterpflux/mininterpflux))*ininterpm1;
     for (unsigned int i = 0; i < ninterp; ++i)
-      RinterpFlux[i] = mininterpflux*exp2(static_cast<double>(i)*dinterpflux);
+      RinterpFlux[i] = mininterpflux * 
+	exp2(static_cast<double>(i) * dinterpflux);
 
 #ifdef TIMING
     std::clock_t starttime = std::clock();
 #endif
-    model.getR(ninterp,RinterpFlux,bm,RinterpVals,numberCounts::BEAMPOS);
+    model.getR(ninterp, RinterpFlux, bm, RinterpVals, numberCounts::BEAMPOS);
 #ifdef TIMING
     RTime += std::clock() - starttime;
 #endif
@@ -317,8 +318,8 @@ void PDFactory::initPD(unsigned int n, double sigma,
       else RinterpVals[i] = pofd_mcmc::smalllogval;
     }
     //Load the Spline
-    gsl_spline_init( spline, RinterpFlux, RinterpVals, 
-                     static_cast<size_t>(ninterp) );
+    gsl_spline_init(spline, RinterpFlux, RinterpVals, 
+		    static_cast<size_t>(ninterp));
 
     //Now interpolate out; note r still needs to be multiplied by dflux
     // for use later.  We figure out which bins are covered by the
@@ -343,7 +344,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
   if (has_neg) {
     //And now, we do basically the same thing for the negative beam
     double mininterpflux = modelmin * subedgemult;
-    double maxinterpflux = modelmax*bm.getMinAbsNeg();
+    double maxinterpflux = modelmax * bm.getMinAbsNeg();
     double dinterp = 0.001*(maxinterpflux-mininterpflux)*ininterpm1;
     maxinterpflux -= dinterp;
     double dinterpflux = (log2(maxinterpflux/mininterpflux))*ininterpm1;
@@ -365,8 +366,8 @@ void PDFactory::initPD(unsigned int n, double sigma,
       if (val > 0) RinterpVals[i] = log2(val); //log2 is faster
       else RinterpVals[i] = pofd_mcmc::smalllogval;
     }
-    gsl_spline_init( spline, RinterpFlux, RinterpVals, 
-                     static_cast<size_t>(ninterp) );
+    gsl_spline_init(spline, RinterpFlux, RinterpVals, 
+                     static_cast<size_t>(ninterp));
 
     //Now interpolate out, same as before
     int st = static_cast<int>( mininterpflux/dflux + 0.9999999999999999 );
@@ -447,8 +448,9 @@ void PDFactory::initPD(unsigned int n, double sigma,
   }
   if (plan == NULL) {
     std::stringstream str;
-    str << "Plan creation failed for forward transform of size: " << 
-      n << std::endl;
+    str << "Plan creation failed for forward transform of size: " << n;
+    if (has_wisdom) str << std::endl << "Your wisdom file may not have"
+			<< " that size";
     throw affineExcept("PDFactory","initPD",str.str(),2);
   }
 
@@ -459,8 +461,9 @@ void PDFactory::initPD(unsigned int n, double sigma,
   }
   if (plan_inv == NULL) {
     std::stringstream str;
-    str << "Plan creation failed for inverse transform of size: " << 
-      n << std::endl;
+    str << "Plan creation failed for inverse transform of size: " << n;
+    if (has_wisdom) str << std::endl << "Your wisdom file may not have"
+			<< " that size";
     throw affineExcept("PDFactory","initPD",str.str(),3);
   }
 
@@ -544,8 +547,8 @@ void PDFactory::initPD(unsigned int n, double sigma,
 
   You must call initPD first, or bad things will probably happen.
 */
-void PDFactory::getPD( double sigma, PD& pd, bool setLog, 
-		       bool edgeFix) {
+void PDFactory::getPD(double sigma, PD& pd, bool setLog, 
+		      bool edgeFix) {
 
   // The basic idea is to compute the P(D) from the previously filled
   // R values, adding in noise and all that fun stuff, filling pd

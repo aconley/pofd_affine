@@ -164,7 +164,7 @@ void PDFactoryDouble::strict_resize(unsigned int NSIZE) {
 void PDFactoryDouble::allocateRvars() {
   if (rvars_allocated) return;
   if (currsize == 0)
-    throw affineExcept("PDFactory","allocate_rvars",
+    throw affineExcept("PDFactoryDouble","allocate_rvars",
 		       "Invalid (0) currsize",1);
   RFlux1 = (double*) fftw_malloc(sizeof(double)*currsize);
   RFlux2 = (double*) fftw_malloc(sizeof(double)*currsize);
@@ -738,14 +738,16 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
   }
   if (plan == NULL) {
     std::stringstream str;
-    str << "Plan creation failed for forward transform of size: " << 
-      n << std::endl;
+    str << "Plan creation failed for forward transform of size: " << n;
+    if (has_wisdom) str << std::endl << "Your wisdom file may not have"
+			<< " that size";
     throw affineExcept("PDFactoryDouble","initPD",str.str(),14);
   }
   if (plan_inv == NULL) {
     std::stringstream str;
-    str << "Plan creation failed for inverse transform of size: " << 
-      n << std::endl;
+    str << "Plan creation failed for inverse transform of size: " << n;
+    if (has_wisdom) str << std::endl << "Your wisdom file may not have"
+			<< " that size";
     throw affineExcept("PDFactoryDouble","initPD",str.str(),15);
   }
 

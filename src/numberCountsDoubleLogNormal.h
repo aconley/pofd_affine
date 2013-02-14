@@ -103,6 +103,8 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
 		    unsigned int, const double* const,
 		    const doublebeam&,unsigned int, double*) const;
 
+  bool isValidLoaded() const; //!< Are loaded values valid?
+
  public :
   numberCountsDoubleLogNormal(); //!< Default
   explicit numberCountsDoubleLogNormal(unsigned int, unsigned int, 
@@ -121,7 +123,7 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   /*! \brief Copy operator */
   numberCountsDoubleLogNormal& operator=(const numberCountsDoubleLogNormal&);
 
-  virtual bool isValid() const; //!< Are model settings loaded and valid?
+  bool isValid() const; //!< Are model settings loaded and valid?
 
   void setNKnots(unsigned int n); //!< Sets number of knots in band 1
   unsigned int getNKnots() const { return nknots; } //!< Number of knots in band 1 spline
