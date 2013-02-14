@@ -1,4 +1,5 @@
 #include<sstream>
+#include<unistd.h>
 
 #include<pofdMCMC.h>
 #include<specFile.h>
@@ -101,10 +102,20 @@ bool pofdMCMC::initChainsMaster() {
 
   MPI::Status Info;
   int jnk;
+  bool ismsg;
   while (nnotinitialized > 0) {
-    //Wait for a message from a slave saying they are ready
+    //See if a message is available, wait for one if it isn't
+    ismsg = MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, MPI::ANY_TAG,
+				   Info);
+    while (ismsg == false) {
+      usleep(10000); //Sleep for 1/100th of a second
+      ismsg = MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, MPI::ANY_TAG,
+				     Info);
+    }
+
+    //We have a message -- process it
     MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,MPI::ANY_SOURCE,
-			 MPI::ANY_SOURCE,Info);
+			 MPI::ANY_TAG,Info);
     int this_tag = Info.Get_tag();
     int this_rank = Info.Get_source();
     if (this_tag == mcmc_affine::ERROR) {
@@ -198,8 +209,19 @@ bool pofdMCMC::initChainsSlave() {
 
   //And wait...
   MPI::Status Info;
+
+  bool ismsg;
+  //See if a message is available, wait for one if it isn't
+  ismsg = MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, MPI::ANY_TAG, Info);
+  while (ismsg == false) {
+    usleep(10000); //Sleep for 1/100th of a second
+    ismsg = MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, MPI::ANY_TAG,
+				   Info);
+  }
+
+  //Got a message, process it
   MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,MPI::ANY_SOURCE,
-		       MPI::ANY_SOURCE,Info);
+		       MPI::ANY_TAG,Info);
   int this_tag = Info.Get_tag();
   int this_rank = Info.Get_source();
 

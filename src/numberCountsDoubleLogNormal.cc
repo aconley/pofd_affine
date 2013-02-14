@@ -610,7 +610,7 @@ void numberCountsDoubleLogNormal::setParams(const paramSet& F) {
   it every time.
 */
 bool numberCountsDoubleLogNormal::isValidLoaded() const {
-  if (!knots_loaded) return false;
+  if (!knotvals_loaded) return false;
   if (nknots < 2) return false;
   if (nsigmaknots == 0) return false;
   if (noffsetknots == 0) return false;
