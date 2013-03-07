@@ -6,9 +6,9 @@
 #include<vector>
 #include<utility>
 
-#include<numberCounts.h>
-#include<ran.h>
-#include<paramSet.h>
+#include "../include/numberCounts.h"
+#include "../include/ran.h"
+#include "../include/paramSet.h"
 
 /*!
   \brief Number counts with knots abstract base class

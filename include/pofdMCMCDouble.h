@@ -1,8 +1,8 @@
 //2D P(D) case MCMC driver
 #include<string>
 
-#include<affineEnsemble.h>
-#include<calcLikeDouble.h>
+#include "../include/affineEnsemble.h"
+#include "../include/calcLikeDouble.h"
 
 /*!
   \brief Class for doing 2D P(D1,D2) MCMC fits

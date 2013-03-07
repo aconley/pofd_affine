@@ -8,8 +8,8 @@
 #include<gsl/gsl_interp.h>
 #include<gsl/gsl_integration.h>
 
-#include<numberCountsDouble.h>
-#include<ran.h>
+#include "../include/numberCountsDouble.h"
+#include "../include/ran.h"
 
 /*!
   \brief Spline number counts model for 2D, where counts

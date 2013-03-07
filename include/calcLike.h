@@ -6,14 +6,14 @@
 #include<string>
 #include<vector>
 
-#include<PDFactory.h>
-#include<PD.h>
-#include<fitsData.h>
-#include<numberCountsKnotsSpline.h>
-#include<beam.h>
-#include<paramSet.h>
-#include<utility.h>
-#include<global_settings.h>
+#include "../include/PDFactory.h"
+#include "../include/PD.h"
+#include "../include/fitsData.h"
+#include "../include/numberCountsKnotsSpline.h"
+#include "../include/beam.h"
+#include "../include/paramSet.h"
+#include "../include/utility.h"
+#include "../include/global_settings.h"
 
 /*!
   \brief Class for computing likelihood of given model for multiple

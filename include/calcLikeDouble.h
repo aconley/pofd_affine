@@ -6,14 +6,14 @@
 #include<string>
 #include<vector>
 
-#include<PDFactoryDouble.h>
-#include<PDDouble.h>
-#include<fitsDataDouble.h>
-#include<numberCountsDoubleLogNormal.h>
-#include<doublebeam.h>
-#include<paramSet.h>
-#include<utility.h>
-#include<global_settings.h>
+#include "../include/PDFactoryDouble.h"
+#include "../include/PDDouble.h"
+#include "../include/fitsDataDouble.h"
+#include "../include/numberCountsDoubleLogNormal.h"
+#include "../include/doublebeam.h"
+#include "../include/paramSet.h"
+#include "../include/utility.h"
+#include "../include/global_settings.h"
 
 /*!
   \brief Class for computing likelihood of given 2D model for multiple

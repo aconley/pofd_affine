@@ -2,9 +2,9 @@
 #include<algorithm>
 #include<sstream>
 
-#include<specFileDouble.h>
-#include<utility.h>
-#include<affineExcept.h>
+#include "../include/specFileDouble.h"
+#include "../include/utility.h"
+#include "../include/affineExcept.h"
 
 specFileDouble::specFileDouble() {
   init();

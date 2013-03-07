@@ -18,10 +18,10 @@ pofd_affine_getR_SOURCES =numberCounts.cc numberCountsKnots.cc beam.cc \
 	pofd_affine_getR.cc
 pofd_affine_getR_LDADD = libaffine.la
 
-pofd_affine_getPD_SOURCES = numberCounts.cc numberCountsKnots.cc 
+pofd_affine_getPD_SOURCES = numberCounts.cc numberCountsKnots.cc \
 	beam.cc utility.cc numberCountsKnotsSpline.cc PD.cc PDFactory.cc \
 	fitsData.cc numberCountsDouble.cc numberCountsDoubleLogNormal.cc \
-	doublebeam.cc ran.cc PDDouble.cc PDFactoryDouble.cc fitsDataDouble.cc \
+	doublebeam.cc PDDouble.cc PDFactoryDouble.cc fitsDataDouble.cc \
 	pofd_affine_getPD.cc 
 pofd_affine_getPD_LDADD = libaffine.la
 

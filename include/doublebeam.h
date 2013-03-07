@@ -11,7 +11,7 @@
 #include <algorithm>
 #include <limits>
 
-#include <utility.h>
+#include "../include/utility.h"
 
 /*!
   \brief Represents PSF parameters for 2 beams with positive

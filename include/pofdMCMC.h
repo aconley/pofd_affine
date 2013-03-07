@@ -1,8 +1,8 @@
 //1D P(D) case MCMC driver
 #include<string>
 
-#include<affineEnsemble.h>
-#include<calcLike.h>
+#include "../include/affineEnsemble.h"
+#include "../include/calcLike.h"
 
 /*!
   \brief Class for doing 1D P(D) fits

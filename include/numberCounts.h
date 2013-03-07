@@ -6,8 +6,8 @@
 #include<string>
 #include<fstream>
 
-#include<beam.h>
-#include<paramSet.h>
+#include "../include/beam.h"
+#include "../include/paramSet.h"
 
 /*!
   \brief Galaxy counts model abstract base class

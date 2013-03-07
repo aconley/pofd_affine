@@ -11,11 +11,9 @@
 #include<gsl/gsl_spline.h>
 #include<fftw3.h>
 
-#include<numberCounts.h>
-#include<PD.h>
-#include<paramSet.h>
-
-
+#include "../include/numberCounts.h"
+#include "../include/PD.h"
+#include "../include/paramSet.h"
 
 /*!
   \brief Class for computing P(D) values from a set of parameters,

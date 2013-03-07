@@ -6,7 +6,7 @@
 #include<string>
 #include<ostream>
 
-#include<fitsDataDouble.h>
+#include "../include/fitsDataDouble.h"
 
 /*!
   \brief Class to hold P(D) in 2 dimensions.  Supports interpolation.

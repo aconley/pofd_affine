@@ -6,7 +6,7 @@
 #include<string>
 #include<ostream>
 
-#include<fitsData.h>
+#include "../include/fitsData.h"
 
 /*!
   \brief Class to hold P(D).  Supports interpolation.

@@ -7,7 +7,7 @@
 #include<gsl/gsl_spline.h>
 #include<gsl/gsl_integration.h>
 
-#include<numberCountsKnots.h>
+#include "../include/numberCountsKnots.h"
 
 /*!
   \brief Spline number counts model

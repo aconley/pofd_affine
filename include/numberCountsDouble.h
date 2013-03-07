@@ -6,8 +6,8 @@
 #include<string>
 #include<fstream>
 
-#include<doublebeam.h>
-#include<paramSet.h>
+#include "../include/doublebeam.h"
+#include "../include/paramSet.h"
 
 /*!
   \brief Galaxy counts model abstract base class
