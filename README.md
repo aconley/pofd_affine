@@ -21,6 +21,8 @@ Installation is via the standard UNIX `configure` and
 * The [GNU scientific library](http://www.gnu.org/software/gsl/)
 * MPI. There are many versions of MPI, but 
    [OpenMPI](http://www.open-mpi.org/) is what I used. 
+* If you want to use the built in tests, you'll need 
+   [googletest](http://code.google.com/p/googletest/)
 It may be necessary to tell configure where to look for these
 libraries -- see `configure --help`.
 
@@ -38,6 +40,14 @@ line routines have some built in documentation using `--help`:
 
 Note that some routines -- including `pofd_affine_mcmc` -- have to
 be run using MPI.
+
+There are some built in tests (unit and otherwise) that can be built
+if you have used --enable-test when configuring, and then do
+
+        make check
+
+There are also some examples, which can be built if --enable-examples
+is set while configuring.
 
 ### Branches
 

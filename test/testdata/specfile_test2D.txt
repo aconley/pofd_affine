@@ -1,0 +1,18 @@
+#Comment should be ignored
+dataset= file1_1.fits file1_2.fits 0.0014 0.003 beam1.fits beam5.fits
+dataset= file2.fits file4.fits 0.002 0.04  beam3.fits funny_beam.fits 1.1
+bin_data= 300
+mean_sub= true
+ignore_mask = true #note the extra space around =
+ #Inline comment
+fftsize= 2048 #Comment should be ignored
+nedge= 100
+edge_fix = false
+beam_histogram = yes
+fit_sigma1 = no
+fit_sigma2 = false
+sigmaprior1= 0.15 #This should turn on fit_sigma1 anyways
+cfirbprior2 = 1.05 0.1
+wisdom_file = a_wisdom_file.txt
+verbose= true
+ultraverbose= false

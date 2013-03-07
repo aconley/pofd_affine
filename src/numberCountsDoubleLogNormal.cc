@@ -1544,16 +1544,16 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
   
   //Read in values
   while (!initfs.eof()) {
-    std::getline(initfs,line);
+    std::getline(initfs, line);
     if (line[0] == '#') continue; //Comment
-    utility::stringwords(line,words);
+    utility::stringwords(line, words);
     if (words.size() == 0) continue; //Nothing on line (with spaces removed)
     if (words[0][0] == '#') continue; //Comment line
     if (words.size() < nreq) continue; //Has wrong number of entries
     str.str(words[0]); str.clear(); str >> currval;
-    wvec1.push_back( currval );
+    wvec1.push_back(currval);
     str.str(words[1]); str.clear(); str >> currval;
-    wvec2.push_back( currval ); 
+    wvec2.push_back(currval); 
 
     //Now, all the options
     if (read_sigma) {
@@ -1727,6 +1727,7 @@ void initFileDoubleLogNormal::getKnotPos(std::vector<double>& kp) const {
   kp.resize(nknots);
   for (unsigned int i = 0; i < nknots; ++i)
     kp[i] = knotpos[i];
+
 }
 
 /*

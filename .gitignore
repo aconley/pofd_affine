@@ -37,8 +37,8 @@ pofd_affine_getLike
 pofd_affine_getdNdS
 pofd_affine_mcmc
 libpd.la
-test_initFile
-test_specFile
-test_copy
+initFile_test
+specFile_test
+mpi_copy_test
 m4
 *.m4
