@@ -37,7 +37,7 @@ namespace mcmc_affine {
   \brief P(D) convenience variables
 */
 namespace pofd_mcmc {
-  const char version[] = "0.1.1"; //!<Version number of P(D) library
+  const char version[] = "0.2.0"; //!<Version number of P(D) library
   const double n_sigma_shift = 8.0; //!< Shift amount
   const double n_sigma_pad = 10.0; //!< Noise padding size in sigma
   const double n_sigma_shift2d = 4.0; //!< Shift amount
