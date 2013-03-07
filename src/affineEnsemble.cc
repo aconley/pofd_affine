@@ -5,9 +5,9 @@
 #include<unistd.h>
 #include<mpi.h>
 
-#include<global_settings.h>
-#include<affineEnsemble.h>
-#include<affineExcept.h>
+#include "../include/global_settings.h"
+#include "../include/affineEnsemble.h"
+#include "../include/affineExcept.h"
 
 /////////////////////////////////////
 

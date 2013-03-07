@@ -3,7 +3,7 @@
 #include<fstream>
 #include<algorithm>
 
-#include <affineChainSet.h>
+#include "../include/affineChainSet.h"
 
 //Parameters for acor computation
 const unsigned int affineChainSet::taumax = 2; 

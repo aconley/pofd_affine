@@ -19,3 +19,12 @@ ltmain.sh
 m4/
 missing
 #*#
+
+src/*.lo
+src/.deps
+src/.libs
+src/libaffine.la
+test/*.lo
+test/.deps
+examples/*.lo
+examples/.deps

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <sstream> 
 
-#include <affineExcept.h>
+#include "../include/affineExcept.h"
 
 using namespace std;
 

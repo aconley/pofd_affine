@@ -1,5 +1,6 @@
 #include<cmath>
-#include<ran.h>
+
+#include "../include/ran.h"
 
 void ran::setSeed(unsigned long long int seed) {
   v = 4101842887655102017LL;
