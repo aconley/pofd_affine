@@ -52,8 +52,7 @@ is set while configuring.
 ### Branches
 
 The master branch contains the P(D) code.  The base branch has
-only code related to the affine-invariant MCMC.  Some tests of
-this code can be found in base_test.
+only code related to the affine-invariant MCMC.  
 
 ### References
 * The original P(D) paper is [Scheuer (1957)](http://dx.doi.org/10.1017/S0305004100032825),
