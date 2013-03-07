@@ -29,9 +29,6 @@ AC_ARG_ENABLE(profile,
               [  --enable-profile        Add gprof-friendly stuff to CXXFLAGS],
               [ CXXFLAGS="$CXXFLAGS -pg -fprofile-arcs" ],)
 
-dnl Light library for example, test linkage
-AM_CONDITIONAL(BUILDTELIB, false)
-
 dnl Example code
 AM_CONDITIONAL(DOEXAMPLES, false)
 AC_ARG_ENABLE(examples,    
@@ -40,7 +37,6 @@ AC_ARG_ENABLE(examples,
 if test $useexamples; then
    AC_MSG_RESULT(Enabling examples)
    AM_CONDITIONAL(DOEXAMPLES, true)
-   AM_CONDITIONAL(BUILDTELIB, true)
 fi
 
 dnl Tests
@@ -51,7 +47,6 @@ AC_ARG_ENABLE(test,
 if test $usetest; then
    AC_MSG_RESULT(Enabling testing, unit and other)
    AM_CONDITIONAL(DOTEST, true)
-   AM_CONDITIONAL(BUILDTELIB, true)
 
    dnl Find gtest library
    AC_ARG_WITH(gtestlib,

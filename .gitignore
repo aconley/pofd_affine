@@ -3,6 +3,7 @@
 *.tar.gz
 \#*
 .*
+*.lo
 INSTALL
 ChangeLog
 confscript.sh
@@ -20,16 +21,16 @@ install-sh
 libtool
 ltmain.sh
 missing
+libaffine.la
+multi_gauss_example
+single_gauss_example
+rosenbrock_example
+polyfit_example
+chain_test
+ensemble_test
 doc
 src/Makefile
 src/Makefile.in
-chain_test
-ensemble_test
-multi_gauss_example
-polyfit_example
-rosenbrock_example
-single_gauss_example
-libaffine.la
 pofd_affine_getPD
 pofd_affine_getR
 pofd_affine_getLike
@@ -40,5 +41,3 @@ test_specFile
 test_copy
 m4
 *.m4
-
-
