@@ -1,8 +1,7 @@
-
 #include<limits>
 
-#include<global_settings.h>
-#include<proposedStep.h>
+#include "../include/global_settings.h"
+#include "../include/proposedStep.h"
 
 
 proposedStep::proposedStep(unsigned int npar) : oldStep(npar), newStep(npar) {

@@ -7,9 +7,10 @@
 #include <map>
 
 #include<fitsio.h>
-#include<doublebeam.h>
-#include<global_settings.h>
-#include<affineExcept.h>
+
+#include "../include/doublebeam.h"
+#include "../include/global_settings.h"
+#include "../include/affineExcept.h"
 
 const unsigned int doublebeam::histothresh = 15;
 

@@ -3,8 +3,8 @@
 
 #include<getopt.h>
 
-#include<pofdMCMC.h>
-#include<affineExcept.h>
+#include "../include/pofdMCMC.h"
+#include "../include/affineExcept.h"
 
 int mcmc_single(const std::string& initfile, const std::string specfile,
 		const std::string& outfile, unsigned int nwalkers, 

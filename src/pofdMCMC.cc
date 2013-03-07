@@ -1,9 +1,9 @@
 #include<sstream>
 #include<unistd.h>
 
-#include<pofdMCMC.h>
-#include<specFile.h>
-#include<affineExcept.h>
+#include "../include/pofdMCMC.h"
+#include "../include/specFile.h"
+#include "../include/affineExcept.h"
 
 /*!
   \param[in] INITFILE Name of model initialization file; see initFileKnots

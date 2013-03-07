@@ -1,8 +1,8 @@
 #include<cmath>
 
-#include<global_settings.h>
-#include<paramSet.h>
-#include<affineExcept.h>
+#include "../include/global_settings.h"
+#include "../include/paramSet.h"
+#include "../include/affineExcept.h"
 
 paramSet::paramSet() {
   nparams = 0;

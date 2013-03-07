@@ -5,11 +5,11 @@
 
 #include<utility>
 
-#include<affineChainSet.h>
-#include<affineQueue.h>
-#include<proposedStep.h>
-#include<paramSet.h>
-#include<ran.h>
+#include "affineChainSet.h"
+#include "affineQueue.h"
+#include "proposedStep.h"
+#include "paramSet.h"
+#include "ran.h"
 
 /*!
   \brief Affine MCMC ensemble sampler.  See Foreman-Mackey et al. 2012

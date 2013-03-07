@@ -5,7 +5,7 @@
 
 #include<mpi.h>
 
-#include<paramSet.h>
+#include "paramSet.h"
 
 /*!
   \brief Convenience class for keeping track of steps

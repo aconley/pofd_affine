@@ -3,8 +3,8 @@
 #include<map>
 #include<sstream>
 
-#include<calcLikeDouble.h>
-#include<affineExcept.h>
+#include "../include/calcLikeDouble.h"
+#include "../include/affineExcept.h"
 
 const double calcLikeDoubleSingle::bad_like = 1e25;
 const double calcLikeDoubleSingle::flux_safety = 1.2;

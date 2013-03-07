@@ -2,12 +2,12 @@
 
 #include<getopt.h>
 
-#include<global_settings.h>
-#include<numberCountsKnotsSpline.h>
-#include<numberCountsDoubleLogNormal.h>
-#include<paramSet.h>
-#include<utility.h>
-#include<affineExcept.h>
+#include "../include/global_settings.h"
+#include "../include/numberCountsKnotsSpline.h"
+#include "../include/numberCountsDoubleLogNormal.h"
+#include "../include/paramSet.h"
+#include "../include/utility.h"
+#include "../include/affineExcept.h"
 
 //All sub-parses have to have the same options to avoid
 // getting warnings.  So we give them all the same long_options,

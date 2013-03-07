@@ -1,4 +1,4 @@
-#include<numberCounts.h>
+#include "../include/numberCounts.h"
 
 std::ostream& operator<<(std::ostream& os, const numberCounts& b) {
   b.writeToStream(os);

@@ -1,9 +1,9 @@
 #include<cmath>
 #include<sstream>
 
-#include<numberCountsKnotsSpline.h>
-#include<global_settings.h>
-#include<affineExcept.h>
+#include "../include/numberCountsKnotsSpline.h"
+#include "../include/global_settings.h"
+#include "../include/affineExcept.h"
 
 //Function to pass to GSL integrator
 static double evalPowfNKnotsSpline(double,void*); //!< Evaluates f^pow dN/dS

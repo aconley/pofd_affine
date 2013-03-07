@@ -2,9 +2,9 @@
 #include<iomanip>
 #include<sstream> 
 
-#include<numberCountsDoubleLogNormal.h>
-#include<global_settings.h>
-#include<affineExcept.h>
+#include "../include/numberCountsDoubleLogNormal.h"
+#include "../include/global_settings.h"
+#include "../include/affineExcept.h"
 
 //Function to pass to GSL integrator
 /*! \brief Evaluates flux1^power1 * exp(const1*mu + const2*sigma^2) dN/dS1 */

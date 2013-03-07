@@ -1,8 +1,8 @@
 #include<sstream>
 
-#include<pofdMCMCDouble.h>
-#include<specFileDouble.h>
-#include<affineExcept.h>
+#include "../include/pofdMCMCDouble.h"
+#include "../include/specFileDouble.h"
+#include "../include/affineExcept.h"
 
 /*!
   \param[in] INITFILE Name of model initialization file; see initFileKnots

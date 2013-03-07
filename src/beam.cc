@@ -5,9 +5,10 @@
 #include <cmath>
 
 #include<fitsio.h>
-#include<beam.h>
-#include<global_settings.h>
-#include<affineExcept.h>
+
+#include "../include/beam.h"
+#include "../include/global_settings.h"
+#include "../include/affineExcept.h"
 
 const unsigned int beam::histothresh = 15;
 

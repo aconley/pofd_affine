@@ -3,9 +3,9 @@
 #include <fitsio.h>
 #include <fftw3.h>
 
-#include <fitsData.h>
-#include <affineExcept.h>
-#include <global_settings.h>
+#include "../include/fitsData.h"
+#include "../include/affineExcept.h"
+#include "../include/global_settings.h"
 
 fitsData::fitsData() {
   n = 0;

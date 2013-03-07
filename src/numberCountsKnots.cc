@@ -7,11 +7,10 @@
 #include<ctime>
 #include<sstream>
 
-#include<global_settings.h>
-#include<numberCountsKnots.h>
-
-#include<utility.h>
-#include<affineExcept.h>
+#include "../include/global_settings.h"
+#include "../include/numberCountsKnots.h"
+#include "../include/utility.h"
+#include "../include/affineExcept.h"
 
 numberCountsKnots::numberCountsKnots() {
   nknots = 0;

@@ -3,7 +3,7 @@
 #ifndef __affineQueue__
 #define __affineQueue__
 
-#include<affineExcept.h>
+#include "affineExcept.h"
 
 //So, why roll my own queue class?  Why not just use std::queue?
 // First, we have a fixed maximum size, so can do this in a more

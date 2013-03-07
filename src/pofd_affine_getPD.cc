@@ -4,14 +4,14 @@
 
 #include<getopt.h>
 
-#include<global_settings.h>
-#include<utility.h>
-#include<PDFactory.h>
-#include<PDFactoryDouble.h>
-#include<numberCountsKnotsSpline.h>
-#include<numberCountsDoubleLogNormal.h>
-#include<paramSet.h>
-#include<affineExcept.h>
+#include "../include/global_settings.h"
+#include "../include/utility.h"
+#include "../include/PDFactory.h"
+#include "../include/PDFactoryDouble.h"
+#include "../include/numberCountsKnotsSpline.h"
+#include "../include/numberCountsDoubleLogNormal.h"
+#include "../include/paramSet.h"
+#include "../include/affineExcept.h"
 
 //See pofd_affine_getdNdS comment to explain why I do this as a global
 static struct option long_options[] = {

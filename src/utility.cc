@@ -4,7 +4,7 @@
 #include<cstdlib>
 #include<algorithm>
 
-#include<utility.h>
+#include "../include/utility.h"
 /*!
   \param[in] ins Input string
   \param[out] words String split up into substrings

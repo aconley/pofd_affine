@@ -3,9 +3,9 @@
 #include<cstring>
 #include<limits>
 
-#include<global_settings.h>
-#include<PDFactory.h>
-#include<affineExcept.h>
+#include "../include/global_settings.h"
+#include "../include/PDFactory.h"
+#include "../include/affineExcept.h"
 
 const double PDFactory::subedgemult = 1e-5;
 

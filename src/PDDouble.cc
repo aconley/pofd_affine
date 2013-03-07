@@ -4,9 +4,9 @@
 #include<fitsio.h>
 #include<fftw3.h>
 
-#include<global_settings.h>
-#include<PDDouble.h>
-#include<affineExcept.h>
+#include "../include/global_settings.h"
+#include "../include/PDDouble.h"
+#include "../include/affineExcept.h"
 
 const double PDDouble::lowsigval = 3.0;
 

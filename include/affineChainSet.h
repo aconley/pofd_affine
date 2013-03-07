@@ -3,8 +3,8 @@
 #ifndef __affineChainSet__
 #define __affineChainSet__
 
-#include<paramSet.h>
-#include<affineExcept.h>
+#include "paramSet.h"
+#include "affineExcept.h"
 
 /*!
   \brief Set of params and likelihoods

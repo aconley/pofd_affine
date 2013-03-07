@@ -7,11 +7,11 @@
 
 #include<getopt.h>
 
-#include<calcLike.h>
-#include<specFile.h>
-#include<calcLikeDouble.h>
-#include<specFileDouble.h>
-#include<affineExcept.h>
+#include "../include/calcLike.h"
+#include "../include/specFile.h"
+#include "../include/calcLikeDouble.h"
+#include "../include/specFileDouble.h"
+#include "../include/affineExcept.h"
 
 int getLikeSingle(const std::string& initfile, const std::string specfile) {
 

@@ -2,9 +2,9 @@
 #include<algorithm>
 #include<sstream>
 
-#include<specFile.h>
-#include<utility.h>
-#include<affineExcept.h>
+#include "../include/specFile.h"
+#include "../include/utility.h"
+#include "../include/affineExcept.h"
 
 specFile::specFile() { init(); }
 
