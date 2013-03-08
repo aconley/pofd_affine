@@ -459,32 +459,30 @@ void beam::powerNeg( double exponent, double* array ) const {
 }
 
 double beam::getEffectiveArea() const {
-  if (! (haspos || hasneg) )
-    return std::numeric_limits<double>::quiet_NaN();
+  if (!(haspos || hasneg)) return 0.0;
   double convfac = pixsize / 3600.0;
   double area = 0.0;
   if (haspos) area = totpos * convfac * convfac;
-  if (hasneg) area += totneg * convfac*convfac;
+  if (hasneg) area += totneg * convfac * convfac;
   return area;
 }
 
 double beam::getEffectiveAreaPos() const {
-  if (!haspos) return std::numeric_limits<double>::quiet_NaN();
+  if (!haspos) return 0.0;
   double convfac = pixsize / 3600.0;
   double area = totpos * convfac * convfac;
   return area;
 }
 
 double beam::getEffectiveAreaNeg() const {
-  if (!hasneg) return std::numeric_limits<double>::quiet_NaN();
+  if (!hasneg) return 0.0;
   double convfac = pixsize / 3600.0;
   double area = totneg * convfac * convfac;
   return area;
 }
 
 double beam::getEffectiveAreaPix() const {
-  if (! (haspos || hasneg) )
-    return std::numeric_limits<double>::quiet_NaN();
+  if (!(haspos || hasneg)) return 0.0;
   double area = 0.0;
   if (haspos) area = totpos;
   if (hasneg) area += totneg;
@@ -492,8 +490,7 @@ double beam::getEffectiveAreaPix() const {
 }
 
 double beam::getEffectiveAreaSq() const {
-  if (! (haspos || hasneg) )
-    return std::numeric_limits<double>::quiet_NaN();
+  if (!(haspos || hasneg)) return 0.0;
   double convfac = pixsize / 3600.0;
   double area = 0.0;
   if (haspos) area = totpossq * convfac * convfac;

@@ -34,9 +34,9 @@ class numberCountsKnots : public numberCounts {
  public:
   numberCountsKnots(); //!< Default constructor
   explicit numberCountsKnots(unsigned int); //!< Constructor with number of knots
-  numberCountsKnots( const std::vector<double>& ); //!< Vector constructor
-  numberCountsKnots( unsigned int, const double* const); //!< C array constructor
-  numberCountsKnots( const numberCountsKnots& ); //!< Copy constructor
+  numberCountsKnots(const std::vector<double>&); //!< Vector constructor
+  numberCountsKnots(unsigned int, const double* const); //!< C array constructor
+  numberCountsKnots(const numberCountsKnots&); //!< Copy constructor
   ~numberCountsKnots(); //!< Destructor
 
   /*! \brief Load knot positions into vector */
@@ -51,7 +51,7 @@ class numberCountsKnots : public numberCounts {
 
   unsigned int getNKnots() const { return nknots; } //!< Returns number of knots
   /*! \brief Get position of specified knot */
-  double getKnotPos( unsigned int i ) const { return knots[i]; }
+  double getKnotPos(unsigned int i) const { return knots[i]; }
 
   /*! \brief Get knot position and log value */
   std::pair<double,double> getLogKnot(unsigned int i) const {

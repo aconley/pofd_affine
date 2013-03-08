@@ -9,7 +9,7 @@
 
 //In both cases the test is to read in test files and make sure they
 // look like what is expected
-TEST(specFileTest, ReadCheck1D) {
+TEST(specFile1DTest, ReadCheck) {
 
   specFile spec_info("testdata/specfile_test1D.txt");
     
@@ -90,7 +90,7 @@ TEST(specFileTest, ReadCheck1D) {
 }
 
 
-TEST(specFileTest, ReadCheck2D) {
+TEST(specFile2DTest, ReadCheck) {
   
   specFileDouble spec_info("testdata/specfile_test2D.txt");
     

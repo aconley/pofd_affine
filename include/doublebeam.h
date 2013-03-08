@@ -33,7 +33,7 @@ class doublebeam {
 
   static const unsigned int histothresh; //!< Don't bother histogramming for this many or fewer
 
-  bool   has_weights[4]; //!< Using histogrammed weights? (pp,pn,np,nn)
+  bool has_weights[4]; //!< Using histogrammed weights? (pp,pn,np,nn)
   double *weights[4]; //!< Histogram weights, if has weights (pp,pn,np,nn)
   double *pixarr1[4]; //!< Array of pixels, beam 1 (pp,pn,np,nn)
   double *pixarr2[4]; //!< Array of pixels, beam 2 (pp,pn,np,nn)
@@ -51,20 +51,20 @@ class doublebeam {
 
  public :
   doublebeam(); //!< Default constructor
-  doublebeam( const std::string&, const std::string&,
-	      bool histogram=false, double histogramlogstep=0.2); //!< Reads beam from files
-  doublebeam( const doublebeam& ); //!< Copy constructor
+  doublebeam(const std::string&, const std::string&,
+	     bool histogram=false, double histogramlogstep=0.2); //!< Reads beam from files
+  doublebeam(const doublebeam&); //!< Copy constructor
   ~doublebeam() { cleanup(); } //!< Destructor
 
   void free() { cleanup(); } //!< Free all memory
 
   /*! \brief Read in files */
-  void readFiles( const std::string&, const std::string& filename2,
-		  bool histogram=false, double histogramlogstep=0.2); 
+  void readFiles(const std::string&, const std::string& filename2,
+		 bool histogram=false, double histogramlogstep=0.2); 
   
-  void setBeams( unsigned int, const double* const,
-		 const double* const, double, bool histogram=false,
-		 double histogramlogstep=0.2 ); //!< Set beams
+  void setBeams(unsigned int, const double* const,
+		const double* const, double, bool histogram=false,
+		double histogramlogstep=0.2 ); //!< Set beams by hand
 
   double getEffectiveArea1() const; //!< Get effective area of beam1 in sq deg
   double getEffectiveAreaSign1(unsigned int) const; //!< Get effective area of either pp,pn,np, or nn beam 1, in pixels

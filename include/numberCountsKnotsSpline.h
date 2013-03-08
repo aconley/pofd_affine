@@ -47,9 +47,9 @@ class numberCountsKnotsSpline : public numberCountsKnots {
  public :
   numberCountsKnotsSpline(); //!< Default
   explicit numberCountsKnotsSpline(unsigned int); //!< Constructor with number of knots
-  numberCountsKnotsSpline( const std::vector<double>& ); //!< Vector constructor
-  numberCountsKnotsSpline( unsigned int, const double* const); //!< C array constructor
-  numberCountsKnotsSpline( const numberCountsKnotsSpline& ); //!< Copy constructor
+  numberCountsKnotsSpline(const std::vector<double>&); //!< Vector constructor
+  numberCountsKnotsSpline(unsigned int, const double* const); //!< C array constructor
+  numberCountsKnotsSpline(const numberCountsKnotsSpline&); //!< Copy constructor
   ~numberCountsKnotsSpline(); //!< Destructor
 
   /*! \brief copy operator */

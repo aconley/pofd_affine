@@ -37,9 +37,9 @@ doublebeam::doublebeam() {
   \param[in] histogram Do beam histogramming?
   \param[in] histogramlogstep Log step if histogramming
 */
-doublebeam::doublebeam( const std::string& filename1,
-			const std::string& filename2,
-			bool histogram, double histogramlogstep ) {
+doublebeam::doublebeam(const std::string& filename1,
+		       const std::string& filename2,
+		       bool histogram, double histogramlogstep ) {
   hassign[0]=hassign[1]=hassign[2]=hassign[3]=false;
   npix[0] = npix[1] = npix[2]= npix[3] = 0;
   tot1[0]=tot1[1]=tot1[2]=tot1[3] = 0.0;
@@ -57,7 +57,7 @@ doublebeam::doublebeam( const std::string& filename1,
   readFiles(filename1,filename2,histogram,histogramlogstep);
 }
 
-doublebeam::doublebeam( const doublebeam& inp ) {
+doublebeam::doublebeam(const doublebeam& inp) {
   pixarr1[0]=pixarr1[1]=pixarr1[2]=pixarr1[3] = NULL;
   pixarr2[0]=pixarr2[1]=pixarr2[2]=pixarr2[3] = NULL;
   cleanup();
@@ -576,7 +576,7 @@ void doublebeam::readFiles(const std::string& filename1,
 double doublebeam::getEffectiveArea1() const {
   bool hasval = hassign[0];
   for (unsigned int i = 1; i < 4; ++i) hasval |= hassign[i];
-  if (!hasval) return std::numeric_limits<double>::quiet_NaN();
+  if (!hasval) return 0.0;
   double convfac = pixsize / 3600.0;
   return totsm1 * convfac * convfac;
 }
@@ -584,7 +584,7 @@ double doublebeam::getEffectiveArea1() const {
 double doublebeam::getEffectiveArea2() const {
   bool hasval = hassign[0];
   for (unsigned int i = 1; i < 4; ++i) hasval |= hassign[i];
-  if (!hasval) return std::numeric_limits<double>::quiet_NaN();
+  if (!hasval) 0.0;
   double convfac = pixsize / 3600.0;
   return totsm2 * convfac * convfac;
 }
@@ -592,40 +592,40 @@ double doublebeam::getEffectiveArea2() const {
 double doublebeam::getEffectiveAreaPixGeoMean() const {
  bool hasval = hassign[0];
   for (unsigned int i = 1; i < 4; ++i) hasval |= hassign[i];
-  if (!hasval) return std::numeric_limits<double>::quiet_NaN();
+  if (!hasval) return 0.0;
   return sqrt(totsm1*totsm2);
 }
 
 double doublebeam::getMinAreaPix() const {
  bool hasval = hassign[0];
   for (unsigned int i = 1; i < 4; ++i) hasval |= hassign[i];
-  if (!hasval) return std::numeric_limits<double>::quiet_NaN();
+  if (!hasval) return 0.0;
   return totsm1 < totsm2 ? totsm1 : totsm2;
 }
 
 double doublebeam::getEffectiveAreaSign1(unsigned int idx) const {
-  if (!hassign[idx]) return std::numeric_limits<double>::quiet_NaN();
+  if (!hassign[idx]) return 0.0;
   double convfac = pixsize / 3600.0;
   double area = tot1[idx] * convfac * convfac;
   return area;
 }
 
 double doublebeam::getEffectiveAreaSign2(unsigned int idx) const {
-  if (!hassign[idx]) return std::numeric_limits<double>::quiet_NaN();
+  if (!hassign[idx]) return 0.0;
   double convfac = pixsize / 3600.0;
   double area = tot2[idx] * convfac * convfac;
   return area;
 }
 
 double doublebeam::getEffectiveAreaSqSign1(unsigned int idx) const {
-  if (!hassign[idx]) return std::numeric_limits<double>::quiet_NaN();
+  if (!hassign[idx]) return 0.0;
   double convfac = pixsize / 3600.0;
   double area = totsq1[idx] * convfac * convfac;
   return area;
 }
 
 double doublebeam::getEffectiveAreaSqSign2(unsigned int idx) const {
-  if (!hassign[idx]) return std::numeric_limits<double>::quiet_NaN();
+  if (!hassign[idx]) return 0.0;
   double convfac = pixsize / 3600.0;
   double area = totsq2[idx] * convfac * convfac;
   return area;
@@ -636,7 +636,7 @@ double doublebeam::getEffectiveAreaSqSign2(unsigned int idx) const {
   \returns Maximum beam value in band 1
 */
 double doublebeam::getMax1(unsigned int sgn) const {
-  if ( ! hassign[sgn] )
+  if (!hassign[sgn])
     return std::numeric_limits<double>::quiet_NaN();
   double* parr = pixarr1[sgn];
   double max, val;
@@ -653,7 +653,7 @@ double doublebeam::getMax1(unsigned int sgn) const {
   \returns Maximum beam value in band 2
 */
 double doublebeam::getMax2(unsigned int sgn) const {
-  if ( ! hassign[sgn] )
+  if (!hassign[sgn])
     return std::numeric_limits<double>::quiet_NaN();
   double* parr = pixarr2[sgn];
   double max, val;
@@ -674,7 +674,7 @@ double doublebeam::getMax2(unsigned int sgn) const {
 */
 void doublebeam::getMinMax1(unsigned int bnd, double& min,
 			    double& max) const {
-  if ( ! hassign[bnd] ) {
+  if (!hassign[bnd]) {
     min = std::numeric_limits<double>::quiet_NaN();
     max = std::numeric_limits<double>::quiet_NaN();
     return;
@@ -700,7 +700,7 @@ void doublebeam::getMinMax1(unsigned int bnd, double& min,
 */
 void doublebeam::getMinMax2(unsigned int bnd, double& min,
 			    double& max) const {
-  if ( ! hassign[bnd] ) {
+  if (!hassign[bnd]) {
     min = std::numeric_limits<double>::quiet_NaN();
     max = std::numeric_limits<double>::quiet_NaN();
     return;

@@ -22,8 +22,8 @@ numberCountsKnotsSpline::numberCountsKnotsSpline(unsigned int NKNOTS) :
   if (NKNOTS > 0) logknots = new double[NKNOTS]; else logknots = NULL;
   acc = gsl_interp_accel_alloc();
   if (NKNOTS > 0)
-    splinelog = gsl_spline_alloc( gsl_interp_cspline,
-				  static_cast<size_t>(NKNOTS));
+    splinelog = gsl_spline_alloc(gsl_interp_cspline,
+				 static_cast<size_t>(NKNOTS));
   else {
     splinelog=NULL;
   }
@@ -40,31 +40,31 @@ numberCountsKnotsSpline::numberCountsKnotsSpline(const std::vector<double>& v):
   } else logknots = NULL;
   acc = gsl_interp_accel_alloc();
   if (v.size() > 0)
-    splinelog = gsl_spline_alloc( gsl_interp_cspline,
-				  static_cast<size_t>(v.size()));
+    splinelog = gsl_spline_alloc(gsl_interp_cspline,
+				 static_cast<size_t>(v.size()));
   else
     splinelog = NULL;
   gsl_work = gsl_integration_workspace_alloc(1000);
   varr = new void*[5];
 }
-numberCountsKnotsSpline::numberCountsKnotsSpline( unsigned int n, 
-						  const double* const S) :
-  numberCountsKnots(n,S) {
+numberCountsKnotsSpline::numberCountsKnotsSpline(unsigned int n, 
+						 const double* const S) :
+  numberCountsKnots(n, S) {
   if (nknots > 0) {
     logknots = new double[nknots]; 
     for (unsigned int i = 0; i < nknots; ++i)
-      logknots[i] = log2( knots[i] );
+      logknots[i] = log2(knots[i]);
   } else logknots = NULL;
   acc = gsl_interp_accel_alloc();
-  splinelog = gsl_spline_alloc( gsl_interp_cspline,
-				static_cast<size_t>(n));
+  splinelog = gsl_spline_alloc(gsl_interp_cspline,
+			       static_cast<size_t>(n));
   gsl_work = gsl_integration_workspace_alloc(1000);
   varr = new void*[5];
 }
 
-numberCountsKnotsSpline::numberCountsKnotsSpline( const numberCountsKnotsSpline& 
-						  other ){
-  if ( this == &other ) return; //Self-copy
+numberCountsKnotsSpline::numberCountsKnotsSpline(const numberCountsKnotsSpline& 
+						 other){
+  if (this == &other) return; //Self-copy
   nknots = 0;
   knots = logknots = logknotvals = NULL;
   acc = NULL;
@@ -108,8 +108,8 @@ void numberCountsKnotsSpline::setNKnots(unsigned int n) {
     knots = logknots = logknotvals = NULL;
   }
   if ( n > 1 )
-    splinelog=gsl_spline_alloc( gsl_interp_cspline,
-				static_cast<size_t>(n));
+    splinelog=gsl_spline_alloc(gsl_interp_cspline,
+			       static_cast<size_t>(n));
   else 
     splinelog=NULL;
   nknots = n;
@@ -118,7 +118,7 @@ void numberCountsKnotsSpline::setNKnots(unsigned int n) {
 
 numberCountsKnotsSpline& 
 numberCountsKnotsSpline::operator=(const numberCountsKnotsSpline& other) {
-  if ( this == &other ) return *this; //Self-copy
+  if (this == &other) return *this; //Self-copy
   if (other.nknots == 0) {
     if (nknots != 0) {
       if (knots != NULL) delete[] knots;
@@ -138,8 +138,8 @@ numberCountsKnotsSpline::operator=(const numberCountsKnotsSpline& other) {
     if (other.knotvals_loaded) {
       for (unsigned int i = 0; i < nknots; ++i)
 	logknotvals[i] = other.logknotvals[i];
-      gsl_spline_init( splinelog, logknots, logknotvals,
-		       static_cast<size_t>(other.nknots) );
+      gsl_spline_init(splinelog, logknots, logknotvals,
+		      static_cast<size_t>(other.nknots));
     }
     knotvals_loaded = other.knotvals_loaded;
   }
@@ -166,8 +166,8 @@ void numberCountsKnotsSpline::setKnotPositions(unsigned int n,
  */
 void numberCountsKnotsSpline::setParams(const paramSet& F) {
   if (nknots > F.getNParams())
-    throw affineExcept("numberCountsKnotsSpline","setKnots",
-		       "Number of knot values different than expected",2);
+    throw affineExcept("numberCountsKnotsSpline", "setKnots",
+		       "Number of knot values different than expected", 1);
   for (unsigned int i = 0; i < nknots; ++i)
     logknotvals[i] = pofd_mcmc::logfac*F[i];
   gsl_spline_init( splinelog, logknots, logknotvals,
@@ -182,9 +182,9 @@ void numberCountsKnotsSpline::setParams(const paramSet& F) {
  */
 double numberCountsKnotsSpline::getNumberCounts(double value) const {
   if (nknots < 2) return std::numeric_limits<double>::quiet_NaN();
-  if (! isValid() ) return std::numeric_limits<double>::quiet_NaN();
+  if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
   if (value < knots[0] || value >= knots[nknots-1]) return 0.0; //Out of range
-  return exp2( gsl_spline_eval( splinelog, log2(value), acc ) ); 
+  return exp2(gsl_spline_eval(splinelog, log2(value), acc)); 
 }
 
 /*!

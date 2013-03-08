@@ -43,18 +43,19 @@ class beam {
 
   void cleanup(); //!< Frees internal structures
   bool revSort(const double&, const double&) const; //!< Reverse sort comparison
+
  public :
   beam(); //!< Default constructor
-  beam( const std::string& filename, bool histogram=false, 
-	double histogramlogstep=0.2 ); //!< Reads beam from file
-  beam( const beam& ); //!< Copy constructor
+  beam(const std::string& filename, bool histogram=false, 
+	double histogramlogstep=0.2); //!< Reads beam from file
+  beam(const beam&); //!< Copy constructor
   ~beam() { cleanup(); } //!< Destructor
 
   void free() { cleanup(); } //!< Free all memory
 
-  bool readFile( const std::string& filename,
-		 bool histogram=false, 
-		 double histogramlogstep=0.2); //!< Read in file
+  bool readFile(const std::string& filename,
+		bool histogram=false, 
+		double histogramlogstep=0.2); //!< Read in file
 
   double getEffectiveArea() const; //!< Get effective area of beam in sq deg
   double getEffectiveAreaPos() const; //!< Get effective area of positive beam in sq deg

@@ -11,7 +11,7 @@
 //This is a pretty simple test.  There are two files in the test
 // directory.  We read them and check that the resulting object
 // is what we expect
-TEST(initFileTest, ReadCheck1) {
+TEST(initFile1DTest, ReadCheck1) {
   //File 1
   //Simple file, no limits, etc.
   initFileKnots test1("testdata/fiducial_1Dmodel.txt",false,false);
@@ -58,7 +58,7 @@ TEST(initFileTest, ReadCheck1) {
       p[i] << " on knot " << i;
 }
 
-TEST(initFileTest, ReadCheck2) {
+TEST(initFile1DTest, ReadCheck2) {
   //Test file 2 -- a more complicated case with sigmas and limits
   const double knotpos[] = { 0.002, 0.005, 0.045, 0.100, 0.45, 1.0 };
   const double knotval[] = { 7.0, 6.3, 4.0, 2.6, 0.6, -0.4 };
@@ -137,7 +137,7 @@ TEST(initFileTest, ReadCheck2) {
   
 }
 
-TEST(initFileTest, ReadCheckDouble) {
+TEST(initFile2DTest, ReadCheck) {
   initFileDoubleLogNormal test1("testdata/initfile_test2D.txt",true,true);
 
   unsigned int nknots = test1.getNKnots();

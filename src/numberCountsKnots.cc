@@ -50,7 +50,7 @@ numberCountsKnots::numberCountsKnots( unsigned int n, const double* const S) {
 }
 
 numberCountsKnots::numberCountsKnots( const numberCountsKnots& other ) {
-  if ( this == &other ) return; //Self-copy
+  if (this == &other) return; //Self-copy
   nknots = 0;
   knots = NULL;
   logknotvals = NULL;
@@ -70,10 +70,10 @@ numberCountsKnots::~numberCountsKnots() {
 }
 
 void numberCountsKnots::setNKnots(unsigned int n) {
-  if ( nknots == n ) return;
-  if ( knots != NULL ) delete[] knots;
-  if ( logknotvals != NULL ) delete[] logknotvals;
-  if ( n > 0 ) {
+  if (nknots == n) return;
+  if (knots != NULL) delete[] knots;
+  if (logknotvals != NULL) delete[] logknotvals;
+  if (n > 0) {
     knots = new double[n];
     logknotvals = new double[n];
   } else {
@@ -152,7 +152,7 @@ void numberCountsKnots::setParams(const paramSet& F) {
     throw affineExcept("numberCountsKnots","setKnots",
 		       "Number of knot values different than expected",2);
   for (unsigned int i = 0; i < nknots; ++i)
-    logknotvals[i] = pofd_mcmc::logfac*F[i]; //convert to base 2
+    logknotvals[i] = pofd_mcmc::logfac * F[i]; //convert to base 2
   knotvals_loaded = true;
 }
 
