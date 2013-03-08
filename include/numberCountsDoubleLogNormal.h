@@ -76,7 +76,19 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   gsl_interp_accel *accoffset; //!< Offset accelerator
   gsl_interp *offsetinterp; //!< Offset interpolator
 
-  bool knotvals_loaded; //!< Knot information loaded
+  //Model validity stuff
+  mutable bool knots_valid; //!< Knots ready
+  mutable bool sigmas_valid; //!< Sigmas ready
+  mutable bool offsets_valid; //!< Offsets ready
+  bool knotpos_loaded; //!< Knot positions loaded (not validity checked)
+  bool sigmapos_loaded; //!< Sigma positions loaded (not validity checked)
+  bool offsetpos_loaded; //!< Offset positions loaded (not validity checked)
+  bool knotvals_loaded; //!< Knot values loaded (not validity checked)
+  bool sigmavals_loaded; //!< Sigma values loaded (not validity checked)
+  bool offsetvals_loaded; //!< Offset values loaded (not validity checked)
+  void checkKnotsValid() const; //!< Set knots_valid by checking
+  void checkSigmasValid() const; //!< Set sigmas_valid by checking
+  void checkOffsetsValid() const; //!< Set offsets_valid by checking
 
   //Workspace
   gsl_integration_workspace *gsl_work; //!< Integration workspace for QAG
@@ -109,15 +121,15 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   numberCountsDoubleLogNormal(); //!< Default
   explicit numberCountsDoubleLogNormal(unsigned int, unsigned int, 
 				       unsigned int); //!< Constructor
-  numberCountsDoubleLogNormal( const std::vector<double>&, 
-			       const std::vector<double>&,
-			       const std::vector<double>& ); //!< Constructor
+  numberCountsDoubleLogNormal(const std::vector<double>&, 
+			      const std::vector<double>&,
+			      const std::vector<double>&); //!< Constructor
   /*! \brief Constructor */
-  numberCountsDoubleLogNormal( unsigned int, const double* const,
-			       unsigned int, const double* const,
-			       unsigned int, const double* const);
+  numberCountsDoubleLogNormal(unsigned int, const double* const,
+			      unsigned int, const double* const,
+			      unsigned int, const double* const);
   /*! \brief Copy constructor */
-  numberCountsDoubleLogNormal( const numberCountsDoubleLogNormal& other );
+  numberCountsDoubleLogNormal(const numberCountsDoubleLogNormal& other);
   ~numberCountsDoubleLogNormal(); //!< Destructor
 
   /*! \brief Copy operator */
@@ -128,25 +140,25 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   void setNKnots(unsigned int n); //!< Sets number of knots in band 1
   unsigned int getNKnots() const { return nknots; } //!< Number of knots in band 1 spline
   /*! \brief Sets knot positions, band 1, vector version */
-  void setKnotPositions( const std::vector<double>& );
+  void setKnotPositions(const std::vector<double>&);
   /*! \brief Sets knot positions, band 1, c array version */
-  void setKnotPositions( unsigned int, const double* const );
+  void setKnotPositions(unsigned int, const double* const);
   /*! \brief Sets number of sigma positions for color model */
   void setNSigmas(unsigned int);
   /*! \brief Gets number of sigma knots in band 2 color model */
   unsigned int getNSigmas() const { return nsigmaknots; }
   /*! \brief Sets knot positions for band 2 sigma model, vector version */
-  void setSigmaPositions( const std::vector<double>& );
+  void setSigmaPositions(const std::vector<double>&);
   /*! \brief Sets knot positions for band 2 sigma model, c array version */
-  void setSigmaPositions( unsigned int, const double* const );
+  void setSigmaPositions(unsigned int, const double* const);
   /*! \brief Sets number of offset positions for color model */
   void setNOffsets(unsigned int);
   /*! \brief Gets number of offset knots in band 2 color model */
   unsigned int getNOffsets() const { return noffsetknots; }
   /*! \brief Sets knot positions for band 2 offset model, vector version */
-  void setOffsetPositions( const std::vector<double>& );
+  void setOffsetPositions(const std::vector<double>&);
   /*! \brief Sets knot positions for band 2 offset model, c array version */
-  void setOffsetPositions( unsigned int, const double* const );
+  void setOffsetPositions(unsigned int, const double* const);
   /*! \brief Gets total number of parameters */
   unsigned int getNParams() const { return nknots+nsigmaknots+noffsetknots; }
   /*! \brief Gets positions of all knots */
@@ -165,7 +177,7 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
    double getOffset(double) const;
 
   /*! \brief Evaluates number counts model */
-   double getNumberCounts( double, double ) const;
+   double getNumberCounts(double, double) const;
 
   /*! \brief Minimum flux model is defined for */
    double getMinFlux(unsigned int) const;

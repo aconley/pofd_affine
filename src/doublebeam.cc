@@ -584,7 +584,7 @@ double doublebeam::getEffectiveArea1() const {
 double doublebeam::getEffectiveArea2() const {
   bool hasval = hassign[0];
   for (unsigned int i = 1; i < 4; ++i) hasval |= hassign[i];
-  if (!hasval) 0.0;
+  if (!hasval) return 0.0;
   double convfac = pixsize / 3600.0;
   return totsm2 * convfac * convfac;
 }

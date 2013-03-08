@@ -14,6 +14,7 @@
 #include "../include/beam.h"
 #include "../include/doublebeam.h"
 #include "../include/numberCountsKnotsSpline.h"
+#include "../include/numberCountsDoubleLogNormal.h"
 
 //////////////////////////////////////////////////
 //beam
@@ -257,6 +258,100 @@ TEST(model1DTest, NumberCounts) {
   for (unsigned int i = 0; i < ntest; ++i)
     EXPECT_NEAR(testval[i], log10(model.getNumberCounts(testpos[i])),0.001) << 
       "Didn't get expected number counts at " << testpos[i];
+
+}
+
+//Model integration -- also hard to ensure the values are right
+TEST(model1DTest, Integration) {
+  const unsigned int nknots = 5;
+  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.050 };
+  const double knotval[nknots] = { 10.0, 7.0, 5.0, 4.0, -1.0 };
+
+  numberCountsKnotsSpline model(nknots, knotpos);
+  paramSet p(nknots, knotval);
+  model.setParams(p);
+  ASSERT_TRUE(model.isValid()) << "Model should be valid";
+
+  EXPECT_NEAR(3.12022e6, model.getNS(), 1e4) <<
+    "Unexpected total number of sources for test case";
+  EXPECT_NEAR(7386.67, model.getMeanFluxPerArea(), 1.0) <<
+    "Unexpected mean flux per area";
+  EXPECT_NEAR(18.132, model.getMeanFluxSqPerArea(), 0.01) <<
+    "Unexpected mean flux^2 per area";
+}
+
+//Test getting R; this depends on the details of
+// the spline model, so will change if GSL changes anything
+// Hence, it's a little hard to say exactly what the results should be.
+TEST(model1DTest, getR) {
+  const unsigned int nknots = 5;
+  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.050 };
+  const double knotval[nknots] = { 10.0, 7.0, 5.0, 4.0, -1.0 };
+
+  numberCountsKnotsSpline model(nknots, knotpos);
+  paramSet p(nknots, knotval);
+  model.setParams(p);
+  ASSERT_TRUE(model.isValid()) << "Model should consider itself valid";
+
+  beam bm("testdata/band1_beam.fits");
+  const unsigned int ntest = 3;
+  const double fluxdens[ntest] = {0.003, 0.011, 0.03};
+  const double rexpect[ntest] = {1891.52, 0.817009, 0.000313631};
+  double rval, reldiff;
+  for (unsigned int i = 0; i < ntest; ++i) {
+    rval = model.getR(fluxdens[i], bm, numberCounts::BEAMBOTH);
+    reldiff = fabs(rval - rexpect[i]) / rexpect[i];
+    EXPECT_NEAR(0.0, reldiff, 1e-3) <<
+      "R value not as expected -- wanted: " << rexpect[i] <<
+      " got " << rval << " relative difference: " << reldiff;
+  }
+}
+
+//////////////////////////////////////////////////
+// numberCountsDoubleLogNormal
+
+//Basic Instantiation
+TEST(model2DTest, Init) {
+  const unsigned int nknots = 5;
+  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
+  const unsigned int nsigmas = 2;
+  const double sigmapos[nsigmas] = { 0.002, 0.020 };
+  const unsigned int noffsets = 2;
+  const double offsetpos[noffsets] = { 0.03, 0.05 };
+  
+  numberCountsDoubleLogNormal model1(nknots, nsigmas, noffsets);
+  EXPECT_EQ(nknots, model1.getNKnots()) << 
+    "Unexpected number of knots in int, int, int constructor";
+  EXPECT_EQ(nsigmas, model1.getNSigmas()) << 
+    "Unexpected number of sigmas in int, int, int constructor";
+  EXPECT_EQ(noffsets, model1.getNOffsets()) << 
+    "Unexpected number of Offsets in int, int, int constructor";
+  EXPECT_EQ(nknots + nsigmas + noffsets, model1.getNParams()) <<
+    "Unexpected number of total parameters after int, int, int constructor";
+  EXPECT_FALSE(model1.isValid()) <<
+    "Model should not be valid after int, int, int constructor";
+  
+  numberCountsDoubleLogNormal model2(nknots, knotpos, nsigmas, sigmapos,
+				     noffsets, offsetpos);
+  EXPECT_EQ(nknots, model2.getNKnots()) << 
+    "Unexpected number of knots in c-array constructor";
+  EXPECT_EQ(nsigmas, model2.getNSigmas()) << 
+    "Unexpected number of sigmas in c-array constructor";
+  EXPECT_EQ(noffsets, model2.getNOffsets()) << 
+    "Unexpected number of Offsets in c-array constructor";
+  EXPECT_FALSE(model2.isValid()) <<
+    "Model should not be valid after c-array constructor";
+  std::vector<double> kp, sp, op;
+  model2.getPositions(kp, sp, op);
+  for (unsigned int i = 0; i < nknots; ++i) 
+    EXPECT_FLOAT_EQ(knotpos[i], kp[i]) <<
+      "Knot position mismatch after c-array constructor at index: " << i;
+  for (unsigned int i = 0; i < nsigmas; ++i) 
+    EXPECT_FLOAT_EQ(sigmapos[i], sp[i]) <<
+      "Sigma position mismatch after c-array constructor at index: " << i;
+  for (unsigned int i = 0; i < noffsets; ++i) 
+    EXPECT_FLOAT_EQ(offsetpos[i], op[i]) <<
+      "Offset position mismatch after c-array constructor at index: " << i;
 }
 
 ////////////////////////////////////////////

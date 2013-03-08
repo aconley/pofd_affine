@@ -55,7 +55,7 @@ class numberCountsKnots : public numberCounts {
 
   /*! \brief Get knot position and log value */
   std::pair<double,double> getLogKnot(unsigned int i) const {
-    return std::pair<double,double>(knots[i],logknotvals[i]); }
+    return std::pair<double,double>(knots[i], logknotvals[i]); }
 
   virtual bool isValid() const; //!< Are model parameters valid
 
