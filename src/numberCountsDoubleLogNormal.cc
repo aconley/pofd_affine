@@ -454,6 +454,18 @@ void numberCountsDoubleLogNormal::setKnotPositions(unsigned int n,
 }
 
 /*!
+  \param[in] idx Index into knot positions
+  \returns Position of idx-th knot
+
+  Access is not checked.
+*/
+double numberCountsDoubleLogNormal::
+getKnotPosition(const unsigned int i) const {
+  return knots[i];
+}
+
+
+/*!
   \param[in] S Input knot positions for band 2 color model sigma
 */
 void numberCountsDoubleLogNormal::
@@ -485,6 +497,16 @@ void numberCountsDoubleLogNormal::setSigmaPositions(unsigned int n,
   if (nsigmaknots > 0) sigmapos_loaded = true;
 }
 
+/*!
+  \param[in] idx Index into sigma knot positions
+  \returns Position of idx-th sigma knot
+
+  Access is not checked.
+*/
+double numberCountsDoubleLogNormal::
+getSigmaPosition(const unsigned int i) const {
+  return sigmaknots[i];
+}
 
 /*!
   \param[in] S Input knot positions for band 2 color model offset
@@ -500,6 +522,17 @@ setOffsetPositions(const std::vector<double>& S) {
   for (unsigned int i = 0; i < n; ++i)
     offsetknots[i] = S[i];
   if (noffsetknots > 0) offsetpos_loaded = true;
+}
+
+/*!
+  \param[in] idx Index into offset knot positions
+  \returns Position of idx-th offset knot
+
+  Access is not checked.
+*/
+double numberCountsDoubleLogNormal::
+getOffsetPosition(const unsigned int i) const {
+  return offsetknots[i];
 }
 
 /*!

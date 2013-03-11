@@ -305,6 +305,16 @@ TEST(model1DTest, getR) {
       "R value not as expected -- wanted: " << rexpect[i] <<
       " got " << rval << " relative difference: " << reldiff;
   }
+
+  //Vectorized version
+  double rarr[ntest];
+  model.getR(ntest, fluxdens, bm, rarr);
+  for (unsigned int i = 0; i < ntest; ++i) {
+    reldiff = fabs(rarr[i] - rexpect[i]) / rexpect[i];
+    EXPECT_NEAR(0.0, reldiff, 1e-3) <<
+      "R value not as expected -- wanted: " << rexpect[i] <<
+      " got " << rarr[i] << " relative difference: " << reldiff;
+  }
 }
 
 //////////////////////////////////////////////////
@@ -319,6 +329,7 @@ TEST(model2DTest, Init) {
   const unsigned int noffsets = 2;
   const double offsetpos[noffsets] = { 0.03, 0.05 };
   
+  //Just set size version, no positions set
   numberCountsDoubleLogNormal model1(nknots, nsigmas, noffsets);
   EXPECT_EQ(nknots, model1.getNKnots()) << 
     "Unexpected number of knots in int, int, int constructor";
@@ -331,6 +342,7 @@ TEST(model2DTest, Init) {
   EXPECT_FALSE(model1.isValid()) <<
     "Model should not be valid after int, int, int constructor";
   
+  //C array version
   numberCountsDoubleLogNormal model2(nknots, knotpos, nsigmas, sigmapos,
 				     noffsets, offsetpos);
   EXPECT_EQ(nknots, model2.getNKnots()) << 
@@ -352,7 +364,230 @@ TEST(model2DTest, Init) {
   for (unsigned int i = 0; i < noffsets; ++i) 
     EXPECT_FLOAT_EQ(offsetpos[i], op[i]) <<
       "Offset position mismatch after c-array constructor at index: " << i;
+
+  //Vector version -- note that kp, sp, op are now set to the kpositions
+  numberCountsDoubleLogNormal model3(kp, sp, op);
+  EXPECT_EQ(nknots, model3.getNKnots()) << 
+    "Unexpected number of knots in vector constructor";
+  EXPECT_EQ(nsigmas, model3.getNSigmas()) << 
+    "Unexpected number of sigmas in vector constructor";
+  EXPECT_EQ(noffsets, model3.getNOffsets()) << 
+    "Unexpected number of Offsets in vector constructor";
+  EXPECT_FALSE(model3.isValid()) <<
+    "Model should not be valid after vector constructor";
+  std::vector<double> kp2, sp2, op2;
+  model3.getPositions(kp2, sp2, op2);
+  for (unsigned int i = 0; i < nknots; ++i) 
+    EXPECT_FLOAT_EQ(kp[i], kp2[i]) <<
+      "Knot position mismatch after vector constructor at index: " << i;
+  for (unsigned int i = 0; i < nsigmas; ++i) 
+    EXPECT_FLOAT_EQ(sp[i], sp2[i]) <<
+      "Sigma position mismatch after vector constructor at index: " << i;
+  for (unsigned int i = 0; i < noffsets; ++i) 
+    EXPECT_FLOAT_EQ(op[i], op2[i]) <<
+      "Offset position mismatch after vector constructor at index: " << i;
+
+  //And, finally, copy constructor
+  numberCountsDoubleLogNormal model4(model3);
+  EXPECT_EQ(nknots, model4.getNKnots()) << 
+    "Unexpected number of knots in copy constructor";
+  EXPECT_EQ(nsigmas, model4.getNSigmas()) << 
+    "Unexpected number of sigmas in copy constructor";
+  EXPECT_EQ(noffsets, model4.getNOffsets()) << 
+    "Unexpected number of Offsets in copy constructor";
+  EXPECT_FALSE(model4.isValid()) <<
+    "Model should not be valid after copy constructor";
+  model4.getPositions(kp2, sp2, op2);
+  for (unsigned int i = 0; i < nknots; ++i) 
+    EXPECT_FLOAT_EQ(kp[i], kp2[i]) <<
+      "Knot position mismatch after copy constructor at index: " << i;
+  for (unsigned int i = 0; i < nsigmas; ++i) 
+    EXPECT_FLOAT_EQ(sp[i], sp2[i]) <<
+      "Sigma position mismatch after copy constructor at index: " << i;
+  for (unsigned int i = 0; i < noffsets; ++i) 
+    EXPECT_FLOAT_EQ(op[i], op2[i]) <<
+      "Offset position mismatch after copy constructor at index: " << i;
+
 }
+
+//Test set positions
+TEST(model2DTest, SetPositions) {
+  const unsigned int nknots = 5;
+  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
+  const unsigned int nsigmas = 2;
+  const double sigmapos[nsigmas] = { 0.002, 0.020 };
+  const unsigned int noffsets = 2;
+  const double offsetpos[noffsets] = { 0.03, 0.05 };
+
+  //Make it with fewer knots -- set should resize
+  numberCountsDoubleLogNormal model1(nknots-1, nsigmas, noffsets+1);
+  ASSERT_EQ(nknots-1, model1.getNKnots()) << 
+    "Unexpected number of knots after int, int, int constructor";
+  ASSERT_EQ(nsigmas, model1.getNSigmas()) << 
+    "Unexpected number of sigma knots after int, int, int constructor";
+  ASSERT_EQ(noffsets+1, model1.getNOffsets()) << 
+    "Unexpected number of offset knots after int, int, int constructor";
+  model1.setKnotPositions(nknots, knotpos);
+  model1.setSigmaPositions(nsigmas, sigmapos);
+  model1.setOffsetPositions(noffsets, offsetpos);
+  ASSERT_EQ(nknots, model1.getNKnots()) << "setKnotPositions failed to resize";
+  ASSERT_EQ(nsigmas, model1.getNSigmas()) << 
+    "setSigmaPositions failed to resize";
+  ASSERT_EQ(noffsets, model1.getNOffsets()) << 
+    "setOffsetPositions failed to resize";
+  for (unsigned int i = 0; i < nknots; ++i)
+    EXPECT_FLOAT_EQ(knotpos[i], model1.getKnotPosition(i)) <<
+      "After setKnotPositions, didn't find expected knot position at " << i;
+  for (unsigned int i = 0; i < nsigmas; ++i)
+    EXPECT_FLOAT_EQ(sigmapos[i], model1.getSigmaPosition(i)) <<
+      "After setSigmaPositions, didn't find expected knot position at " << i;
+  for (unsigned int i = 0; i < noffsets; ++i)
+    EXPECT_FLOAT_EQ(offsetpos[i], model1.getOffsetPosition(i)) <<
+      "After setOffsetPositions, didn't find expected offset position at " << i;
+  
+  //Reject negative knot positions
+  const double knotpos2[nknots] = { -0.002, 0.005, 0.010, 0.020, 0.040 };
+  EXPECT_THROW(model1.setKnotPositions(nknots, knotpos2), affineExcept) <<
+    "Trying to set a negative knot position should throw an exception";
+  EXPECT_THROW(model1.setSigmaPositions(nknots, knotpos2), affineExcept) <<
+    "Trying to set a negative sigma position should throw an exception";
+  EXPECT_THROW(model1.setOffsetPositions(nknots, knotpos2), affineExcept) <<
+    "Trying to set a negative offset position should throw an exception";
+}
+
+//Test set params
+TEST(model2DTest, SetGetParams) {
+  const unsigned int nknots = 5;
+  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
+  const unsigned int nsigmas = 2;
+  const double sigmapos[nsigmas] = { 0.002, 0.020 };
+  const unsigned int noffsets = 1;
+  const double offsetpos[noffsets] = { 0.03 };
+  const unsigned int ntot = nknots + nsigmas + noffsets;
+  const double pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, 0.2, -0.03 };
+
+  numberCountsDoubleLogNormal model(nknots, knotpos, nsigmas, sigmapos,
+				    noffsets, offsetpos);
+  ASSERT_EQ(nknots, model.getNKnots()) << "Model has wrong number of knots";
+  ASSERT_EQ(nsigmas, model.getNSigmas()) << "Model has wrong number of sigmas";
+  ASSERT_EQ(noffsets, model.getNOffsets()) << 
+    "Model has wrong number of offsets";
+  EXPECT_FALSE(model.isValid()) << "Model should not be valid";
+
+  paramSet p(ntot, pvals);
+  ASSERT_EQ(ntot, p.getNParams()) << "paramSet has wrong number of values";
+
+  model.setParams(p);
+  ASSERT_EQ(nknots, model.getNKnots()) <<
+    "Model has wrong number of knots after setParams";
+  EXPECT_TRUE(model.isValid()) << "Model should be valid after setParams";
+
+  paramSet p2(1);
+  EXPECT_THROW(model.getParams(p2), affineExcept) <<
+    "Should throw exception if wrong number of params in getParams paramSet";
+  p2.setNParams(ntot);
+  model.getParams(p2);
+  ASSERT_EQ(ntot, p2.getNParams()) << 
+    "Output params had wrong size after getParams";
+  for (unsigned int i = 0; i < ntot; ++i)
+    EXPECT_FLOAT_EQ(p[i], p2[i]) << 
+      "Recovered wrong parameter value after set/get params at index: " << i;
+}
+
+//For the following tests (NumberCounts, Integration, getR)
+// it's hard to say what the 'correct' value is because the models
+// are complicated.  But we can still record values from the time
+// they were written as a check against things changing unexpectedly later.
+TEST(model2DTest, NumberCounts) {
+  const unsigned int nknots = 5;
+  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
+  const unsigned int nsigmas = 2;
+  const double sigmapos[nsigmas] = { 0.002, 0.020 };
+  const unsigned int noffsets = 1;
+  const double offsetpos[noffsets] = { 0.03 };
+  const unsigned int ntot = nknots + nsigmas + noffsets;
+  const double pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, 0.2, -0.03 };
+
+  numberCountsDoubleLogNormal model(nknots, knotpos, nsigmas, sigmapos,
+				    noffsets, offsetpos);
+  paramSet p(ntot, pvals);
+  model.setParams(p);
+  ASSERT_TRUE(model.isValid()) << "Model should be valid";
+
+  const unsigned int ntest = 4;
+  const double fluxdens1[ntest] = {0.003, 0.011, 0.011, 0.03};
+  const double fluxdens2[ntest] = {0.003, 0.010, 0.015, 0.028};
+  const double numexp[ntest] = { 2.09837e+10, 1.67999e+06, 94125.8,
+				 29739.2 };
+
+  double rval, reldiff;
+  for (unsigned int i = 0; i < ntest; ++i) {
+    rval = model.getNumberCounts(fluxdens1[i], fluxdens2[i]);
+    reldiff = fabs(rval - numexp[i])/numexp[i];
+    EXPECT_NEAR(0.0, reldiff, 1e-3) <<
+      "Number counts not as expected -- wanted: " << numexp[i] <<
+      " got: " << rval << " for " << fluxdens1[i] << " " << fluxdens2[i];
+  }
+}
+
+TEST(model2DTest, Integration) {
+  const unsigned int nknots = 5;
+  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
+  const unsigned int nsigmas = 2;
+  const double sigmapos[nsigmas] = { 0.002, 0.020 };
+  const unsigned int noffsets = 1;
+  const double offsetpos[noffsets] = { 0.03 };
+  const unsigned int ntot = nknots + nsigmas + noffsets;
+  const double pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, 0.2, -0.03 };
+
+  numberCountsDoubleLogNormal model(nknots, knotpos, nsigmas, sigmapos,
+				    noffsets, offsetpos);
+  paramSet p(ntot, pvals);
+  model.setParams(p);
+  ASSERT_TRUE(model.isValid()) << "Model should be valid";
+
+  EXPECT_NEAR(57266.8, model.getNS(), 10.0) <<
+    "Total number of sources not as expected";
+  EXPECT_NEAR(152.262, model.getMeanFluxPerArea(0), 0.1) <<
+    "Mean flux in band 1 not as expected";
+  EXPECT_NEAR(148.585, model.getMeanFluxPerArea(1), 0.1) <<
+    "Mean flux in band 2 not as expected";
+}
+
+TEST(model2DTest, getR) {
+  const unsigned int nknots = 5;
+  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
+  const unsigned int nsigmas = 2;
+  const double sigmapos[nsigmas] = { 0.002, 0.020 };
+  const unsigned int noffsets = 1;
+  const double offsetpos[noffsets] = { 0.03 };
+  const unsigned int ntot = nknots + nsigmas + noffsets;
+  const double pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, 0.2, -0.03 };
+
+  numberCountsDoubleLogNormal model(nknots, knotpos, nsigmas, sigmapos,
+				    noffsets, offsetpos);
+  paramSet p(ntot, pvals);
+  model.setParams(p);
+  ASSERT_TRUE(model.isValid()) << "Model should be valid";
+
+  doublebeam bm("testdata/band1_beam.fits",
+		"testdata/band2_beam.fits");
+
+  const unsigned int ntest = 4;
+  const double fluxdens1[ntest] = {0.003, 0.011, 0.011, 0.03};
+  const double fluxdens2[ntest] = {0.003, 0.010, 0.015, 0.028};
+  const double rexp[ntest] = { 97571.4, 10.9065, 9.95045, 0.102312 };
+
+  double rval, reldiff;
+  for (unsigned int i = 0; i < ntest; ++i) {
+    rval = model.getR(fluxdens1[i], fluxdens2[i], bm);
+    reldiff = fabs(rval - rexp[i])/rexp[i];
+    EXPECT_NEAR(0.0, reldiff, 1e-3) <<
+      "Rnot as expected -- wanted: " << rexp[i] <<
+      " got: " << rval << " for " << fluxdens1[i] << " " << fluxdens2[i];
+  }
+}
+
 
 ////////////////////////////////////////////
 

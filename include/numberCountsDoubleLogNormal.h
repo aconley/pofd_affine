@@ -159,6 +159,12 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   void setOffsetPositions(const std::vector<double>&);
   /*! \brief Sets knot positions for band 2 offset model, c array version */
   void setOffsetPositions(unsigned int, const double* const);
+
+  //Get individual positions
+  double getKnotPosition(unsigned int i) const; //!< Get knot position (unchecked)
+  double getSigmaPosition(unsigned int i) const; //!< Get knot position (unchecked)
+  double getOffsetPosition(unsigned int i) const; //!< Get knot position (unchecked)
+
   /*! \brief Gets total number of parameters */
   unsigned int getNParams() const { return nknots+nsigmaknots+noffsetknots; }
   /*! \brief Gets positions of all knots */
