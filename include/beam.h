@@ -29,8 +29,8 @@ class beam {
   bool hasneg; //!< Has negative pixels
   bool hasposweights; //!< Has weights for positive pixels (histogrammed)
   bool hasnegweights; //!< Has weights for negative pixels (histogrammed)
-  double *posweights; //!< Positive weights
-  double *negweights; //!< Negative weights
+  double *posweights; //!< Positive weights; double to avoid casting
+  double *negweights; //!< Negative weights; double to avoid casting
   double *pospixarr; //!< Holds positive pixel values (sorted)
   double *negpixarr; //!< Holds absolute value of negative pixel values (sorted)
   double *posinvpixarr; //!< Inverse positive pixels

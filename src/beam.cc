@@ -306,14 +306,14 @@ bool beam::readFile(const std::string& filename,bool histogram,
       minval = log(pospixarr[0]);
       maxval = log(pospixarr[npos-1]);
       unsigned int nbins = 
-	static_cast<unsigned int>( (maxval-minval)/histogramlogstep )+2;
+	static_cast<unsigned int>((maxval - minval) / histogramlogstep) + 2;
       unsigned int *ninbin = new unsigned int[nbins];
       double *meaninbin = new double[nbins];
       for (unsigned int i = 0; i < nbins; ++i) ninbin[i]=0;
       for (unsigned int i = 0; i < nbins; ++i) meaninbin[i]=0.0;
       for (unsigned int i = 0; i < npos; ++i) {
 	val = pospixarr[i];
-	idx = static_cast<unsigned int>( (log(val)-minval)/histogramlogstep );
+	idx = static_cast<unsigned int>((log(val) - minval) / histogramlogstep);
 	ninbin[idx] += 1;
 	meaninbin[idx] += val;
       }
@@ -328,7 +328,7 @@ bool beam::readFile(const std::string& filename,bool histogram,
 	if (ninbin[i] > 0) {
 	  val = static_cast<double>(ninbin[i]);
 	  posweights[ctr] = val;
-	  newpixarr[ctr] = meaninbin[i]/val;
+	  newpixarr[ctr] = meaninbin[i] / val;
 	  ++ctr;
 	}
       delete[] pospixarr;
@@ -344,14 +344,14 @@ bool beam::readFile(const std::string& filename,bool histogram,
       minval = log(negpixarr[0]);
       maxval = log(negpixarr[nneg-1]);
       unsigned int nbins = 
-	static_cast<unsigned int>( (maxval-minval)/histogramlogstep )+2;
+	static_cast<unsigned int>((maxval - minval) / histogramlogstep) + 2;
       unsigned int *ninbin = new unsigned int[nbins];
       double *meaninbin = new double[nbins];
       for (unsigned int i = 0; i < nbins; ++i) ninbin[i]=0;
       for (unsigned int i = 0; i < nbins; ++i) meaninbin[i]=0.0;
       for (unsigned int i = 0; i < nneg; ++i) {
 	val = negpixarr[i];
-	idx = static_cast<unsigned int>( (log(val)-minval)/histogramlogstep );
+	idx = static_cast<unsigned int>((log(val) - minval) / histogramlogstep);
 	ninbin[idx] += 1;
 	meaninbin[idx] += val;
       }
@@ -365,7 +365,7 @@ bool beam::readFile(const std::string& filename,bool histogram,
 	if (ninbin[i] > 0) {
 	  val = static_cast<double>(ninbin[i]);
 	  negweights[ctr] = val;
-	  newpixarr[ctr] = meaninbin[i]/val;
+	  newpixarr[ctr] = meaninbin[i] / val;
 	  ++ctr;
 	}
       delete[] negpixarr;

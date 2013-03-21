@@ -40,6 +40,41 @@ TEST(beam1DTest, Read) {
     "Beam had unexpected maximum pixel value";
 }
 
+TEST(beam1DTest, Histogram) {
+  beam bm("testdata/band1_beam.fits", true, 0.2);
+  
+  ASSERT_TRUE(bm.hasPosWeights()) << "Beam should have positive weights";
+  EXPECT_TRUE(bm.hasPos()) << "Beam should have positive pixels";
+  EXPECT_EQ(76U, bm.getNPos()) << "Beam had wrong number of positive pixels";
+  EXPECT_FALSE(bm.hasNeg()) << "Beam should have no negative pixels";
+  EXPECT_EQ(0U, bm.getNNeg()) << "Beam had wrong number of negative pixels";
+  EXPECT_NEAR(4.0, bm.getPixSize(), 0.0001) << "Wrong pixel size";
+  EXPECT_NEAR(2.8327253e-5, bm.getEffectiveArea(), 1e-8) <<
+    "Beam had wrong effective area";
+  EXPECT_NEAR(2.8327253e-5, bm.getEffectiveAreaPos(), 1e-8) <<
+    "Beam had wrong positive effective area";
+  EXPECT_FLOAT_EQ(0.0, bm.getEffectiveAreaNeg()) <<
+    "Beam should have zero negative area";
+  EXPECT_NEAR(22.945073, bm.getEffectiveAreaPix(), 1e-4) << 
+    "Didn't get expected beam area in pixels";
+  EXPECT_NEAR(1.3852891e-5, bm.getEffectiveAreaSq(), 1e-8) <<
+    "Beam^2 had wrong effective area";
+  EXPECT_NEAR(0.97798554, bm.getMaxPos(), 1e-5) <<
+    "Beam had unexpected maximum pixel value";
+
+  //Check histogram
+  const double *wts = bm.getPosWeights();
+  double exp_posweights[5] = {4.0, 8.0, 8.0, 4.0, 8.0};
+  for (unsigned int i = 0; i < 5; ++i)
+    EXPECT_FLOAT_EQ(exp_posweights[i], wts[i]) << "Didn't get expected weight";
+  const double* iparr = bm.getPosInvPixArr();
+  const double exp_inv[5] = {1.99712, 1.74686, 1.33647, 1.169, 1.02251};
+  for (unsigned int i = 71; i < 76; ++i)
+    EXPECT_NEAR(exp_inv[i-71], iparr[i], 0.001) << 
+      "Got unexpected binned inverse pixel value in index: " << i;
+
+}
+
 //////////////////////////////////////////////////
 // doublebeam
 TEST(beam2DTest, Read) {
@@ -577,7 +612,8 @@ TEST(model2DTest, getR) {
   const double fluxdens1[ntest] = {0.003, 0.011, 0.011, 0.03};
   const double fluxdens2[ntest] = {0.003, 0.010, 0.015, 0.028};
   const double rexp[ntest] = { 97571.4, 10.9065, 9.95045, 0.102312 };
-
+  
+  //Scalar version
   double rval, reldiff;
   for (unsigned int i = 0; i < ntest; ++i) {
     rval = model.getR(fluxdens1[i], fluxdens2[i], bm);
@@ -586,6 +622,28 @@ TEST(model2DTest, getR) {
       "Rnot as expected -- wanted: " << rexp[i] <<
       " got: " << rval << " for " << fluxdens1[i] << " " << fluxdens2[i];
   }
+
+  const unsigned int ntest_1 = 3;
+  const unsigned int ntest_2 = 2;
+  const double fluxdens1_2d[ntest_1] = {0.003, 0.011, 0.02};
+  const double fluxdens2_2d[ntest_2] = {0.003, 0.015};
+  
+  const double rexp_2d[ntest_1 * ntest_2] = 
+    {97571.4, 0.277285, 8.66458e-13,
+     9.95045, 1.30238e-19, 0.46487};
+  double rval_2d[ntest_1 * ntest_2];
+  model.getR(ntest_1, fluxdens1_2d, ntest_2, fluxdens2_2d,
+	     bm, rval_2d);
+  unsigned int idx;
+  for (unsigned int i = 0; i < ntest_1; ++i)
+    for (unsigned int j = 0; j < ntest_2; ++j) {
+      idx = i * ntest_2 + j;
+      reldiff = fabs(rval_2d[idx] - rexp_2d[idx]) / rexp_2d[idx];
+      EXPECT_NEAR(0.0, reldiff, 1e-3) <<
+	"Rnot as expected -- wanted: " << rexp_2d[idx] <<
+	" got: " << rval_2d[idx] << " for " << fluxdens1[i] << " " << 
+	fluxdens2[j];
+    }
 }
 
 

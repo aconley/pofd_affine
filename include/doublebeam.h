@@ -34,7 +34,7 @@ class doublebeam {
   static const unsigned int histothresh; //!< Don't bother histogramming for this many or fewer
 
   bool has_weights[4]; //!< Using histogrammed weights? (pp,pn,np,nn)
-  double *weights[4]; //!< Histogram weights, if has weights (pp,pn,np,nn)
+  double *weights[4]; //!< Histogram weights, if has weights (pp,pn,np,nn); double to avoid casting
   double *pixarr1[4]; //!< Array of pixels, beam 1 (pp,pn,np,nn)
   double *pixarr2[4]; //!< Array of pixels, beam 2 (pp,pn,np,nn)
   double *ipixarr1[4]; //!< Array of inverse pixels, beam 1 (pp,pn,np,nn)

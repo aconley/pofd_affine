@@ -825,7 +825,7 @@ getNumberCountsInner(double f1, double f2) const {
     return 0.0; //Out of range
 
   //This is the n_1 bit
-  double cnts = exp2( gsl_spline_eval( splinelog, log2(f1), acc ) ); 
+  double cnts = exp2(gsl_spline_eval(splinelog, log2(f1), acc)); 
 
   //Counts in band 2, Log Normal in f2/f1, multiply them onto n_1
   double if1 = 1.0/f1;
@@ -1008,7 +1008,6 @@ getMeanFluxPerArea(unsigned int band) const {
 double numberCountsDoubleLogNormal::getRInternal(double f1,double f2,
 						 const doublebeam& bm, 
 						 unsigned int sgn) const {
-
   double ieta1, ieta2, retval;
   const double* iparr1;
   const double* iparr2;
@@ -1021,13 +1020,14 @@ double numberCountsDoubleLogNormal::getRInternal(double f1,double f2,
     for (unsigned int i = 0; i < npsf; ++i) {
       ieta1 = iparr1[i];
       ieta2 = iparr2[i];
-      retval += warr[i]*ieta1*ieta2*getNumberCountsInner(f1*ieta1,f2*ieta2);
+      retval += warr[i] * ieta1 * ieta2 * 
+	getNumberCountsInner(f1 * ieta1, f2 * ieta2);
     } 
   } else {
     for (unsigned int i = 0; i < npsf; ++i) {
       ieta1 = iparr1[i];
       ieta2 = iparr2[i];
-      retval += ieta1*ieta2*getNumberCountsInner(f1*ieta1,f2*ieta2);
+      retval += ieta1 * ieta2 * getNumberCountsInner(f1 * ieta1, f2 * ieta2);
     } 
   }
   return retval;
@@ -1051,13 +1051,14 @@ getRInternal(unsigned int n1, const double* const f1,
 	     unsigned int n2, const double* const f2,
 	     const doublebeam& bm, unsigned int sgn,
 	     double* R) const {
+
   double minknot = knots[0];
   double maxknot = knots[nknots-1];
 
   double maxf1 = maxknot / bm.getMax1(sgn); //!< Max non-zero flux, band 1
 
   unsigned int npsf = bm.getNPix(sgn);
-  setRWorkSize( npsf );
+  setRWorkSize(npsf);
 
   const double normfac = 1.0/sqrt(2*M_PI);
   double *rowptr;
@@ -1079,19 +1080,19 @@ getRInternal(unsigned int n1, const double* const f1,
 	//Precompute f1 related values
 	for (unsigned int j = 0; j < npsf; ++j) {
 	  ieta1 = iparr1[j];
-	  f1prod = f1val*ieta1;
+	  f1prod = f1val * ieta1;
 	  if (f1prod >= minknot && f1prod < maxknot) {
 	    RWork1[j] = log(f1prod) + getOffsetInner(f1prod);
 	    isigma = 1.0 / getSigmaInner( f1prod );
-	    RWork2[j] = warr[j]*normfac*ieta1*isigma*
-	      exp2( gsl_spline_eval( splinelog, log2(f1prod), acc ) );
 	    RWork3[j] = -0.5*isigma*isigma;
+	    RWork2[j] = warr[j]*normfac*ieta1*isigma*
+	      exp2(gsl_spline_eval(splinelog, log2(f1prod), acc));
 	    RWorkValid[j] = true;
 	  } else RWorkValid[j] = false;
 	}
 	//Now loop over flux 2 values
 	for (unsigned int j = 0; j < n2; ++j) {
-	  f2val  = f2[j];
+	  f2val = f2[j];
 	  if2 = 1.0/f2val;
 	  workval = 0;
 	  if (f2val > 0)
@@ -1100,7 +1101,7 @@ getRInternal(unsigned int n1, const double* const f1,
 		f2prod = f2val*iparr2[k];
 		tfac = log(f2prod)-RWork1[k];
 		workval += RWork2[k] * if2 *
-		  exp( tfac * tfac * RWork3[k] );
+		  exp(tfac * tfac * RWork3[k]);
 	      }
 	  rowptr[j] += workval;
 	}
@@ -1115,17 +1116,20 @@ getRInternal(unsigned int n1, const double* const f1,
       } else {
 	for (unsigned int j = 0; j < npsf; ++j) {
 	  ieta1 = iparr1[j];
-	  f1prod = f1val*ieta1;
-	  RWork1[j] = log(f1prod) + getOffsetInner(f1prod);
-	  isigma = 1.0/getSigmaInner( f1prod );
-	  RWork2[j] = normfac*ieta1*isigma*
-	    exp2( gsl_spline_eval( splinelog, log2(f1prod), acc ) );
-	  RWork3[j] = -0.5*isigma*isigma;
+	  f1prod = f1val * ieta1;
+	  if (f1prod >= minknot && f1prod < maxknot) {
+	    RWork1[j] = log(f1prod) + getOffsetInner(f1prod);
+	    isigma = 1.0/getSigmaInner(f1prod);
+	    RWork3[j] = -0.5*isigma*isigma;
+	    RWork2[j] = normfac * ieta1 * isigma *
+	      exp2(gsl_spline_eval(splinelog, log2(f1prod), acc));
+	    RWorkValid[j] = true;
+	  } else RWorkValid[j] = false;
 	}
 	//Now loop over flux 2 values
 	for (unsigned int j = 0; j < n2; ++j) {
-	  f2val  = f2[j];
-	  if2    = 1.0/f2val;
+	  f2val = f2[j];
+	  if2 = 1.0/f2val;
 	  workval = 0;
 	  if (f2val > 0)
 	    for (unsigned int k = 0; k < npsf; ++k)
@@ -1159,7 +1163,7 @@ double numberCountsDoubleLogNormal::getR(double f1, double f2,
   if (!isValid())
     return std::numeric_limits<double>::quiet_NaN();
 
-  if ( (f1 <= 0.0) || (f2 <= 0.0) ) return 0.0;
+  if ((f1 <= 0.0) || (f2 <= 0.0)) return 0.0;
   if (f1 > knots[nknots-1]) {
     //Since max(beam) = 1
     return 0.0;
@@ -1169,29 +1173,29 @@ double numberCountsDoubleLogNormal::getR(double f1, double f2,
 
   switch (bmtype) {
   case BEAMPOS :
-    if ( ! bm.hasSign(0) )
+    if (! bm.hasSign(0))
       return std::numeric_limits<double>::quiet_NaN();
     Rval = getRInternal(f1,f2,bm,0);
     break;
   case BEAMPOSNEG :
-    if ( ! bm.hasSign(1) )
+    if (! bm.hasSign(1))
       return std::numeric_limits<double>::quiet_NaN();
     Rval = getRInternal(f1,f2,bm,1);
     break;
   case BEAMNEGPOS :
-    if ( ! bm.hasSign(2) )
+    if (! bm.hasSign(2))
       return std::numeric_limits<double>::quiet_NaN();
     Rval = getRInternal(f1,f2,bm,2);
     break;
   case BEAMNEG :
-    if ( ! bm.hasSign(3) )
+    if (! bm.hasSign(3))
       return std::numeric_limits<double>::quiet_NaN();
     Rval = getRInternal(f1,f2,bm,3);
     break;
   case BEAMALL :
     Rval = 0.0;
     for (unsigned int i = 0; i < 4; ++i) {
-      if ( bm.hasSign(i) )
+      if (bm.hasSign(i))
 	Rval += getRInternal(f1,f2,bm,i);
     }
     break;
@@ -1216,7 +1220,7 @@ double numberCountsDoubleLogNormal::getR(double f1, double f2,
   \param[in]  n2 Number of fluxes along dimension 2
   \param[in]  f2 Fluxes along dimension 2
   \param[in]  bm Holds beam information
-  \param[out] vals Row major array (n1xn2) giving values of R, including
+  \param[out] vals Row major array (n1 x n2) giving values of R, including
                     the beam pixel size prefactor
   \param[in]  bmtype What type of R value to get (pos-pos, pos-neg, neg-pos,
                    neg-neg or the sum of all types)
@@ -1230,7 +1234,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 				       const rtype bmtype) 
   const {
 
-  if ( (!isValid()) || (n1 == 0) || (n2 == 0)) {
+  if ((!isValid()) || (n1 == 0) || (n2 == 0)) {
     for (unsigned int i = 0; i < n1*n2; ++i)
 	vals[i] = std::numeric_limits<double>::quiet_NaN();
     return;
@@ -1243,7 +1247,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
   //Compute R
   switch (bmtype) {
   case BEAMPOS :
-    if ( ! bm.hasSign(0) ) {
+    if (! bm.hasSign(0)) {
       for (unsigned int i = 0; i < n1*n2; ++i)
 	vals[i] = std::numeric_limits<double>::quiet_NaN();
       return;
@@ -1251,7 +1255,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
     getRInternal(n1,f1,n2,f2,bm,0,vals);
     break;
   case BEAMPOSNEG :
-    if ( ! bm.hasSign(1) ) {
+    if (! bm.hasSign(1)) {
       for (unsigned int i = 0; i < n1*n2; ++i)
 	vals[i] = std::numeric_limits<double>::quiet_NaN();
       return;
@@ -1259,7 +1263,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
     getRInternal(n1,f1,n2,f2,bm,1,vals);
     break;
   case BEAMNEGPOS :
-   if ( ! bm.hasSign(2) ) {
+   if (! bm.hasSign(2)) {
       for (unsigned int i = 0; i < n1*n2; ++i)
 	vals[i] = std::numeric_limits<double>::quiet_NaN();
       return;
@@ -1267,7 +1271,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
     getRInternal(n1,f1,n2,f2,bm,2,vals);
     break;
   case BEAMNEG :
-   if ( ! bm.hasSign(2) ) {
+   if (! bm.hasSign(2)) {
       for (unsigned int i = 0; i < n1*n2; ++i)
 	vals[i] = std::numeric_limits<double>::quiet_NaN();
       return;
