@@ -45,5 +45,5 @@ double ran::gauss() {
     y = fabs(v1) + 0.386595;
     q = x * x + y * (0.19600 * y - 0.25472 * x);
   } while (q > 0.27597 && (q > 0.27846 || v1 * v1 > -4. * log(u1) * u1 * u1));
-  return v1/u1;
+  return v1 / u1;
 }

@@ -43,7 +43,7 @@ struct affineStepChunk {
   bool getStep(unsigned int, unsigned int, paramSet&, double&) const;
 
   /*! \brief get most resent step for given walker */
-  bool getLastStep(unsigned int, paramSet&, double& ) const;
+  bool getLastStep(unsigned int, paramSet&, double&) const;
   
   /*! \brief Get pointer to particular set of parameters */
   double* getParamPointer(unsigned int, unsigned int); 
@@ -58,10 +58,10 @@ struct affineStepChunk {
   double getLogLike(unsigned int i1, unsigned int i2) const {
     return logLike[i1*niters+i2]; }
 
-  void writeToStream( std::ostream& os ) const; //!< Write to stream
+  void writeToStream(std::ostream& os) const; //!< Write to stream
 };
 
-std::ostream& operator<<( std::ostream& os, const affineStepChunk& );
+std::ostream& operator<<(std::ostream& os, const affineStepChunk&);
 
 /*!
   \brief Holds chains
@@ -124,7 +124,7 @@ class affineChainSet {
 		       double&, paramSet&) const throw (affineExcept);
 
   /*! \brief Returns the most recent step for the specified walker */
-  void getLastStep( unsigned int, paramSet&, double& ) const
+  void getLastStep(unsigned int, paramSet&, double&) const
     throw (affineExcept);
 
   /*! \brief Get a specified step */
@@ -146,7 +146,7 @@ class affineChainSet {
     const throw(affineExcept); //!< Autocorrelation length for all params
   
   affineChainSet& operator=(const affineChainSet&); //!< Replace this chain set with a copy of another
-  affineChainSet& operator+=( const affineChainSet& ) throw (affineExcept);  //!<Merge another chain set onto this
+  affineChainSet& operator+=(const affineChainSet&) throw (affineExcept);  //!<Merge another chain set onto this
 
   double getParamMean(unsigned int) const throw (affineExcept); //!< Get mean value of param across all walkers
   /* \brief Get statistics on a given parameter across all walkers */
@@ -155,7 +155,7 @@ class affineChainSet {
     throw (affineExcept); 
   void makeCovMatrix(double** covmat) const; //!< Get covariance of all params
 
-  void writeToFile( const std::string&) const throw (affineExcept); //!< Write to file
+  void writeToFile(const std::string&) const throw (affineExcept); //!< Write to file
 
 };
 

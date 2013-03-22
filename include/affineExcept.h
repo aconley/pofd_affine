@@ -21,22 +21,22 @@ class affineExcept {
   std::string errclass;          //!< Class throwing the exception
   std::string errmethod;         //!< Method throwing the exception
   std::string errstr;            //!< Error string (user consumption)
-  int errnum;               //!< Error code (class or method specific)
+  int errnum;                    //!< Error code (class or method specific)
 
   // Constructors
 
   affineExcept(); //!< Basic constructor
   explicit affineExcept(const std::string errstr); //!< Just with errstring
-  explicit affineExcept(const std::string errstr,int err); //!< Errstring and number
-  explicit affineExcept(const std::string errclass,const std::string errmethod,
+  explicit affineExcept(const std::string errstr, int err); //!< Errstring and number
+  explicit affineExcept(const std::string errclass, const std::string errmethod,
 			const std::string errstr); //!< Class, method, error string
-  explicit affineExcept(const std::string errclass,const std::string errmethod,
-			const std::string errstr,int err); //!< Class, method, error string, and number
+  explicit affineExcept(const std::string errclass, const std::string errmethod,
+			const std::string errstr, int err); //!< Class, method, error string, and number
 
   std::string what() const; //!< Explain error
 
 };
 
-std::ostream& operator<<(std::ostream& os,const affineExcept& ex);//!< Output operator for affineExcept
+std::ostream& operator<<(std::ostream& os, const affineExcept& ex);//!< Output operator for affineExcept
 
 #endif

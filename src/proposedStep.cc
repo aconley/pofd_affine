@@ -3,7 +3,6 @@
 #include "../include/global_settings.h"
 #include "../include/proposedStep.h"
 
-
 proposedStep::proposedStep(unsigned int npar) : oldStep(npar), newStep(npar) {
   update_idx = 0;
   oldLogLike = std::numeric_limits<double>::quiet_NaN();
