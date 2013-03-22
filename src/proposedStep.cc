@@ -3,7 +3,6 @@
 #include "../include/global_settings.h"
 #include "../include/proposedStep.h"
 
-
 proposedStep::proposedStep(unsigned int npar) : oldStep(npar), newStep(npar) {
   update_idx = 0;
   oldLogLike = std::numeric_limits<double>::quiet_NaN();
@@ -11,9 +10,9 @@ proposedStep::proposedStep(unsigned int npar) : oldStep(npar), newStep(npar) {
 }
 
 proposedStep::proposedStep(const proposedStep& other) :
-  update_idx( other.update_idx ),
-  oldStep( other.oldStep ), newStep( other.newStep ),
-  oldLogLike( other.oldLogLike ), newLogLike( other.newLogLike ) { }
+  update_idx(other.update_idx),
+  oldStep(other.oldStep), newStep(other.newStep),
+  oldLogLike(other.oldLogLike), newLogLike(other.newLogLike) { }
 
 proposedStep::~proposedStep() {}
 
@@ -61,7 +60,7 @@ void proposedStep::recieveCopy(MPI::Comm& comm, int src) {
   comm.Recv(&newLogLike,1,MPI::DOUBLE,src,mcmc_affine::PSTSENDNLIKE);
 }
 
-std::ostream& operator<<( std::ostream& os, const proposedStep& p) {
+std::ostream& operator<<(std::ostream& os, const proposedStep& p) {
   os << "Update idx: " << p.update_idx << std::endl;
   os << "Old step: " << p.oldStep << " logLike: " << p.oldLogLike << std::endl;
   os << "New step: " << p.newStep << " logLike: " << p.newLogLike;

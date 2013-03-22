@@ -14,8 +14,8 @@ struct proposedStep {
   unsigned int update_idx; //!< Which one to update
   paramSet oldStep; //!< Previous step
   paramSet newStep; //!< New step to try
-  double   oldLogLike; //!< Log Likelihood of previous step
-  double   newLogLike; //!< Log Likelihood of new step
+  double oldLogLike; //!< Log Likelihood of previous step
+  double newLogLike; //!< Log Likelihood of new step
  
   proposedStep(unsigned int); //!< Constructor with number of parameters
   proposedStep(const proposedStep&); //!< Copy constructor

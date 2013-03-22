@@ -138,7 +138,7 @@ void paramSet::readFromStream(std::istream& is) {
     is >> paramvals[i];
 }
 
-bool paramSet::writeToStream( std::ostream& os ) const {
+bool paramSet::writeToStream(std::ostream& os) const {
   for (unsigned int i = 0; i < nparams; ++i)
     os << "   " << paramvals[i];
   return true;
@@ -157,12 +157,12 @@ void paramSet::recieveCopy(MPI::Comm& comm, int src) {
 }
 
 
-std::istream& operator>>( std::istream& is, paramSet& p) {
+std::istream& operator>>(std::istream& is, paramSet& p) {
   p.readFromStream(is);
   return is;
 }
 
-std::ostream& operator<<( std::ostream& os, const paramSet& p) {
+std::ostream& operator<<(std::ostream& os, const paramSet& p) {
   p.writeToStream(os);
   return os;
 }

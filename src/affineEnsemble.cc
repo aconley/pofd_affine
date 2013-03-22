@@ -23,13 +23,13 @@
                             before checking burn-in again
   \param[in] SCALEFAC Scale factor of Z distribution			    
  */
-affineEnsemble::affineEnsemble( unsigned int NWALKERS, unsigned int NPARAMS,
-				unsigned int NSAMPLES, unsigned int INIT_STEPS,
-				unsigned int MIN_BURN,
-				double BURN_MULTIPLE, double SCALEFAC ) :
+affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
+			       unsigned int NSAMPLES, unsigned int INIT_STEPS,
+			       unsigned int MIN_BURN,
+			       double BURN_MULTIPLE, double SCALEFAC) :
   nwalkers(NWALKERS), nparams(NPARAMS), has_any_names(false), 
   scalefac(SCALEFAC), init_steps(INIT_STEPS), min_burn(MIN_BURN), 
-  burn_multiple( BURN_MULTIPLE ), pstep(NPARAMS), chains(NWALKERS,NPARAMS) {
+  burn_multiple(BURN_MULTIPLE), pstep(NPARAMS), chains(NWALKERS,NPARAMS) {
   
   has_name.resize(nparams);
   has_name.assign(nparams, false);
@@ -38,8 +38,8 @@ affineEnsemble::affineEnsemble( unsigned int NWALKERS, unsigned int NPARAMS,
   nignore = 0;
 
   //Set number of steps per walker, which won't quite match nsamples
-  nsteps = static_cast<unsigned int>( NSAMPLES/static_cast<double>(nwalkers)
-				      + 0.999999999999 );
+  nsteps = static_cast<unsigned int>(NSAMPLES/static_cast<double>(nwalkers)
+				     + 0.999999999999);
 
 
   acor_set = false;
@@ -53,7 +53,7 @@ affineEnsemble::affineEnsemble( unsigned int NWALKERS, unsigned int NPARAMS,
   if (rank == 0) {
     //Reserve room for queues
     procqueue.setCapacity(nproc);
-    stepqueue.setCapacity(nwalkers/2+1);  //Only store one half at a time
+    stepqueue.setCapacity(nwalkers / 2 + 1);  //Only store one half at a time
 
     //Master node; slaves don't need this
     naccept.resize(nwalkers);
@@ -96,8 +96,8 @@ double affineEnsemble::generateZ() const {
   //  G^{-1}(x) = [(a-1)*x+1]^2/a
   //a is scalefac in the nomenclature of this class
   double val;
-  val = (scalefac-1.0)*rangen.doub()+1.0;
-  return val*val/scalefac;
+  val = (scalefac - 1.0) * rangen.doub() + 1.0;
+  return val * val / scalefac;
 }
 
 /*!
@@ -114,8 +114,8 @@ void affineEnsemble::setNWalkers(unsigned int n) {
   chains.setNWalkers(n);
   
   unsigned int nsamples = nsteps * nwalkers;
-  nsteps = static_cast<unsigned int>( nsamples/static_cast<double>(n)
-				      + 0.999999999999 );
+  nsteps = static_cast<unsigned int>(nsamples/static_cast<double>(n)
+				     + 0.999999999999);
 
   if (rank == 0) {
     stepqueue.setCapacity(n/2+1);  //Only store one half at a time
@@ -158,7 +158,7 @@ double affineEnsemble::getMaxLogLike() const {
   return chains.getMaxLogLike();
 }
 
-void affineEnsemble::getMaxLogLikeParam( double& val, paramSet& p ) const {
+void affineEnsemble::getMaxLogLikeParam(double& val, paramSet& p) const {
   if (rank != 0) {
     val = std::numeric_limits<double>::quiet_NaN();
     p.setNParams(nparams);
@@ -171,7 +171,7 @@ void affineEnsemble::getMaxLogLikeParam( double& val, paramSet& p ) const {
 
 void affineEnsemble::attentionAllParams() {
   if (rank != 0) return;
-  ignore_params.assign( ignore_params.size(), false );
+  ignore_params.assign(ignore_params.size(), false);
   nignore = 0;
 }
 
@@ -241,8 +241,8 @@ bool affineEnsemble::getAcor(std::vector<double>& retval) const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble","getAcor","Don't call on slave",1);
   bool success;
-  if (! acor_set ) success = computeAcor(); else success=true;
-  if (! success ) return success;
+  if (! acor_set) success = computeAcor(); else success=true;
+  if (! success) return success;
   retval.resize(nparams);
   for (unsigned int i = 0; i < nparams; ++i)
     retval[i] = acor[i];
@@ -268,7 +268,8 @@ void affineEnsemble::getAcceptanceFrac(std::vector<double>& retval) const {
   }
 }
 
-void affineEnsemble::printStatistics(double conflevel, std::ostream& os) const {
+void affineEnsemble::printStatistics(double conflevel, 
+				     std::ostream& os) const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble","printStatistics",
 		       "Don't call on slave",1);
@@ -381,19 +382,19 @@ void affineEnsemble::masterSample() {
 }
 
 double affineEnsemble::getMaxAcor() const {
-  if (! acor_set ) 
+  if (! acor_set) 
     throw affineExcept("affineEnsemble","getMaxAcor",
 		       "Called without acor available",1);
   double maxval;
   unsigned int start_idx;
   for (start_idx = 0; start_idx < nparams; ++start_idx)
-    if ( ! ignore_params[start_idx] ) break;
+    if (! ignore_params[start_idx]) break;
   if (start_idx == nparams)
     throw affineExcept("affineEnsemble","getMaxAcor",
 		       "All params ignored",2);
   maxval = acor[start_idx];
   for (unsigned int i = start_idx+1; i < nparams; ++i)
-    if ( (!ignore_params[i]) && acor[i] > maxval ) maxval = acor[i];
+    if ((!ignore_params[i]) && acor[i] > maxval) maxval = acor[i];
   return maxval;
 }
 
@@ -449,7 +450,7 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
   unsigned int nminsteps = 
     static_cast<unsigned int>(burn_multiple*max_acor + 0.999999999999999);
   bool burned_in = (nsteps > nminsteps);
-  while (! burned_in ) {
+  while (! burned_in) {
     //Figure out how many more steps to do.  Do half of the number
     // estimated
     unsigned int nmore = (nminsteps-nsteps)/2 + 1;
@@ -493,8 +494,8 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
   chains.setSkipFirst();
 }
 
-void affineEnsemble::generateNewStep( unsigned int idx1, unsigned int idx2,
-				      proposedStep& prstep ) const {
+void affineEnsemble::generateNewStep(unsigned int idx1, unsigned int idx2,
+				     proposedStep& prstep) const {
   //Assume prstep is the right size, don't check for speed
   double zval = generateZ();
   //Get previous step for this walker
@@ -512,7 +513,7 @@ void affineEnsemble::doMasterStep() throw (affineExcept) {
   if (rank != 0)
     throw affineExcept("affineEnsemble","doMasterStep",
 		       "Should only be called from master node",1);
-  if (! stepqueue.empty() )
+  if (! stepqueue.empty())
     throw affineExcept("affineEnsemble","doMasterStep",
 		       "step queue should be empty at start",4);
 
@@ -524,7 +525,7 @@ void affineEnsemble::doMasterStep() throw (affineExcept) {
   for (unsigned int i = 0; i < nwalkers/2; ++i) {
     pr.first  = i;
     pr.second = rangen.selectFromRange(minidx,maxidx);
-    stepqueue.push( pr );
+    stepqueue.push(pr);
   }
 
   //Now run that
@@ -536,7 +537,7 @@ void affineEnsemble::doMasterStep() throw (affineExcept) {
   for (unsigned int i = nwalkers/2; i < nwalkers; ++i) {
     pr.first  = i;
     pr.second = rangen.selectFromRange(minidx,maxidx);
-    stepqueue.push( pr );
+    stepqueue.push(pr);
   }
   emptyMasterQueue();
 
@@ -567,7 +568,7 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
 	//Figure out next thing to update
 	pr = stepqueue.pop();
 	//Generate actual value into pstep
-	generateNewStep( pr.first, pr.second, pstep );
+	generateNewStep(pr.first, pr.second, pstep);
 
 	MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,this_rank,
 			     mcmc_affine::SENDINGPOINT);
@@ -604,8 +605,8 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
       pstep.recieveCopy(MPI::COMM_WORLD,this_rank);
       
       //Make sure it's okay
-      if ( std::isinf( pstep.newLogLike ) ||
-	   std::isnan( pstep.newLogLike ) ) {
+      if (std::isinf(pstep.newLogLike) ||
+	   std::isnan(pstep.newLogLike)) {
 	//That's not good -- exit
 	for (unsigned int i = 1; i < nproc; ++i)
 	  MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,mcmc_affine::STOP);
@@ -621,7 +622,7 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
 			   pstep.newLogLike);
 	naccept[pstep.update_idx] += 1;
       } else {
-	prob = exp( pstep.newLogLike - pstep.oldLogLike );
+	prob = exp(pstep.newLogLike - pstep.oldLogLike);
 	if (rangen.doub() < prob) {
 	  //Also accept
 	  chains.addNewStep(pstep.update_idx, pstep.newStep,
@@ -670,8 +671,8 @@ void affineEnsemble::slaveSample() {
       MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,0,MPI::ANY_TAG,Info);
 
       int tag = Info.Get_tag();
-      if ( tag == mcmc_affine::STOP ) return; //Master says -- we're done!
-      else if ( tag == mcmc_affine::SENDINGPOINT ) {
+      if (tag == mcmc_affine::STOP) return; //Master says -- we're done!
+      else if (tag == mcmc_affine::SENDINGPOINT) {
 	pstep.recieveCopy(MPI::COMM_WORLD,0);
 	
 	//Compute likelihood
@@ -705,7 +706,7 @@ void affineEnsemble::slaveSample() {
   Doesn't output the first chunk (which should just have the initial step
   in it).
  */
-void affineEnsemble::writeToFile( const std::string& filename ) const {
+void affineEnsemble::writeToFile(const std::string& filename) const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble","writeToFile",
 		       "Should only be called from master node",1);  

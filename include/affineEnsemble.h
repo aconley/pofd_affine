@@ -57,7 +57,7 @@ private:
   void emptyMasterQueue() throw (affineExcept); //!< Runs all steps in stepqueue as master node
 
   /*! \brief Generate a new proposed Step */
-  void generateNewStep( unsigned int, unsigned int, proposedStep&) const;
+  void generateNewStep(unsigned int, unsigned int, proposedStep&) const;
 
 
 protected:
@@ -100,8 +100,8 @@ public:
   //Dealing with ignorable params
   unsigned int getNIgnoreParams() const { return nignore; } //!< Return number of parameters being ignored for burn-in check
   void attentionAllParams(); //!< Don't ignore any parameters in burn-in check
-  bool ignoreParam( unsigned int ); //!< Ignore this parameter in burn-in check
-  bool attentionParam( unsigned int ); //!< Don't ignore this parameter is burn-in check
+  bool ignoreParam(unsigned int); //!< Ignore this parameter in burn-in check
+  bool attentionParam(unsigned int); //!< Don't ignore this parameter is burn-in check
   /*! \brief Is a particular parameter being ignored in burn-in */
   bool isParamIgnored(unsigned int idx) const { return ignore_params[idx]; }
   
@@ -111,7 +111,7 @@ public:
   std::string getParamName(unsigned int) const; //!< Get param name for particular parameter
 
   /*! \brief Sets random number generator seed */
-  void setSeed( unsigned long long int seed ) const { rangen.setSeed(seed); }
+  void setSeed(unsigned long long int seed) const { rangen.setSeed(seed); }
   double generateZ() const; //!< Generate a Z value
 
   bool computeAcor() const; //!< Computes autocorrelation
@@ -129,7 +129,7 @@ public:
   
   void doSteps(unsigned int,unsigned int=0); //!< Do a fixed number of steps
 
-  void writeToFile( const std::string& ) const; //!< Write results to file
+  void writeToFile(const std::string&) const; //!< Write results to file
 
 };
 
