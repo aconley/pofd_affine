@@ -96,9 +96,9 @@ class beam {
   std::pair<double,double> getRangeNeg() const; //!< Get range of negative pixels
 
   /*! \brief Returns positive pixel values raised to some power */
-  void powerPos( double, double* ) const;
+  void powerPos(double, double*) const;
   /*! \brief Returns negative pixel values raised to some power */
-  void powerNeg( double, double* ) const;
+  void powerNeg(double, double*) const;
 
   /*! \brief Returns first index greater than specified value in pos pixel map,
    or npos if there isn't one*/

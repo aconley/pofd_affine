@@ -36,7 +36,7 @@ numberCountsKnotsSpline::numberCountsKnotsSpline(const std::vector<double>& v):
   if (nknots > 0) {
     logknots = new double[nknots]; 
     for (unsigned int i = 0; i < nknots; ++i)
-      logknots[i] = log2( knots[i] );
+      logknots[i] = log2(knots[i]);
   } else logknots = NULL;
   acc = gsl_interp_accel_alloc();
   if (v.size() > 0)
@@ -78,8 +78,8 @@ numberCountsKnotsSpline::numberCountsKnotsSpline(const numberCountsKnotsSpline&
   if (other.knotvals_loaded) {
     for (unsigned int i = 0; i < nknots; ++i)
       logknotvals[i] = other.logknotvals[i];
-    gsl_spline_init( splinelog, logknots, logknotvals,
-		     static_cast<size_t>(other.nknots) );
+    gsl_spline_init(splinelog, logknots, logknotvals,
+		    static_cast<size_t>(other.nknots));
   }
   knotvals_loaded = other.knotvals_loaded;
   gsl_work = gsl_integration_workspace_alloc(1000);
@@ -94,20 +94,20 @@ numberCountsKnotsSpline::~numberCountsKnotsSpline() {
 }
 
 void numberCountsKnotsSpline::setNKnots(unsigned int n) {
-  if ( nknots == n ) return;
-  if ( knots != NULL ) delete[] knots;
-  if ( logknotvals != NULL ) delete[] logknotvals;
-  if ( logknots != NULL) delete[] logknots;
+  if (nknots == n) return;
+  if (knots != NULL) delete[] knots;
+  if (logknotvals != NULL) delete[] logknotvals;
+  if (logknots != NULL) delete[] logknots;
   if (splinelog != NULL) gsl_spline_free(splinelog);
 
-  if ( n > 0 ) {
+  if (n > 0) {
     knots = new double[n];
     logknots = new double[n];
     logknotvals = new double[n];
   } else {
     knots = logknots = logknotvals = NULL;
   }
-  if ( n > 1 )
+  if (n > 1)
     splinelog=gsl_spline_alloc(gsl_interp_cspline,
 			       static_cast<size_t>(n));
   else 
@@ -170,8 +170,8 @@ void numberCountsKnotsSpline::setParams(const paramSet& F) {
 		       "Number of knot values different than expected", 1);
   for (unsigned int i = 0; i < nknots; ++i)
     logknotvals[i] = pofd_mcmc::logfac*F[i];
-  gsl_spline_init( splinelog, logknots, logknotvals,
-		   static_cast<size_t>(nknots) );
+  gsl_spline_init(splinelog, logknots, logknotvals,
+		  static_cast<size_t>(nknots));
   knotvals_loaded = true;
 }
 
@@ -198,7 +198,7 @@ double numberCountsKnotsSpline::getNumberCounts(double value) const {
  */
 double numberCountsKnotsSpline::splineInt(double alpha) const {
   if (nknots < 2) return std::numeric_limits<double>::quiet_NaN();
-  if (! isValid() ) return std::numeric_limits<double>::quiet_NaN();
+  if (! isValid()) return std::numeric_limits<double>::quiet_NaN();
   double result, error;
   void *params;
   gsl_function F;
@@ -265,15 +265,15 @@ double numberCountsKnotsSpline::getRPos(double fluxdensity,
       ieta = ipixarr[i];
       currarg = fluxdensity * ieta;
       if (currarg < minknot || currarg >= maxknot) continue;
-      retval += warr[i]*
-	exp2( gsl_spline_eval( splinelog, log2(currarg), acc ) )*ieta;
+      retval += warr[i] *
+	exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
     } 
   } else {
     for (unsigned int i = 0; i < npsf; ++i) {
       ieta = ipixarr[i];
       currarg = fluxdensity * ieta;
       if (currarg < minknot || currarg >= maxknot) continue;
-      retval += exp2( gsl_spline_eval( splinelog, log2(currarg), acc ) )*ieta;
+      retval += exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
     } 
   }
 
@@ -292,7 +292,7 @@ double numberCountsKnotsSpline::getRPos(double fluxdensity,
 void numberCountsKnotsSpline::getRPos(unsigned int n,const double* const flux,
 				      const beam& bm,double* R) const {
   if (n == 0) return;
-  if ( (!isValid()) || (!bm.hasPos()) ) {
+  if ((!isValid()) || (!bm.hasPos())) {
     for (unsigned int i = 0; i < n; ++i)
       R[i] = std::numeric_limits<double>::quiet_NaN();
     return;
@@ -319,8 +319,8 @@ void numberCountsKnotsSpline::getRPos(unsigned int n,const double* const flux,
 	ieta = ipixarr[i];
 	currarg = fluxdensity * ieta;
 	if (currarg < minknot || currarg >= maxknot) continue;
-	workval += warr[i]*
-	  exp2( gsl_spline_eval( splinelog, log2(currarg), acc ) )*ieta;
+	workval += warr[i] *
+	  exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
       } 
       R[j] += prefac*workval;
     }
@@ -333,8 +333,7 @@ void numberCountsKnotsSpline::getRPos(unsigned int n,const double* const flux,
 	ieta = ipixarr[i];
 	currarg = fluxdensity * ieta;
 	if (currarg < minknot || currarg >= maxknot) continue;
-	workval += exp2( gsl_spline_eval( splinelog, log2(currarg), acc ) ) * 
-	  ieta;
+	workval += exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
       } 
       R[j] += prefac*workval;
     }
@@ -373,15 +372,15 @@ double numberCountsKnotsSpline::getRNeg(double fluxdensity,
       ieta = ipixarr[i];
       currarg = fluxdensity * ieta;
       if (currarg < minknot || currarg >= maxknot) continue;
-      retval += warr[i]*
-	exp2( gsl_spline_eval( splinelog, log2(currarg), acc ) )*ieta;
+      retval += warr[i] *
+	exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
     } 
   } else {
     for (unsigned int i = 0; i < npsf; ++i) {
       ieta = ipixarr[i];
       currarg = fluxdensity * ieta;
       if (currarg < minknot || currarg >= maxknot) continue;
-      retval += exp2( gsl_spline_eval( splinelog, log2(currarg), acc ) )*ieta;
+      retval += exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
     } 
   }
   return prefac*retval;
@@ -397,7 +396,7 @@ double numberCountsKnotsSpline::getRNeg(double fluxdensity,
 void numberCountsKnotsSpline::getRNeg(unsigned int n,const double* const flux,
 				      const beam& bm,double* R) const {
   if (n == 0) return;
-  if ( (!isValid()) || (!bm.hasNeg()) ) {
+  if ((!isValid()) || (!bm.hasNeg())) {
     for (unsigned int i = 0; i < n; ++i)
       R[i] = std::numeric_limits<double>::quiet_NaN();
     return;
@@ -422,8 +421,8 @@ void numberCountsKnotsSpline::getRNeg(unsigned int n,const double* const flux,
 	ieta = ipixarr[i];
 	currarg = fluxdensity * ieta;
 	if (currarg < minknot || currarg >= maxknot) continue;
-	workval += warr[i]*
-	  exp2( gsl_spline_eval( splinelog, log2(currarg), acc ) )*ieta;
+	workval += warr[i] *
+	  exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
       } 
       R[j] += prefac*workval;
     }
@@ -435,8 +434,7 @@ void numberCountsKnotsSpline::getRNeg(unsigned int n,const double* const flux,
 	ieta = ipixarr[i];
 	  currarg = fluxdensity * ieta;
 	if (currarg < minknot || currarg >= maxknot) continue;
-	workval += exp2( gsl_spline_eval( splinelog, log2(currarg), acc ) )
-	  * ieta;
+	workval += exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
       } 
       R[j] += prefac*workval;
     }
@@ -523,15 +521,15 @@ void numberCountsKnotsSpline::recieveCopy(MPI::Comm& comm, int src) {
   if (nknots != oldnknots) {
     if (splinelog != NULL) gsl_spline_free(splinelog);
     if (nknots > 0) 
-      splinelog = gsl_spline_alloc( gsl_interp_cspline,
+      splinelog = gsl_spline_alloc(gsl_interp_cspline,
 				    static_cast<size_t>(nknots));
     else
       splinelog = NULL;
   }
   if (knotvals_loaded) {
     comm.Recv(logknots,nknots,MPI::DOUBLE,src,pofd_mcmc::NCKSSENDLOGKNOTS);
-    gsl_spline_init( splinelog, logknots, logknotvals,
-		     static_cast<size_t>(nknots) );
+    gsl_spline_init(splinelog, logknots, logknotvals,
+		     static_cast<size_t>(nknots));
   }
 }
 
@@ -553,11 +551,11 @@ static double evalPowfNKnotsSpline(double x, void* params) {
   
   if (x < minknot || x >= maxknot) return 0.0;
 
-  double splval = exp2( gsl_spline_eval(spl,log2(x),acc) );
+  double splval = exp2(gsl_spline_eval(spl,log2(x),acc));
 
-  if ( fabs(power) < 1e-2 ) return splval;
-  if ( fabs(power-1.0) < 1e-2) return x*splval;
-  if ( fabs(power-2.0) < 1e-2) return x*x*splval;
+  if (fabs(power) < 1e-2) return splval;
+  if (fabs(power-1.0) < 1e-2) return x*splval;
+  if (fabs(power-2.0) < 1e-2) return x*x*splval;
   return pow(x,power)*splval;
 
 }

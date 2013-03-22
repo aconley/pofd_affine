@@ -165,7 +165,7 @@ readDataFromFiles(const std::vector<std::string>& datafiles,
 }
 
 void calcLikeSingle::readBeam(const std::string& fl, bool histogram, 
-			double histogramlogstep) {
+			      double histogramlogstep) {
   bm.readFile(fl,histogram,histogramlogstep);
   has_beam = true;
 }
@@ -268,7 +268,7 @@ calcLikeSingle::getLogLike(const numberCounts& model, double sigmult,
   LogLike = 0.0;
   for (unsigned int i = 0; i < ndatasets; ++i) {
     //Get PD for this particuar set of sigmas
-    pdfac.getPD( sigmult*sigma_base[i], pd, true, edgefix );
+    pdfac.getPD(sigmult*sigma_base[i], pd, true, edgefix);
 
     //Get log like
     curr_LogLike = pd.getLogLike(data[i]) - like_offset[i];
@@ -286,7 +286,7 @@ calcLikeSingle::getLogLike(const numberCounts& model, double sigmult,
   return LogLike;
 }
 
-void calcLikeSingle::writePDToStream( std::ostream& os ) const {
+void calcLikeSingle::writePDToStream(std::ostream& os) const {
   PD cpy(pd);
   cpy.deLog();
   os << cpy;
@@ -398,7 +398,7 @@ void calcLike::readDataFromFiles(const std::vector<std::string>& datafiles,
 				 const std::vector<double>& sigmas,
 				 const std::vector<double>& like_norms,
 				 bool IGNOREMASK, bool MEANSUB,
-				 bool HISTOGRAM, double HISTOGRAMLOGSTEP ) {
+				 bool HISTOGRAM, double HISTOGRAMLOGSTEP) {
 
   //Make sure they are all the same length
   unsigned int ndat = datafiles.size();
@@ -451,13 +451,13 @@ void calcLike::readDataFromFiles(const std::vector<std::string>& datafiles,
 
   grpmap_it = grpmap.begin();
   for (unsigned int i=0; grpmap_it != grpmap.end(); ++grpmap_it, ++i) {
-    beamsets[i].setNInterp( ninterp );
-    beamsets[i].readDataFromFiles( grpmap_it->second.datafiles,
-				   IGNOREMASK, MEANSUB, bin_data, nbins );
-    beamsets[i].readBeam( grpmap_it->second.beamfile, 
-			  HISTOGRAM, HISTOGRAMLOGSTEP );
-    beamsets[i].setSigmaBase( grpmap_it->second.sigmas );
-    beamsets[i].setLikeNorm( grpmap_it->second.like_norms );
+    beamsets[i].setNInterp(ninterp);
+    beamsets[i].readDataFromFiles(grpmap_it->second.datafiles,
+				  IGNOREMASK, MEANSUB, bin_data, nbins);
+    beamsets[i].readBeam(grpmap_it->second.beamfile, 
+			 HISTOGRAM, HISTOGRAMLOGSTEP);
+    beamsets[i].setSigmaBase(grpmap_it->second.sigmas);
+    beamsets[i].setLikeNorm(grpmap_it->second.like_norms);
   }
 }
 
@@ -468,7 +468,7 @@ void calcLike::setNInterp(unsigned int nint) {
   if (nint == ninterp) return;
   if (beamsets != NULL)
     for (unsigned int i = 0; i < nbeamsets; ++i)
-      beamsets[i].setNInterp( nint );
+      beamsets[i].setNInterp(nint);
   ninterp = nint;
 }
 
@@ -523,7 +523,7 @@ void calcLike::setNBins(unsigned int nbns) {
   
   The prior is assumed Gaussian
  */
-void calcLike::setCFIRBPrior( double mn, double sg ) {
+void calcLike::setCFIRBPrior(double mn, double sg) {
   has_cfirb_prior = true;
   cfirb_prior_mean = mn;
   cfirb_prior_sigma = sg;
@@ -566,7 +566,7 @@ double calcLike::getLogLike(const paramSet& p) const {
 
   if (has_cfirb_prior) {
     double save_per_area = model.getMeanFluxPerArea();
-    double val = ( cfirb_prior_mean - save_per_area ) / cfirb_prior_sigma;
+    double val = (cfirb_prior_mean - save_per_area) / cfirb_prior_sigma;
     LogLike -=  half_log_2pi + log(cfirb_prior_sigma) + 0.5*val*val;
   }
   return LogLike;

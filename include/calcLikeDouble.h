@@ -119,7 +119,7 @@ class calcLikeDoubleSingle { //Odd name...
 		    double sigmult2=1.0, unsigned int fftsize=4096, 
 		    bool edgefix=true, bool edgeinteg=true) const;
 
-  void writePDToStream( std::ostream& os ) const; //!< Write out computed P(D)
+  void writePDToStream( std::ostream& os) const; //!< Write out computed P(D)
 
   /*! \brief MPI copy send operation */
   void sendSelf(MPI::Comm&, int dest) const;
@@ -249,23 +249,23 @@ class calcLikeDouble {
 
   //Sigma prior
   /*! \brief Activates the sigma prior with width set to value, band 1*/
-  void setSigmaPrior1( double val ) { 
+  void setSigmaPrior1( double val) { 
     has_sigma_prior1 = true; sigma_prior_width1 = val;}
   /*! \brief De-activate the sigma prior, band 1*/
   void unsetSigmaPrior1() { has_sigma_prior1 = false; }
   /*! \brief Activates the sigma prior with width set to value, band 2*/
-  void setSigmaPrior2( double val ) { 
+  void setSigmaPrior2( double val) { 
     has_sigma_prior2 = true; sigma_prior_width2 = val;}
   /*! \brief De-activate the sigma prior, band 2*/
   void unsetSigmaPrior2() { has_sigma_prior2 = false; }
 
   //CFIRB prior
   /*! \brief Activates the CFIRB prior with the specified values, band 1 */
-  void setCFIRBPrior1( double, double );
+  void setCFIRBPrior1( double, double);
   /*! \brief De-activated CFIRB prior, band 1 */
   void unsetCFIRBPrior() { has_cfirb_prior1 = false; }
   /*! \brief Activates the CFIRB prior with the specified values, band 2 */
-  void setCFIRBPrior2( double, double );
+  void setCFIRBPrior2( double, double);
   /*! \brief De-activated CFIRB prior, band 2 */
   void unsetCFIRBPrior2() { has_cfirb_prior2 = false; }
 

@@ -64,7 +64,7 @@ class doublebeam {
   
   void setBeams(unsigned int, const double* const,
 		const double* const, double, bool histogram=false,
-		double histogramlogstep=0.2 ); //!< Set beams by hand
+		double histogramlogstep=0.2); //!< Set beams by hand
 
   double getEffectiveArea1() const; //!< Get effective area of beam1 in sq deg
   double getEffectiveAreaSign1(unsigned int) const; //!< Get effective area of either pp,pn,np, or nn beam 1, in pixels

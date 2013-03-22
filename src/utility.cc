@@ -87,8 +87,8 @@ bool utility::string_true(const std::string& ins) {
   std::string strlow(ins); //Lowercase version of string
   std::transform(strlow.begin(), strlow.end(),
 		 strlow.begin(), ::tolower);
-  if ( (strlow == "true") || (strlow == "t") ||
-       (strlow == "yes") || (strlow == "y") )
+  if ((strlow == "true") || (strlow == "t") ||
+      (strlow == "yes") || (strlow == "y"))
     return true;
   else return false;
 }
@@ -261,10 +261,10 @@ int utility::binary_search_rev(double value, double* data,
 
   From http://graphics.stanford.edu/~seander/bithacks.html#IntegerLog
  */
-unsigned int utility::log2( unsigned int val ) {
+unsigned int utility::log2(unsigned int val) {
   if (val == 1) {
     return 0;
-  } else if ( val & (val-1) ) {
+  } else if (val & (val-1)) {
     //Not a power of 2
     const unsigned int b[] = {0x2, 0xC, 0xF0, 0xFF00, 0xFFFF0000};
     const unsigned int S[] = {1, 2, 4, 8, 16};

@@ -29,8 +29,8 @@ beam::beam() {
   \param[in] histogram  Do beam histogramming
   \param[in] histogramlogstep Log step for histogram bins
 */
-beam::beam( const std::string& filename, bool histogram, 
-	    double histogramlogstep ) {
+beam::beam(const std::string& filename, bool histogram, 
+	   double histogramlogstep) {
   nneg = npos = 0; 
   totneg = totpos = 0; 
   totnegsq = totpossq = 0.0;
@@ -43,9 +43,10 @@ beam::beam( const std::string& filename, bool histogram,
   readFile(filename, histogram, histogramlogstep);
 }
 
-beam::beam( const beam& inp ) {
+beam::beam(const beam& inp) {
   negpixarr = pospixarr = NULL;
-  cleanup();
+  posinvpixarr = neginvpixarr = NULL;
+  posweights = negweights = NULL;
   npos = inp.npos;
   nneg = inp.nneg;
   haspos = inp.haspos;
@@ -229,12 +230,12 @@ bool beam::readFile(const std::string& filename,bool histogram,
   //Now, sort in to positive and negative
   npos = nneg = 0;
   for (unsigned int i = 0; i < n; ++i) {
-    if ( std::isnan(pixarr[i]) || std::isinf(pixarr[i] ) ) continue;
+    if (std::isnan(pixarr[i]) || std::isinf(pixarr[i])) continue;
     if (pixarr[i] > 0.0) npos++;
     if (pixarr[i] < 0.0) nneg++;
   }
 
-  if ( (npos == 0) && (hasneg == 0) )
+  if ((npos == 0) && (hasneg == 0))
     throw affineExcept("beam","readFile",
 		       "Beam file has only zero values",1);
 
@@ -244,7 +245,7 @@ bool beam::readFile(const std::string& filename,bool histogram,
     ctr = 0;
     pospixarr = new double[npos];
     for (unsigned int i = 0; i < n; ++i) {
-      if ( std::isnan(pixarr[i]) || std::isinf(pixarr[i] ) ) continue;
+      if (std::isnan(pixarr[i]) || std::isinf(pixarr[i])) continue;
       if (pixarr[i] > 0.0) pospixarr[ctr++] = pixarr[i];
     }
     haspos = true;
@@ -254,7 +255,7 @@ bool beam::readFile(const std::string& filename,bool histogram,
     ctr = 0;
     negpixarr = new double[nneg];
     for (unsigned int i = 0; i < n; ++i) {
-      if ( std::isnan(pixarr[i]) || std::isinf(pixarr[i] ) ) continue;
+      if (std::isnan(pixarr[i]) || std::isinf(pixarr[i])) continue;
       if (pixarr[i] < 0.0) negpixarr[ctr++] = fabs(pixarr[i]);
     }
     hasneg = true;
@@ -391,71 +392,71 @@ bool beam::readFile(const std::string& filename,bool histogram,
 }
 
 double beam::getMinPos() const {
-  if (! haspos ) return std::numeric_limits<double>::quiet_NaN();
+  if (! haspos) return std::numeric_limits<double>::quiet_NaN();
   return pospixarr[0];
 }
 
 double beam::getMaxPos() const {
-  if (! haspos ) return std::numeric_limits<double>::quiet_NaN();
+  if (! haspos) return std::numeric_limits<double>::quiet_NaN();
   return pospixarr[npos-1];
 }
 
 double beam::getMinAbsNeg() const {
-  if (! hasneg ) return std::numeric_limits<double>::quiet_NaN();
+  if (! hasneg) return std::numeric_limits<double>::quiet_NaN();
   return negpixarr[0];
 }
 
 double beam::getMaxAbsNeg() const {
-  if (! hasneg ) return std::numeric_limits<double>::quiet_NaN();
+  if (! hasneg) return std::numeric_limits<double>::quiet_NaN();
   return negpixarr[nneg-1];
 }
 
 std::pair<double,double> beam::getRangePos() const {
   if (!haspos) {
     double val = std::numeric_limits<double>::quiet_NaN();
-    return std::pair< double, double > ( val, val );
+    return std::pair< double, double > (val, val);
   }
-  double lowval = *std::min_element( pospixarr, pospixarr+npos );
-  double highval = *std::max_element( pospixarr, pospixarr+npos );
-  return std::pair< double, double > ( lowval, highval );
+  double lowval = *std::min_element(pospixarr, pospixarr+npos);
+  double highval = *std::max_element(pospixarr, pospixarr+npos);
+  return std::pair< double, double > (lowval, highval);
 }
 
 std::pair<double,double> beam::getRangeNeg() const {
   if (!hasneg) {
     double val = std::numeric_limits<double>::quiet_NaN();
-    return std::pair< double, double > ( val, val );
+    return std::pair< double, double > (val, val);
   }
-  double lowval = *std::min_element( negpixarr, negpixarr+nneg );
-  double highval = *std::max_element( negpixarr, negpixarr+nneg );
-  return std::pair< double, double > ( lowval, highval );
+  double lowval = *std::min_element(negpixarr, negpixarr+nneg);
+  double highval = *std::max_element(negpixarr, negpixarr+nneg);
+  return std::pair< double, double > (lowval, highval);
 }
 
 /*!
   Size of array is unchecked and assumed to be at least large enough
   to hold all of pixels.
  */
-void beam::powerPos( double exponent, double* array ) const {
+void beam::powerPos(double exponent, double* array) const {
   if (!haspos) return;
-  if ( fabs(exponent) < 1e-4 ) {
+  if (fabs(exponent) < 1e-4) {
     for (unsigned int i = 0; i < npos; ++i) array[i]=1.0;
     return;
   }
   for (unsigned int i = 0; i < npos; ++i)
-    array[i] = pow( pospixarr[i], exponent );
+    array[i] = pow(pospixarr[i], exponent);
 }
 
 /*!
   Size of array is unchecked and assumed to be at least large enough
   to hold all of pixels.
  */
-void beam::powerNeg( double exponent, double* array ) const {
-  if ( ! hasneg ) return;
-  if ( fabs(exponent) < 1e-4 ) {
+void beam::powerNeg(double exponent, double* array) const {
+  if (! hasneg) return;
+  if (fabs(exponent) < 1e-4) {
     for (unsigned int i = 0; i < nneg; ++i) array[i]=1.0;
     return;
   }
   for (unsigned int i = 0; i < nneg; ++i)
-    array[i] = pow( negpixarr[i], exponent );
+    array[i] = pow(negpixarr[i], exponent);
 }
 
 double beam::getEffectiveArea() const {

@@ -109,7 +109,7 @@ class calcLikeSingle {
   double getLogLike(const numberCounts&, double sigmult=1.0, 
 		    unsigned int fftsize=131072, bool edgefix=true) const;
 
-  void writePDToStream( std::ostream& os ) const; //!< Write out computed P(D)
+  void writePDToStream(std::ostream& os) const; //!< Write out computed P(D)
   
   /*! \brief MPI copy send operation */
   void sendSelf(MPI::Comm&, int dest) const;
@@ -168,7 +168,7 @@ class calcLike {
  public:
   /*! \brief Constructor */
   calcLike(unsigned int FFTSIZE=262144, unsigned int NINTERP=1024, 
-	   bool EDGEFIX=true, bool BINNED=false, unsigned int NBINS=1000 );
+	   bool EDGEFIX=true, bool BINNED=false, unsigned int NBINS=1000);
   ~calcLike(); //!< Destuctor
 
   void freeData(); //!< Remove internal data
@@ -211,14 +211,14 @@ class calcLike {
 
   //Sigma prior
   /*! \brief Activates the sigma prior with width set to value */
-  void setSigmaPrior( double val ) { 
+  void setSigmaPrior(double val) { 
     has_sigma_prior=true; sigma_prior_width = val;}
   /*! \brief De-activate the sigma prior */
   void unsetSigmaPrior() { has_sigma_prior = false; }
 
   //CFIRB prior
   /*! \brief Activates the CFIRB prior with the specified values */
-  void setCFIRBPrior( double, double );
+  void setCFIRBPrior(double, double);
   /*! \brief De-activated CFIRB prior */
   void unsetCFIRBPrior() { has_cfirb_prior = false; }
   

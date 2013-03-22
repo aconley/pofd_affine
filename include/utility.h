@@ -44,10 +44,10 @@ namespace utility {
 			unsigned int ndata);
 
   /*! \brief Binary logarithm (\f$log_{2}\f$) of 32 bit integer */
-  unsigned int log2( unsigned int );
+  unsigned int log2(unsigned int);
 
   /*! \brief Log of factorial of argument */
-  double logfactorial( double );
+  double logfactorial(double);
 
 }
 

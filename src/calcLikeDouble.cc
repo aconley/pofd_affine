@@ -161,10 +161,12 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
     }
     if (BINDATA) data[i].applyBinning(NBINS,NBINS);
 
-    //log(N!)
-    like_offset[i] = nd*log(nd) - nd + 0.5*log(2.0*M_PI*nd) + 
-      1.0/(12.0*nd) - 1.0/(360.0*nd*nd*nd) + 1/(1260.0*nd*nd*nd*nd*nd) -
-      1.0/(1680.0*pow(nd,7));
+    //log(N!), a bit beyond the stirling approximation
+    like_offset[i] = nd * log(nd) - nd + 
+      0.5 * log(2.0 * M_PI * nd) + 
+      1.0 / (12.0*nd) - 1.0 / (360.0*nd*nd*nd) + 
+      1.0 / (1260.0*nd*nd*nd*nd*nd) -
+      1.0 / (1680.0*pow(nd,7));
   }
 
   //Determine maximum flux (with safety factor) for all this data
@@ -337,8 +339,8 @@ calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
   LogLike = 0.0;
   for (unsigned int i = 0; i < ndatasets; ++i) {
     //Get PD for this particuar set of sigmas
-    pdfac.getPD( sigmult1*sigma_base1[i], sigmult2*sigma_base2[i],
-		 pd, true, edgefix );
+    pdfac.getPD(sigmult1*sigma_base1[i], sigmult2*sigma_base2[i],
+		 pd, true, edgefix);
 
     //Get log like
     curr_LogLike = pd.getLogLike(data[i]) - like_offset[i];
@@ -356,7 +358,7 @@ calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
   return LogLike;
 }
 
-void calcLikeDoubleSingle::writePDToStream( std::ostream& os ) const {
+void calcLikeDoubleSingle::writePDToStream(std::ostream& os) const {
   PDDouble cpy(pd);
   cpy.deLog();
   os << cpy;
@@ -487,7 +489,7 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
 		  const std::vector<double>& sigmas2,
 		  const std::vector<double>& like_norms,
 		  bool IGNOREMASK, bool MEANSUB,
-		  bool HISTOGRAM, double HISTOGRAMLOGSTEP ) {
+		  bool HISTOGRAM, double HISTOGRAMLOGSTEP) {
 
   //Make sure they are all the same length
   unsigned int ndat = datafiles1.size();
@@ -554,16 +556,16 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
   }
   grpmap_it = grpmap.begin();
   for (unsigned int i=0; grpmap_it != grpmap.end(); ++grpmap_it, ++i) {
-    beamsets[i].setNEdge( nedge );
-    beamsets[i].readDataFromFiles( grpmap_it->second.datafiles1,
-				   grpmap_it->second.datafiles2,
-				   IGNOREMASK, MEANSUB, bin_data, nbins );
-    beamsets[i].readBeam( grpmap_it->second.beamfile1, 
-			  grpmap_it->second.beamfile2, 
-			  HISTOGRAM, HISTOGRAMLOGSTEP );
-    beamsets[i].setSigmaBase1( grpmap_it->second.sigmas1 );
-    beamsets[i].setSigmaBase2( grpmap_it->second.sigmas2 );
-    beamsets[i].setLikeNorm( grpmap_it->second.like_norms );
+    beamsets[i].setNEdge(nedge);
+    beamsets[i].readDataFromFiles(grpmap_it->second.datafiles1,
+				  grpmap_it->second.datafiles2,
+				  IGNOREMASK, MEANSUB, bin_data, nbins);
+    beamsets[i].readBeam(grpmap_it->second.beamfile1, 
+			 grpmap_it->second.beamfile2, 
+			 HISTOGRAM, HISTOGRAMLOGSTEP);
+    beamsets[i].setSigmaBase1(grpmap_it->second.sigmas1);
+    beamsets[i].setSigmaBase2(grpmap_it->second.sigmas2);
+    beamsets[i].setLikeNorm(grpmap_it->second.like_norms);
   }
 }
 
@@ -630,7 +632,7 @@ void calcLikeDouble::setNBins(unsigned int nbns) {
   
   The prior is assumed Gaussian
  */
-void calcLikeDouble::setCFIRBPrior1( double mn, double sg ) {
+void calcLikeDouble::setCFIRBPrior1(double mn, double sg) {
   has_cfirb_prior1   = true;
   cfirb_prior_mean1  = mn;
   cfirb_prior_sigma1 = sg;
@@ -642,7 +644,7 @@ void calcLikeDouble::setCFIRBPrior1( double mn, double sg ) {
   
   The prior is assumed Gaussian
  */
-void calcLikeDouble::setCFIRBPrior2( double mn, double sg ) {
+void calcLikeDouble::setCFIRBPrior2(double mn, double sg) {
   has_cfirb_prior2   = true;
   cfirb_prior_mean2  = mn;
   cfirb_prior_sigma2 = sg;
@@ -692,12 +694,12 @@ double calcLikeDouble::getLogLike(const paramSet& p) const {
 
   if (has_cfirb_prior1) {
     double save_per_area = model.getMeanFluxPerArea(0);
-    double val = ( cfirb_prior_mean1 - save_per_area ) / cfirb_prior_sigma1;
+    double val = (cfirb_prior_mean1 - save_per_area) / cfirb_prior_sigma1;
     LogLike -=  half_log_2pi + log(cfirb_prior_sigma1) + 0.5*val*val;
   }
   if (has_cfirb_prior2) {
     double save_per_area = model.getMeanFluxPerArea(1);
-    double val = ( cfirb_prior_mean2 - save_per_area ) / cfirb_prior_sigma2;
+    double val = (cfirb_prior_mean2 - save_per_area) / cfirb_prior_sigma2;
     LogLike -=  half_log_2pi + log(cfirb_prior_sigma2) + 0.5*val*val;
   }
 

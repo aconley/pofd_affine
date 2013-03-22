@@ -83,7 +83,7 @@ bool pofdMCMCDouble::initChainsMaster() {
   if (! spec_info.fit_sigma2) this->ignoreParam(ntot + 1);
 
   //Initialize likelihood information -- priors, data, etc.
-  likeSet.setFFTSize( spec_info.fftsize );
+  likeSet.setFFTSize(spec_info.fftsize);
   if (spec_info.edge_fix) likeSet.setEdgeFix(); else likeSet.unSetEdgeFix();
   if (spec_info.edge_set) {
     likeSet.setEdgeInteg();
@@ -91,17 +91,17 @@ bool pofdMCMCDouble::initChainsMaster() {
   }
   if (spec_info.bin_data) {
     likeSet.setBinData(); 
-    likeSet.setNBins( spec_info.nbins );
+    likeSet.setNBins(spec_info.nbins);
   } else likeSet.unSetBinData();
   if (spec_info.has_wisdom_file) likeSet.addWisdom(spec_info.wisdom_file);
 
   //Set priors 
   if (spec_info.has_cfirbprior1)
-    likeSet.setCFIRBPrior1( spec_info.cfirbprior_mean1,
-			   spec_info.cfirbprior_stdev1 );
+    likeSet.setCFIRBPrior1(spec_info.cfirbprior_mean1,
+			   spec_info.cfirbprior_stdev1);
   if (spec_info.has_cfirbprior2)
-    likeSet.setCFIRBPrior2( spec_info.cfirbprior_mean2,
-			   spec_info.cfirbprior_stdev2 );
+    likeSet.setCFIRBPrior2(spec_info.cfirbprior_mean2,
+			   spec_info.cfirbprior_stdev2);
   if (spec_info.fit_sigma1 && spec_info.has_sigprior1)
     likeSet.setSigmaPrior1(spec_info.sigprior_stdev1);
   if (spec_info.fit_sigma2 && spec_info.has_sigprior2)
@@ -110,11 +110,11 @@ bool pofdMCMCDouble::initChainsMaster() {
   //Read in data files
   if (spec_info.verbose || spec_info.ultraverbose)
       std::cout << "Reading in data files" << std::endl;
-  likeSet.readDataFromFiles( spec_info.datafiles1, spec_info.datafiles2,
-			     spec_info.psffiles1, spec_info.psffiles2, 
-			     spec_info.sigmas1, spec_info.sigmas2,
-			     spec_info.like_norm, spec_info.ignore_mask, 
-			     spec_info.mean_sub, spec_info.beam_histogram );
+  likeSet.readDataFromFiles(spec_info.datafiles1, spec_info.datafiles2,
+			    spec_info.psffiles1, spec_info.psffiles2, 
+			    spec_info.sigmas1, spec_info.sigmas2,
+			    spec_info.like_norm, spec_info.ignore_mask, 
+			    spec_info.mean_sub, spec_info.beam_histogram);
 
 
   //Now, copy that information over to slaves

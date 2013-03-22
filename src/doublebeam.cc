@@ -15,20 +15,20 @@
 const unsigned int doublebeam::histothresh = 15;
 
 doublebeam::doublebeam() {
-  hassign[0]=hassign[1]=hassign[2]=hassign[3]=false;
-  npix[0] = npix[1] = npix[2]= npix[3] = 0;
-  tot1[0]=tot1[1]=tot1[2]=tot1[3] = 0.0;
-  tot2[0]=tot2[1]=tot2[2]=tot2[3] = 0.0;
-  totsq1[0]=totsq1[1]=totsq1[2]=totsq1[3] = 0.0;
-  totsq2[0]=totsq2[1]=totsq2[2]=totsq2[3] = 0.0;
+  hassign[0] = hassign[1] = hassign[2] = hassign[3] = false;
+  npix[0] = npix[1] = npix[2] = npix[3] = 0;
+  tot1[0] =tot1[1] = tot1[2] = tot1[3] = 0.0;
+  tot2[0] =tot2[1] = tot2[2] = tot2[3] = 0.0;
+  totsq1[0] = totsq1[1] = totsq1[2] = totsq1[3] = 0.0;
+  totsq2[0] = totsq2[1] = totsq2[2] = totsq2[3] = 0.0;
   totsm1 = totsm2 = 0.0;
-  pixsize=0.0; 
-  pixarr1[0]=pixarr1[1]=pixarr1[2]=pixarr1[3] = NULL;
-  pixarr2[0]=pixarr2[1]=pixarr2[2]=pixarr2[3] = NULL;
-  ipixarr1[0]=ipixarr1[1]=ipixarr1[2]=ipixarr1[3] = NULL;
-  ipixarr2[0]=ipixarr2[1]=ipixarr2[2]=ipixarr2[3] = NULL;
-  has_weights[0]=has_weights[1]=has_weights[2]=has_weights[3] = false;
-  weights[0]=weights[1]=weights[2]=weights[3] = NULL;
+  pixsize = 0.0; 
+  pixarr1[0] = pixarr1[1] = pixarr1[2] = pixarr1[3] = NULL;
+  pixarr2[0] = pixarr2[1] = pixarr2[2] = pixarr2[3] = NULL;
+  ipixarr1[0] = ipixarr1[1] = ipixarr1[2] = ipixarr1[3] = NULL;
+  ipixarr2[0] = ipixarr2[1] = ipixarr2[2] = ipixarr2[3] = NULL;
+  has_weights[0] = has_weights[1] = has_weights[2] = has_weights[3] = false;
+  weights[0] = weights[1] = weights[2] = weights[3] = NULL;
 }
 
 /*!
@@ -40,27 +40,29 @@ doublebeam::doublebeam() {
 doublebeam::doublebeam(const std::string& filename1,
 		       const std::string& filename2,
 		       bool histogram, double histogramlogstep ) {
-  hassign[0]=hassign[1]=hassign[2]=hassign[3]=false;
-  npix[0] = npix[1] = npix[2]= npix[3] = 0;
-  tot1[0]=tot1[1]=tot1[2]=tot1[3] = 0.0;
-  tot2[0]=tot2[1]=tot2[2]=tot2[3] = 0.0;
-  totsq1[0]=totsq1[1]=totsq1[2]=totsq1[3] = 0.0;
-  totsq2[0]=totsq2[1]=totsq2[2]=totsq2[3] = 0.0;
+  hassign[0] = hassign[1] = hassign[2] = hassign[3] = false;
+  npix[0] = npix[1] = npix[2] = npix[3] = 0;
+  tot1[0] = tot1[1] = tot1[2] = tot1[3] = 0.0;
+  tot2[0] = tot2[1] = tot2[2] = tot2[3] = 0.0;
+  totsq1[0] = totsq1[1] = totsq1[2] = totsq1[3] = 0.0;
+  totsq2[0] = totsq2[1] = totsq2[2] = totsq2[3] = 0.0;
   totsm1 = totsm2 = 0.0;
-  pixsize=0.0; 
-  pixarr1[0]=pixarr1[1]=pixarr1[2]=pixarr1[3] = NULL;
-  pixarr2[0]=pixarr2[1]=pixarr2[2]=pixarr2[3] = NULL;
-  ipixarr1[0]=ipixarr1[1]=ipixarr1[2]=ipixarr1[3] = NULL;
-  ipixarr2[0]=ipixarr2[1]=ipixarr2[2]=ipixarr2[3] = NULL;
-  has_weights[0]=has_weights[1]=has_weights[2]=has_weights[3] = false;
-  weights[0]=weights[1]=weights[2]=weights[3] = NULL;
-  readFiles(filename1,filename2,histogram,histogramlogstep);
+  pixsize = 0.0; 
+  pixarr1[0] = pixarr1[1] = pixarr1[2] = pixarr1[3] = NULL;
+  pixarr2[0] = pixarr2[1] = pixarr2[2] = pixarr2[3] = NULL;
+  ipixarr1[0] = ipixarr1[1] = ipixarr1[2] = ipixarr1[3] = NULL;
+  ipixarr2[0] = ipixarr2[1] = ipixarr2[2] = ipixarr2[3] = NULL;
+  has_weights[0] = has_weights[1] = has_weights[2] = has_weights[3] = false;
+  weights[0] = weights[1] = weights[2] = weights[3] = NULL;
+  readFiles(filename1, filename2, histogram, histogramlogstep);
 }
 
 doublebeam::doublebeam(const doublebeam& inp) {
-  pixarr1[0]=pixarr1[1]=pixarr1[2]=pixarr1[3] = NULL;
-  pixarr2[0]=pixarr2[1]=pixarr2[2]=pixarr2[3] = NULL;
-  cleanup();
+  pixarr1[0] = pixarr1[1] = pixarr1[2] = pixarr1[3] = NULL;
+  pixarr2[0] = pixarr2[1] = pixarr2[2] = pixarr2[3] = NULL;
+  ipixarr1[0] = ipixarr1[1] = ipixarr1[2] = ipixarr1[3] = NULL;
+  ipixarr2[0] = ipixarr2[1] = ipixarr2[2] = ipixarr2[3] = NULL;
+  weights[0] = weights[1] = weights[2] = weights[3] = NULL;
   for (unsigned int i = 0; i < 4; ++i) npix[i] = inp.npix[i];
   for (unsigned int i = 0; i < 4; ++i) hassign[i] = inp.hassign[i];
   for (unsigned int i = 0; i < 4; ++i) tot1[i] = inp.tot1[i];
@@ -69,6 +71,7 @@ doublebeam::doublebeam(const doublebeam& inp) {
   for (unsigned int i = 0; i < 4; ++i) totsq2[i] = inp.totsq2[i];
   totsm1 = inp.totsm1;
   totsm2 = inp.totsm2;
+  pixsize = inp.pixsize;
   for (unsigned int  i = 0; i < 4; ++i)
     if (hassign[i]) {
       pixarr1[i] = new double[npix[i]];
@@ -84,9 +87,11 @@ doublebeam::doublebeam(const doublebeam& inp) {
       for (unsigned int j = 0; j < npix[i]; ++j)
 	ipixarr2[i][j] = inp.ipixarr2[i][j];
       has_weights[i] = inp.has_weights[i];
-      if (has_weights[i])
+      if (has_weights[i]) {
+	weights[i] = new double[npix[i]];
 	for (unsigned int j = 0; j < npix[i]; ++j)
 	  weights[i][j] = inp.weights[i][j];
+      }
     }
 }
 
@@ -101,6 +106,7 @@ doublebeam& doublebeam::operator=(const doublebeam& other) {
   for (unsigned int i = 0; i < 4; ++i) totsq2[i] = other.totsq2[i];
   totsm1 = other.totsm1;
   totsm2 = other.totsm2;
+  pixsize = other.pixsize;
   for (unsigned int i = 0; i < 4; ++i)
     if (hassign[i]) {
       pixarr1[i] = new double[npix[i]];
@@ -116,9 +122,11 @@ doublebeam& doublebeam::operator=(const doublebeam& other) {
       for (unsigned int j = 0; j < npix[i]; ++j)
 	ipixarr2[i][j] = other.ipixarr2[i][j];
       has_weights[i] = other.has_weights[i];
-      if (has_weights[i])
+      if (has_weights[i]) {
+	weights[i] = new double[npix[i]];
 	for (unsigned int j = 0; j < npix[i]; ++j)
 	  weights[i][j] = other.weights[i][j];
+      }
     }
   return *this;
 }
@@ -175,17 +183,17 @@ void doublebeam::setBeams(unsigned int n, const double* const bm1,
   for (unsigned int i = 0; i < n; ++i) {
     bmval1 = bm1[i]; 
     bmval2 = bm2[i]; 
-    if ( std::isnan(bmval1) || std::isinf(bmval1) ) continue;
-    if ( std::isnan(bmval2) || std::isinf(bmval2 ) ) continue;
-    if ( (bmval1 == 0) || (bmval2 == 0) ) continue;
-    if ( (fabs(bmval1) > 1) || (fabs(bmval2) > 1) ) continue;
+    if (std::isnan(bmval1) || std::isinf(bmval1)) continue;
+    if (std::isnan(bmval2) || std::isinf(bmval2 )) continue;
+    if ((bmval1 == 0) || (bmval2 == 0) ) continue;
+    if ((fabs(bmval1) > 1) || (fabs(bmval2) > 1)) continue;
     if (bmval1 > 0.0)
       if (bmval2 > 0.0) ++npix[0]; else ++npix[1];
     else
       if (bmval2 > 0.0) ++npix[2]; else ++npix[3];
   }
 
-  if ( (npix[0]+npix[1]+npix[2]+npix[3]) == 0 )
+  if ((npix[0]+npix[1]+npix[2]+npix[3]) == 0)
     throw affineExcept("doublebeam","setBeams",
 		       "Doublebeam file has only zero values",1);
 
@@ -203,12 +211,12 @@ void doublebeam::setBeams(unsigned int n, const double* const bm1,
   for (unsigned int i = 0; i < n; ++i) {
     bmval1 = bm1[i]; 
     bmval2 = bm2[i]; 
-    if ( std::isnan(bmval1) || std::isinf(bmval1) ) continue;
-    if ( std::isnan(bmval2) || std::isinf(bmval2 ) ) continue;
-    if ( (bmval1 == 0) || (bmval2 == 0) ) continue;
+    if (std::isnan(bmval1) || std::isinf(bmval1)) continue;
+    if (std::isnan(bmval2) || std::isinf(bmval2 )) continue;
+    if ((bmval1 == 0) || (bmval2 == 0)) continue;
     abmval1 = fabs(bmval1);
     abmval2 = fabs(bmval2);
-    if  ( ( abmval1 > 1) || (abmval2 > 1) ) continue;
+    if  ((abmval1 > 1) || (abmval2 > 1)) continue;
     if (bmval1 > 0.0)
       if (bmval2 > 0.0) {
 	pixarr1[0][ppctr]=bmval1; 
@@ -244,21 +252,21 @@ void doublebeam::setBeams(unsigned int n, const double* const bm1,
       pptr = pixarr1[i];
       val = pptr[0];
       tot1[i] = val;
-      totsq1[i] = val*val;
+      totsq1[i] = val * val;
       for (unsigned int j = 1; j < npix[i]; ++j) {
 	val = pptr[j];
 	tot1[i] += val;
-	totsq1[i] += val*val;
+	totsq1[i] += val * val;
       }
       totsm1 += tot1[i];
       pptr = pixarr2[i];
       val = pptr[0];
       tot2[i] = val;
-      totsq2[i] = val*val;
+      totsq2[i] = val * val;
       for (unsigned int j = 1; j < npix[i]; ++j) {
 	val = pptr[j];
 	tot2[i] += val;
-	totsq2[i] += val*val;
+	totsq2[i] += val * val;
       }
       totsm2 += tot2[i];
     }
@@ -294,7 +302,7 @@ void doublebeam::setBeams(unsigned int n, const double* const bm1,
 	maxval2 = log(maxval2);
 
 	unsigned int nbins2 = 
-	  static_cast<unsigned int>( (maxval2-minval2)/histogramlogstep )+2;
+	  static_cast<unsigned int>((maxval2 - minval2) / histogramlogstep) + 2;
 
 	//Now build up number of bins and mean values
 	//This will be sparse, so use a map
@@ -307,12 +315,12 @@ void doublebeam::setBeams(unsigned int n, const double* const bm1,
 	  //Get index value, histogramming on beam value
 	  //Since we are in log space, histogramming on beam or inverse
 	  // beam is irrelevant
-	  val1 = log( pixarr1[sgn][i] );
-	  val2 = log( pixarr2[sgn][i] );
-	  idx1 = static_cast<unsigned int>( (val1-minval1)/histogramlogstep );
-	  idx2 = static_cast<unsigned int>( (val2-minval2)/histogramlogstep );
+	  val1 = log(pixarr1[sgn][i]);
+	  val2 = log(pixarr2[sgn][i]);
+	  idx1 = static_cast<unsigned int>((val1 - minval1) / histogramlogstep);
+	  idx2 = static_cast<unsigned int>((val2 - minval2) / histogramlogstep);
 
-	  fullidx = idx1*nbins2 + idx2;
+	  fullidx = idx1 * nbins2 + idx2;
 	  
 	  //See if already present
 	  histpos = hist.find(fullidx);
@@ -333,14 +341,14 @@ void doublebeam::setBeams(unsigned int n, const double* const bm1,
 	//Copy new stuff over
 	unsigned int newnpix = hist.size();
 	delete[] pixarr1[sgn];
-	pixarr1[sgn] = new double[ newnpix ];
+	pixarr1[sgn] = new double[newnpix];
 	delete[] pixarr2[sgn];
-	pixarr2[sgn] = new double[ newnpix ];
+	pixarr2[sgn] = new double[newnpix];
 	delete[] ipixarr1[sgn];
-	ipixarr1[sgn] = new double[ newnpix ];
+	ipixarr1[sgn] = new double[newnpix];
 	delete[] ipixarr2[sgn];
-	ipixarr2[sgn] = new double[ newnpix ];
-	weights[sgn] = new double[ newnpix ];
+	ipixarr2[sgn] = new double[newnpix];
+	weights[sgn] = new double[newnpix];
 	unsigned int ctr=0, npres;
 	for (histpos = hist.begin(); histpos != hist.end(); ++histpos) {
 	  npres = histpos->second.cnt;
@@ -509,7 +517,7 @@ void doublebeam::readFiles(const std::string& filename1,
 			 errstr.str(),256);
     }
   }
-  if ( fabs( ( pixsize1 - pixsize2 ) / pixsize1 ) > 0.01 ) {
+  if (fabs((pixsize1 - pixsize2) / pixsize1 ) > 0.01) {
     delete[] rpixarr1;
     fits_close_file(fptr,&status);
     std::stringstream errstr("");
@@ -767,7 +775,7 @@ void doublebeam::recieveCopy(MPI::Comm& comm, int src) {
 	pixarr2[i] = new double[ new_n[i] ];
 	ipixarr1[i] = new double[ new_n[i] ];
 	ipixarr2[i] = new double[ new_n[i] ];
-	if (has_weights[i]) weights[i] = new double[ new_n[i] ]; else
+	if (has_weights[i]) weights[i] = new double[new_n[i]]; else
 	  weights[i] = NULL;
       } else {
 	pixarr1[i] = pixarr2[i] = NULL;

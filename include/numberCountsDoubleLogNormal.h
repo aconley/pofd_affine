@@ -97,7 +97,7 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   mutable double* RWork1; //!< R working array 1
   mutable double* RWork2; //!< R working array 2
   mutable double* RWork3; //!< R working array 3
-  void setRWorkSize( unsigned int ) const; //!< Controls R working arrays
+  void setRWorkSize(unsigned int) const; //!< Controls R working arrays
 
   //Convenience functions for spline computations without input checking
   double getSigmaInner(double) const; //!< Inner sigma computation
@@ -258,7 +258,7 @@ class initFileDoubleLogNormal {
   void readFile(const std::string&, bool=false, bool=false); //!< Read file
 
   /*! \brief Set seed of random number generator */
-  void setSeed( unsigned long long int seed ) const { rangen.setSeed(seed); }
+  void setSeed(unsigned long long int seed) const { rangen.setSeed(seed); }
 
   void getKnotPos(std::vector<double>&) const; //!< Gets the knot positions for band 1
   void getKnotVals(std::vector<double>&) const; //!< Gets the knot values for band 1

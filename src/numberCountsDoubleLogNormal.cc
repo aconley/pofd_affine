@@ -46,8 +46,8 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
     knots = new double[NKNOTS];
     logknots = new double[NKNOTS]; 
     logknotvals = new double[NKNOTS]; 
-    splinelog = gsl_spline_alloc( gsl_interp_cspline,
-				  static_cast<size_t>(NKNOTS));
+    splinelog = gsl_spline_alloc(gsl_interp_cspline,
+				 static_cast<size_t>(NKNOTS));
     for (unsigned int i = 0; i < NKNOTS; ++i)
       knots[i] = std::numeric_limits<double>::quiet_NaN();
     for (unsigned int i = 0; i < NKNOTS; ++i)
@@ -65,11 +65,11 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
     sigmavals = new double[NSIGMA];
     sigmainterp = NULL;
     if (NSIGMA > 2)
-      sigmainterp = gsl_interp_alloc( gsl_interp_cspline,
-				      static_cast<size_t>(NSIGMA));
+      sigmainterp = gsl_interp_alloc(gsl_interp_cspline,
+				     static_cast<size_t>(NSIGMA));
     else
-      sigmainterp = gsl_interp_alloc( gsl_interp_linear,
-				      static_cast<size_t>(NSIGMA));
+      sigmainterp = gsl_interp_alloc(gsl_interp_linear,
+				     static_cast<size_t>(NSIGMA));
     for (unsigned int i = 0; i < NSIGMA; ++i)
       sigmaknots[i] = std::numeric_limits<double>::quiet_NaN();
     for (unsigned int i = 0; i < NSIGMA; ++i)
@@ -84,11 +84,11 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
     offsetknots = new double[NOFFSET];
     offsetvals = new double[NOFFSET];
     if (NOFFSET > 2)
-      offsetinterp = gsl_interp_alloc( gsl_interp_cspline,
-				       static_cast<size_t>(NOFFSET));
+      offsetinterp = gsl_interp_alloc(gsl_interp_cspline,
+				      static_cast<size_t>(NOFFSET));
     else
-      offsetinterp = gsl_interp_alloc( gsl_interp_linear,
-				       static_cast<size_t>(NOFFSET));
+      offsetinterp = gsl_interp_alloc(gsl_interp_linear,
+				      static_cast<size_t>(NOFFSET));
     for (unsigned int i = 0; i < NOFFSET; ++i)
       offsetknots[i] =  std::numeric_limits<double>::quiet_NaN();
     for (unsigned int i = 0; i < NOFFSET; ++i)
@@ -145,7 +145,7 @@ numberCountsDoubleLogNormal(const std::vector<double>& KNOTS,
 numberCountsDoubleLogNormal::
 numberCountsDoubleLogNormal(unsigned int nk, const double* const K,
 			    unsigned int ns, const double* const S,
-			    unsigned int no, const double* const O ) :
+			    unsigned int no, const double* const O) :
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
   knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
@@ -172,7 +172,7 @@ numberCountsDoubleLogNormal(unsigned int nk, const double* const K,
 */
 numberCountsDoubleLogNormal::
 numberCountsDoubleLogNormal(const numberCountsDoubleLogNormal& other) {
-  if ( this == &other ) return; //Self-copy
+  if (this == &other) return; //Self-copy
   nknots = nsigmaknots = noffsetknots = 0;
   knots = logknots = logknotvals = sigmaknots = 
     sigmavals = offsetknots = offsetvals = NULL;
@@ -234,7 +234,7 @@ numberCountsDoubleLogNormal(const numberCountsDoubleLogNormal& other) {
     offsetvals_loaded = other.offsetvals_loaded;
     if (noffsetknots > 1)
       gsl_interp_init(offsetinterp, offsetknots, offsetvals,
-		      static_cast<size_t>(other.noffsetknots) );
+		      static_cast<size_t>(other.noffsetknots));
     checkOffsetsValid();
   }
 
@@ -273,7 +273,7 @@ numberCountsDoubleLogNormal::~numberCountsDoubleLogNormal() {
 */
 numberCountsDoubleLogNormal& numberCountsDoubleLogNormal::
 operator=(const numberCountsDoubleLogNormal& other) {
-  if ( this == &other ) return *this; //Self-copy
+  if (this == &other) return *this; //Self-copy
 
   knots_valid = sigmas_valid = offsets_valid = false;
   knotpos_loaded = sigmapos_loaded = offsetpos_loaded = false;
@@ -325,7 +325,7 @@ operator=(const numberCountsDoubleLogNormal& other) {
     offsetvals_loaded = other.offsetvals_loaded;
     if (noffsetknots > 1)
       gsl_interp_init(offsetinterp, offsetknots, offsetvals,
-		      static_cast<size_t>(other.noffsetknots) );
+		      static_cast<size_t>(other.noffsetknots));
     checkOffsetsValid();
   }
 
@@ -378,11 +378,11 @@ void numberCountsDoubleLogNormal::setNSigmas(unsigned int n) {
   }
   if (n > 1) {
     if (n > 2)
-      sigmainterp=gsl_interp_alloc( gsl_interp_cspline,
-				    static_cast<size_t>(n));
+      sigmainterp=gsl_interp_alloc(gsl_interp_cspline,
+				   static_cast<size_t>(n));
     else
-      sigmainterp=gsl_interp_alloc( gsl_interp_linear,
-				    static_cast<size_t>(n));
+      sigmainterp=gsl_interp_alloc(gsl_interp_linear,
+				   static_cast<size_t>(n));
   } else 
     sigmainterp=NULL;
   nsigmaknots = n;
@@ -407,11 +407,11 @@ void numberCountsDoubleLogNormal::setNOffsets(unsigned int n) {
   }
   if (n > 1) {
     if (n > 2)
-      offsetinterp=gsl_interp_alloc( gsl_interp_cspline,
-				     static_cast<size_t>(n));
+      offsetinterp=gsl_interp_alloc(gsl_interp_cspline,
+				    static_cast<size_t>(n));
     else
-      offsetinterp=gsl_interp_alloc( gsl_interp_linear,
-				     static_cast<size_t>(n));
+      offsetinterp=gsl_interp_alloc(gsl_interp_linear,
+				    static_cast<size_t>(n));
   } else 
     offsetinterp=NULL;
   noffsetknots = n;
@@ -601,7 +601,7 @@ setPositions(const std::vector<double>& K, const std::vector<double>& S,
 
   Allocates R work arrays.  Only upsizes 
 */
-void numberCountsDoubleLogNormal::setRWorkSize( unsigned int sz ) const {
+void numberCountsDoubleLogNormal::setRWorkSize(unsigned int sz) const {
   if (sz <= nRWork) return;
   if (RWork1 != NULL) delete[] RWork1;
   if (RWork2 != NULL) delete[] RWork2;
@@ -701,7 +701,7 @@ void numberCountsDoubleLogNormal::checkKnotsValid() const {
     if (std::isnan(knots[i]) || std::isinf(knots[i])) return;
   if (knots[0] <= 0.0) return;
   for (unsigned int i = 1; i < nknots; ++i)
-    if (knots[i] <= knots[i-1] ) return;
+    if (knots[i] <= knots[i-1]) return;
   for (unsigned int i = 0; i < nknots; ++i)
     if (std::isnan(logknotvals[i])) return;
   knots_valid = true;
@@ -720,7 +720,7 @@ void numberCountsDoubleLogNormal::checkSigmasValid() const {
     if (std::isnan(sigmaknots[i]) || std::isinf(sigmaknots[i])) return;
   if (sigmaknots[0] <= 0.0) return;
   for (unsigned int i = 1; i < nsigmaknots; ++i)
-    if (sigmaknots[i] <= sigmaknots[i-1] ) return;
+    if (sigmaknots[i] <= sigmaknots[i-1]) return;
   for (unsigned int i = 0; i < nsigmaknots; ++i)
     if (std::isnan(sigmavals[i]) || std::isinf(sigmavals[i])) return;
   sigmas_valid = true;
@@ -739,11 +739,11 @@ void numberCountsDoubleLogNormal::checkOffsetsValid() const {
   if (noffsetknots == 0) return;
   for (unsigned int i = 0; i < noffsetknots; ++i)
     if (std::isnan(offsetknots[i]) || std::isinf(offsetknots[i])) return;
-  if ( offsetknots[0] <= 0.0 ) return;
+  if (offsetknots[0] <= 0.0) return;
   for (unsigned int i = 1; i < noffsetknots; ++i)
-    if (offsetknots[i] <= offsetknots[i-1] ) return;
+    if (offsetknots[i] <= offsetknots[i-1]) return;
   for (unsigned int i = 0; i < noffsetknots; ++i)
-    if ( std::isnan(offsetvals[i]) ) return;
+    if (std::isnan(offsetvals[i])) return;
   offsets_valid = true;
 }
 
@@ -765,8 +765,8 @@ double numberCountsDoubleLogNormal::getSigmaInner(double f1) const {
   if (nsigmaknots == 1) return sigmavals[0];
   if (f1 <= sigmaknots[0]) return sigmavals[0];
   if (f1 >= sigmaknots[nsigmaknots-1]) return sigmavals[nsigmaknots-1];
-  return gsl_interp_eval( sigmainterp, sigmaknots, sigmavals, 
-			  f1, accsigma );
+  return gsl_interp_eval(sigmainterp, sigmaknots, sigmavals, 
+			 f1, accsigma);
 }
 
 /*!
@@ -779,8 +779,8 @@ double numberCountsDoubleLogNormal::getOffsetInner(double f1) const {
   if (noffsetknots == 1) return offsetvals[0];
   if (f1 <= offsetknots[0]) return offsetvals[0];
   if (f1 >= offsetknots[noffsetknots-1]) return offsetvals[noffsetknots-1];
-  return gsl_interp_eval( offsetinterp, offsetknots, offsetvals,
-			  f1, accoffset );
+  return gsl_interp_eval(offsetinterp, offsetknots, offsetvals,
+			 f1, accoffset);
 }
 
 /*!
@@ -820,7 +820,7 @@ double numberCountsDoubleLogNormal::getOffset(double f1) const {
 */
 double numberCountsDoubleLogNormal::
 getNumberCountsInner(double f1, double f2) const {
-  const double normfac = 1.0/sqrt(2*M_PI);
+  const double normfac = 1.0 / sqrt(2 * M_PI);
   if (f1 < knots[0] || f1 >= knots[nknots-1] || f2 <= 0.0) 
     return 0.0; //Out of range
 
@@ -828,10 +828,10 @@ getNumberCountsInner(double f1, double f2) const {
   double cnts = exp2(gsl_spline_eval(splinelog, log2(f1), acc)); 
 
   //Counts in band 2, Log Normal in f2/f1, multiply them onto n_1
-  double if1 = 1.0/f1;
-  double isigma = 1.0/getSigmaInner( f1 );
-  double tfac = (log(f2*if1) - getOffsetInner( f1 ))*isigma;
-  cnts *= normfac * isigma * exp( -0.5*tfac*tfac ) / f2; //yes, it's 1/f2 here
+  double if1 = 1.0 / f1;
+  double isigma = 1.0/getSigmaInner(f1);
+  double tfac = (log(f2 * if1) - getOffsetInner(f1)) * isigma;
+  cnts *= normfac * isigma * exp(-0.5 * tfac * tfac) / f2; //yes, it's 1/f2 here
   return cnts;
 }
 
@@ -847,9 +847,9 @@ double numberCountsDoubleLogNormal::getNumberCounts(double f1, double f2)
   if ((nknots < 2) || (nsigmaknots < 1) || (noffsetknots < 1))
     return std::numeric_limits<double>::quiet_NaN();
   if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
-  if ( std::isnan(f1) || std::isinf(f1)) 
+  if (std::isnan(f1) || std::isinf(f1)) 
     return std::numeric_limits<double>::quiet_NaN();
-  if ( std::isnan(f2) || std::isinf(f2)) 
+  if (std::isnan(f2) || std::isinf(f2)) 
     return std::numeric_limits<double>::quiet_NaN();
   return getNumberCountsInner(f1,f2);
 }
@@ -885,9 +885,10 @@ double numberCountsDoubleLogNormal::getMaxFlux(unsigned int band) const {
     //Get the expectation and variance in S2/S1 at the top S1 knot
     double sg = getSigmaInner(kv);
     double mu = getOffsetInner(kv);
-    double mn = exp( mu + 0.5*sg*sg );
-    double var = exp( 2*mu + sg*sg )*(exp(sg*sg)-1.0);
-    return kv*(mn + sigmult*sqrt(var));
+    double sg2 = sg * sg;
+    double mn = exp(mu + 0.5 * sg2);
+    double var = exp(2 * mu + sg2)*(exp(sg2) - 1.0);
+    return kv * (mn + sigmult * sqrt(var));
   } else throw affineExcept("numberCountsDoubleLogNormal","getMaxFlux",
 			    "Invalid band (must be 0 or 1)",1);
 }
@@ -932,10 +933,10 @@ double numberCountsDoubleLogNormal::splineInt(double alpha, double beta) const {
   // const1 = beta
   // const2 = 1/2 beta^2
   //So it evaluates 
-  // S_1^power1 n_1(S_1) exp( const1*mu(S_1) + const2*sigma^2(S_2) )
-  double power = alpha+beta;
+  // S_1^power1 n_1(S_1) exp( const1*mu(S_1) + const2*sigma^2(S_2))
+  double power = alpha + beta;
   double const1 = beta;
-  double const2 = 0.5*beta*beta;
+  double const2 = 0.5 * beta * beta;
 
   //There are a -ton- of other things to set though, so that
   // evalfN knows what to do in detail (minima, maxima, etc.)
@@ -1071,7 +1072,7 @@ getRInternal(unsigned int n1, const double* const f1,
   if (bm.hasWeights(sgn)) {
     const double* warr = bm.getWeights(sgn);
     for (unsigned int i = 0; i < n1; ++i) {
-      rowptr = R+i*n2;
+      rowptr = R + i * n2;
       f1val = f1[i];
       if (f1val <= 0 || f1val >= maxf1) { 
 	//R always zero at these boundaries or outside them
@@ -1083,9 +1084,9 @@ getRInternal(unsigned int n1, const double* const f1,
 	  f1prod = f1val * ieta1;
 	  if (f1prod >= minknot && f1prod < maxknot) {
 	    RWork1[j] = log(f1prod) + getOffsetInner(f1prod);
-	    isigma = 1.0 / getSigmaInner( f1prod );
-	    RWork3[j] = -0.5*isigma*isigma;
-	    RWork2[j] = warr[j]*normfac*ieta1*isigma*
+	    isigma = 1.0 / getSigmaInner(f1prod);
+	    RWork3[j] = -0.5 * isigma * isigma;
+	    RWork2[j] = warr[j] * normfac * ieta1 * isigma *
 	      exp2(gsl_spline_eval(splinelog, log2(f1prod), acc));
 	    RWorkValid[j] = true;
 	  } else RWorkValid[j] = false;
@@ -1093,23 +1094,23 @@ getRInternal(unsigned int n1, const double* const f1,
 	//Now loop over flux 2 values
 	for (unsigned int j = 0; j < n2; ++j) {
 	  f2val = f2[j];
-	  if2 = 1.0/f2val;
 	  workval = 0;
-	  if (f2val > 0)
+	  if (f2val > 0) {
+	    if2 = 1.0 / f2val;
 	    for (unsigned int k = 0; k < npsf; ++k)
 	      if (RWorkValid[k]) {
-		f2prod = f2val*iparr2[k];
-		tfac = log(f2prod)-RWork1[k];
-		workval += RWork2[k] * if2 *
-		  exp(tfac * tfac * RWork3[k]);
+		f2prod = f2val * iparr2[k];
+		tfac = log(f2prod) - RWork1[k];
+		workval += RWork2[k] * if2 * exp(tfac * tfac * RWork3[k]);
 	      }
+	  }
 	  rowptr[j] += workval;
 	}
       }
     }
   } else {
     for (unsigned int i = 0; i < n1; ++i) {
-      rowptr = R+i*n2;
+      rowptr = R + i * n2;
       f1val = f1[i];
       if (f1val <= 0.0 || f1val >= maxf1) { 
 	//Do nothing
@@ -1119,8 +1120,8 @@ getRInternal(unsigned int n1, const double* const f1,
 	  f1prod = f1val * ieta1;
 	  if (f1prod >= minknot && f1prod < maxknot) {
 	    RWork1[j] = log(f1prod) + getOffsetInner(f1prod);
-	    isigma = 1.0/getSigmaInner(f1prod);
-	    RWork3[j] = -0.5*isigma*isigma;
+	    isigma = 1.0 / getSigmaInner(f1prod);
+	    RWork3[j] = -0.5 * isigma * isigma;
 	    RWork2[j] = normfac * ieta1 * isigma *
 	      exp2(gsl_spline_eval(splinelog, log2(f1prod), acc));
 	    RWorkValid[j] = true;
@@ -1129,16 +1130,16 @@ getRInternal(unsigned int n1, const double* const f1,
 	//Now loop over flux 2 values
 	for (unsigned int j = 0; j < n2; ++j) {
 	  f2val = f2[j];
-	  if2 = 1.0/f2val;
 	  workval = 0;
-	  if (f2val > 0)
+	  if (f2val > 0) {
+	    if2 = 1.0/f2val;
 	    for (unsigned int k = 0; k < npsf; ++k)
 	      if (RWorkValid[k]) {
-		f2prod = f2val*iparr2[k];
-		tfac = log(f2prod)-RWork1[k];
-		workval += RWork2[k] * if2 *
-		  exp( tfac * tfac * RWork3[k] );
+		f2prod = f2val * iparr2[k];
+		tfac = log(f2prod) - RWork1[k];
+		workval += RWork2[k] * if2 * exp(tfac * tfac * RWork3[k]);
 	      }
+	  }
 	  rowptr[j] += workval;
 	}
       }
@@ -1208,7 +1209,7 @@ double numberCountsDoubleLogNormal::getR(double f1, double f2,
   double prefac;
   prefac = bm.getPixSize()/3600.0;  //To sq deg
   
-  return prefac*prefac*Rval;
+  return prefac * prefac * Rval;
 
 }
 
@@ -1280,7 +1281,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
     break;
   case BEAMALL :
     for (unsigned int k = 0; k < 4; ++k) {
-      if ( bm.hasSign(k) ) getRInternal(n1,f1,n2,f2,bm,k,vals);
+      if (bm.hasSign(k)) getRInternal(n1,f1,n2,f2,bm,k,vals);
     }
     break;
   default :
@@ -1291,8 +1292,8 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 
   //Put in prefac
   double prefac;
-  prefac = bm.getPixSize()/3600.0;  //To sq deg
-  prefac = prefac*prefac;
+  prefac = bm.getPixSize() / 3600.0;  //To sq deg
+  prefac = prefac * prefac;
   for (unsigned int i = 0; i < n1*n2; ++i)
     vals[i] *= prefac;
 }
@@ -1399,7 +1400,7 @@ void numberCountsDoubleLogNormal::recieveCopy(MPI::Comm& comm, int src) {
     comm.Recv(offsetvals, n, MPI::DOUBLE, src, pofd_mcmc::NCDCSENDSIGMAVALS);
     if (n > 1)
       gsl_interp_init(sigmainterp, sigmaknots, sigmavals,
-		      static_cast<size_t>(nsigmaknots) );
+		      static_cast<size_t>(nsigmaknots));
     offsetvals_loaded = loaded;
   }
   checkOffsetsValid();
@@ -1500,7 +1501,7 @@ static double evalPowfNDoubleLogNormal(double s1, void* params) {
       else {
 	gsl_interp* ospl = static_cast<gsl_interp*>(vptr[7]);
 	gsl_interp_accel* oacc = static_cast<gsl_interp_accel*>(vptr[8]);
-	mu = gsl_interp_eval( ospl, offsetpos, offsetval, s1, oacc );
+	mu = gsl_interp_eval(ospl, offsetpos, offsetval, s1, oacc);
       }
       expbit = const1 * mu;
     } else expbit = 0.0;
@@ -1517,7 +1518,7 @@ static double evalPowfNDoubleLogNormal(double s1, void* params) {
       else {
 	gsl_interp* sspl = static_cast<gsl_interp*>(vptr[12]);
 	gsl_interp_accel* sacc = static_cast<gsl_interp_accel*>(vptr[13]);
-	sigma = gsl_interp_eval( sspl, sigmapos, sigmaval, s1, sacc );
+	sigma = gsl_interp_eval(sspl, sigmapos, sigmaval, s1, sacc);
       }
       expbit += const2 * sigma * sigma;
     } 
@@ -1529,7 +1530,7 @@ static double evalPowfNDoubleLogNormal(double s1, void* params) {
   //Now multiply in n(band1)
   gsl_spline* spl = static_cast<gsl_spline*>(vptr[3]);
   gsl_interp_accel* acc = static_cast<gsl_interp_accel*>(vptr[4]);
-  double splval = exp2( gsl_spline_eval(spl,log2(s1),acc) );
+  double splval = exp2(gsl_spline_eval(spl,log2(s1),acc));
   return prefac * splval;
 }
 
@@ -1635,7 +1636,7 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
   std::stringstream str;
   double currval;
 
-  std::ifstream initfs( flname.c_str() );
+  std::ifstream initfs(flname.c_str());
   if (!initfs) {
     initfs.close();
     std::stringstream errmsg;
@@ -1645,18 +1646,18 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
 
   //Read in number
   initfs >> nk >> ns >> no;
-  if ( nk < 2 ) {
+  if (nk < 2) {
     initfs.close();
     throw affineExcept("initFileDoubleLogNormal","readFile",
 		       "Need at least 2 band 1 knots",2);
   }
-  if ( ns < 1 ) {
+  if (ns < 1) {
     initfs.close();
     throw affineExcept("initFileDoubleLogNormal","readFile",
 		       "Need at least one sigma color model knot",3);
 
   }
-  if ( no < 1 ) {
+  if (no < 1) {
     initfs.close();
     throw affineExcept("initFileDoubleLogNormal","readFile",
 		       "Need at least one offset color model knot",4);
@@ -1702,9 +1703,9 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
 	}
       } else {
 	h4.push_back(false);
-	wvec4.push_back( std::numeric_limits<double>::quiet_NaN() );
+	wvec4.push_back(std::numeric_limits<double>::quiet_NaN());
 	h5.push_back(false);
-	wvec5.push_back( std::numeric_limits<double>::quiet_NaN() );
+	wvec5.push_back(std::numeric_limits<double>::quiet_NaN());
       }
     }
   }
@@ -1744,7 +1745,7 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
   //Make sure lower/upper limits don't cross
   if (has_lower_limits && has_upper_limits)
     for (unsigned int i = 0; i < ntot; ++i) {
-      if ( !(has_uplim[i] && has_lowlim[i]) ) continue;
+      if (!(has_uplim[i] && has_lowlim[i])) continue;
       if (uplim[i] < lowlim[i]) {
 	std::stringstream errstr;
 	errstr << "Lower/Upper limits cross at index: " << i << std::endl;
@@ -1753,7 +1754,7 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
 	throw affineExcept("initFileDoubleLogNormal", "readFiles", 
 			   errstr.str(), 6);
       }
-      if ( (sigma[i] > 0.) && (uplim[i] == lowlim[i]) ) {
+      if ((sigma[i] > 0.) && (uplim[i] == lowlim[i])) {
 	std::stringstream errstr;
 	errstr << "Lower/Upper limits meet at index: " << i 
 	       << " but sigma is not zero" << std::endl;
@@ -2008,7 +2009,7 @@ void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
 				   errstr.str(), 5);
 	      }
 	      trialval = rangen.gauss() * sigma[i] + knotval[i];
-	      if ( (trialval >= lowlim[i]) && (trialval <= uplim[i]) ) 
+	      if ((trialval >= lowlim[i]) && (trialval <= uplim[i])) 
 		goodval = true;
 	      ++iters;
 	    }
@@ -2150,7 +2151,7 @@ double initFileDoubleLogNormal::getUpperLimit(unsigned int idx) const {
 
 
 bool initFileDoubleLogNormal::isValid(const paramSet& p) const {
-  if (! (has_lower_limits || has_upper_limits) ) return true;
+  if (! (has_lower_limits || has_upper_limits)) return true;
   unsigned int ntot = nknots + nsigmas + noffsets;
   if (p.getNParams() < ntot)
     throw affineExcept("initFileDoubleLogNormal","isValid",

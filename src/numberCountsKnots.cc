@@ -19,7 +19,7 @@ numberCountsKnots::numberCountsKnots() {
   knotvals_loaded = false;
 }
 
-numberCountsKnots::numberCountsKnots( unsigned int NKNOTS ) :
+numberCountsKnots::numberCountsKnots(unsigned int NKNOTS) :
   nknots(NKNOTS) {
   if (nknots > 0) {
     knots = new double[nknots];
@@ -33,7 +33,7 @@ numberCountsKnots::numberCountsKnots( unsigned int NKNOTS ) :
   knotvals_loaded = false;
 }  
 
-numberCountsKnots::numberCountsKnots( const std::vector<double>& S ) {
+numberCountsKnots::numberCountsKnots(const std::vector<double>& S) {
   nknots = 0;
   knots = NULL;
   logknotvals = NULL;
@@ -41,7 +41,7 @@ numberCountsKnots::numberCountsKnots( const std::vector<double>& S ) {
   knotvals_loaded = false;
 }
 
-numberCountsKnots::numberCountsKnots( unsigned int n, const double* const S) {
+numberCountsKnots::numberCountsKnots(unsigned int n, const double* const S) {
   nknots = 0;
   knots = NULL;
   logknotvals = NULL;
@@ -49,7 +49,7 @@ numberCountsKnots::numberCountsKnots( unsigned int n, const double* const S) {
   knotvals_loaded = false;
 }
 
-numberCountsKnots::numberCountsKnots( const numberCountsKnots& other ) {
+numberCountsKnots::numberCountsKnots(const numberCountsKnots& other) {
   if (this == &other) return; //Self-copy
   nknots = 0;
   knots = NULL;
@@ -163,12 +163,12 @@ bool numberCountsKnots::isValid() const {
   if (nknots == 0) return false;
   if (!knotvals_loaded) return false;
   for (unsigned int i = 0; i < nknots; ++i)
-    if ( std::isnan(knots[i]) ) return false;
-  if ( knots[0] <= 0.0 ) return false;
+    if (std::isnan(knots[i])) return false;
+  if (knots[0] <= 0.0) return false;
   for (unsigned int i = 1; i < nknots; ++i)
-    if (knots[i] <= knots[i-1] ) return false;
+    if (knots[i] <= knots[i-1]) return false;
   for (unsigned int i = 0; i < nknots; ++i)
-    if ( std::isnan(logknotvals[i]) ) return false;
+    if (std::isnan(logknotvals[i])) return false;
   return true;
 }
 
@@ -309,7 +309,7 @@ void initFileKnots::readFile(const std::string& flname,
   unsigned int nreq = 2; //Pos, value
   if (read_sigma) nreq += 1; //Sigma -- read limits not required ever
 
-  std::ifstream initfs( flname.c_str() );
+  std::ifstream initfs(flname.c_str());
   if (!initfs) {
     initfs.close();
     std::stringstream errmsg;
@@ -360,9 +360,9 @@ void initFileKnots::readFile(const std::string& flname,
 	}
       } else {
 	hl.push_back(false);
-	kl.push_back( std::numeric_limits<double>::quiet_NaN() );
+	kl.push_back(std::numeric_limits<double>::quiet_NaN());
 	hu.push_back(false);
-	ku.push_back( std::numeric_limits<double>::quiet_NaN() );
+	ku.push_back(std::numeric_limits<double>::quiet_NaN());
       }
     }
   }
@@ -400,7 +400,7 @@ void initFileKnots::readFile(const std::string& flname,
   //Make sure lower/upper limits don't cross
   if (has_lower_limits && has_upper_limits)
     for (unsigned int i = 0; i < nknots; ++i) {
-      if ( !(has_uplim[i] && has_lowlim[i]) ) continue;
+      if (!(has_uplim[i] && has_lowlim[i])) continue;
       if (uplim[i] < lowlim[i]) {
 	std::stringstream errstr;
 	errstr << "Lower/Upper limits cross at index: " << i << std::endl;
@@ -408,7 +408,7 @@ void initFileKnots::readFile(const std::string& flname,
 	       << " Upper limit: " << uplim[i];
 	throw affineExcept("initFileKnots", "readFiles", errstr.str(), 3);
       }
-      if ( (sigma[i] > 0.) && (uplim[i] == lowlim[i]) ) {
+      if ((sigma[i] > 0.) && (uplim[i] == lowlim[i])) {
 	std::stringstream errstr;
 	errstr << "Lower/Upper limits meet at index: " << i 
 	       << " but sigma is not zero" << std::endl;
@@ -606,7 +606,7 @@ void initFileKnots::generateRandomKnotValues(paramSet& p) const {
 				   errstr.str(),5);
 	      }
 	      trialval = rangen.gauss() * sigma[i] + knotval[i];
-	      if ( (trialval >= lowlim[i]) && (trialval <= uplim[i]) ) 
+	      if ((trialval >= lowlim[i]) && (trialval <= uplim[i])) 
 		goodval = true;
 	      ++iters;
 	    }
@@ -732,7 +732,7 @@ double initFileKnots::getUpperLimit(unsigned int idx) const {
 
 
 bool initFileKnots::isValid(const paramSet& p) const {
-  if (! (has_lower_limits || has_upper_limits) ) return true;
+  if (! (has_lower_limits || has_upper_limits)) return true;
   if (p.getNParams() < nknots)
     throw affineExcept("initFileKnots","isValid",
 		       "Not enough params in paramSet to test validity",1);

@@ -43,7 +43,7 @@ class numberCounts {
   virtual double getMeanFluxSqPerArea() const = 0;
 
   /*! Get differential number counts */
-  virtual double getNumberCounts( double ) const = 0; 
+  virtual double getNumberCounts(double) const = 0; 
 
   /*! \brief Get number of source responses, single value version */
   virtual double getR(double,const beam&, rtype=BEAMBOTH) const = 0;
