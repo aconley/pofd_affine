@@ -45,7 +45,10 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
   if (NKNOTS > 0) {
     knots = new double[NKNOTS];
     logknots = new double[NKNOTS]; 
-    logknotvals = new double[NKNOTS]; 
+    logknotvals = new double[NKNOTS];
+    if (NKNOTS <= 2)
+      throw affineExcept("numberCountsDoubleLogNormal","constructor",
+			 "nknots must be > 2",1);
     splinelog = gsl_spline_alloc(gsl_interp_cspline,
 				 static_cast<size_t>(NKNOTS));
     for (unsigned int i = 0; i < NKNOTS; ++i)
@@ -60,43 +63,38 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
   }
   acc = gsl_interp_accel_alloc();
 
+  sigmainterp = NULL;
   if (NSIGMA > 0) {
     sigmaknots = new double[NSIGMA];
     sigmavals = new double[NSIGMA];
-    sigmainterp = NULL;
-    if (NSIGMA > 2)
-      sigmainterp = gsl_interp_alloc(gsl_interp_cspline,
-				     static_cast<size_t>(NSIGMA));
-    else
-      sigmainterp = gsl_interp_alloc(gsl_interp_linear,
-				     static_cast<size_t>(NSIGMA));
     for (unsigned int i = 0; i < NSIGMA; ++i)
       sigmaknots[i] = std::numeric_limits<double>::quiet_NaN();
     for (unsigned int i = 0; i < NSIGMA; ++i)
       sigmavals[i] = std::numeric_limits<double>::quiet_NaN();
-  } else {
-    sigmaknots = sigmavals = NULL;
-    sigmainterp = NULL;
-  }
+    if (NSIGMA == 2)
+      sigmainterp = gsl_interp_alloc(gsl_interp_linear,
+				     static_cast<size_t>(NSIGMA));
+    else if (NSIGMA > 2)
+      sigmainterp = gsl_interp_alloc(gsl_interp_cspline,
+				     static_cast<size_t>(NSIGMA));
+  } else sigmaknots = sigmavals = NULL;
   accsigma = gsl_interp_accel_alloc();
 
+  offsetinterp = NULL;
   if (NOFFSET > 0) {
     offsetknots = new double[NOFFSET];
     offsetvals = new double[NOFFSET];
-    if (NOFFSET > 2)
-      offsetinterp = gsl_interp_alloc(gsl_interp_cspline,
-				      static_cast<size_t>(NOFFSET));
-    else
-      offsetinterp = gsl_interp_alloc(gsl_interp_linear,
-				      static_cast<size_t>(NOFFSET));
     for (unsigned int i = 0; i < NOFFSET; ++i)
       offsetknots[i] =  std::numeric_limits<double>::quiet_NaN();
     for (unsigned int i = 0; i < NOFFSET; ++i)
       offsetvals[i] =  std::numeric_limits<double>::quiet_NaN();
-  } else {
-    offsetknots = offsetvals = NULL;
-    offsetinterp = NULL;
-  }
+    if (NOFFSET == 2)
+	offsetinterp = gsl_interp_alloc(gsl_interp_linear,
+					static_cast<size_t>(NOFFSET));
+    else if (NOFFSET > 2)
+      offsetinterp = gsl_interp_alloc(gsl_interp_cspline,
+				      static_cast<size_t>(NOFFSET));
+  } else offsetknots = offsetvals = NULL;
   accoffset = gsl_interp_accel_alloc();
 
   gsl_work = gsl_integration_workspace_alloc(1000);
@@ -186,8 +184,8 @@ numberCountsDoubleLogNormal(const numberCountsDoubleLogNormal& other) {
   knotpos_loaded = sigmapos_loaded = offsetpos_loaded = false;
   knotvals_loaded = sigmavals_loaded = offsetvals_loaded = false;
 
-  acc       = gsl_interp_accel_alloc();
-  accsigma  = gsl_interp_accel_alloc();
+  acc = gsl_interp_accel_alloc();
+  accsigma = gsl_interp_accel_alloc();
   accoffset = gsl_interp_accel_alloc();
 
   //Knot positions
@@ -215,8 +213,9 @@ numberCountsDoubleLogNormal(const numberCountsDoubleLogNormal& other) {
     for (unsigned int i = 0; i < nknots; ++i)
       logknotvals[i] = other.logknotvals[i];
     knotvals_loaded = other.knotvals_loaded;
-    gsl_spline_init(splinelog, logknots, logknotvals,
-		    static_cast<size_t>(other.nknots));
+    if (nknots > 2)
+      gsl_spline_init(splinelog, logknots, logknotvals,
+		      static_cast<size_t>(other.nknots));
     checkKnotsValid();
   }
   if (other.sigmavals_loaded) {
@@ -306,8 +305,9 @@ operator=(const numberCountsDoubleLogNormal& other) {
     for (unsigned int i = 0; i < nknots; ++i)
       logknotvals[i] = other.logknotvals[i];
     knotvals_loaded = other.knotvals_loaded;
-    gsl_spline_init(splinelog, logknots, logknotvals,
-		    static_cast<size_t>(other.nknots));
+    if (nknots > 2)
+      gsl_spline_init(splinelog, logknots, logknotvals,
+		      static_cast<size_t>(other.nknots));
     checkKnotsValid();
   }
   if (other.sigmavals_loaded) {
@@ -351,7 +351,7 @@ void numberCountsDoubleLogNormal::setNKnots(unsigned int n) {
   } else {
     knots = logknots = logknotvals = NULL;
   }
-  if (n > 1)
+  if (n > 2)
     splinelog=gsl_spline_alloc(gsl_interp_cspline,
 			       static_cast<size_t>(n));
   else 
@@ -376,15 +376,13 @@ void numberCountsDoubleLogNormal::setNSigmas(unsigned int n) {
   } else {
     sigmaknots = sigmavals = NULL;
   }
-  if (n > 1) {
-    if (n > 2)
-      sigmainterp=gsl_interp_alloc(gsl_interp_cspline,
-				   static_cast<size_t>(n));
-    else
+  sigmainterp = NULL;
+  if (n == 2)
       sigmainterp=gsl_interp_alloc(gsl_interp_linear,
 				   static_cast<size_t>(n));
-  } else 
-    sigmainterp=NULL;
+  else if (n > 2)
+    sigmainterp=gsl_interp_alloc(gsl_interp_cspline,
+				 static_cast<size_t>(n));
   nsigmaknots = n;
 }
 
@@ -405,15 +403,13 @@ void numberCountsDoubleLogNormal::setNOffsets(unsigned int n) {
   } else {
     offsetknots = offsetvals = NULL;
   }
-  if (n > 1) {
-    if (n > 2)
-      offsetinterp=gsl_interp_alloc(gsl_interp_cspline,
-				    static_cast<size_t>(n));
-    else
-      offsetinterp=gsl_interp_alloc(gsl_interp_linear,
-				    static_cast<size_t>(n));
-  } else 
-    offsetinterp=NULL;
+  offsetinterp = NULL;
+  if (n == 2) 
+    offsetinterp=gsl_interp_alloc(gsl_interp_linear,
+				  static_cast<size_t>(n));
+  else if (n > 2)
+    offsetinterp=gsl_interp_alloc(gsl_interp_cspline,
+				  static_cast<size_t>(n));
   noffsetknots = n;
 }
 
@@ -663,9 +659,11 @@ void numberCountsDoubleLogNormal::setParams(const paramSet& F) {
 
   for (unsigned int i = 0; i < nknots; ++i)
     logknotvals[i] = pofd_mcmc::logfac*F[i]; //Convert to base 2
-  if (nknots > 1) 
+  if (nknots > 2) 
     gsl_spline_init(splinelog, logknots, logknotvals,
 		    static_cast<size_t>(nknots));
+  else throw affineExcept("numberCountsDoubleLogNormal", "setParams",
+			  "Need at least 3 knots", 3);
   knotvals_loaded = true;
   checkKnotsValid();
 
@@ -696,7 +694,7 @@ void numberCountsDoubleLogNormal::checkKnotsValid() const {
   knots_valid = false;
   if (!knotpos_loaded) return;
   if (!knotvals_loaded) return;
-  if (nknots < 2) return;
+  if (nknots < 3) return;
   for (unsigned int i = 0; i < nknots; ++i)
     if (std::isnan(knots[i]) || std::isinf(knots[i])) return;
   if (knots[0] <= 0.0) return;
@@ -1362,8 +1360,9 @@ void numberCountsDoubleLogNormal::recieveCopy(MPI::Comm& comm, int src) {
   if (knotpos_loaded && loaded && nknots > 0) {
     comm.Recv(logknotvals,nknots,MPI::DOUBLE,src,
 	      pofd_mcmc::NCDCSENDLOGKNOTVALS);
-    gsl_spline_init(splinelog, logknots, logknotvals,
-		    static_cast<size_t>(nknots));
+    if (nknots > 2)
+      gsl_spline_init(splinelog, logknots, logknotvals,
+		      static_cast<size_t>(nknots));
     knotvals_loaded = loaded;
   }
   checkKnotsValid();
