@@ -192,8 +192,9 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
    double getMaxFlux(unsigned int) const;
 
    double getNS() const; //!< Total number of sources per area
-   double getMeanFluxPerArea(unsigned int) const; //!< Mean flux per unit area (sq deg)
-   double getMeanFluxPowerPerArea(double p1,double p2) const; //!< Integral of s1 to some power and s2 to some power over number counts
+   double getFluxPerArea(unsigned int) const; //!< Flux per unit area (sq deg)
+   double getFluxSqPerArea(unsigned int) const; //!< Flux^2 per unit area (sq deg)
+   double getFluxPowerPerArea(double p1, double p2) const; //!< Integral of s1 to some power and s2 to some power over number counts
 
    //Routines for getting R
    /*! \brief Get R value at single flux1,flux2 value */

@@ -29,7 +29,10 @@ class numberCountsDouble {
   virtual bool isValid() const = 0; //!< See if model params are valid
 
   /*! \brief Get Mean Flux per unit area */
-  virtual double getMeanFluxPerArea(unsigned int) const = 0;
+  virtual double getFluxPerArea(unsigned int) const = 0;
+
+  /*! \brief Get Mean Flux^2 per unit area */
+  virtual double getFluxSqPerArea(unsigned int) const = 0;
 
   /*! \brief Minimum flux model is defined for */
   virtual double getMinFlux(unsigned int) const = 0;

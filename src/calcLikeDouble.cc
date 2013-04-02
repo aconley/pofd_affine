@@ -693,13 +693,13 @@ double calcLikeDouble::getLogLike(const paramSet& p) const {
   }
 
   if (has_cfirb_prior1) {
-    double save_per_area = model.getMeanFluxPerArea(0);
-    double val = (cfirb_prior_mean1 - save_per_area) / cfirb_prior_sigma1;
+    double s_per_area = model.getFluxPerArea(0);
+    double val = (cfirb_prior_mean1 - s_per_area) / cfirb_prior_sigma1;
     LogLike -=  half_log_2pi + log(cfirb_prior_sigma1) + 0.5*val*val;
   }
   if (has_cfirb_prior2) {
-    double save_per_area = model.getMeanFluxPerArea(1);
-    double val = (cfirb_prior_mean2 - save_per_area) / cfirb_prior_sigma2;
+    double s_per_area = model.getFluxPerArea(1);
+    double val = (cfirb_prior_mean2 - s_per_area) / cfirb_prior_sigma2;
     LogLike -=  half_log_2pi + log(cfirb_prior_sigma2) + 0.5*val*val;
   }
 

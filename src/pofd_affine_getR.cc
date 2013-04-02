@@ -100,7 +100,7 @@ int getRSingle( int argc, char** argv ) {
       rt = numberCounts::BEAMNEG;
     
     if (verbose) {
-      std::cout << "Mean flux per area: " << model.getMeanFluxPerArea()
+      std::cout << "Flux per area: " << model.getFluxPerArea()
 		<< std::endl;
       std::cout << "Beam area: " << bm.getEffectiveArea() << std::endl;
       if (bm.hasPos()) std::cout << " Beam has positive components" 
@@ -236,12 +236,12 @@ int getRDouble(int argc, char** argv) {
       rt = numberCountsDouble::BEAMALL;
     
     if (verbose) {
-      std::cout << "Mean flux per area, band 1: " 
-		<< model.getMeanFluxPerArea(0)
+      std::cout << "Flux per area, band 1: " 
+		<< model.getFluxPerArea(0)
 		<< std::endl;
       std::cout << "Beam area, band 1: " << bm.getEffectiveArea1() << std::endl;
-      std::cout << "Mean flux per area, band 2: " 
-		<< model.getMeanFluxPerArea(1)
+      std::cout << "Flux per area, band 2: " 
+		<< model.getFluxPerArea(1)
 		<< std::endl;
       std::cout << "Beam area, band 2: " << bm.getEffectiveArea2() << std::endl;
     }

@@ -158,15 +158,14 @@ int getPDSingle(int argc, char **argv) {
 
     if (! has_user_maxflux) {
       //Need to decide on some estimate
-      double meanFluxPerBeam = model.getMeanFluxPerArea() * 
-	bm.getEffectiveArea();
-      maxflux = model.getMaxFlux() - meanFluxPerBeam;
+      double fluxPerBeam = model.getFluxPerArea() * bm.getEffectiveArea();
+      maxflux = model.getMaxFlux() - fluxPerBeam;
     }
 
     if (verbose) {
       printf("  Beam area: %0.3e\n",bm.getEffectiveArea());
-      printf("  Mean flux per area: %0.3f\n",
-	     model.getMeanFluxPerArea());
+      printf("  Flux per area: %0.3f\n",
+	     model.getFluxPerArea());
       printf("  Nknots: %u\n",model_info.getNKnots());
       printf("  Sigma:  %0.5f\n",sigma_noise);
       if (histogram)
@@ -342,23 +341,21 @@ int getPDDouble(int argc, char** argv) {
 
     if (! has_user_maxflux1) {
       //Need to decide on some estimate
-      double meanFluxPerBeam = model.getMeanFluxPerArea(0) * 
-	bm.getEffectiveArea1();
-      maxflux1 = model.getMaxFlux(0) - meanFluxPerBeam;
+      double fluxPerBeam = model.getFluxPerArea(0) * bm.getEffectiveArea1();
+      maxflux1 = model.getMaxFlux(0) - fluxPerBeam;
     }
     if (! has_user_maxflux2) {
-      double meanFluxPerBeam = model.getMeanFluxPerArea(1) * 
-	bm.getEffectiveArea2();
-      maxflux2 = model.getMaxFlux(1) - meanFluxPerBeam;
+      double fluxPerBeam = model.getFluxPerArea(1) * bm.getEffectiveArea2();
+      maxflux2 = model.getMaxFlux(1) - fluxPerBeam;
     }
 
     if (verbose) {
       printf("  Beam area, band 1: %0.3e\n",bm.getEffectiveArea1());
-      printf("  Mean flux per area, band 1: %0.3f\n",
-	     model.getMeanFluxPerArea(0));
+      printf("  Flux per area, band 1: %0.3f\n",
+	     model.getFluxPerArea(0));
       printf("  Beam area, band 2: %0.3e\n",bm.getEffectiveArea2());
-      printf("  Mean flux per area, band 2: %0.3f\n",
-	     model.getMeanFluxPerArea(1));
+      printf("  Flux per area, band 2: %0.3f\n",
+	     model.getFluxPerArea(1));
       printf("  Nknots: %u\n",model_info.getNKnots());
       printf("  Nsigma: %u\n",model_info.getNSigmas());
       printf("  Noffset: %u\n",model_info.getNOffsets());
@@ -387,8 +384,9 @@ int getPDDouble(int argc, char** argv) {
     //Get P(D)
     if (verbose) std::cout << "Getting P(D) with transform length: " 
 			   << nflux << std::endl;
-    pfactory.initPD(nflux,sigma1,sigma2,maxflux1,maxflux2,model,bm,doedge);
-    pfactory.getPD( sigma1, sigma2, pd, false, true );
+    pfactory.initPD(nflux, sigma1, sigma2, maxflux1, maxflux2,
+		    model, bm, doedge);
+    pfactory.getPD(sigma1, sigma2, pd, false, true);
 
     //Write it
     if (verbose) std::cout << "Writing P(D) to file " << outputfile 

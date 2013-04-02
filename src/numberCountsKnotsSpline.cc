@@ -224,11 +224,11 @@ double numberCountsKnotsSpline::getNS() const {
   return splineInt(0);
 }
 
-double numberCountsKnotsSpline::getMeanFluxPerArea() const {
+double numberCountsKnotsSpline::getFluxPerArea() const {
   return splineInt(1);
 }
 
-double numberCountsKnotsSpline::getMeanFluxSqPerArea() const {
+double numberCountsKnotsSpline::getFluxSqPerArea() const {
   return splineInt(2);
 }
   

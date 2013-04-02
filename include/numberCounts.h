@@ -37,10 +37,10 @@ class numberCounts {
   /*! \brief Return the number of sources per unit area */
   virtual double getNS() const = 0; 
 
-  /*! \brief Get mean flux per unit area) */
-  virtual double getMeanFluxPerArea() const = 0; 
+  /*! \brief Get flux per unit area */
+  virtual double getFluxPerArea() const = 0; 
   /*! \brief Get mean flux^2 per unit area) */
-  virtual double getMeanFluxSqPerArea() const = 0;
+  virtual double getFluxSqPerArea() const = 0;
 
   /*! Get differential number counts */
   virtual double getNumberCounts(double) const = 0; 

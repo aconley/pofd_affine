@@ -124,7 +124,7 @@ int getNSingle( int argc, char** argv ) {
       dflux = 1.0; //Not used
 
     if (verbose) {
-      std::cout << "Mean flux per sq degree: " << model.getMeanFluxPerArea()
+      std::cout << "Flux per sq degree: " << model.getFluxPerArea()
 		<< std::endl;
       std::cout << "Number of sources per area: "
 		<< model.getNS() << std::endl;
@@ -277,10 +277,10 @@ int getNDouble( int argc, char** argv ) {
       dflux2 = 1.0; //Not used
 
     if (verbose) {
-      std::cout << "Mean flux per sq degree, band 1: "
-		<< model.getMeanFluxPerArea(0) << std::endl;
-      std::cout << "Mean flux per sq degree, band 2: "
-		<< model.getMeanFluxPerArea(1) << std::endl;
+      std::cout << "Flux per sq degree, band 1: "
+		<< model.getFluxPerArea(0) << std::endl;
+      std::cout << "Flux per sq degree, band 2: "
+		<< model.getFluxPerArea(1) << std::endl;
       std::cout << "Number of sources per area: "
 		<< model.getNS() << std::endl;
     }

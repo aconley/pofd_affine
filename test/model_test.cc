@@ -412,10 +412,10 @@ TEST(model1DTest, Integration) {
 
   EXPECT_NEAR(3.12022e6, model.getNS(), 1e4) <<
     "Unexpected total number of sources for test case";
-  EXPECT_NEAR(7386.67, model.getMeanFluxPerArea(), 1.0) <<
-    "Unexpected mean flux per area";
-  EXPECT_NEAR(18.132, model.getMeanFluxSqPerArea(), 0.01) <<
-    "Unexpected mean flux^2 per area";
+  EXPECT_NEAR(7386.67, model.getFluxPerArea(), 1.0) <<
+    "Unexpected flux per area";
+  EXPECT_NEAR(18.132, model.getFluxSqPerArea(), 0.01) <<
+    "Unexpected flux^2 per area";
 }
 
 //Test getting R; this depends on the details of
@@ -724,10 +724,10 @@ TEST(model2DTest, Integration) {
 
   EXPECT_NEAR(57266.8, model.getNS(), 10.0) <<
     "Total number of sources not as expected";
-  EXPECT_NEAR(152.262, model.getMeanFluxPerArea(0), 0.1) <<
-    "Mean flux in band 1 not as expected";
-  EXPECT_NEAR(148.585, model.getMeanFluxPerArea(1), 0.1) <<
-    "Mean flux in band 2 not as expected";
+  EXPECT_NEAR(152.262, model.getFluxPerArea(0), 0.1) <<
+    "Flux per area in band 1 not as expected";
+  EXPECT_NEAR(148.585, model.getFluxPerArea(1), 0.1) <<
+    "Flux per area in band 2 not as expected";
 }
 
 TEST(model2DTest, getR) {

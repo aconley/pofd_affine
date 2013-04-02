@@ -63,8 +63,8 @@ class numberCountsKnotsSpline : public numberCountsKnots {
   double getNumberCounts(double) const; //!< Evaluates number counts model
   double getNS() const; //!< Return the number of sources with \f$S > S_{min}\f$ per square degree
 
-  double getMeanFluxPerArea() const; //!< Mean flux per unit area (sq deg)
-  double getMeanFluxSqPerArea() const; //!< Mean flux squared per unit area (sq deg)
+  double getFluxPerArea() const; //!< Flux per unit area (sq deg)
+  double getFluxSqPerArea() const; //!< Flux squared per unit area (sq deg)
   
   /*! \brief Get R at single flux value */
   double getR(double,const beam&, rtype=BEAMPOS) const;

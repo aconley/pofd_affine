@@ -984,15 +984,38 @@ double numberCountsDoubleLogNormal::getNS() const {
 
 /*!
   \param[in] band Which band to select; 0 for band 1, 1 for band 2
-  \returns The mean flux per area -- however the model defines area and
+  \returns The flux per area -- however the model defines area and
            flux
 */
 double numberCountsDoubleLogNormal::
-getMeanFluxPerArea(unsigned int band) const {
-  if (band == 0) return splineInt(1.0,0.0);
-  else if (band == 1) return splineInt(0.0,1.0);
+getFluxPerArea(unsigned int band) const {
+  if (band == 0) return splineInt(1.0, 0.0);
+  else if (band == 1) return splineInt(0.0, 1.0);
   else throw affineExcept("numberCountsDoubleLogNormal",
-			  "getMeanFluxPerArea","Band must be 0 or 1",1);
+			  "getFluxPerArea","Band must be 0 or 1",1);
+}
+
+/*!
+  \param[in] band Which band to select; 0 for band 1, 1 for band 2
+  \returns The flux density^2 per area -- however the model defines area and
+           flux
+*/
+double numberCountsDoubleLogNormal::
+getFluxSqPerArea(unsigned int band) const {
+  if (band == 0) return splineInt(2.0, 0.0);
+  else if (band == 1) return splineInt(0.0, 2.0);
+  else throw affineExcept("numberCountsDoubleLogNormal",
+			  "getFluxSqPerArea","Band must be 0 or 1",1);
+}
+
+/*!
+  \param[in] p1 Power of band 1 flux density
+  \param[in] p2 Power of band 2 flux density
+  \returns The flux density (band1)^p1 * flux density (band2)^p2 per area
+ */
+double numberCountsDoubleLogNormal::
+getFluxPowerPerArea(double p1, double p2) const {
+  return splineInt(p1, p2);
 }
 
 /*!
@@ -1473,17 +1496,16 @@ static double evalPowfNDoubleLogNormal(double s1, void* params) {
   double const1 = *static_cast<double*>(vptr[1]);
   double const2 = *static_cast<double*>(vptr[2]);
 
-  //Construct thing we multiply spline by
+  //Construct thing we multiply spline by  
   double prefac;
-  
   //Construct s1^power part
-  if (power == 0) 
-    prefac = 1.0; 
-  else {
-    if (fabs(power-1.0) < 1e-6) prefac = s1; 
-    else if (fabs(power-2.0) < 1e-6) prefac = s1*s1;
-    else prefac = pow(s1,power);
-  }
+  if (fabs(power) < 1e-6)
+    prefac = 1.0;
+  else if (fabs(power - 1.0) < 1e-6) 
+    prefac = s1; 
+  else if (fabs(power - 2.0) < 1e-6) 
+    prefac = s1 * s1;
+  else prefac = pow(s1, power);
 
   //Now exponential part
   if (const1 != 0 || const2 != 0) {
