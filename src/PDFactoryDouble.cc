@@ -502,7 +502,7 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
 #ifdef TIMING
     starttime = std::clock();
 #endif
-    model.getR(nedge,REdgeFlux1,nedge,REdgeFlux2,bm,REdgeWork,
+    model.getR(nedge, REdgeFlux1, nedge, REdgeFlux2, bm, REdgeWork,
 	       numberCountsDouble::BEAMALL);
 #ifdef TIMING
     RTime += std::clock() - starttime;
@@ -550,22 +550,22 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
 #ifdef TIMING
       starttime = std::clock();
 #endif
-      model.getR(nedge,REdgeFlux1,1,&fixed_value,bm,REdgeWork,
+      model.getR(nedge, REdgeFlux1, 1, &fixed_value, bm, REdgeWork,
 		 numberCountsDouble::BEAMALL);
 #ifdef TIMING
       RTime += std::clock() - starttime;
 #endif
       if (use_edge_log_x) {
-	scriptr = 0.5*(REdgeFlux1[0]*REdgeWork[0]+
-		       REdgeFlux1[nedge-1]*REdgeWork[nedge-1]);
+	scriptr = 0.5*(REdgeFlux1[0] * REdgeWork[0]+
+		       REdgeFlux1[nedge-1] * REdgeWork[nedge-1]);
 	for (unsigned int i = 1; i < nedge-1; ++i)
-	  scriptr += REdgeFlux1[i]*REdgeWork[i];
+	  scriptr += REdgeFlux1[i] * REdgeWork[i];
       } else {
-	scriptr = 0.5*(REdgeWork[0]+REdgeWork[nedge-1]);
+	scriptr = 0.5*(REdgeWork[0] + REdgeWork[nedge-1]);
 	for (unsigned int i = 1; i < nedge-1; ++i)
 	  scriptr += REdgeWork[i];
       }
-      rvals[j] = scriptr*iRxnorm;
+      rvals[j] = scriptr * iRxnorm;
     }
     
     //And Ry = R[x,0]
@@ -575,22 +575,22 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
 #ifdef TIMING
       starttime = std::clock();
 #endif
-      model.getR(1,&fixed_value,nedge,REdgeFlux2,bm,REdgeWork,
+      model.getR(1, &fixed_value, nedge, REdgeFlux2, bm, REdgeWork,
 		 numberCountsDouble::BEAMALL);
 #ifdef TIMING
       RTime += std::clock() - starttime;
 #endif
       if (use_edge_log_y) {
-	scriptr = 0.5*(REdgeFlux2[0]*REdgeWork[0]+
-		       REdgeFlux2[nedge-1]*REdgeWork[nedge-1]);
+	scriptr = 0.5*(REdgeFlux2[0] * REdgeWork[0]+
+		       REdgeFlux2[nedge-1] * REdgeWork[nedge-1]);
 	for (unsigned int j = 1; j < nedge-1; ++j)
-	  scriptr += REdgeFlux2[j]*REdgeWork[j];
+	  scriptr += REdgeFlux2[j] * REdgeWork[j];
       } else {
-	scriptr = 0.5*(REdgeWork[0]+REdgeWork[nedge-1]);
+	scriptr = 0.5*(REdgeWork[0] + REdgeWork[nedge-1]);
 	for (unsigned int j = 1; j < nedge-1; ++j)
 	  scriptr += REdgeWork[j];
       }
-      rvals[i*n] = scriptr*iRynorm;
+      rvals[i*n] = scriptr * iRynorm;
     }
   } else {
     //Just set edges to zero
@@ -605,13 +605,13 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
 #ifdef TIMING
   starttime = std::clock();
 #endif
-  getRStats(n,mn1,mn2,var_noi1,var_noi2);
+  getRStats(n, mn1, mn2, var_noi1, var_noi2);
 #ifdef TIMING
   RStatsTime += std::clock() - starttime;
 #endif
   //Add the instrument noise into the variances
-  sg1 = sqrt( var_noi1 + sigma1*sigma1 );
-  sg2 = sqrt( var_noi2 + sigma2*sigma2 );
+  sg1 = sqrt(var_noi1 + sigma1*sigma1);
+  sg2 = sqrt(var_noi2 + sigma2*sigma2);
 
   //Decide if we will shift and pad, and if so by how much
   //Only do shifts if the noise is larger than one actual step size
@@ -630,8 +630,12 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
 	      << mn2 << std::endl;
     std::cout << " Initial stdev estimate band1: " << sg1 << " band2: "
 	      << sg2 << std::endl;
-    std::cout << " Additional shift applied band1: " << shift1 << " band2: "
-	      << shift2 << std::endl;
+    if (doshift1)
+      std::cout << " Additional shift in band 1: " << shift1 << std::endl;
+    else std::cout << " Not applying additional shift in band 1" << std::endl;
+    if (doshift2)
+      std::cout << " Additional shift in band 2: " << shift2 << std::endl;
+    else std::cout << " Not applying additional shift in band 2" << std::endl;
   }
 
   //Make sure that maxflux is large enough that we don't get
@@ -706,7 +710,7 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
   // number of sources in each bin.  Note we do this
   // after calling getRStats, since the thing we have
   // is no longer strictly R after this.
-  double dfactor = dflux1*dflux2;
+  double dfactor = dflux1 * dflux2;
   for (unsigned int i = 0; i < maxidx1; ++i) {
     rptr = rvals + n*i;
     for (unsigned int j = 0; j < maxidx2; ++j)

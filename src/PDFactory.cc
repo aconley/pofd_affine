@@ -480,6 +480,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
     std::cout << " Initial stdev estimate: " << sg << std::endl;
     if (doshift)
       std::cout << " Additional shift applied: " << shift << std::endl;
+    else std::cout << " Not applying additional shift" << std::endl;
   }
 
   //Make sure that maxflux is large enough that we don't get
