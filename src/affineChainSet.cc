@@ -74,7 +74,7 @@ affineStepChunk::~affineStepChunk() {
 void affineStepChunk::fillFromLastStep(const affineStepChunk& other)
   throw (affineExcept) {
   unsigned int sz;
-  sz = other.nwalkers*other.niters*other.nparams;
+  sz = other.nwalkers * other.niters * other.nparams;
   if (sz == 0)
     throw affineExcept("affineStepChunk","fillFromLastStep",
 		       "Other chunk has zero size",1);
@@ -100,9 +100,8 @@ void affineStepChunk::fillFromLastStep(const affineStepChunk& other)
       nsteps = NULL;
       return;
     }
-  } else {
-    sz = nwalkers * niters * nparams;
-  }
+  } 
+
   //Now, for each walker, set the last param
   unsigned int laststep;
   double *ptro, *ptrn;
@@ -150,28 +149,26 @@ affineStepChunk& affineStepChunk::operator=(const affineStepChunk& other) {
   if (this == &other) return *this; //Self copy
   
   //Unless they are exactly the same size, have to reallocate
+  unsigned int sz = nwalkers * niters * nparams;
   if ((nwalkers != other.nwalkers) ||
       (niters != other.niters)   ||
       (nparams != other.nparams)) {
+
     clear();
     nwalkers = other.nwalkers;
     niters = other.niters;
     nparams = other.nparams;
+    sz = nwalkers * niters * nparams;
 
-    unsigned int sz = nwalkers * niters * nparams;
     if (sz > 0) {
       steps = new double[sz];
       logLike = new double[nwalkers*niters];
       nsteps = new unsigned int[nwalkers];
-    } else {
-      steps = NULL;
-      logLike = NULL;
-      nsteps = NULL;
-    }
+    } 
   }
 
   //Now copy
-  unsigned int sz = nwalkers * niters * nparams;
+
   if (sz > 0) {
     for (unsigned int i = 0; i < sz; ++i)
       steps[i] = other.steps[i];
@@ -210,7 +207,7 @@ double affineStepChunk::getMaxLogLike() const {
   return maxval;
 }
 
-void affineStepChunk::getMaxLogLikeParam(double& maxval,paramSet& p) const {
+void affineStepChunk::getMaxLogLikeParam(double& maxval, paramSet& p) const {
   if (nwalkers == 0 || niters == 0 || nparams == 0) {
     maxval = std::numeric_limits<double>::quiet_NaN();
     return;
@@ -225,14 +222,14 @@ void affineStepChunk::getMaxLogLikeParam(double& maxval,paramSet& p) const {
     if (nsteps[startidx] > 0) break;
   if (startidx == nwalkers) {
     //Didn't find anything
-    val = std::numeric_limits<double>::quiet_NaN();
+    maxval = std::numeric_limits<double>::quiet_NaN();
     return;
   }
-  maxval = logLike[startidx*niters];
+  maxval = logLike[startidx * niters];
   iloc = startidx;
   jloc = 0;
   for (unsigned int i = startidx; i < nwalkers; ++i) {
-    sgl_ptr = logLike + i*niters;
+    sgl_ptr = logLike + i * niters;
     curr_nsteps = nsteps[i];
     for (unsigned int j = 0; j < curr_nsteps; ++j) {
       val = sgl_ptr[j];
@@ -242,7 +239,7 @@ void affineStepChunk::getMaxLogLikeParam(double& maxval,paramSet& p) const {
       }
     }
   }
-  p.setParamValues(nparams,steps+(iloc*niters+jloc)*nparams);
+  p.setParamValues(nparams, steps + (iloc * niters + jloc) * nparams);
   return;
 }
 
@@ -635,17 +632,20 @@ double affineChainSet::getMaxLogLike() const {
 
 void affineChainSet::getMaxLogLikeParam(double& maxval, paramSet& p) const {
   p.setNParams(nparams);
+
   if (steps.size() == 0) {
     maxval = std::numeric_limits<double>::quiet_NaN();
+    return;
   }
+
   double currval;
   unsigned int firststep = 0;
   if (skipfirst) firststep = 1;
-  steps[firststep]->getMaxLogLikeParam(maxval,p);
+  steps[firststep]->getMaxLogLikeParam(maxval, p);
 
   paramSet cp(nparams);
-  for (unsigned int i = firststep+1; i < steps.size(); ++i) {
-    steps[i]->getMaxLogLikeParam(currval,cp);
+  for (unsigned int i = firststep + 1; i < steps.size(); ++i) {
+    steps[i]->getMaxLogLikeParam(currval, cp);
     if (currval > maxval) {
       maxval = currval;
       p = cp;
@@ -720,7 +720,6 @@ void affineChainSet::getAverageParamVector(unsigned int paramidx,
     //First find the minimum number of steps for this param in this
     // chunk, store in nsteps
     nsteps = chunkptr->nsteps[0];
-    currsteps = 0;
     for (unsigned int j = 1; j < nwalkers; ++j) {
       currsteps = chunkptr->nsteps[i];
       if (currsteps < nsteps) nsteps = currsteps;
@@ -836,7 +835,9 @@ double affineChainSet::getAcor(unsigned int paramidx, double& mean,
     throw affineExcept("affineChainSet","getAcor",
 		       "Specified paramidx exceeds number available",1);
 
+  double tau;
   sigma = std::numeric_limits<double>::quiet_NaN();
+  tau = std::numeric_limits<double>::quiet_NaN();
 
   //Get the averaged parameters
   std::vector<double> pvec;
@@ -848,8 +849,7 @@ double affineChainSet::getAcor(unsigned int paramidx, double& mean,
     return std::numeric_limits<double>::quiet_NaN();
   }
 
-  double tau;
-  acor(mean,sigma,tau,pvec,pvec.size());
+  acor(mean, sigma, tau, pvec, pvec.size());
   succ = true;
   return tau;
 }
