@@ -28,6 +28,9 @@ AC_ARG_ENABLE(debug,
 AC_ARG_ENABLE(profile,
               [  --enable-profile        Add gprof-friendly stuff to CXXFLAGS],
               [ CXXFLAGS="$CXXFLAGS -pg -fprofile-arcs" ],)
+AC_ARG_ENABLE(analyze,
+              [  --enable-analyze        Run static checker (if using clang)],
+              [ CXXFLAGS="$CXXFLAGS --analyze" ],)
 
 dnl Example code
 AM_CONDITIONAL(DOEXAMPLES, false)
@@ -59,6 +62,10 @@ if test $usetest; then
       		    AC_MSG_ERROR("libgtest not in location specified by --with-gtestlib: $gtestlib"),
       		    [ -lgtest -lgtest_main -L$gtestlib ] )
    else
+      AC_MSG_RESULT( Checking gtest_main )
+      AC_CHECK_LIB( gtest_main, main, ,
+      AC_MSG_ERROR("libgtest_main not found -- use --with-gtestlib"),
+                   [ -lgtest -lgtest_main ] )
       AC_MSG_RESULT( Checking gtest )
       AC_CHECK_LIB( gtest, main, ,
       AC_MSG_ERROR("libgtest not found -- use --with-gtestlib"),
