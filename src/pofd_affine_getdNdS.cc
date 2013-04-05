@@ -47,6 +47,7 @@ int getNSingle( int argc, char** argv ) {
   has_user_minflux = false;
   has_user_maxflux = false;
   logspace         = false;
+  verbose          = false;
 
   int c;
   int option_index = 0;
@@ -192,6 +193,7 @@ int getNDouble( int argc, char** argv ) {
   nflux2            = 100;
   has_user_maxflux1 = false;
   has_user_maxflux2 = false;
+  verbose           = false;
 
   int c;
   int option_index = 0;

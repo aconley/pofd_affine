@@ -449,15 +449,17 @@ void calcLike::readDataFromFiles(const std::vector<std::string>& datafiles,
     nbeamsets = newnbeamsets;
   }
 
-  grpmap_it = grpmap.begin();
-  for (unsigned int i=0; grpmap_it != grpmap.end(); ++grpmap_it, ++i) {
-    beamsets[i].setNInterp(ninterp);
-    beamsets[i].readDataFromFiles(grpmap_it->second.datafiles,
-				  IGNOREMASK, MEANSUB, bin_data, nbins);
-    beamsets[i].readBeam(grpmap_it->second.beamfile, 
-			 HISTOGRAM, HISTOGRAMLOGSTEP);
-    beamsets[i].setSigmaBase(grpmap_it->second.sigmas);
-    beamsets[i].setLikeNorm(grpmap_it->second.like_norms);
+  if (nbeamsets > 0) {
+    grpmap_it = grpmap.begin();
+    for (unsigned int i=0; grpmap_it != grpmap.end(); ++grpmap_it, ++i) {
+      beamsets[i].setNInterp(ninterp);
+      beamsets[i].readDataFromFiles(grpmap_it->second.datafiles,
+				    IGNOREMASK, MEANSUB, bin_data, nbins);
+      beamsets[i].readBeam(grpmap_it->second.beamfile, 
+			   HISTOGRAM, HISTOGRAMLOGSTEP);
+      beamsets[i].setSigmaBase(grpmap_it->second.sigmas);
+      beamsets[i].setLikeNorm(grpmap_it->second.like_norms);
+    }
   }
 }
 

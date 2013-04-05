@@ -29,7 +29,7 @@ PDDouble::~PDDouble() {
  */
 void PDDouble::resize(unsigned int N1, unsigned int N2) {
   //Doesn't actually resize arrays if it can avoid it
-  unsigned int newcap = N1*N2;
+  unsigned int newcap = N1 * N2;
   if (newcap > capacity) {
     if (pd_ != NULL) fftw_free(pd_);
     if (newcap > 0) pd_ = (double *) fftw_malloc(sizeof(double) * newcap);
@@ -608,15 +608,19 @@ void PDDouble::getMeansAndVars(double& mean1, double& mean2,
 
 PDDouble& PDDouble::operator=(const PDDouble& other) {
   if (this == &other) return *this; //Self-copy
-  resize(other.n1,other.n2);
+  resize(other.n1, other.n2);
   minflux1 = other.minflux1;
   dflux1 = other.dflux1;
   minflux2 = other.minflux2;
   dflux2 = other.dflux2;
-  unsigned int sz = n1*n2;
-  if (sz > 0)
+  unsigned int sz = n1 * n2;
+  if (sz > 0) {
+    if (pd_ == NULL)
+      throw affineExcept("PDDouble", "operator=", 
+			 "Internal storage not initialized", 1);
     for (unsigned int i = 0; i < sz; ++i)
       pd_[i] = other.pd_[i];
+  }
   logflat = other.logflat;
   return *this;
 }
@@ -625,15 +629,19 @@ void PDDouble::fill(unsigned int N1, double MINFLUX1, double DFLUX1,
 		    unsigned int N2, double MINFLUX2, double DFLUX2,
 		    const double* const PD, bool LOG) {
   logflat = LOG;
-  resize(N1,N2);
+  resize(N1, N2);
   minflux1 = MINFLUX1;
   dflux1 = DFLUX1;
   minflux2 = MINFLUX2;
   dflux2 = DFLUX2;
   unsigned int sz = n1*n2;
-  if (sz > 0)
+  if (sz > 0) {
+    if (pd_ == NULL)
+      throw affineExcept("PDDouble", "operator=", 
+			 "Internal storage not initialized", 1);
     for (unsigned int i = 0; i < sz; ++i)
       pd_[i] = PD[i];
+  }
 }
 
 /*!
@@ -818,7 +826,7 @@ double PDDouble::getLogLikeUnbinned(const fitsDataDouble& data) const {
   const double* flux1;
   const double* flux2;
   double cflux1, cflux2, loglike, interp_val, delt1, delt2;
-  double u,t,omu,omt;
+  double u, t, omu, omt;
   double idflux1 = 1.0/dflux1;
   double idflux2 = 1.0/dflux2;
 
@@ -826,7 +834,6 @@ double PDDouble::getLogLikeUnbinned(const fitsDataDouble& data) const {
   flux1 = data.getData1();
   flux2 = data.getData2();
 
-  loglike = 0.0;
   //Do interpolation.  Note we don't call getPDval, since
   // we do the interpolation here always in log space no matter
   // how it is stored internally, and because it's more efficient

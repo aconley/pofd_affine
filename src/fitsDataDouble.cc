@@ -78,8 +78,7 @@ bool fitsDataDouble::readFile(const std::string& file,unsigned int& ndata,
   }
 
   //Try to find a mask extension
-  nmask = 0;
-  if ( ! ignore_mask ) {
+  if (!ignore_mask) {
     fits_movnam_hdu(fptr, IMAGE_HDU, const_cast<char*>("mask"),
 		    0, &status);
     if (status == 0) has_mask = true; else {

@@ -554,18 +554,21 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
     else beamsets = NULL;
     nbeamsets = newnbeamsets;
   }
-  grpmap_it = grpmap.begin();
-  for (unsigned int i=0; grpmap_it != grpmap.end(); ++grpmap_it, ++i) {
-    beamsets[i].setNEdge(nedge);
-    beamsets[i].readDataFromFiles(grpmap_it->second.datafiles1,
-				  grpmap_it->second.datafiles2,
-				  IGNOREMASK, MEANSUB, bin_data, nbins);
-    beamsets[i].readBeam(grpmap_it->second.beamfile1, 
-			 grpmap_it->second.beamfile2, 
-			 HISTOGRAM, HISTOGRAMLOGSTEP);
-    beamsets[i].setSigmaBase1(grpmap_it->second.sigmas1);
-    beamsets[i].setSigmaBase2(grpmap_it->second.sigmas2);
-    beamsets[i].setLikeNorm(grpmap_it->second.like_norms);
+
+  if (nbeamsets > 0) {
+    grpmap_it = grpmap.begin();
+    for (unsigned int i=0; grpmap_it != grpmap.end(); ++grpmap_it, ++i) {
+      beamsets[i].setNEdge(nedge);
+      beamsets[i].readDataFromFiles(grpmap_it->second.datafiles1,
+				    grpmap_it->second.datafiles2,
+				    IGNOREMASK, MEANSUB, bin_data, nbins);
+      beamsets[i].readBeam(grpmap_it->second.beamfile1, 
+			   grpmap_it->second.beamfile2, 
+			   HISTOGRAM, HISTOGRAMLOGSTEP);
+      beamsets[i].setSigmaBase1(grpmap_it->second.sigmas1);
+      beamsets[i].setSigmaBase2(grpmap_it->second.sigmas2);
+      beamsets[i].setLikeNorm(grpmap_it->second.like_norms);
+    }
   }
 }
 
