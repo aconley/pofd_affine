@@ -386,7 +386,7 @@ TEST(model1DTest, NumberCounts) {
 
   //Evaluate at knot positions -- these should be very close
   for (unsigned int i = 1; i < nknots-1; ++i)
-    EXPECT_NEAR(knotval[i], log10(model.getNumberCounts(knotpos[i])),0.0001) << 
+    EXPECT_NEAR(knotval[i], log10(model.getNumberCounts(knotpos[i])), 1e-4) << 
       "Didn't get expected number counts at " << knotpos[i];
   
   const unsigned int ntest = 3;
@@ -394,7 +394,7 @@ TEST(model1DTest, NumberCounts) {
   const double testval[ntest] = {8.69422, 5.88217, 4.53303};
   //Don't require as tight tolerances for this test
   for (unsigned int i = 0; i < ntest; ++i)
-    EXPECT_NEAR(testval[i], log10(model.getNumberCounts(testpos[i])),0.001) << 
+    EXPECT_NEAR(testval[i], log10(model.getNumberCounts(testpos[i])), 1e-3) << 
       "Didn't get expected number counts at " << testpos[i];
 
 }

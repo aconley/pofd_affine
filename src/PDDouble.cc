@@ -17,7 +17,7 @@ PDDouble::PDDouble(unsigned int N1, double MINFLUX1, double DFLUX1,
 			       minflux1(MINFLUX1), dflux1(DFLUX1),
 			       minflux2(MINFLUX2), dflux2(DFLUX2) {
   if (capacity == 0) pd_ = NULL; else
-    pd_ = (double *) fftw_malloc( sizeof(double)*capacity );
+    pd_ = (double *) fftw_malloc(sizeof(double) * capacity);
 }
 
 PDDouble::~PDDouble() {
@@ -30,9 +30,9 @@ PDDouble::~PDDouble() {
 void PDDouble::resize(unsigned int N1, unsigned int N2) {
   //Doesn't actually resize arrays if it can avoid it
   unsigned int newcap = N1*N2;
-  if ( newcap > capacity ) {
+  if (newcap > capacity) {
     if (pd_ != NULL) fftw_free(pd_);
-    if (newcap > 0) pd_ = (double *) fftw_malloc( sizeof(double)*newcap );
+    if (newcap > 0) pd_ = (double *) fftw_malloc(sizeof(double) * newcap);
     else pd_ = NULL;
     capacity = newcap;
   }
@@ -45,9 +45,9 @@ void PDDouble::resize(unsigned int N1, unsigned int N2) {
  */
 void PDDouble::shrink() {
   unsigned int newcap = n1*n2;
-  if ( newcap < capacity ) {
+  if (newcap < capacity) {
     if (newcap > 0) {
-      double* tmp = (double*) fftw_malloc( sizeof(double)*newcap );
+      double* tmp = (double*) fftw_malloc(sizeof(double) * newcap);
       for (unsigned int i = 0; i < newcap; ++i)
 	tmp[i] = pd_[i];
       if (pd_ != NULL) fftw_free(pd_);
@@ -65,9 +65,9 @@ void PDDouble::shrink() {
  */
 void PDDouble::strict_resize(unsigned int N1, unsigned int N2) {
   unsigned int newcap = N1*N2;
-  if ( newcap != capacity ) {
+  if (newcap != capacity) {
     if (pd_ != NULL) fftw_free(pd_);
-    if (newcap > 0) pd_ = (double*) fftw_malloc( sizeof(double)*newcap );
+    if (newcap > 0) pd_ = (double*) fftw_malloc(sizeof(double) * newcap);
     else pd_ = NULL;
     capacity = newcap;
   }
@@ -76,7 +76,7 @@ void PDDouble::strict_resize(unsigned int N1, unsigned int N2) {
 }
 
 double PDDouble::getTotal() const {
-  if ( (n1 == 0) || (n2 == 0) )
+  if ((n1 == 0) || (n2 == 0))
     return std::numeric_limits<double>::quiet_NaN();
   double retval;
   unsigned int sz = n1*n2;
@@ -93,7 +93,7 @@ double PDDouble::getTotal() const {
 }
 
 double PDDouble::getIntegral() const {
-  if ( (n1 == 0) || (n2 == 0) )
+  if ((n1 == 0) || (n2 == 0))
     return std::numeric_limits<double>::quiet_NaN();
   
   double tot, *rowptr;
@@ -142,15 +142,15 @@ double PDDouble::getIntegral() const {
   to integrate
  */
 void PDDouble::normalize() {
-  if ( (n1 == 0) || (n2 == 0) )
+  if ((n1 == 0) || (n2 == 0))
     throw affineExcept("PDDouble","normalize",
-		     "No information present to normalize",1);
+		       "No information present to normalize",1);
   //Note, because of the 0.5 edge pieces we don't just use
   // getTotal
   double tot = getIntegral();
   unsigned int sz = n1*n2;
   if (logflat) {
-    double lgtot = log2( tot );
+    double lgtot = log2(tot);
     for (unsigned int i = 0; i < sz; ++i)
       pd_[i] -= lgtot;
   } else {
@@ -199,11 +199,11 @@ void PDDouble::edgeFix(bool donorm) {
 
   //Get mean and vars
   double mn1, mn2, var1, var2;
-  getMeansAndVars(mn1,mn2,var1,var2,donorm);
-  if ( std::isnan( mn1 ) || std::isinf( mn1 ) ||
-       std::isnan( var1 ) || std::isinf( var1 ) ||
-       std::isnan( mn2 ) || std::isinf( mn2 ) ||
-       std::isnan( var2 ) || std::isinf( var2 ) )
+  getMeansAndVars(mn1, mn2, var1, var2, donorm);
+  if (std::isnan(mn1) || std::isinf(mn1) ||
+      std::isnan(var1) || std::isinf(var1) ||
+      std::isnan(mn2) || std::isinf(mn2) ||
+      std::isnan(var2) || std::isinf(var2))
     throw affineExcept("PDDouble","edgeFix",
 		       "Problem with means/vars",2);
   
@@ -213,12 +213,12 @@ void PDDouble::edgeFix(bool donorm) {
   //Figure out what indexes these represent in x and y
   double maxfluxfix1, maxfluxfix2;
   int maxidx1, maxidx2;
-  maxfluxfix1 = mn1 - PDDouble::lowsigval*sqrt( var1 );
-  maxfluxfix2 = mn2 - PDDouble::lowsigval*sqrt( var2 );
-  maxidx1 = static_cast<int>( (maxfluxfix1 - minflux1) / dflux1 );
-  maxidx2 = static_cast<int>( (maxfluxfix2 - minflux2) / dflux2 );
-  maxfluxfix1 = minflux1 + maxidx1*dflux1;
-  maxfluxfix2 = minflux2 + maxidx2*dflux2;
+  maxfluxfix1 = mn1 - PDDouble::lowsigval*sqrt(var1);
+  maxfluxfix2 = mn2 - PDDouble::lowsigval*sqrt(var2);
+  maxidx1 = static_cast<int>((maxfluxfix1 - minflux1) / dflux1);
+  maxidx2 = static_cast<int>((maxfluxfix2 - minflux2) / dflux2);
+  maxfluxfix1 = minflux1 + maxidx1 * dflux1;
+  maxfluxfix2 = minflux2 + maxidx2 * dflux2;
   
   //Do edges now
   double pdval, tval, preconst, stepfac, subfac, *rowptr;
@@ -290,12 +290,11 @@ void PDDouble::edgeFix(bool donorm) {
  */
 void PDDouble::getMeans(double& mean1, double& mean2,
 			bool donorm) const {
-  if ( (n1 == 0) || (n2 == 0) ) {
+  if ((n1 == 0) || (n2 == 0)) {
     mean1 = std::numeric_limits<double>::quiet_NaN();
     mean2 = std::numeric_limits<double>::quiet_NaN();
     return;
   }
-
 
   //We use the trapezoidal rule here for the integrals
   // so it isn't quite a simple sum
@@ -392,7 +391,7 @@ void PDDouble::getMeans(double& mean1, double& mean2,
 void PDDouble::getMeansAndVars(double& mean1, double& mean2,
 			       double& var1, double& var2,
 			       bool donorm) const {
-  if ( (n1 == 0) || (n2 == 0) ) {
+  if ((n1 == 0) || (n2 == 0)) {
     mean1 = std::numeric_limits<double>::quiet_NaN();
     mean2 = std::numeric_limits<double>::quiet_NaN();
     var1  = std::numeric_limits<double>::quiet_NaN();
@@ -608,7 +607,7 @@ void PDDouble::getMeansAndVars(double& mean1, double& mean2,
 
 
 PDDouble& PDDouble::operator=(const PDDouble& other) {
-  if ( this == &other ) return *this; //Self-copy
+  if (this == &other) return *this; //Self-copy
   resize(other.n1,other.n2);
   minflux1 = other.minflux1;
   dflux1 = other.dflux1;
@@ -645,28 +644,28 @@ double PDDouble::getPDVal(double x, double y,bool logval) const {
   if (pd_ == NULL) return std::numeric_limits<double>::quiet_NaN();
 
   //look up the effective indexes
-  int idx1 = static_cast<int>( (x-minflux1)/dflux1 );
-  int idx2 = static_cast<int>( (y-minflux2)/dflux2 );
-  int n2idx1 = n2*idx1;
+  int idx1 = static_cast<int>((x - minflux1) / dflux1);
+  int idx2 = static_cast<int>((y - minflux2) / dflux2);
+  int n2idx1 = n2 * idx1;
 
-  double maxflux1 = minflux1 + static_cast<double>(n1-1)*dflux1;
-  double maxflux2 = minflux2 + static_cast<double>(n2-1)*dflux2;
+  double maxflux1 = minflux1 + static_cast<double>(n1 - 1) * dflux1;
+  double maxflux2 = minflux2 + static_cast<double>(n2 - 1) * dflux2;
 
-  unsigned int n2n1 = n2*n1;
+  unsigned int n2n1 = n2 * n1;
   double interp_val;
   //Check to see if we are off the edge
-  if ( x < minflux1 ) {
-    if ( y < minflux2 ) interp_val = pd_[0];
-    else if ( y > maxflux2 ) interp_val = pd_[n2-1];
+  if (x < minflux1) {
+    if (y < minflux2) interp_val = pd_[0];
+    else if (y > maxflux2) interp_val = pd_[n2 - 1];
     else interp_val = pd_[idx2];
-  } else if ( x > maxflux1 ) {
-    if (y < minflux2) interp_val = pd_[n2n1-n1];
-    else if ( y > maxflux2 ) interp_val = pd_[n2n1-1];
-    else interp_val =  pd_[n2n1-n1+idx2];
-  } else if ( y < minflux2 ) {
+  } else if (x > maxflux1) {
+    if (y < minflux2) interp_val = pd_[n2n1 - n1];
+    else if (y > maxflux2) interp_val = pd_[n2n1 - 1];
+    else interp_val =  pd_[n2n1 - n1 + idx2];
+  } else if (y < minflux2) {
     interp_val =  pd_[n2idx1];
-  } else if ( y > maxflux2 ) {
-    interp_val = pd_[n2idx1+n2-1];
+  } else if (y > maxflux2) {
+    interp_val = pd_[n2idx1 + n2 - 1];
   } else {
     //Actual interpolation
     double u,t,omu,omt;
@@ -694,7 +693,7 @@ std::ostream& PDDouble::writeToStream(std::ostream& os) const {
   double *rowptr;
   if (n1*n2 > 0) {
     for (unsigned int i = 0; i < n1; ++i) {
-      rowptr = pd_ + i*n2;
+      rowptr = pd_ + i * n2;
       os << rowptr[0];
       for (unsigned int j = 1; j < n2; ++j)
 	os << " " << rowptr[j];
@@ -708,7 +707,7 @@ std::ostream& PDDouble::writeToStream(std::ostream& os) const {
   \param[in] outputfile File to write to
   \returns 0 on success, an error code (!=0) for anything else
  */
-int PDDouble::writeToFits( const std::string& outputfile ) const {
+int PDDouble::writeToFits(const std::string& outputfile) const {
 
   //Make the fits file
   int status = 0;
@@ -726,61 +725,61 @@ int PDDouble::writeToFits( const std::string& outputfile ) const {
   axissize[0] = static_cast<long>(n1);
   axissize[1] = static_cast<long>(n2);
   
-  fits_create_img( fp, DOUBLE_IMG, 2, axissize, &status );
+  fits_create_img(fp, DOUBLE_IMG, 2, axissize, &status);
   
   //Add "WCS" info to hdr
   float crpix = 1;
   double tmpval;
-  fits_write_key( fp, TSTRING, const_cast<char*>("CTYPE1"),
-		  const_cast<char*>("FLUX1"),
-		  const_cast<char*>("Type of Data axis 1"),&status);
-  fits_write_key( fp, TFLOAT, const_cast<char*>("CRPIX1"), &crpix, 
-		  const_cast<char*>("Ref pix of axis 1"), &status );
+  fits_write_key(fp, TSTRING, const_cast<char*>("CTYPE1"),
+		 const_cast<char*>("FLUX1"),
+		 const_cast<char*>("Type of Data axis 1"),&status);
+  fits_write_key(fp, TFLOAT, const_cast<char*>("CRPIX1"), &crpix, 
+		 const_cast<char*>("Ref pix of axis 1"), &status);
   tmpval = minflux1;
-  fits_write_key( fp, TDOUBLE, const_cast<char*>("CRVAL1"), &tmpval, 
-		  const_cast<char*>("val at ref pix"), &status );
+  fits_write_key(fp, TDOUBLE, const_cast<char*>("CRVAL1"), &tmpval, 
+		 const_cast<char*>("val at ref pix"), &status);
   tmpval = dflux1;
-  fits_write_key( fp, TDOUBLE, const_cast<char*>("CDELT1"), &tmpval,
-		  const_cast<char*>("delta along axis 1"), &status );
+  fits_write_key(fp, TDOUBLE, const_cast<char*>("CDELT1"), &tmpval,
+		 const_cast<char*>("delta along axis 1"), &status);
 
-  fits_write_key( fp, TSTRING, const_cast<char*>("CTYPE2"),
-		  const_cast<char*>("FLUX2"),
-		  const_cast<char*>("Type of Data axis 2"),&status);
-  fits_write_key( fp, TFLOAT, const_cast<char*>("CRPIX2"), &crpix, 
-		  const_cast<char*>("Ref pix of axis 2"), &status );
+  fits_write_key(fp, TSTRING, const_cast<char*>("CTYPE2"),
+		 const_cast<char*>("FLUX2"),
+		 const_cast<char*>("Type of Data axis 2"),&status);
+  fits_write_key(fp, TFLOAT, const_cast<char*>("CRPIX2"), &crpix, 
+		 const_cast<char*>("Ref pix of axis 2"), &status);
   tmpval = minflux2;
-  fits_write_key( fp, TDOUBLE, const_cast<char*>("CRVAL2"), &tmpval, 
-		  const_cast<char*>("val at ref pix"), &status );
+  fits_write_key(fp, TDOUBLE, const_cast<char*>("CRVAL2"), &tmpval, 
+		 const_cast<char*>("val at ref pix"), &status);
   tmpval = dflux2;
-  fits_write_key( fp, TDOUBLE, const_cast<char*>("CDELT2"), &tmpval,
-		  const_cast<char*>("delta along axis 2"), &status );
+  fits_write_key(fp, TDOUBLE, const_cast<char*>("CDELT2"), &tmpval,
+		 const_cast<char*>("delta along axis 2"), &status);
   tmpval = dflux1;
-  fits_write_key( fp, TDOUBLE, const_cast<char*>("CD1_1"), &tmpval,
-		  const_cast<char*>("WCS matrix element 1 1"),&status );
+  fits_write_key(fp, TDOUBLE, const_cast<char*>("CD1_1"), &tmpval,
+		 const_cast<char*>("WCS matrix element 1 1"), &status);
   tmpval = 0.0;
-  fits_write_key( fp, TDOUBLE, const_cast<char*>("CD1_2"), &tmpval, 
-		  const_cast<char*>("WCS matrix element 1 2"),
-		  &status );
-  fits_write_key( fp, TDOUBLE, const_cast<char*>("CD2_1"), &tmpval, 
-		  const_cast<char*>("WCS matrix element 2 1"),
-		  &status );
+  fits_write_key(fp, TDOUBLE, const_cast<char*>("CD1_2"), &tmpval, 
+		 const_cast<char*>("WCS matrix element 1 2"),
+		 &status);
+  fits_write_key(fp, TDOUBLE, const_cast<char*>("CD2_1"), &tmpval, 
+		 const_cast<char*>("WCS matrix element 2 1"),
+		 &status);
   tmpval = dflux2;
-  fits_write_key( fp, TDOUBLE, const_cast<char*>("CD2_2"), &tmpval, 
-		  const_cast<char*>("WCS matrix element 2 2"),
-		  &status );
+  fits_write_key(fp, TDOUBLE, const_cast<char*>("CD2_2"), &tmpval, 
+		 const_cast<char*>("WCS matrix element 2 2"),
+		 &status);
 
   int lg = static_cast<int>(logflat);
-  fits_write_key( fp, TLOGICAL, const_cast<char*>("LOG"),&lg,
-		  const_cast<char*>("Is log P(D) stored?"), &status);
+  fits_write_key(fp, TLOGICAL, const_cast<char*>("LOG"),&lg,
+		 const_cast<char*>("Is log P(D) stored?"), &status);
 
   //Do data writing.  We have to make a transposed copy of the
   // data to do this, which is irritating as hell
   double *tmpdata = new double[ n1 ];
   long fpixel[2] = { 1, 1 };
-  for ( unsigned int j = 0; j < n2; ++j ) {
+  for (unsigned int j = 0; j < n2; ++j) {
     for (unsigned int i = 0; i < n1; ++i) tmpdata[i] = pd_[i*n2+j];
     fpixel[1] = static_cast<long>(j+1);
-    fits_write_pix( fp, TDOUBLE, fpixel, n1, tmpdata, &status );
+    fits_write_pix(fp, TDOUBLE, fpixel, n1, tmpdata, &status);
   }
   delete[] tmpdata;
 
@@ -839,57 +838,57 @@ double PDDouble::getLogLikeUnbinned(const fitsDataDouble& data) const {
       //Get effective indices
       delt1 = (cflux1-minflux1)*idflux1;
       delt2 = (cflux2-minflux2)*idflux2;
-      idx1 = static_cast<int>( delt1 );
-      idx2 = static_cast<int>( delt2 );
+      idx1 = static_cast<int>(delt1);
+      idx2 = static_cast<int>(delt2);
       n2idx1 = n2*idx1;
-      if ( cflux1 <= minflux1 ) {
-	if ( cflux2 <= minflux2 ) interp_val = pd_[0];
-        else if ( cflux2 >= maxflux2 ) interp_val = pd_[n2-1];
+      if (cflux1 <= minflux1) {
+	if (cflux2 <= minflux2) interp_val = pd_[0];
+        else if (cflux2 >= maxflux2) interp_val = pd_[n2 - 1];
         else interp_val = pd_[idx2];
-      } else if ( cflux1 >= maxflux1 ) {
-        if (cflux2 <= minflux2) interp_val = pd_[n2n1-n1];
-        else if ( cflux2 >= maxflux2 ) interp_val = pd_[n2n1-1];
-        else interp_val = pd_[n2n1-n1+idx2];
-      } else if ( cflux2 <= minflux2 ) {
+      } else if (cflux1 >= maxflux1) {
+        if (cflux2 <= minflux2) interp_val = pd_[n2n1 - n1];
+        else if (cflux2 >= maxflux2) interp_val = pd_[n2n1 - 1];
+        else interp_val = pd_[n2n1 - n1 + idx2];
+      } else if (cflux2 <= minflux2) {
         interp_val = pd_[n2idx1];
-      } else if ( cflux2 >= maxflux2 ) {
-        interp_val = pd_[n2idx1+n2-1];
+      } else if (cflux2 >= maxflux2) {
+        interp_val = pd_[n2idx1 + n2 - 1];
       } else {
         //Not off edge
         t = delt1 - static_cast<double>(idx1);
         u = delt2 - static_cast<double>(idx2);
         omu = 1.0 - u; omt = 1.0 - t;
         baseidx = n2idx1+idx2;
-        interp_val = omt*(omu*pd_[baseidx] + u*pd_[baseidx+1]) +
-          t*(omu*pd_[baseidx+n2] + u*pd_[baseidx+n2+1]);
+        interp_val = omt * (omu * pd_[baseidx] + u * pd_[baseidx+1]) +
+          t * (omu * pd_[baseidx+n2] + u * pd_[baseidx+n2+1]);
       }
       loglike += interp_val;
     }
   } else {
     //Not stored as log2 -- inefficient, but supported
-    //Note that it would be insane to do this multiplicatively,
+    //Note that it would be really stupid to do this multiplicatively,
     // then take the log.  Also, it's better to interpolate
     // in log space than interpolate, then log
     for (unsigned int i = 0; i < ndata; ++i) {
       cflux1 = flux1[i]; cflux2 = flux2[i];
       delt1 = (cflux1-minflux1)*idflux1;
       delt2 = (cflux2-minflux2)*idflux2;
-      idx1 = static_cast<int>( delt1 );
-      idx2 = static_cast<int>( delt2 );
-      n2idx1 = n2*idx1;
+      idx1 = static_cast<int>(delt1);
+      idx2 = static_cast<int>(delt2);
+      n2idx1 = n2 * idx1;
       
-      if ( cflux1 < minflux1 ) {
-        if ( cflux2 < minflux2 ) interp_val = log2(pd_[0]);
-        else if ( cflux2 > maxflux2 ) interp_val = log2(pd_[n2-1]);
+      if (cflux1 < minflux1) {
+        if (cflux2 < minflux2) interp_val = log2(pd_[0]);
+        else if (cflux2 > maxflux2) interp_val = log2(pd_[n2 - 1]);
         else interp_val = log2(pd_[idx2]);
-      } else if ( cflux1 > maxflux1 ) {
-        if (cflux2 < minflux2) interp_val = log2(pd_[n2n1-n1]);
-        else if ( cflux2 > maxflux2 ) interp_val = log2(pd_[n2n1-1]);
-        else interp_val = log2(pd_[n2n1-n1+idx2]);
-      } else if ( cflux2 < minflux2 ) {
+      } else if (cflux1 > maxflux1) {
+        if (cflux2 < minflux2) interp_val = log2(pd_[n2n1 - n1]);
+        else if (cflux2 > maxflux2 ) interp_val = log2(pd_[n2n1 - 1]);
+        else interp_val = log2(pd_[n2n1 - n1 + idx2]);
+      } else if (cflux2 < minflux2) {
         interp_val = log2(pd_[n2idx1]);
-      } else if ( cflux2 > maxflux2 ) {
-        interp_val = log2(pd_[n2idx1+n2-1]);
+      } else if (cflux2 > maxflux2) {
+        interp_val = log2(pd_[n2idx1 + n2 - 1]);
       } else {
         //Not off edge
         t = delt1 - static_cast<double>(idx1);
@@ -897,14 +896,15 @@ double PDDouble::getLogLikeUnbinned(const fitsDataDouble& data) const {
         omu = 1.0 - u; omt = 1.0-t;
         
         baseidx = n2idx1+idx2;
-        interp_val = omt*(omu*log2(pd_[baseidx]) + u*log2(pd_[baseidx+1])) +
-          t*(omu*log2(pd_[baseidx+n2]) + u*log2(pd_[baseidx+n2+1]));
+        interp_val = 
+	  omt * (omu * log2(pd_[baseidx]) + u * log2(pd_[baseidx + 1])) +
+          t* (omu * log2(pd_[baseidx + n2]) + u * log2(pd_[baseidx + n2 + 1]));
       }
       loglike += interp_val;
     }
   }
   //This has been base 2 -- convert back to base e
-  return pofd_mcmc::log2toe*loglike;
+  return pofd_mcmc::log2toe * loglike;
 }
 
 
@@ -950,36 +950,37 @@ double PDDouble::getLogLikeBinned(const fitsDataDouble& data) const {
     //Internal information is stored as log2 of P(D)
     for (unsigned int i = 0; i < nbins1; ++i) {
       cflux1 = bincent01 + static_cast<double>(i)*bindelta1;
-      idx1 = static_cast<int>( (cflux1-minflux1)*idflux1 );
-      n2idx1 = n2*idx1;
-      binptr = bins + i*nbins2;
+      idx1 = static_cast<int>((cflux1 - minflux1) * idflux1);
+      n2idx1 = n2 * idx1;
+      binptr = bins + i * nbins2;
       for (unsigned int j = 0; j < nbins2; ++j) {
 	ninbin = binptr[j];
 	if (ninbin == 0) continue;  //skip calculation
-	cflux2 = bincent02 + static_cast<double>(j)*bindelta2;
-	idx2 = static_cast<int>( (cflux2-minflux2)*idflux2 );
-	if ( cflux1 < minflux1 ) {
-	  if ( cflux2 < minflux2 ) interp_val = pd_[0];
-	  else if ( cflux2 > maxflux2 ) interp_val = pd_[n2-1];
+	cflux2 = bincent02 + static_cast<double>(j) * bindelta2;
+	idx2 = static_cast<int>((cflux2 - minflux2) * idflux2);
+	if (cflux1 < minflux1) {
+	  if (cflux2 < minflux2) interp_val = pd_[0];
+	  else if (cflux2 > maxflux2) interp_val = pd_[n2 - 1];
 	  else interp_val = pd_[idx2];
-	} else if ( cflux1 > maxflux1 ) {
-	  if (cflux2 < minflux2) interp_val = pd_[n2n1-n1];
-	  else if ( cflux2 > maxflux2 ) interp_val = pd_[n2n1-1];
-	  else interp_val = pd_[n2n1-n1+idx2];
-	} else if ( cflux2 < minflux2 ) {
+	} else if (cflux1 > maxflux1) {
+	  if (cflux2 < minflux2) interp_val = pd_[n2n1 - n1];
+	  else if (cflux2 > maxflux2) interp_val = pd_[n2n1 - 1];
+	  else interp_val = pd_[n2n1 - n1 + idx2];
+	} else if (cflux2 < minflux2) {
 	  interp_val = pd_[n2idx1];
-	} else if ( cflux2 > maxflux2 ) {
-	  interp_val = pd_[n2idx1+n2-1];
+	} else if (cflux2 > maxflux2) {
+	  interp_val = pd_[n2idx1 + n2 - 1];
 	} else {
 	  //Not off edge
-	  t = (cflux1 - minflux1)*idflux1 - static_cast<double>(idx1);
-	  u = (cflux2 - minflux2)*idflux2 - static_cast<double>(idx2);
+	  t = (cflux1 - minflux1) * idflux1 - static_cast<double>(idx1);
+	  u = (cflux2 - minflux2) * idflux2 - static_cast<double>(idx2);
 	  omu = 1.0 - u; omt = 1.0 - t;
-	  baseidx = n2idx1+idx2;
-	  interp_val = omt*(omu*pd_[baseidx] + u*pd_[baseidx+1]) +
-	    t*(omu*pd_[baseidx+n2] + u*pd_[baseidx+n2+1]);
+	  baseidx = n2idx1 + idx2;
+	  interp_val = 
+	    omt * (omu * pd_[baseidx] + u * pd_[baseidx+1]) +
+	    t * (omu * pd_[baseidx+n2] + u * pd_[baseidx+n2+1]);
 	}
-	loglike += static_cast<double>(ninbin)*interp_val;
+	loglike += static_cast<double>(ninbin) * interp_val;
       }
     }
   } else {
@@ -988,44 +989,45 @@ double PDDouble::getLogLikeBinned(const fitsDataDouble& data) const {
     // then take the log.  Also, it's better to interpolate
     // in log space than interpolate, then log
     for (unsigned int i = 0; i < nbins1; ++i) {
-      cflux1 = bincent01 + static_cast<double>(i)*bindelta1;
-      idx1 = static_cast<int>( (cflux1-minflux1)*idflux1 );
-      n2idx1 = n2*idx1;
-      binptr = bins + i*nbins2;
+      cflux1 = bincent01 + static_cast<double>(i) * bindelta1;
+      idx1 = static_cast<int>((cflux1 - minflux1) * idflux1);
+      n2idx1 = n2 * idx1;
+      binptr = bins + i * nbins2;
       for (unsigned int j = 0; j < nbins2; ++j) {
 	ninbin = binptr[j];
 	if (ninbin == 0) continue;  //skip calculation
-	cflux2 = bincent02 + static_cast<double>(j)*bindelta2;
-	idx2 = static_cast<int>( (cflux2-minflux2)*idflux2 );
+	cflux2 = bincent02 + static_cast<double>(j) * bindelta2;
+	idx2 = static_cast<int>((cflux2 - minflux2) * idflux2);
 	
-	if ( cflux1 < minflux1 ) {
-	  if ( cflux2 < minflux2 ) interp_val = log2(pd_[0]);
-	  else if ( cflux2 > maxflux2 ) interp_val = log2(pd_[n2-1]);
+	if (cflux1 < minflux1) {
+	  if (cflux2 < minflux2) interp_val = log2(pd_[0]);
+	  else if (cflux2 > maxflux2) interp_val = log2(pd_[n2 - 1]);
 	  else interp_val = log2(pd_[idx2]);
-	} else if ( cflux1 > maxflux1 ) {
-	  if (cflux2 < minflux2) interp_val = log2(pd_[n2n1-n1]);
-	  else if ( cflux2 > maxflux2 ) interp_val = log2(pd_[n2n1-1]);
-	  else interp_val = log2(pd_[n2n1-n1+idx2]);
-	} else if ( cflux2 < minflux2 ) {
+	} else if (cflux1 > maxflux1) {
+	  if (cflux2 < minflux2) interp_val = log2(pd_[n2n1 - n1]);
+	  else if (cflux2 > maxflux2) interp_val = log2(pd_[n2n1 - 1]);
+	  else interp_val = log2(pd_[n2n1 - n1 + idx2]);
+	} else if (cflux2 < minflux2) {
 	  interp_val = log2(pd_[n2idx1]);
-	} else if ( cflux2 > maxflux2 ) {
-	  interp_val = log2(pd_[n2idx1+n2-1]);
+	} else if (cflux2 > maxflux2) {
+	  interp_val = log2(pd_[n2idx1 + n2 - 1]);
 	} else {
 	  //Not off edge
-	  t = (cflux1 - minflux1)*idflux1 - idx1;
-	  u = (cflux2 - minflux2)*idflux2 - idx2;
+	  t = (cflux1 - minflux1) * idflux1 - idx1;
+	  u = (cflux2 - minflux2) * idflux2 - idx2;
 	  omu = 1.0 - u; omt = 1.0-t;
 	  
-	  baseidx = n2idx1+idx2;
-	  interp_val = omt*(omu*log2(pd_[baseidx]) + u*log2(pd_[baseidx+1])) +
-	    t*(omu*log2(pd_[baseidx+n2]) + u*log2(pd_[baseidx+n2+1]));
+	  baseidx = n2idx1 + idx2;
+	  interp_val = 
+	    omt * (omu * log2(pd_[baseidx]) + u * log2(pd_[baseidx+1])) +
+	    t * (omu * log2(pd_[baseidx+n2]) + u * log2(pd_[baseidx+n2+1]));
 	}
-	loglike += static_cast<double>(ninbin)*interp_val;
+	loglike += static_cast<double>(ninbin) * interp_val;
       }
     }
   }
   //This has been base 2 -- convert back to base e
-  return pofd_mcmc::log2toe*loglike;
+  return pofd_mcmc::log2toe * loglike;
 }
 
 
