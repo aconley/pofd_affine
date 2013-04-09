@@ -44,20 +44,27 @@ proposedStep& proposedStep::operator=(const proposedStep& other) {
   return *this;
 }
 
-void proposedStep::sendSelf(MPI::Comm& comm, int dest) const {
-  comm.Send(&update_idx,1,MPI::UNSIGNED,dest,mcmc_affine::PSTSENDIDX);
-  oldStep.sendSelf(comm,dest);
-  newStep.sendSelf(comm,dest);
-  comm.Send(&oldLogLike,1,MPI::DOUBLE,dest,mcmc_affine::PSTSENDOLIKE);
-  comm.Send(&newLogLike,1,MPI::DOUBLE,dest,mcmc_affine::PSTSENDNLIKE);
+void proposedStep::sendSelf(MPI_Comm comm, int dest) const {
+  MPI_Send(const_cast<unsigned int*>(&update_idx), 1, MPI_UNSIGNED, 
+	   dest, mcmc_affine::PSTSENDIDX, comm);
+  oldStep.sendSelf(comm, dest);
+  newStep.sendSelf(comm, dest);
+  MPI_Send(const_cast<double*>(&oldLogLike), 1, MPI_DOUBLE, dest, 
+	   mcmc_affine::PSTSENDOLIKE, comm);
+  MPI_Send(const_cast<double*>(&newLogLike), 1, MPI_DOUBLE, dest, 
+	   mcmc_affine::PSTSENDNLIKE, comm);
 }
 
-void proposedStep::recieveCopy(MPI::Comm& comm, int src) {
-  comm.Recv(&update_idx,1,MPI::UNSIGNED,src,mcmc_affine::PSTSENDIDX);
-  oldStep.recieveCopy(comm,src);
-  newStep.recieveCopy(comm,src);
-  comm.Recv(&oldLogLike,1,MPI::DOUBLE,src,mcmc_affine::PSTSENDOLIKE);
-  comm.Recv(&newLogLike,1,MPI::DOUBLE,src,mcmc_affine::PSTSENDNLIKE);
+void proposedStep::recieveCopy(MPI_Comm comm, int src) {
+  MPI_Status Info;
+  MPI_Recv(&update_idx, 1, MPI_UNSIGNED, src, mcmc_affine::PSTSENDIDX, 
+	   comm, &Info);
+  oldStep.recieveCopy(comm, src);
+  newStep.recieveCopy(comm, src);
+  MPI_Recv(&oldLogLike, 1, MPI_DOUBLE, src, mcmc_affine::PSTSENDOLIKE, 
+	   comm, &Info);
+  MPI_Recv(&newLogLike, 1, MPI_DOUBLE, src, mcmc_affine::PSTSENDNLIKE, 
+	   comm, &Info);
 }
 
 std::ostream& operator<<(std::ostream& os, const proposedStep& p) {

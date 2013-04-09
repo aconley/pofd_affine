@@ -42,7 +42,7 @@ private:
   affineQueue<int> procqueue;
 
   /*! \brief For keeping track of what to do next */
-  affineQueue< std::pair< unsigned int, unsigned int > > stepqueue;
+  affineQueue< std::pair<int, int> > stepqueue;
   mutable proposedStep pstep; //!< Convenience variable for new steps
 
   double getMaxAcor() const; //!< Return maximum autocorrelation length
@@ -67,7 +67,7 @@ protected:
 
   mutable ran rangen; //!< Random number generator
 
-  unsigned int rank; //!< Which node is this; if 0 master, otherwise slave
+  int rank; //!< Which node is this; if 0 master, otherwise slave
 
   bool verbose; //!< Ouput information messages as we run
 

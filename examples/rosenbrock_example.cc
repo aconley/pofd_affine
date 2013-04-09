@@ -79,10 +79,10 @@ int main(int argc, char** argv) {
   };
   char optstring[] = "hvV";
 
-  unsigned int rank, nproc;
-  MPI::Init(argc,argv);
-  rank = MPI::COMM_WORLD.Get_rank();
-  nproc = MPI::COMM_WORLD.Get_size();
+  int rank, nproc;
+  MPI_Init(&argc, &argv);
+  MPI_Comm_size(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &nproc);
 
   if (nproc < 2) {
     if (rank == 0) {
@@ -92,8 +92,8 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  while ( ( c = getopt_long(argc,argv,optstring,long_options,
-                            &option_index ) ) != -1 ) 
+  while ((c = getopt_long(argc,argv,optstring,long_options, 
+			  &option_index)) != -1 ) 
     switch(c) {
     case 'h' :
       if (rank == 0) {
@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
 	std::cerr << "\t\tOuput the version number of mcmc_affine in use"
 		  << std::endl;
       }
-      MPI::Finalize();
+      MPI_Finalize();
       return 0;
       break;
     case 'v' :
@@ -137,7 +137,7 @@ int main(int argc, char** argv) {
 	std::cerr << "mcmc_affine version number: " << mcmc_affine::version 
 		  << std::endl;
       }
-      MPI::Finalize();
+      MPI_Finalize();
       return 0;
       break;
     }
@@ -145,7 +145,7 @@ int main(int argc, char** argv) {
     if (rank == 0) {
       std::cerr << "Required arguments missing" << std::endl;
     }
-    MPI::Finalize();
+    MPI_Finalize();
     return 1;
   }
 
@@ -166,7 +166,7 @@ int main(int argc, char** argv) {
     if (verbose && rank == 0)
       std::cout << "Entering main loop" << std::endl;
     if (rank == 0) rd.initChains();
-    rd.doSteps( rd.getNSteps() );
+    rd.doSteps(rd.getNSteps());
     
     if (rank == 0) {
       std::vector<double> accept;
@@ -191,12 +191,12 @@ int main(int argc, char** argv) {
     std::cerr << ex << std::endl;
     int jnk;
     if (rank == 0)
-      for (unsigned int i = 1; i < nproc; ++i)
-	MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,mcmc_affine::STOP);
-    MPI::Finalize();
+      for (int i = 1; i < nproc; ++i)
+	MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
+    MPI_Finalize();
     return 1;
   }
-  MPI::Finalize();
+  MPI_Finalize();
 
   return 0;
 }

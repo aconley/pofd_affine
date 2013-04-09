@@ -56,9 +56,9 @@ class paramSet {
   bool writeToStream(std::ostream& os) const; //!< Write parameters to stream
   
   /*! \brief MPI copying, send operation */
-  void sendSelf(MPI::Comm& comm, int dest) const;
+  void sendSelf(MPI_Comm comm, int dest) const;
   /*! \brief MPI copying, recieving operation */
-  void recieveCopy(MPI::Comm& comm, int src);
+  void recieveCopy(MPI_Comm comm, int src);
 
 };
 
