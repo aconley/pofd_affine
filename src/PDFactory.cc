@@ -214,7 +214,7 @@ bool PDFactory::addWisdom(const std::string& filename) {
     throw affineExcept("PDFactory","addWisdom",str.str(),2);
   }
   fclose(fp);
-  fftw_plan_style = FFTW_WISDOM_ONLY || FFTW_ESTIMATE;
+  fftw_plan_style = FFTW_WISDOM_ONLY | FFTW_ESTIMATE;
   has_wisdom = true;
   wisdom_file = filename;
   if (plan != NULL) {
@@ -703,39 +703,47 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog,
 #endif
 }
  
-void PDFactory::sendSelf(MPI::Comm& comm, int dest) const {
-  comm.Send(&fftw_plan_style,1,MPI::UNSIGNED,dest,pofd_mcmc::PDFSENDPLANSTYLE);
-  comm.Send(&has_wisdom,1,MPI::BOOL,dest,pofd_mcmc::PDFHASWISDOM);
+void PDFactory::sendSelf(MPI_Comm comm, int dest) const {
+  MPI_Send(const_cast<unsigned int*>(&fftw_plan_style), 1, MPI_UNSIGNED,
+	   dest, pofd_mcmc::PDFSENDPLANSTYLE, comm);
+  MPI_Send(const_cast<bool*>(&has_wisdom), 1, MPI::BOOL, dest, 
+	   pofd_mcmc::PDFHASWISDOM, comm);
   if (has_wisdom) {
     //Send wisdom file name
     unsigned int nstr = wisdom_file.size()+1;
     char *cstr = new char[nstr];
-    std::strncpy( cstr, wisdom_file.c_str(), nstr );
-    comm.Send(&nstr,1,MPI::UNSIGNED,dest,pofd_mcmc::PDFWISLEN);
-    comm.Send(cstr, nstr, MPI::CHAR, dest,pofd_mcmc::PDFWISNAME);
+    std::strncpy(cstr, wisdom_file.c_str(), nstr);
+    MPI_Send(&nstr, 1, MPI_UNSIGNED, dest, pofd_mcmc::PDFWISLEN, comm);
+    MPI_Send(cstr, nstr, MPI_CHAR, dest, pofd_mcmc::PDFWISNAME, comm);
     delete[] cstr;
   }
-  comm.Send(&verbose,1,MPI::BOOL,dest,pofd_mcmc::PDFVERBOSE);
-  comm.Send(&ninterp,1,MPI::UNSIGNED,dest,pofd_mcmc::PDFNINTERP);
+  MPI_Send(const_cast<bool*>(&verbose), 1, MPI::BOOL, dest,
+	   pofd_mcmc::PDFVERBOSE, comm);
+  MPI_Send(const_cast<unsigned int*>(&ninterp), 1, MPI_UNSIGNED, dest,
+	   pofd_mcmc::PDFNINTERP, comm);
 }
 
 //Note this doesn't copy over interal variables
-void PDFactory::recieveCopy(MPI::Comm& comm, int src) {
-  comm.Recv(&fftw_plan_style,1,MPI::UNSIGNED,src,pofd_mcmc::PDFSENDPLANSTYLE);
-  comm.Recv(&has_wisdom,1,MPI::BOOL,src,pofd_mcmc::PDFHASWISDOM);
+void PDFactory::recieveCopy(MPI_Comm comm, int src) {
+  MPI_Status Info;
+  MPI_Recv(&fftw_plan_style, 1, MPI_UNSIGNED, src, 
+	   pofd_mcmc::PDFSENDPLANSTYLE, comm, &Info);
+  MPI_Recv(&has_wisdom, 1, MPI::BOOL, src, pofd_mcmc::PDFHASWISDOM,
+	   comm, &Info);
   if (has_wisdom) {
     //Recieve wisdom file name
     unsigned int nstr;
-    comm.Recv(&nstr,1,MPI::UNSIGNED,src,pofd_mcmc::PDFWISLEN);
+    MPI_Recv(&nstr, 1, MPI_UNSIGNED, src, pofd_mcmc::PDFWISLEN, comm, &Info);
     char *cstr = new char[nstr];
-    comm.Recv(cstr, nstr, MPI::CHAR, src,pofd_mcmc::PDFWISNAME);    
+    MPI_Recv(cstr, nstr, MPI_CHAR, src, pofd_mcmc::PDFWISNAME, comm, &Info);    
     wisdom_file = std::string(cstr);
     delete[] cstr;
     addWisdom(wisdom_file);
   }
-  comm.Recv(&verbose,1,MPI::BOOL,src,pofd_mcmc::PDFVERBOSE);
+  MPI_Recv(&verbose, 1, MPI::BOOL, src, pofd_mcmc::PDFVERBOSE, comm, &Info);
   unsigned int nnewinterp;
-  comm.Recv(&nnewinterp,1,MPI::UNSIGNED,src,pofd_mcmc::PDFNINTERP);
+  MPI_Recv(&nnewinterp, 1, MPI_UNSIGNED, src, pofd_mcmc::PDFNINTERP,
+	   comm, &Info);
   if (nnewinterp != ninterp) {
     freeInterp();
     ninterp = nnewinterp;

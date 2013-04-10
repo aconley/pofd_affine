@@ -141,9 +141,9 @@ class beam {
   }
 
   /*! \brief MPI copy send operation */
-  void sendSelf(MPI::Comm&, int dest) const;
+  void sendSelf(MPI_Comm, int dest) const;
   /*! \brief MPI copy recieve operation */
-  void recieveCopy(MPI::Comm&, int dest);
+  void recieveCopy(MPI_Comm, int dest);
 };
 
 #endif

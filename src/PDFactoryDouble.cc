@@ -1070,39 +1070,46 @@ void PDFactoryDouble::getPD( double sigma1, double sigma2,
 #endif
 }
  
-void PDFactoryDouble::sendSelf(MPI::Comm& comm, int dest) const {
-  comm.Send(&fftw_plan_style,1,MPI::UNSIGNED,dest,pofd_mcmc::PDFDSENDPLANSTYLE);
-  comm.Send(&has_wisdom,1,MPI::BOOL,dest,pofd_mcmc::PDFDHASWISDOM);
+void PDFactoryDouble::sendSelf(MPI_Comm comm, int dest) const {
+  MPI_Send(const_cast<unsigned int*>(&fftw_plan_style), 1, MPI_UNSIGNED,
+	   dest, pofd_mcmc::PDFDSENDPLANSTYLE, comm);
+  MPI_Send(const_cast<bool*>(&has_wisdom), 1, MPI::BOOL, dest,
+	   pofd_mcmc::PDFDHASWISDOM, comm);
   if (has_wisdom) {
     //Send wisdom file name
     unsigned int nstr = wisdom_file.size()+1;
     char *cstr = new char[nstr];
     std::strncpy( cstr, wisdom_file.c_str(), nstr );
-    comm.Send(&nstr,1,MPI::UNSIGNED,dest,pofd_mcmc::PDFDWISLEN);
-    comm.Send(cstr, nstr, MPI::CHAR, dest,pofd_mcmc::PDFDWISNAME);
+    MPI_Send(&nstr,1,MPI_UNSIGNED,dest,pofd_mcmc::PDFDWISLEN, comm);
+    MPI_Send(cstr, nstr, MPI_CHAR, dest,pofd_mcmc::PDFDWISNAME, comm);
     delete[] cstr;
   }
-  comm.Send(&verbose,1,MPI::BOOL,dest,pofd_mcmc::PDFDVERBOSE);
-  comm.Send(&nedge,1,MPI::UNSIGNED,dest,pofd_mcmc::PDFDNEDGE);
+  MPI_Send(const_cast<bool*>(&verbose), 1, MPI::BOOL, dest,
+	   pofd_mcmc::PDFDVERBOSE, comm);
+  MPI_Send(const_cast<unsigned int*>(&nedge), 1, MPI_UNSIGNED, dest,
+	   pofd_mcmc::PDFDNEDGE, comm);
 }
 
 //Note this doesn't copy over interal variables
-void PDFactoryDouble::recieveCopy(MPI::Comm& comm, int src) {
-  comm.Recv(&fftw_plan_style,1,MPI::UNSIGNED,src,pofd_mcmc::PDFDSENDPLANSTYLE);
-  comm.Recv(&has_wisdom,1,MPI::BOOL,src,pofd_mcmc::PDFDHASWISDOM);
+void PDFactoryDouble::recieveCopy(MPI_Comm comm, int src) {
+  MPI_Status Info;
+  MPI_Recv(&fftw_plan_style, 1, MPI_UNSIGNED, src, 
+	   pofd_mcmc::PDFDSENDPLANSTYLE, comm, &Info);
+  MPI_Recv(&has_wisdom, 1, MPI::BOOL, src, pofd_mcmc::PDFDHASWISDOM,
+	   comm, &Info);
   if (has_wisdom) {
     //Recieve wisdom file name
     unsigned int nstr;
-    comm.Recv(&nstr,1,MPI::UNSIGNED,src,pofd_mcmc::PDFDWISLEN);
+    MPI_Recv(&nstr, 1, MPI_UNSIGNED, src, pofd_mcmc::PDFDWISLEN, comm, &Info);
     char *cstr = new char[nstr];
-    comm.Recv(cstr, nstr, MPI::CHAR, src,pofd_mcmc::PDFDWISNAME);    
+    MPI_Recv(cstr, nstr, MPI_CHAR, src, pofd_mcmc::PDFDWISNAME, comm, &Info); 
     wisdom_file = std::string(cstr);
     delete[] cstr;
     addWisdom(wisdom_file);
   }
-  comm.Recv(&verbose,1,MPI::BOOL,src,pofd_mcmc::PDFDVERBOSE);
+  MPI_Recv(&verbose, 1, MPI::BOOL, src, pofd_mcmc::PDFDVERBOSE, comm, &Info);
   unsigned int newnedge;
-  comm.Recv(&newnedge,1,MPI::UNSIGNED,src,pofd_mcmc::PDFDNEDGE);
+  MPI_Recv(&newnedge, 1, MPI_UNSIGNED, src, pofd_mcmc::PDFDNEDGE, comm, &Info);
   if (newnedge != nedge) {
     freeEdgevars();
     nedge   = newnedge;

@@ -182,27 +182,32 @@ double numberCountsKnots::getMaxFlux() const {
   return knots[nknots-1];
 }
 
-void numberCountsKnots::sendSelf(MPI::Comm& comm, int dest) const {
-  comm.Send(&nknots,1,MPI::UNSIGNED,dest,pofd_mcmc::NCKSENDNKNOTS);
+void numberCountsKnots::sendSelf(MPI_Comm comm, int dest) const {
+  MPI_Send(const_cast<unsigned int*>(&nknots), 1, MPI_UNSIGNED, dest,
+	   pofd_mcmc::NCKSENDNKNOTS, comm);
   if (nknots != 0) {
-    comm.Send(knots,nknots,MPI::DOUBLE,dest,pofd_mcmc::NCKSENDKNOTS);
-    comm.Send(&knotvals_loaded,1,MPI::BOOL,dest,pofd_mcmc::NCKSENDKNOTSLOADED);
+    MPI_Send(knots, nknots, MPI_DOUBLE, dest, pofd_mcmc::NCKSENDKNOTS, comm);
+    MPI_Send(const_cast<bool*>(&knotvals_loaded), 1, MPI::BOOL, dest,
+	     pofd_mcmc::NCKSENDKNOTSLOADED, comm);
     if (knotvals_loaded)
-      comm.Send(logknotvals,nknots,MPI::DOUBLE,dest,
-		pofd_mcmc::NCKSENDLOGKNOTVALS);
+      MPI_Send(logknotvals,nknots,MPI_DOUBLE,dest,
+	       pofd_mcmc::NCKSENDLOGKNOTVALS, comm);
   }
 }
 
-void numberCountsKnots::recieveCopy(MPI::Comm& comm, int src) {
+void numberCountsKnots::recieveCopy(MPI_Comm comm, int src) {
   unsigned int n;
-  comm.Recv(&n,1,MPI::UNSIGNED,src,pofd_mcmc::NCKSENDNKNOTS);
+  MPI_Status Info;
+  MPI_Recv(&n, 1, MPI_UNSIGNED, src, pofd_mcmc::NCKSENDNKNOTS, comm, &Info);
   if (n != 0) {
     if (n != nknots) setNKnots(n);
-    comm.Recv(knots,nknots,MPI::DOUBLE,src,pofd_mcmc::NCKSENDKNOTS);
-    comm.Recv(&knotvals_loaded,1,MPI::BOOL,src,pofd_mcmc::NCKSENDKNOTSLOADED);
+    MPI_Recv(knots, nknots, MPI_DOUBLE, src, pofd_mcmc::NCKSENDKNOTS,
+	     comm, &Info);
+    MPI_Recv(&knotvals_loaded, 1, MPI::BOOL, src, 
+	     pofd_mcmc::NCKSENDKNOTSLOADED, comm, &Info);
     if (knotvals_loaded)
-      comm.Recv(logknotvals,nknots,MPI::DOUBLE,src,
-		pofd_mcmc::NCKSENDLOGKNOTVALS);
+      MPI_Recv(logknotvals, nknots, MPI_DOUBLE, src,
+	       pofd_mcmc::NCKSENDLOGKNOTVALS, comm, &Info);
   }
 }
 
@@ -745,28 +750,37 @@ bool initFileKnots::isValid(const paramSet& p) const {
   return true;
 }
 
-void initFileKnots::sendSelf(MPI::Comm& comm, int dest) const {
-  comm.Send(&nknots,1,MPI::UNSIGNED,dest,pofd_mcmc::IFKSENDNKNOTS);
+void initFileKnots::sendSelf(MPI_Comm comm, int dest) const {
+  MPI_Send(const_cast<unsigned int*>(&nknots), 1, MPI_UNSIGNED, dest, 
+	   pofd_mcmc::IFKSENDNKNOTS, comm);
   if (nknots != 0) {
-    comm.Send(knotpos,nknots,MPI::DOUBLE,dest,pofd_mcmc::IFKSENDKNOTPOS);
-    comm.Send(knotval,nknots,MPI::DOUBLE,dest,pofd_mcmc::IFKSENDKNOTVAL);
-    comm.Send(&has_sigma,1,MPI::BOOL,dest,pofd_mcmc::IFKHASSIGMA);
+    MPI_Send(knotpos, nknots, MPI_DOUBLE, dest, 
+	     pofd_mcmc::IFKSENDKNOTPOS, comm);
+    MPI_Send(knotval, nknots, MPI_DOUBLE, dest, 
+	     pofd_mcmc::IFKSENDKNOTVAL, comm);
+    MPI_Send(const_cast<bool*>(&has_sigma), 1, MPI::BOOL, dest,
+	     pofd_mcmc::IFKHASSIGMA, comm);
     if (has_sigma)
-      comm.Send(sigma,nknots,MPI::DOUBLE,dest,pofd_mcmc::IFKSENDSIGMA);
-    comm.Send(&has_lower_limits,1,MPI::BOOL,dest,pofd_mcmc::IFKHASLOWERLIMITS);
+      MPI_Send(sigma, nknots, MPI_DOUBLE, dest, pofd_mcmc::IFKSENDSIGMA, comm);
+    MPI_Send(const_cast<bool*>(&has_lower_limits), 1, MPI::BOOL, dest,
+	     pofd_mcmc::IFKHASLOWERLIMITS, comm);
     if (has_lower_limits) {
-      comm.Send(has_lowlim,nknots,MPI::BOOL,dest,pofd_mcmc::IFKSENDHASLOWLIM);
-      comm.Send(lowlim,nknots,MPI::DOUBLE,dest,pofd_mcmc::IFKSENDLOWLIM);
+      MPI_Send(has_lowlim, nknots, MPI::BOOL, dest, 
+	       pofd_mcmc::IFKSENDHASLOWLIM, comm);
+      MPI_Send(lowlim, nknots, MPI_DOUBLE, dest, 
+	       pofd_mcmc::IFKSENDLOWLIM, comm);
     }
-    comm.Send(&has_upper_limits,1,MPI::BOOL,dest,pofd_mcmc::IFKHASUPPERLIMITS);
+    MPI_Send(const_cast<bool*>(&has_upper_limits), 1, MPI::BOOL, dest,
+	     pofd_mcmc::IFKHASUPPERLIMITS, comm);
     if (has_upper_limits) {
-      comm.Send(has_uplim,nknots,MPI::BOOL,dest,pofd_mcmc::IFKSENDHASUPLIM);
-      comm.Send(uplim,nknots,MPI::DOUBLE,dest,pofd_mcmc::IFKSENDUPLIM);
+      MPI_Send(has_uplim, nknots, MPI::BOOL, dest,
+	       pofd_mcmc::IFKSENDHASUPLIM, comm);
+      MPI_Send(uplim, nknots, MPI_DOUBLE, dest, pofd_mcmc::IFKSENDUPLIM, comm);
     }
   }
 }
 
-void initFileKnots::recieveCopy(MPI::Comm& comm, int src) {
+void initFileKnots::recieveCopy(MPI_Comm comm, int src) {
   //Delete everything for simplicity
   if (knotpos != NULL) delete[] knotpos;
   if (knotval != NULL) delete[] knotval;
@@ -778,30 +792,43 @@ void initFileKnots::recieveCopy(MPI::Comm& comm, int src) {
   knotpos = knotval = sigma = lowlim = uplim = NULL;
   has_lowlim = has_uplim = NULL;
 
-  comm.Recv(&nknots,1,MPI::UNSIGNED,src,pofd_mcmc::IFKSENDNKNOTS);
+  MPI_Status Info;
+
+  MPI_Recv(&nknots, 1, MPI_UNSIGNED, src, 
+	   pofd_mcmc::IFKSENDNKNOTS, comm, &Info);
   if (nknots > 0) {
     knotpos = new double[nknots];
-    comm.Recv(knotpos,nknots,MPI::DOUBLE,src,pofd_mcmc::IFKSENDKNOTPOS);
+    MPI_Recv(knotpos, nknots, MPI_DOUBLE, src, 
+	     pofd_mcmc::IFKSENDKNOTPOS, comm, &Info);
     knotval = new double[nknots];
-    comm.Recv(knotval,nknots,MPI::DOUBLE,src,pofd_mcmc::IFKSENDKNOTVAL);
-    comm.Recv(&has_sigma,1,MPI::BOOL,src,pofd_mcmc::IFKHASSIGMA);
+    MPI_Recv(knotval, nknots, MPI_DOUBLE, src, 
+	     pofd_mcmc::IFKSENDKNOTVAL, comm, &Info);
+    MPI_Recv(&has_sigma, 1, MPI::BOOL, src, pofd_mcmc::IFKHASSIGMA,
+	     comm, &Info);
     if (has_sigma) {
       sigma = new double[nknots];
-      comm.Recv(sigma,nknots,MPI::DOUBLE,src,pofd_mcmc::IFKSENDSIGMA);
+      MPI_Recv(sigma, nknots, MPI_DOUBLE, src,pofd_mcmc::IFKSENDSIGMA,
+	       comm, &Info);
     }
-    comm.Recv(&has_lower_limits,1,MPI::BOOL,src,pofd_mcmc::IFKHASLOWERLIMITS);
+    MPI_Recv(&has_lower_limits, 1, MPI::BOOL, src, 
+	     pofd_mcmc::IFKHASLOWERLIMITS, comm, &Info);
     if (has_lower_limits) {
       has_lowlim = new bool[nknots];
-      comm.Recv(has_lowlim,nknots,MPI::BOOL,src,pofd_mcmc::IFKSENDHASLOWLIM);
+      MPI_Recv(has_lowlim, nknots, MPI::BOOL, src, 
+	       pofd_mcmc::IFKSENDHASLOWLIM, comm, &Info);
       lowlim = new double[nknots];
-      comm.Recv(lowlim,nknots,MPI::DOUBLE,src,pofd_mcmc::IFKSENDLOWLIM);
+      MPI_Recv(lowlim, nknots, MPI_DOUBLE, src, 
+	       pofd_mcmc::IFKSENDLOWLIM, comm, &Info);
     }
-    comm.Recv(&has_upper_limits,1,MPI::BOOL,src,pofd_mcmc::IFKHASUPPERLIMITS);
+    MPI_Recv(&has_upper_limits, 1, MPI::BOOL, src, 
+	     pofd_mcmc::IFKHASUPPERLIMITS, comm, &Info);
     if (has_upper_limits) {
       has_uplim = new bool[nknots];
-      comm.Recv(has_uplim,nknots,MPI::BOOL,src,pofd_mcmc::IFKSENDHASUPLIM);
+      MPI_Recv(has_uplim, nknots, MPI::BOOL, src, 
+	       pofd_mcmc::IFKSENDHASUPLIM, comm, &Info);
       uplim = new double[nknots];
-      comm.Recv(uplim,nknots,MPI::DOUBLE,src,pofd_mcmc::IFKSENDUPLIM);
+      MPI_Recv(uplim, nknots, MPI_DOUBLE, src, pofd_mcmc::IFKSENDUPLIM,
+	       comm, &Info);
     }
   }
 }

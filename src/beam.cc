@@ -499,45 +499,55 @@ double beam::getEffectiveAreaSq() const {
   return area;
 }
 
-void beam::sendSelf(MPI::Comm& comm, int dest) const {
-  comm.Send(&pixsize,1,MPI::DOUBLE,dest,pofd_mcmc::BEAMSENDPIXSIZE);
-  comm.Send(&npos,1,MPI::UNSIGNED,dest,pofd_mcmc::BEAMSENDNPOS);
+void beam::sendSelf(MPI_Comm comm, int dest) const {
+  MPI_Send(const_cast<double*>(&pixsize), 1, MPI_DOUBLE, dest,
+	   pofd_mcmc::BEAMSENDPIXSIZE, comm);
+  MPI_Send(const_cast<unsigned int*>(&npos), 1, MPI_UNSIGNED, dest,
+	   pofd_mcmc::BEAMSENDNPOS, comm);
 
   if (npos > 0) {
-    comm.Send(&hasposweights,1,MPI::BOOL,dest,
-	      pofd_mcmc::BEAMSENDHASPOSWEIGHTS);
-    comm.Send(pospixarr,npos,MPI::DOUBLE,dest,
-	      pofd_mcmc::BEAMSENDPOSPIXARR);
-    comm.Send(posinvpixarr,npos,MPI::DOUBLE,dest,
-	      pofd_mcmc::BEAMSENDINVPOSPIXARR);
+    MPI_Send(const_cast<bool*>(&hasposweights), 1, MPI::BOOL, dest,
+	     pofd_mcmc::BEAMSENDHASPOSWEIGHTS, comm);
+    MPI_Send(pospixarr, npos, MPI_DOUBLE, dest, 
+	     pofd_mcmc::BEAMSENDPOSPIXARR, comm);
+    MPI_Send(posinvpixarr, npos, MPI_DOUBLE, dest,
+	     pofd_mcmc::BEAMSENDINVPOSPIXARR, comm);
     if (hasposweights)
-      comm.Send(posweights,npos,MPI::DOUBLE,dest,
-		pofd_mcmc::BEAMSENDPOSWEIGHTS);
-    comm.Send(&totpos,1,MPI::DOUBLE,dest,pofd_mcmc::BEAMSENDTOTPOS);
-    comm.Send(&totpossq,1,MPI::DOUBLE,dest,pofd_mcmc::BEAMSENDTOTSQPOS);
+      MPI_Send(posweights, npos, MPI_DOUBLE, dest,
+	       pofd_mcmc::BEAMSENDPOSWEIGHTS, comm);
+    MPI_Send(const_cast<double*>(&totpos), 1, MPI_DOUBLE, dest,
+	     pofd_mcmc::BEAMSENDTOTPOS, comm);
+    MPI_Send(const_cast<double*>(&totpossq), 1, MPI_DOUBLE, dest,
+	     pofd_mcmc::BEAMSENDTOTSQPOS, comm);
   }
-  comm.Send(&nneg,1,MPI::UNSIGNED,dest,pofd_mcmc::BEAMSENDNNEG);
+  MPI_Send(const_cast<unsigned int*>(&nneg), 1, MPI_UNSIGNED, dest, 
+	   pofd_mcmc::BEAMSENDNNEG, comm);
   if (nneg > 0) {
-    comm.Send(&hasnegweights,1,MPI::BOOL,dest,
-	      pofd_mcmc::BEAMSENDHASNEGWEIGHTS);
-    comm.Send(negpixarr,nneg,MPI::DOUBLE,dest,
-	      pofd_mcmc::BEAMSENDNEGPIXARR);
-    comm.Send(neginvpixarr,nneg,MPI::DOUBLE,dest,
-	      pofd_mcmc::BEAMSENDINVNEGPIXARR);
+    MPI_Send(const_cast<bool*>(&hasnegweights), 1, MPI::BOOL, dest,
+	     pofd_mcmc::BEAMSENDHASNEGWEIGHTS, comm);
+    MPI_Send(negpixarr, nneg, MPI_DOUBLE, dest,
+	     pofd_mcmc::BEAMSENDNEGPIXARR, comm);
+    MPI_Send(neginvpixarr, nneg, MPI_DOUBLE, dest,
+	     pofd_mcmc::BEAMSENDINVNEGPIXARR, comm);
     if (hasnegweights)
-      comm.Send(negweights,npos,MPI::DOUBLE,dest,
-		pofd_mcmc::BEAMSENDNEGWEIGHTS);
-    comm.Send(&totneg,1,MPI::DOUBLE,dest,pofd_mcmc::BEAMSENDTOTNEG);
-    comm.Send(&totnegsq,1,MPI::DOUBLE,dest,pofd_mcmc::BEAMSENDTOTSQNEG);
+      MPI_Send(negweights, npos, MPI_DOUBLE, dest,
+	       pofd_mcmc::BEAMSENDNEGWEIGHTS, comm);
+    MPI_Send(const_cast<double*>(&totneg), 1, MPI_DOUBLE, dest,
+	     pofd_mcmc::BEAMSENDTOTNEG, comm);
+    MPI_Send(const_cast<double*>(&totnegsq), 1, MPI_DOUBLE, dest,
+	     pofd_mcmc::BEAMSENDTOTSQNEG, comm);
   }
 }
 
-void beam::recieveCopy(MPI::Comm& comm, int src) {
+void beam::recieveCopy(MPI_Comm comm, int src) {
+  MPI_Status Info;
   unsigned int new_n;
-  comm.Recv(&pixsize,1,MPI::DOUBLE,src,pofd_mcmc::BEAMSENDPIXSIZE);
+  MPI_Recv(&pixsize, 1, MPI_DOUBLE, src, pofd_mcmc::BEAMSENDPIXSIZE,
+	   comm, &Info);
 
   //Pos side
-  comm.Recv(&new_n,1,MPI::UNSIGNED,src,pofd_mcmc::BEAMSENDNPOS);
+  MPI_Recv(&new_n, 1, MPI_UNSIGNED, src, pofd_mcmc::BEAMSENDNPOS,
+	   comm, &Info);
   if (new_n != npos) {
     if (pospixarr != NULL) delete[] pospixarr;
     if (posinvpixarr != NULL) delete[] posinvpixarr;
@@ -548,23 +558,27 @@ void beam::recieveCopy(MPI::Comm& comm, int src) {
     npos = new_n;
   }
   if (npos > 0) {
-    comm.Recv(&hasposweights,1,MPI::BOOL,src,
-	      pofd_mcmc::BEAMSENDHASPOSWEIGHTS);
-    comm.Recv(pospixarr,npos,MPI::DOUBLE,src,pofd_mcmc::BEAMSENDPOSPIXARR);
-    comm.Recv(posinvpixarr,npos,MPI::DOUBLE,src,
-	      pofd_mcmc::BEAMSENDINVPOSPIXARR);
+    MPI_Recv(&hasposweights, 1, MPI::BOOL, src,
+	     pofd_mcmc::BEAMSENDHASPOSWEIGHTS, comm, &Info);
+    MPI_Recv(pospixarr, npos, MPI_DOUBLE, src, pofd_mcmc::BEAMSENDPOSPIXARR,
+	     comm, &Info);
+    MPI_Recv(posinvpixarr, npos, MPI_DOUBLE, src,
+	     pofd_mcmc::BEAMSENDINVPOSPIXARR, comm, &Info);
     if (hasposweights) {
       if (posweights == NULL) posweights = new double[npos];
-      comm.Recv(posweights,npos,MPI::DOUBLE,src,
-		pofd_mcmc::BEAMSENDPOSWEIGHTS);
+      MPI_Recv(posweights, npos, MPI_DOUBLE, src,
+	       pofd_mcmc::BEAMSENDPOSWEIGHTS, comm, &Info);
     }
-    comm.Recv(&totpos,1,MPI::DOUBLE,src,pofd_mcmc::BEAMSENDTOTPOS);
-    comm.Recv(&totpossq,1,MPI::DOUBLE,src,pofd_mcmc::BEAMSENDTOTSQPOS);
+    MPI_Recv(&totpos, 1, MPI_DOUBLE, src, pofd_mcmc::BEAMSENDTOTPOS,
+	     comm, &Info);
+    MPI_Recv(&totpossq, 1, MPI_DOUBLE, src, pofd_mcmc::BEAMSENDTOTSQPOS,
+	     comm, &Info);
     haspos = true;
   } else haspos = false;
 
   //Neg side
-  comm.Recv(&new_n,1,MPI::UNSIGNED,src,pofd_mcmc::BEAMSENDNNEG);
+  MPI_Recv(&new_n, 1, MPI_UNSIGNED, src, pofd_mcmc::BEAMSENDNNEG,
+	   comm, &Info);
   if (new_n != nneg) {
     if (negpixarr != NULL) delete[] negpixarr;
     if (neginvpixarr != NULL) delete[] neginvpixarr;
@@ -575,18 +589,21 @@ void beam::recieveCopy(MPI::Comm& comm, int src) {
     nneg = new_n;
   }
   if (nneg > 0) {
-    comm.Recv(&hasnegweights,1,MPI::BOOL,src,
-	      pofd_mcmc::BEAMSENDHASNEGWEIGHTS);
-    comm.Recv(negpixarr,nneg,MPI::DOUBLE,src,pofd_mcmc::BEAMSENDNEGPIXARR);
-    comm.Recv(neginvpixarr,nneg,MPI::DOUBLE,src,
-	      pofd_mcmc::BEAMSENDINVNEGPIXARR);
+    MPI_Recv(&hasnegweights, 1, MPI::BOOL, src,
+	     pofd_mcmc::BEAMSENDHASNEGWEIGHTS, comm, &Info);
+    MPI_Recv(negpixarr, nneg, MPI_DOUBLE, src, pofd_mcmc::BEAMSENDNEGPIXARR,
+	     comm, &Info);
+    MPI_Recv(neginvpixarr, nneg, MPI_DOUBLE, src,
+	     pofd_mcmc::BEAMSENDINVNEGPIXARR, comm, &Info);
     if (hasnegweights) {
       if (negweights == NULL) negweights = new double[nneg];
-      comm.Recv(negweights,nneg,MPI::DOUBLE,src,
-		pofd_mcmc::BEAMSENDNEGWEIGHTS);
+      MPI_Recv(negweights, nneg, MPI_DOUBLE, src,
+	       pofd_mcmc::BEAMSENDNEGWEIGHTS, comm, &Info);
     }
-    comm.Recv(&totneg,1,MPI::DOUBLE,src,pofd_mcmc::BEAMSENDTOTNEG);
-    comm.Recv(&totnegsq,1,MPI::DOUBLE,src,pofd_mcmc::BEAMSENDTOTSQNEG);
+    MPI_Recv(&totneg, 1, MPI_DOUBLE, src, pofd_mcmc::BEAMSENDTOTNEG,
+	     comm, &Info);
+    MPI_Recv(&totnegsq, 1, MPI_DOUBLE, src, pofd_mcmc::BEAMSENDTOTSQNEG,
+	     comm, &Info);
     hasneg = true;
   } else hasneg = false;
 

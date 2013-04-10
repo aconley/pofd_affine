@@ -54,8 +54,8 @@ class fitsData {
   void getMinMax(double&, double&) const; //!< Get minima and maxima
   double getMean() const; //!< Get mean flux
 
-  void sendSelf(MPI::Comm&, int dest) const; //!< Send self
-  void recieveCopy(MPI::Comm&, int src); //!< Recieve
+  void sendSelf(MPI_Comm, int dest) const; //!< Send self
+  void recieveCopy(MPI_Comm, int src); //!< Recieve
 };
 
 #endif

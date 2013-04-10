@@ -109,8 +109,8 @@ class PDFactory {
   void getPD(double, PD&, bool setLog=true, 
 	     bool edgeFix=false);
 
-  void sendSelf(MPI::Comm&, int dest) const; //!< MPI copy send operation
-  void recieveCopy(MPI::Comm&, int dest); //!< MPI copy recieve operation
+  void sendSelf(MPI_Comm, int dest) const; //!< MPI copy send operation
+  void recieveCopy(MPI_Comm, int dest); //!< MPI copy recieve operation
 
 #ifdef TIMING
   void resetTime(); //!< Reset timing information

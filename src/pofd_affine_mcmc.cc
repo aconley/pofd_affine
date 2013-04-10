@@ -63,10 +63,11 @@ int main(int argc, char** argv) {
   burn_multiple = 1.5;
   scalefac = 2.0;
 
-  unsigned int rank, nproc;
-  MPI::Init(argc,argv);
-  rank = MPI::COMM_WORLD.Get_rank();
-  nproc = MPI::COMM_WORLD.Get_size();
+  MPI_Init(&argc, &argv);
+
+  int rank, nproc;
+  MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   static struct option long_options[] = {
     {"burnmult",required_argument,0,'b'},
@@ -149,7 +150,7 @@ int main(int argc, char** argv) {
 	std::cerr << "\t\tScale factor in stretch steps (def: 2.0)."
 		  << std::endl;
       }
-      MPI::Finalize();
+      MPI_Finalize();
       return 0;
       break;
     case 'b' :
@@ -177,7 +178,7 @@ int main(int argc, char** argv) {
       if (rank == 0) 
 	std::cerr << "pofd_mcmc version number: " << pofd_mcmc::version 
 		  << std::endl;
-      MPI::Finalize();
+      MPI_Finalize();
       return 0;
       break;
     }
@@ -187,7 +188,7 @@ int main(int argc, char** argv) {
     if (rank == 0) {
       std::cerr << "Must run on multiple processes" << std::endl;
     }
-    MPI::Finalize();
+    MPI_Finalize();
     return 1;
   }
 
@@ -248,7 +249,7 @@ int main(int argc, char** argv) {
 	std::cout << "Done with sampling; writing to: " << outfile << std::endl;
 	engine.writeToFile(outfile);
       }
-      MPI::Finalize();
+      MPI_Finalize();
       
     } else {
       
@@ -265,7 +266,7 @@ int main(int argc, char** argv) {
 	std::cout << "Done with sampling; writing to: " << outfile << std::endl;
 	engine.writeToFile(outfile);
       }
-      MPI::Finalize();
+      MPI_Finalize();
     }
   } catch (const affineExcept& ex) {
     std::cerr << "Error encountered: " << ex << std::endl;

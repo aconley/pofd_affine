@@ -93,42 +93,40 @@ bool pofdMCMC::initChainsMaster() {
 
 
   //Now, copy that information over to slaves
-  unsigned int nproc = MPI::COMM_WORLD.Get_size();
+  int nproc;
+  MPI_Comm_size(MPI_COMM_WORLD, &nproc);
 
-  unsigned int nnotinitialized;
-  std::vector<bool> initialized(false,nproc);
+  int nnotinitialized;
+  std::vector<bool> initialized(false, nproc);
   initialized[0] = true; //Master is initialized
   nnotinitialized = nproc-1;
 
-  MPI::Status Info;
-  int jnk;
-  bool ismsg;
+  MPI_Status Info;
+  int jnk, ismsg;
   while (nnotinitialized > 0) {
     //See if a message is available, wait for one if it isn't
-    ismsg = MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, MPI::ANY_TAG,
-				   Info);
-    while (ismsg == false) {
+    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
+    while (ismsg == 0) {
       usleep(10000); //Sleep for 1/100th of a second
-      ismsg = MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, MPI::ANY_TAG,
-				     Info);
+      MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     }
 
     //We have a message -- process it
-    MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,MPI::ANY_SOURCE,
-			 MPI::ANY_TAG,Info);
-    int this_tag = Info.Get_tag();
-    int this_rank = Info.Get_source();
+    MPI_Recv(&jnk, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, 
+	     MPI_COMM_WORLD, &Info);
+    int this_tag = Info.MPI_TAG;
+    int this_rank = Info.MPI_SOURCE;
     if (this_tag == mcmc_affine::ERROR) {
       //An error was encountered -- the slave should have
       // notified all others of failure
       return false; 
     } else if (this_tag == pofd_mcmc::PMCMCSENDINIT) {
-      MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, this_rank, 
-			   pofd_mcmc::PMCMCSENDINGINIT);
-      MPI::COMM_WORLD.Send(&npar, 1, MPI::UNSIGNED, this_rank, 
-			   pofd_mcmc::PMCMCSENDNPAR);
-      ifile.sendSelf(MPI::COMM_WORLD, this_rank);
-      likeSet.sendSelf(MPI::COMM_WORLD, this_rank);
+      MPI_Send(&jnk, 1, MPI_INT, this_rank, pofd_mcmc::PMCMCSENDINGINIT,
+	       MPI_COMM_WORLD);
+      MPI_Send(&npar, 1, MPI_UNSIGNED, this_rank, pofd_mcmc::PMCMCSENDNPAR,
+	       MPI_COMM_WORLD);
+      ifile.sendSelf(MPI_COMM_WORLD, this_rank);
+      likeSet.sendSelf(MPI_COMM_WORLD, this_rank);
       
     } else if (this_tag == pofd_mcmc::PMCMCISREADY) {
       initialized[this_rank] = true;
@@ -180,8 +178,9 @@ bool pofdMCMC::initChainsMaster() {
 	if (trialval > 0) break;
       }
       if (j == maxtrials) {
-	for (unsigned int k = 1; k < nproc; ++k) //Tell slaves to stop
-	  MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, k, mcmc_affine::STOP);
+	for (int k = 1; k < nproc; ++k) //Tell slaves to stop
+	  MPI_Send(&jnk, 1, MPI_INT, k, mcmc_affine::STOP,
+		   MPI_COMM_WORLD);
 	throw affineExcept("pofdMCMC", "initChainsMaster",
 			   "Couldn't generate sigma multiplier value", 4);
       }
@@ -205,42 +204,41 @@ bool pofdMCMC::initChainsSlave() {
 		       "Should not be called on master node", 1);
   //Send message to master saying we are ready
   int jnk;
-  MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, 0, pofd_mcmc::PMCMCSENDINIT);
+  MPI_Send(&jnk, 1, MPI_INT, 0, pofd_mcmc::PMCMCSENDINIT, MPI_COMM_WORLD);
 
   //And wait...
-  MPI::Status Info;
+  MPI_Status Info;
 
-  bool ismsg;
+  int ismsg;
   //See if a message is available, wait for one if it isn't
-  ismsg = MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, MPI::ANY_TAG, Info);
-  while (ismsg == false) {
+  MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
+  while (ismsg == 0) {
     usleep(10000); //Sleep for 1/100th of a second
-    ismsg = MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, MPI::ANY_TAG,
-				   Info);
+    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
   }
 
   //Got a message, process it
-  MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,MPI::ANY_SOURCE,
-		       MPI::ANY_TAG,Info);
-  int this_tag = Info.Get_tag();
-  int this_rank = Info.Get_source();
+  MPI_Recv(&jnk, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, 
+	   MPI_COMM_WORLD, &Info);
+  int this_tag = Info.MPI_TAG;
+  int this_rank = Info.MPI_SOURCE;
 
   if (this_rank != 0) {
     //Got a message from another slave.  This is not allowed!
-    MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, 0, mcmc_affine::ERROR);
+    MPI_Send(&jnk, 1, MPI_INT, 0, mcmc_affine::ERROR, MPI_COMM_WORLD);
     return false;
   } else {
     if (this_tag == mcmc_affine::STOP)
       return false;
     else if (this_tag == pofd_mcmc::PMCMCSENDINGINIT) {
       unsigned int npar;
-      MPI::COMM_WORLD.Recv(&npar, 1, MPI::UNSIGNED, 0, 
-			   pofd_mcmc::PMCMCSENDNPAR);
+      MPI_Recv(&npar, 1, MPI_UNSIGNED, 0, pofd_mcmc::PMCMCSENDNPAR,
+	       MPI_COMM_WORLD, &Info);
       this->setNParams(npar);
-      ifile.recieveCopy(MPI::COMM_WORLD, 0);
-      likeSet.recieveCopy(MPI::COMM_WORLD, 0);
+      ifile.recieveCopy(MPI_COMM_WORLD, 0);
+      likeSet.recieveCopy(MPI_COMM_WORLD, 0);
 
-      MPI::COMM_WORLD.Send(&jnk, 1, MPI::INT, 0, pofd_mcmc::PMCMCISREADY);
+      MPI_Send(&jnk, 1, MPI_INT, 0, pofd_mcmc::PMCMCISREADY, MPI_COMM_WORLD);
     }
   }
 

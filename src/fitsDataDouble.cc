@@ -573,30 +573,39 @@ std::pair<double,double> fitsDataDouble::getBinDelta() const {
   return std::make_pair(bindelta1,bindelta2);
 }
 
-void fitsDataDouble::sendSelf(MPI::Comm& comm, int dest) const {
-  comm.Send(&n,1,MPI::UNSIGNED,dest,pofd_mcmc::FDDSENDN);
+void fitsDataDouble::sendSelf(MPI_Comm comm, int dest) const {
+  MPI_Send(const_cast<unsigned int*>(&n), 1, MPI_UNSIGNED, dest,
+	   pofd_mcmc::FDDSENDN, comm);
   if (n > 0) {
-    comm.Send(data1,n,MPI::DOUBLE,dest,pofd_mcmc::FDDSENDDATA1);
-    comm.Send(data2,n,MPI::DOUBLE,dest,pofd_mcmc::FDDSENDDATA2);
-    comm.Send(&is_binned,1,MPI::BOOL,dest,pofd_mcmc::FDDSENDISBINNED);
+    MPI_Send(data1, n, MPI_DOUBLE, dest, pofd_mcmc::FDDSENDDATA1, comm);
+    MPI_Send(data2, n, MPI_DOUBLE, dest, pofd_mcmc::FDDSENDDATA2, comm);
+    MPI_Send(const_cast<bool*>(&is_binned), 1, MPI::BOOL, dest,
+	     pofd_mcmc::FDDSENDISBINNED, comm);
     if (is_binned) {
-      comm.Send(&nbins1,1,MPI::UNSIGNED,dest,pofd_mcmc::FDDSENDNBINS1);
-      comm.Send(&nbins2,1,MPI::UNSIGNED,dest,pofd_mcmc::FDDSENDNBINS2);
+      MPI_Send(const_cast<unsigned int*>(&nbins1), 1, MPI_UNSIGNED, dest,
+	       pofd_mcmc::FDDSENDNBINS1, comm);
+      MPI_Send(const_cast<unsigned int*>(&nbins2), 1, MPI_UNSIGNED, dest,
+	       pofd_mcmc::FDDSENDNBINS2, comm);
       if ( (nbins1 > 0) && (nbins2 > 0) ) {
-	comm.Send(binval,nbins1*nbins2,
-		  MPI::UNSIGNED,dest,pofd_mcmc::FDDSENDBINVAL);
-	comm.Send(&bincent01,1,MPI::DOUBLE,dest,pofd_mcmc::FDDSENDBINCENT01);
-	comm.Send(&bindelta1,1,MPI::DOUBLE,dest,pofd_mcmc::FDDSENDBINDELTA1);
-	comm.Send(&bincent02,1,MPI::DOUBLE,dest,pofd_mcmc::FDDSENDBINCENT02);
-	comm.Send(&bindelta2,1,MPI::DOUBLE,dest,pofd_mcmc::FDDSENDBINDELTA2);
+	MPI_Send(binval, nbins1*nbins2, MPI_UNSIGNED, dest,
+		 pofd_mcmc::FDDSENDBINVAL, comm);
+	MPI_Send(const_cast<double*>(&bincent01), 1, MPI_DOUBLE, dest,
+		 pofd_mcmc::FDDSENDBINCENT01, comm);
+	MPI_Send(const_cast<double*>(&bindelta1), 1, MPI_DOUBLE, dest,
+		 pofd_mcmc::FDDSENDBINDELTA1, comm);
+	MPI_Send(const_cast<double*>(&bincent02), 1, MPI_DOUBLE, dest,
+		 pofd_mcmc::FDDSENDBINCENT02, comm);
+	MPI_Send(const_cast<double*>(&bindelta2), 1, MPI_DOUBLE, dest,
+		 pofd_mcmc::FDDSENDBINDELTA2, comm);
       }
     }
   }
 }
 
-void fitsDataDouble::recieveCopy(MPI::Comm& comm, int src) {
+void fitsDataDouble::recieveCopy(MPI_Comm comm, int src) {
   unsigned int newn;
-  comm.Recv(&newn,1,MPI::UNSIGNED,src,pofd_mcmc::FDDSENDN);
+  MPI_Status Info;
+  MPI_Recv(&newn, 1, MPI_UNSIGNED, src, pofd_mcmc::FDDSENDN, comm, &Info);
 
   if (newn != n) {
     //Have to change sizes
@@ -610,15 +619,18 @@ void fitsDataDouble::recieveCopy(MPI::Comm& comm, int src) {
   }
   if (n > 0) {
     //Data to recieve
-    comm.Recv(data1,n,MPI::DOUBLE,src,pofd_mcmc::FDDSENDDATA1);
-    comm.Recv(data2,n,MPI::DOUBLE,src,pofd_mcmc::FDDSENDDATA2);
+    MPI_Recv(data1, n, MPI_DOUBLE, src, pofd_mcmc::FDDSENDDATA1, comm, &Info);
+    MPI_Recv(data2, n, MPI_DOUBLE, src, pofd_mcmc::FDDSENDDATA2, comm, &Info);
 
     bool recbin;
-    comm.Recv(&recbin,1,MPI::BOOL,src,pofd_mcmc::FDDSENDISBINNED);
+    MPI_Recv(&recbin, 1, MPI::BOOL, src, pofd_mcmc::FDDSENDISBINNED, 
+	     comm, &Info);
     if (recbin) {
       unsigned int newnbins1, newnbins2;
-      comm.Recv(&newnbins1,1,MPI::UNSIGNED,src,pofd_mcmc::FDDSENDNBINS1);
-      comm.Recv(&newnbins2,1,MPI::UNSIGNED,src,pofd_mcmc::FDDSENDNBINS2);
+      MPI_Recv(&newnbins1, 1, MPI_UNSIGNED, src, pofd_mcmc::FDDSENDNBINS1, 
+	       comm, &Info);
+      MPI_Recv(&newnbins2, 1, MPI_UNSIGNED, src, pofd_mcmc::FDDSENDNBINS2, 
+	       comm, &Info);
       //Realloc if needed
       if ( (newnbins1 != nbins1) || (newnbins2 != nbins2) ) {
 	if (binval != NULL) fftw_free(binval);
@@ -630,12 +642,16 @@ void fitsDataDouble::recieveCopy(MPI::Comm& comm, int src) {
 	} else binval = NULL;
       }
       if ( (nbins1 > 0) && (nbins2 > 0) ) {
-	comm.Recv(binval,nbins1*nbins2,MPI::UNSIGNED,src,
-		  pofd_mcmc::FDDSENDBINVAL);
-	comm.Recv(&bincent01,1,MPI::DOUBLE,src,pofd_mcmc::FDDSENDBINCENT01);
-	comm.Recv(&bindelta1,1,MPI::DOUBLE,src,pofd_mcmc::FDDSENDBINDELTA1);
-	comm.Recv(&bincent02,1,MPI::DOUBLE,src,pofd_mcmc::FDDSENDBINCENT02);
-	comm.Recv(&bindelta2,1,MPI::DOUBLE,src,pofd_mcmc::FDDSENDBINDELTA2);
+	MPI_Recv(binval, nbins1*nbins2, MPI_UNSIGNED, src,
+		 pofd_mcmc::FDDSENDBINVAL, comm, &Info);
+	MPI_Recv(&bincent01, 1, MPI_DOUBLE, src, pofd_mcmc::FDDSENDBINCENT01,
+		 comm, &Info);
+	MPI_Recv(&bindelta1, 1, MPI_DOUBLE, src, pofd_mcmc::FDDSENDBINDELTA1,
+		 comm, &Info);
+	MPI_Recv(&bincent02, 1, MPI_DOUBLE, src, pofd_mcmc::FDDSENDBINCENT02,
+		 comm, &Info);
+	MPI_Recv(&bindelta2, 1, MPI_DOUBLE, src, pofd_mcmc::FDDSENDBINDELTA2,
+		 comm, &Info);
 	is_binned = true;
       } else is_binned = false;
     }

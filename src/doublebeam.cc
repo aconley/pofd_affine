@@ -725,42 +725,56 @@ void doublebeam::getMinMax2(unsigned int bnd, double& min,
 
 }
 
-void doublebeam::sendSelf(MPI::Comm& comm, int dest) const {
-  comm.Send(&pixsize,1,MPI::DOUBLE,dest,pofd_mcmc::DOUBLEBEAMSENDPIXSIZE);
-  comm.Send(npix,4,MPI::UNSIGNED,dest,pofd_mcmc::DOUBLEBEAMSENDN);
-  comm.Send(has_weights,4,MPI::BOOL,dest,pofd_mcmc::DOUBLEBEAMSENDHASWEIGHTS);
+void doublebeam::sendSelf(MPI_Comm comm, int dest) const {
+  MPI_Send(const_cast<double*>(&pixsize), 1, MPI_DOUBLE, dest, 
+	   pofd_mcmc::DOUBLEBEAMSENDPIXSIZE, comm);
+  MPI_Send(const_cast<unsigned int*>(npix), 4, MPI_UNSIGNED, 
+	   dest, pofd_mcmc::DOUBLEBEAMSENDN, comm);
+  MPI_Send(const_cast<bool*>(has_weights), 4, MPI::BOOL, dest, 
+	   pofd_mcmc::DOUBLEBEAMSENDHASWEIGHTS, comm);
   
   for (unsigned int i = 0; i < 4; ++i)
     if (npix[i] > 0) {
-      comm.Send(pixarr1[i],npix[i],MPI::DOUBLE,dest,
-		pofd_mcmc::DOUBLEBEAMSENDPIXARR1);
-      comm.Send(pixarr2[i],npix[i],MPI::DOUBLE,dest,
-		pofd_mcmc::DOUBLEBEAMSENDPIXARR2);
-      comm.Send(ipixarr1[i],npix[i],MPI::DOUBLE,dest,
-		pofd_mcmc::DOUBLEBEAMSENDIPIXARR1);
-      comm.Send(ipixarr2[i],npix[i],MPI::DOUBLE,dest,
-		pofd_mcmc::DOUBLEBEAMSENDIPIXARR2);
+      MPI_Send(pixarr1[i], npix[i], MPI_DOUBLE, dest,
+	       pofd_mcmc::DOUBLEBEAMSENDPIXARR1, comm);
+      MPI_Send(pixarr2[i], npix[i], MPI_DOUBLE, dest,
+	       pofd_mcmc::DOUBLEBEAMSENDPIXARR2, comm);
+      MPI_Send(ipixarr1[i], npix[i], MPI_DOUBLE, dest,
+	       pofd_mcmc::DOUBLEBEAMSENDIPIXARR1, comm);
+      MPI_Send(ipixarr2[i], npix[i], MPI_DOUBLE, dest,
+	       pofd_mcmc::DOUBLEBEAMSENDIPIXARR2, comm);
       if (has_weights[i])
-	comm.Send(weights[i],npix[i],MPI::DOUBLE,dest,
-		  pofd_mcmc::DOUBLEBEAMSENDWEIGHTS);
+	MPI_Send(weights[i], npix[i], MPI_DOUBLE, dest,
+		 pofd_mcmc::DOUBLEBEAMSENDWEIGHTS, comm);
     }
-  comm.Send(tot1,4,MPI::DOUBLE,dest,pofd_mcmc::DOUBLEBEAMSENDTOT1);
-  comm.Send(tot2,4,MPI::DOUBLE,dest,pofd_mcmc::DOUBLEBEAMSENDTOT2);
-  comm.Send(totsq1,4,MPI::DOUBLE,dest,pofd_mcmc::DOUBLEBEAMSENDTOTSQ1);
-  comm.Send(totsq2,4,MPI::DOUBLE,dest,pofd_mcmc::DOUBLEBEAMSENDTOTSQ2);
-  comm.Send(&totsm1,1,MPI::DOUBLE,dest,pofd_mcmc::DOUBLEBEAMSENDTOTSM1);
-  comm.Send(&totsm2,1,MPI::DOUBLE,dest,pofd_mcmc::DOUBLEBEAMSENDTOTSM2);
+  MPI_Send(const_cast<double*>(tot1), 4, MPI_DOUBLE, dest, 
+	   pofd_mcmc::DOUBLEBEAMSENDTOT1, comm);
+  MPI_Send(const_cast<double*>(tot2), 4, MPI_DOUBLE, dest, 
+	   pofd_mcmc::DOUBLEBEAMSENDTOT2, comm);
+  MPI_Send(const_cast<double*>(totsq1), 4, MPI_DOUBLE, dest, 
+	   pofd_mcmc::DOUBLEBEAMSENDTOTSQ1, comm);
+  MPI_Send(const_cast<double*>(totsq2), 4, MPI_DOUBLE, dest, 
+	   pofd_mcmc::DOUBLEBEAMSENDTOTSQ2, comm);
+  MPI_Send(const_cast<double*>(&totsm1), 1, MPI_DOUBLE, dest, 
+	   pofd_mcmc::DOUBLEBEAMSENDTOTSM1, comm);
+  MPI_Send(const_cast<double*>(&totsm2), 1, MPI_DOUBLE, dest, 
+	   pofd_mcmc::DOUBLEBEAMSENDTOTSM2, comm);
 }
 
-void doublebeam::recieveCopy(MPI::Comm& comm, int src) {
+void doublebeam::recieveCopy(MPI_Comm comm, int src) {
+  MPI_Status Info;
+
   unsigned int new_n[4];
-  comm.Recv(&pixsize,1,MPI::DOUBLE,src,pofd_mcmc::DOUBLEBEAMSENDPIXSIZE);
+  MPI_Recv(&pixsize, 1, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDPIXSIZE,
+	   comm, &Info);
 
   //Number of elems
-  comm.Recv(new_n,4,MPI::UNSIGNED,src,pofd_mcmc::DOUBLEBEAMSENDN);
+  MPI_Recv(new_n, 4, MPI_UNSIGNED, src, pofd_mcmc::DOUBLEBEAMSENDN,
+	   comm, &Info);
   
   //Weight elements
-  comm.Recv(&has_weights,4,MPI::BOOL,src,pofd_mcmc::DOUBLEBEAMSENDHASWEIGHTS);
+  MPI_Recv(&has_weights, 4, MPI::BOOL, src, 
+	   pofd_mcmc::DOUBLEBEAMSENDHASWEIGHTS, comm, &Info);
 
   //Actual beam elems
   for (unsigned int i = 0; i < 4; ++i) {
@@ -793,17 +807,17 @@ void doublebeam::recieveCopy(MPI::Comm& comm, int src) {
     }
     
     if (new_n[i] > 0) {
-      comm.Recv(pixarr1[i],new_n[i],MPI::DOUBLE,src,
-		pofd_mcmc::DOUBLEBEAMSENDPIXARR1);
-      comm.Recv(pixarr2[i],new_n[i],MPI::DOUBLE,src,
-		pofd_mcmc::DOUBLEBEAMSENDPIXARR2);
-      comm.Recv(ipixarr1[i],new_n[i],MPI::DOUBLE,src,
-		pofd_mcmc::DOUBLEBEAMSENDIPIXARR1);
-      comm.Recv(ipixarr2[i],new_n[i],MPI::DOUBLE,src,
-		pofd_mcmc::DOUBLEBEAMSENDIPIXARR2);
+      MPI_Recv(pixarr1[i], new_n[i], MPI_DOUBLE, src,
+	       pofd_mcmc::DOUBLEBEAMSENDPIXARR1, comm, &Info);
+      MPI_Recv(pixarr2[i], new_n[i], MPI_DOUBLE, src,
+	       pofd_mcmc::DOUBLEBEAMSENDPIXARR2, comm, &Info);
+      MPI_Recv(ipixarr1[i], new_n[i], MPI_DOUBLE, src,
+	       pofd_mcmc::DOUBLEBEAMSENDIPIXARR1, comm, &Info);
+      MPI_Recv(ipixarr2[i], new_n[i], MPI_DOUBLE, src,
+	       pofd_mcmc::DOUBLEBEAMSENDIPIXARR2, comm, &Info);
       if (has_weights[i])
-	comm.Recv(weights[i],new_n[i],MPI::DOUBLE,src,
-		  pofd_mcmc::DOUBLEBEAMSENDWEIGHTS);
+	MPI_Recv(weights[i], new_n[i], MPI_DOUBLE, src,
+		 pofd_mcmc::DOUBLEBEAMSENDWEIGHTS, comm, &Info);
     } 
 
     npix[i] = new_n[i];
@@ -811,11 +825,17 @@ void doublebeam::recieveCopy(MPI::Comm& comm, int src) {
   }
   
   //Totals
-  comm.Recv(tot1,4,MPI::DOUBLE,src,pofd_mcmc::DOUBLEBEAMSENDTOT1);
-  comm.Recv(tot2,4,MPI::DOUBLE,src,pofd_mcmc::DOUBLEBEAMSENDTOT2);
-  comm.Recv(totsq1,4,MPI::DOUBLE,src,pofd_mcmc::DOUBLEBEAMSENDTOTSQ1);
-  comm.Recv(totsq2,4,MPI::DOUBLE,src,pofd_mcmc::DOUBLEBEAMSENDTOTSQ2);
-  comm.Recv(&totsm1,1,MPI::DOUBLE,src,pofd_mcmc::DOUBLEBEAMSENDTOTSM1);
-  comm.Recv(&totsm2,1,MPI::DOUBLE,src,pofd_mcmc::DOUBLEBEAMSENDTOTSM2);
+  MPI_Recv(tot1, 4, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDTOT1,
+	   comm, &Info);
+  MPI_Recv(tot2, 4, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDTOT2,
+	   comm, &Info);
+  MPI_Recv(totsq1, 4, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDTOTSQ1,
+	   comm, &Info);
+  MPI_Recv(totsq2, 4, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDTOTSQ2,
+	   comm, &Info);
+  MPI_Recv(&totsm1, 1, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDTOTSM1,
+	   comm, &Info);
+  MPI_Recv(&totsm2, 1, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDTOTSM2,
+	   comm, &Info);
 }
 

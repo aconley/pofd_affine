@@ -64,8 +64,8 @@ class numberCountsKnots : public numberCounts {
   
   bool writeToStream(std::ostream& os) const; //<! Output
 
-  virtual void sendSelf(MPI::Comm&, int dest) const; //!< Send self
-  virtual void recieveCopy(MPI::Comm&, int src); //!< Recieve
+  virtual void sendSelf(MPI_Comm, int dest) const; //!< Send self
+  virtual void recieveCopy(MPI_Comm, int src); //!< Recieve
 };
 
 /*! \brief Write to stream operator */
@@ -129,8 +129,8 @@ class initFileKnots {
 
   bool isValid(const paramSet&) const; //!< Checks if parameters are within allowed ranges
   
-  void sendSelf(MPI::Comm&, int dest) const; //!< Send self
-  void recieveCopy(MPI::Comm&, int src); //!< Recieve
+  void sendSelf(MPI_Comm, int dest) const; //!< Send self
+  void recieveCopy(MPI_Comm, int src); //!< Recieve
 };
 
 #endif

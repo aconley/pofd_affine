@@ -68,8 +68,8 @@ class fitsDataDouble {
   void getMinMax(double&, double&, double&, double&) const; //!< Get minima and maxima for both bands
   std::pair<double,double> getMean() const; //!< Gets mean value in each band
 
-  void sendSelf(MPI::Comm&, int dest) const; //!< Send self
-  void recieveCopy(MPI::Comm&, int src); //!< Recieve
+  void sendSelf(MPI_Comm, int dest) const; //!< Send self
+  void recieveCopy(MPI_Comm, int src); //!< Recieve
 };
 
 #endif

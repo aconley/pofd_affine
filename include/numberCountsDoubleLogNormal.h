@@ -206,8 +206,8 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
 
    bool writeToStream(std::ostream& os) const; //<! Output
 
-   void sendSelf(MPI::Comm&, int dest) const; //!< Send self
-   void recieveCopy(MPI::Comm&, int src); //!< Recieve
+   void sendSelf(MPI_Comm, int dest) const; //!< Send self
+   void recieveCopy(MPI_Comm, int src); //!< Recieve
 };
 
 //////////////////////////////
@@ -283,8 +283,8 @@ class initFileDoubleLogNormal {
 
   bool isValid(const paramSet&) const; //!< Checks if parameters are within allowed ranges
 
-  void sendSelf(MPI::Comm&, int dest) const; //!< Send self
-  void recieveCopy(MPI::Comm&, int src); //!< Recieve
+  void sendSelf(MPI_Comm, int dest) const; //!< Send self
+  void recieveCopy(MPI_Comm, int src); //!< Recieve
 };
 
 #endif

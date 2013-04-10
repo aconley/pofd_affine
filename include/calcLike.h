@@ -112,9 +112,9 @@ class calcLikeSingle {
   void writePDToStream(std::ostream& os) const; //!< Write out computed P(D)
   
   /*! \brief MPI copy send operation */
-  void sendSelf(MPI::Comm&, int dest) const;
+  void sendSelf(MPI_Comm, int dest) const;
   /*! \brief MPI copy recieve operation */
-  void recieveCopy(MPI::Comm&, int dest);
+  void recieveCopy(MPI_Comm, int dest);
 };
 
 ////////////////////////////////////////////////////
@@ -229,9 +229,9 @@ class calcLike {
   double getLogLike(const paramSet&) const;
 
   /*! \brief MPI copy send operation */
-  void sendSelf(MPI::Comm&, int dest) const;
+  void sendSelf(MPI_Comm, int dest) const;
   /*! \brief MPI copy send operation */
-  void recieveCopy(MPI::Comm&, int dest);
+  void recieveCopy(MPI_Comm, int dest);
 };
 
 #endif

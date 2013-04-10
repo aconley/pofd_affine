@@ -8,7 +8,6 @@
 //Function to pass to GSL integrator
 static double evalPowfNKnotsSpline(double,void*); //!< Evaluates f^pow dN/dS
 
-
 numberCountsKnotsSpline::numberCountsKnotsSpline() : numberCountsKnots() {
   logknots = NULL;
   acc = gsl_interp_accel_alloc();
@@ -506,15 +505,15 @@ void numberCountsKnotsSpline::getR(unsigned int n,const double* const flux,
   return;
 }
 
-void numberCountsKnotsSpline::sendSelf(MPI::Comm& comm, int dest) const {
-  numberCountsKnots::sendSelf(comm,dest);
-  if (knotvals_loaded) {
-    comm.Send(logknots,nknots,MPI::DOUBLE,dest,
-	      pofd_mcmc::NCKSSENDLOGKNOTS);
-  }
+void numberCountsKnotsSpline::sendSelf(MPI_Comm comm, int dest) const {
+  numberCountsKnots::sendSelf(comm, dest);
+  if (knotvals_loaded)
+    MPI_Send(logknots, nknots, MPI_DOUBLE, dest,
+	     pofd_mcmc::NCKSSENDLOGKNOTS, comm);
 }
 
-void numberCountsKnotsSpline::recieveCopy(MPI::Comm& comm, int src) {
+void numberCountsKnotsSpline::recieveCopy(MPI_Comm comm, int src) {
+  MPI_Status Info;
   unsigned int oldnknots = nknots;
   numberCountsKnots::recieveCopy(comm,src);
 
@@ -522,14 +521,15 @@ void numberCountsKnotsSpline::recieveCopy(MPI::Comm& comm, int src) {
     if (splinelog != NULL) gsl_spline_free(splinelog);
     if (nknots > 0) 
       splinelog = gsl_spline_alloc(gsl_interp_cspline,
-				    static_cast<size_t>(nknots));
+				   static_cast<size_t>(nknots));
     else
       splinelog = NULL;
   }
   if (knotvals_loaded) {
-    comm.Recv(logknots,nknots,MPI::DOUBLE,src,pofd_mcmc::NCKSSENDLOGKNOTS);
+    MPI_Recv(logknots, nknots, MPI_DOUBLE, src, pofd_mcmc::NCKSSENDLOGKNOTS,
+	     comm, &Info);
     gsl_spline_init(splinelog, logknots, logknotvals,
-		     static_cast<size_t>(nknots));
+		    static_cast<size_t>(nknots));
   }
 }
 
