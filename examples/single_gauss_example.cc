@@ -91,16 +91,8 @@ int main(int argc, char** argv) {
 
   int rank, nproc;
   MPI_Init(&argc, &argv);
-  MPI_Comm_size(MPI_COMM_WORLD, &rank);
-  MPI_Comm_rank(MPI_COMM_WORLD, &nproc);
-
-  if (nproc < 2) {
-    if (rank == 0) {
-      std::cerr << "Must run on multiple processes" << std::endl;
-    }
-    MPI_Finalize();
-    return 1;
-  }
+  MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
                             &option_index ) ) != -1 ) 
@@ -113,8 +105,8 @@ int main(int argc, char** argv) {
 		  << std::endl;
 	std::cerr << std::endl;
 	std::cerr << "SYNOPSIS" << std::endl;
-	std::cerr << "\tsingle_gauss_example nwalkers nsamples mean sigma outfile"
-		  << std::endl;
+	std::cerr << "\tsingle_gauss_example nwalkers nsamples mean sigma "
+		  << "outfile" << std::endl;
 	std::cerr << "DESCRIPTION:" << std::endl;
 	std::cerr << "\tDraws samples from a Gaussian using"
 		  << std::endl;
@@ -148,19 +140,27 @@ int main(int argc, char** argv) {
       return 0;
       break;
     }
-  if ( optind >= argc-4 ) {
+
+  if (nproc < 2) {
+    if (rank == 0) {
+      std::cerr << "Must run on multiple processes" << std::endl;
+    }
+    MPI_Finalize();
+    return 1;
+  }
+
+  if (optind >= argc - 4) {
     if (rank == 0) {
       std::cerr << "Required arguments missing" << std::endl;
     }
     MPI_Finalize();
     return 1;
   }
-
-  nwalkers = atoi( argv[optind] );
-  nsamples = atoi( argv[optind+1] );
-  mean     = atof( argv[optind+2] );
-  sigma    = atof( argv[optind+3] );
-  outfile  = std::string( argv[optind+4] );
+  nwalkers = atoi(argv[optind]);
+  nsamples = atoi(argv[optind+1]);
+  mean     = atof(argv[optind+2]);
+  sigma    = atof(argv[optind+3]);
+  outfile  = std::string(argv[optind+4]);
 
   if (nwalkers == 0 || nsamples == 0) {
     MPI_Finalize();

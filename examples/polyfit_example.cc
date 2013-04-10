@@ -32,7 +32,7 @@ public:
 polyFit::polyFit(const std::string& datafile,
 		 unsigned int NWALKERS, unsigned int NPARAMS,
 		 unsigned int NSAMPLES ) :
-  affineEnsemble(NWALKERS,NPARAMS,NSAMPLES) {
+  affineEnsemble(NWALKERS, NPARAMS, NSAMPLES) {
   ndata = 0;
   x = NULL;
   y = NULL;
@@ -163,8 +163,8 @@ int main(int argc, char** argv) {
 
   int rank, nproc;
   MPI_Init(&argc, &argv);
-  MPI_Comm_size(MPI_COMM_WORLD, &rank);
-  MPI_Comm_rank(MPI_COMM_WORLD, &nproc);
+  MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   if (nproc < 2) {
     if (rank == 0) {
@@ -249,10 +249,10 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  order    = atoi( argv[optind] );
-  infile   = std::string( argv[optind+1] );
-  nwalkers = atoi( argv[optind+2] );
-  nsamples = atoi( argv[optind+3] );
+  order    = atoi(argv[optind]);
+  infile   = std::string( argv[optind + 1]);
+  nwalkers = atoi(argv[optind + 2]);
+  nsamples = atoi(argv[optind + 3]);
 
   if (nwalkers == 0) return 0;
   if (nsamples == 0) return 0;

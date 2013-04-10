@@ -33,7 +33,7 @@ template <class Item> class affineQueue {
   bool empty() const { return nelem == 0; } //!< Is queue empty?
 
   void clear(); //!< Clear out contents (but preserve capacity)
-  void setCapacity( unsigned int ); //!< Change capacity -- does not preserve contents
+  void setCapacity(unsigned int); //!< Change capacity -- does not preserve contents
 
   void push(const Item&) throw (affineExcept);  //!< Push something onto queue
   Item pop() throw (affineExcept); //!< Pull item off of queue

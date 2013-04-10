@@ -57,8 +57,6 @@ double testEnsemble::getLogLike(const paramSet& p) {
 
 int main(int argc, char** argv) {
   
-  const unsigned int cap = 25;
-
   unsigned int rank;
   MPI::Init(argc,argv);
   rank = MPI::COMM_WORLD.Get_rank();
@@ -66,122 +64,6 @@ int main(int argc, char** argv) {
   if (rank == 0) {
     try {
       ran ranstruct;
-
-      std::cout << "affineQueue tests" << std::endl;
-      affineQueue< unsigned int > queue(cap);
-      
-      //Insert 25, make sure that's okay
-      for (unsigned int i = 0; i < 5; ++i)
-	queue.push(i);
-      for (unsigned int i = 5; i < cap; ++i)
-	queue.push( ranstruct.int32() );
-      if (queue.size() != cap)
-	throw affineExcept("ensemble_test","main",
-			   "Queue should have 25 elems in it",1);
-      if (queue.capacity() != cap)
-	throw affineExcept("ensemble_test","main",
-			   "Queue should have capacity of 25",2);
-      
-      unsigned int val;
-      for (unsigned int i = 0; i < 5; ++i) {
-	val = queue.pop();
-	if (val != i) {
-	  std::stringstream str;
-	  str << "Queue pop should have yielded: " << i << " but gave "
-	      << val;
-	  throw affineExcept("ensemble_test","main",
-			     str.str(),3);
-	}
-      }
-      if (queue.size() != 20)
-	throw affineExcept("ensemble_test","main",
-			   "Queue should have 20 elements",4);
-      
-      //Pop the rest
-      for (unsigned int i = 5; i < cap; ++i)
-	val = queue.pop();
-      if (queue.size() != 0)
-	throw affineExcept("ensemble_test","main",
-			   "Queue should have 0 elements",5);
-      if (!queue.empty())
-	throw affineExcept("ensemble_test","main",
-			   "Queue should be empty",6);
-      if (queue.capacity() != cap)
-	throw affineExcept("ensemble_test","main",
-			   "Queue should have capacity of 25",7);
-      
-      
-      //Test clear
-      for (unsigned int i = 0; i < cap-3; ++i)
-	queue.push( ranstruct.int32() );
-      if (queue.size() != cap-3)
-	throw affineExcept("ensemble_test","main",
-			   "Queue should have 22 elements",8);
-      if (queue.capacity() != cap)
-	throw affineExcept("ensemble_test","main",
-			   "Queue should have capacity of 25",9);
-      queue.clear();
-      if (queue.size() != 0)
-	throw affineExcept("ensemble_test","main",
-			   "Queue should have 0 elements",10);
-      if (!queue.empty())
-	throw affineExcept("ensemble_test","main",
-			   "Queue should be empty",11);
-      if (queue.capacity() != cap)
-	throw affineExcept("ensemble_test","main",
-			   "Queue should have capacity of 25",12);
-      
-      
-      //Try a more complicated element
-      affineQueue< std::pair<unsigned int, int> > queue2(cap);
-      if (queue2.capacity() != cap)
-	throw affineExcept("ensemble_test","main",
-			   "Queue2 should have capacity of 25",13);
-      if (!queue2.empty())
-	throw affineExcept("ensemble_test","main",
-			   "Queue2 should be empty",14);
-      std::pair<unsigned int, int> val2,val3;
-      val2.first = 4;
-      val2.second = -2;
-      queue2.push(val2);
-      val2.first = 5;
-      val2.second = -4;
-      queue2.push(val2);
-      for (unsigned int i = 2; i < 10; ++i) {
-	val3.first = ranstruct.int32();
-	val3.second = ranstruct.int32();
-	queue2.push(val3);
-      }
-      if (queue2.capacity() != cap)
-	throw affineExcept("ensemble_test","main",
-			   "Queue2 should have capacity of 25",15);
-      if (queue2.size() != 10)
-	throw affineExcept("ensemble_test","main",
-			   "Queue2 should have 10 elements",16);
-      val3 = queue2.pop();
-      if (queue2.size() != 9)
-	throw affineExcept("ensemble_test","main",
-			   "Queue2 should have 9 elements",17);
-      val3 = queue2.pop();
-      if (queue2.size() != 8)
-	throw affineExcept("ensemble_test","main",
-			   "Queue2 should have 8 elements",18);
-      if (val3.first != val2.first)
-	throw affineExcept("ensemble_test","main",
-			   "First elem of second pop not as expected",19);
-      if (val3.second != val2.second)
-	throw affineExcept("ensemble_test","main",
-			   "Second elem of second pop not as expected",20);
-      
-      queue2.setCapacity(5);
-      if (queue2.capacity() != 5)
-	throw affineExcept("ensemble_test","main",
-			   "Queue2 should have capacity of 5",21);
-      if (!queue2.empty())
-	throw affineExcept("ensemble_test","main",
-			   "Queue2 should be empty",22);
-      
-
       std::cout << "affineEnsemble tests" << std::endl;
       
       testEnsemble ensemble(250,4,1000);

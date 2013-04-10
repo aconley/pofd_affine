@@ -28,3 +28,4 @@ rosenbrock_example
 polyfit_example
 chain_test
 ensemble_test
+queue_test
