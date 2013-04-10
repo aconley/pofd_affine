@@ -30,8 +30,8 @@ public:
  
 };
 
-singleGauss::singleGauss( unsigned int NWALKERS,
-			  unsigned int NSAMPLES, double MN, double VAR) :
+singleGauss::singleGauss(unsigned int NWALKERS,
+			 unsigned int NSAMPLES, double MN, double VAR) :
   affineEnsemble(NWALKERS,1,NSAMPLES) {
     mean = MN;
     var  = VAR;
@@ -50,16 +50,16 @@ void singleGauss::initChains() {
   chains.clear();
   chains.addChunk(1);
   
-  paramSet p( 1 );
+  paramSet p(1);
   double logLike;
-  double rng = sqrt(var)*2.0;
-  double genmn = mean+0.5*rng;
+  double rng = sqrt(var) * 10.0;
+  double genmn = mean - 0.5*rng;
 
   unsigned int nwalk = getNWalkers();
   for (unsigned int i = 0; i < nwalk; ++i) {
-    p[0] = rng*rangen.doub() + genmn;
+    p[0] = rng * rangen.doub() + genmn;
     logLike = getLogLike(p);
-    chains.addNewStep( i, p, logLike );
+    chains.addNewStep(i, p, logLike);
     naccept[i] = 1;
   }
   chains.setSkipFirst();
@@ -67,27 +67,29 @@ void singleGauss::initChains() {
 
 double singleGauss::getLogLike(const paramSet& p) {
   double val = p[0] - mean;
-  return gfac*val*val;
+  return gfac * val * val;
 }
 
 int main(int argc, char** argv) {
 
-  unsigned int nwalkers, nsamples;
+  unsigned int nwalkers, nsamples, nburn;
   double mean, sigma;
   std::string outfile;
   bool verbose;
 
+  nburn = 20;
   verbose = false;
 
   int c;
   int option_index = 0;
   static struct option long_options[] = {
     {"help",no_argument,0,'h'},
+    {"nburn", required_argument, 0, 'n'},
     {"verbose",no_argument,0,'v'},
     {"Version",no_argument,0,'V'},
     {0,0,0,0}
   };
-  char optstring[] = "hvV";
+  char optstring[] = "hn:vV";
 
   int rank, nproc;
   MPI_Init(&argc, &argv);
@@ -118,6 +120,9 @@ int main(int argc, char** argv) {
 	std::cerr << "OPTIONS" << std::endl;
 	std::cerr << "\t-h, --help" << std::endl;
 	std::cerr << "\t\tOutput this help." << std::endl;
+	std::cerr << "\t-n, --nburn NBURN" << std::endl;
+	std::cerr << "\t\tNumber of burn-in steps to do per walker (def: 20)"
+		  << std::endl;
 	std::cerr << "\t-v, --verbose" << std::endl;
 	std::cerr << "\t\tOuput informational messages as it runs"
 		  << std::endl;
@@ -127,6 +132,9 @@ int main(int argc, char** argv) {
       }
       MPI_Finalize();
       return 0;
+      break;
+    case 'n':
+      nburn = atoi(optarg);
       break;
     case 'v' :
       verbose = true;
@@ -176,7 +184,9 @@ int main(int argc, char** argv) {
     if (verbose && rank == 0)
       std::cout << "Entering main loop" << std::endl;
     sg->initChains();
-    sg->doSteps(sg->getNSteps());
+
+    //Do actual computation
+    sg->doSteps(sg->getNSteps(), nburn);
 
     if (rank == 0) {
       std::vector<double> accept;

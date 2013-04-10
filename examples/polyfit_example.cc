@@ -276,7 +276,7 @@ int main(int argc, char** argv) {
     if (verbose && rank == 0)
       std::cout << "Entering main loop" << std::endl;
     if (rank == 0) ply.initChains();
-    ply.doSteps( ply.getNSteps(), burnsteps );
+    ply.doSteps(ply.getNSteps(), burnsteps);
     
     if (rank == 0) {
       std::vector<double> accept;

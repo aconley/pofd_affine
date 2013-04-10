@@ -62,17 +62,19 @@ double rosenbrockDensity::getLogLike(const paramSet& p) {
 
 int main(int argc, char** argv) {
 
-  unsigned int nwalkers, nsamples;
+  unsigned int nwalkers, nsamples, nburn;
   std::string outfile;
   double a1, a2;
   bool verbose;
 
   verbose = false;
+  nburn = 20;
 
   int c;
   int option_index = 0;
   static struct option long_options[] = {
     {"help",no_argument,0,'h'},
+    {"nburn", required_argument, 0, 'n'},
     {"verbose",no_argument,0,'v'},
     {"Version",no_argument,0,'V'},
     {0,0,0,0}
@@ -119,6 +121,9 @@ int main(int argc, char** argv) {
 	std::cerr << "OPTIONS" << std::endl;
 	std::cerr << "\t-h, --help" << std::endl;
 	std::cerr << "\t\tOutput this help." << std::endl;
+	std::cerr << "\t-n, --nburn NBURN" << std::endl;
+	std::cerr << "\t\tNumber of burn-in steps to do per walker (def: 20)"
+		  << std::endl;
 	std::cerr << "\t-v, --verbose" << std::endl;
 	std::cerr << "\t\tOuput informational messages as it runs"
 		  << std::endl;
@@ -128,6 +133,9 @@ int main(int argc, char** argv) {
       }
       MPI_Finalize();
       return 0;
+      break;
+    case 'n':
+      nburn = atoi(optarg);
       break;
     case 'v' :
       verbose = true;
@@ -166,7 +174,7 @@ int main(int argc, char** argv) {
     if (verbose && rank == 0)
       std::cout << "Entering main loop" << std::endl;
     if (rank == 0) rd.initChains();
-    rd.doSteps(rd.getNSteps());
+    rd.doSteps(rd.getNSteps(), nburn);
     
     if (rank == 0) {
       std::vector<double> accept;
