@@ -144,16 +144,21 @@ bool paramSet::writeToStream(std::ostream& os) const {
   return true;
 }
 
-void paramSet::sendSelf(MPI::Comm& comm, int dest) const {
-  comm.Send(&nparams,1,MPI::UNSIGNED,dest,mcmc_affine::PSSENDNPARS);
-  comm.Send(paramvals,nparams,MPI::DOUBLE,dest,mcmc_affine::PSSENDPVALS);
+void paramSet::sendSelf(MPI_Comm comm, int dest) const {
+  MPI_Send(const_cast<unsigned int*>(&nparams), 1, MPI_UNSIGNED, 
+	   dest, mcmc_affine::PSSENDNPARS, comm);
+  MPI_Send(paramvals, nparams, MPI_DOUBLE, dest, mcmc_affine::PSSENDPVALS,
+	   comm);
 }
 
-void paramSet::recieveCopy(MPI::Comm& comm, int src) {
+void paramSet::recieveCopy(MPI_Comm comm, int src) {
+  MPI_Status Info;
   unsigned int newpars;
-  comm.Recv(&newpars,1,MPI::UNSIGNED,src,mcmc_affine::PSSENDNPARS);
+  MPI_Recv(&newpars, 1, MPI_UNSIGNED, src, mcmc_affine::PSSENDNPARS, 
+	   comm, &Info);
   setNParams(newpars);
-  comm.Recv(paramvals,newpars,MPI::DOUBLE,src,mcmc_affine::PSSENDPVALS);
+  MPI_Recv(paramvals, newpars, MPI_DOUBLE, src, mcmc_affine::PSSENDPVALS,
+	   comm, &Info);
 }
 
 

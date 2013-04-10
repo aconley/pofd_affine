@@ -44,12 +44,13 @@ affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
 
   acor_set = false;
 
-  unsigned int nproc = MPI::COMM_WORLD.Get_size();
+  int nproc;
+  MPI_Comm_size(MPI_COMM_WORLD, &nproc);
   if (nproc < 2)
     throw affineExcept("affineEnsemble","affineEnsemble",
 		       "Must have at least 2 nodes",1);
 
-  rank = MPI::COMM_WORLD.Get_rank();  
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   if (rank == 0) {
     //Reserve room for queues
     procqueue.setCapacity(nproc);
@@ -339,13 +340,13 @@ void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
     chains.addChunk(nsteps);
     for (unsigned int i = 0; i < nsteps; ++i)
       doMasterStep();
-
-    unsigned int nproc = MPI::COMM_WORLD.Get_size();
-    for (unsigned int i = 1; i < nproc; ++i)
-      MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,mcmc_affine::STOP);
-  } else {
+    
+    int nproc;
+    MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
+  } else
     slaveSample();
-  }
 }
 
 void affineEnsemble::masterSample() {
@@ -374,11 +375,10 @@ void affineEnsemble::masterSample() {
     doMasterStep();  
   
   //Tell slaves we are done
-  int jnk;
-  unsigned int nproc = MPI::COMM_WORLD.Get_size();
-  for (unsigned int i = 1; i < nproc; ++i)
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,mcmc_affine::STOP);
-
+  int jnk, nproc;
+  MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+  for (int i = 1; i < nproc; ++i)
+    MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
 }
 
 double affineEnsemble::getMaxAcor() const {
@@ -545,14 +545,13 @@ void affineEnsemble::doMasterStep() throw (affineExcept) {
 
 void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
   //Step loop
-  MPI::Status Info;
-  bool ismsg;
-  int jnk, this_rank, this_tag;
-  unsigned int ndone, nproc, nsteps;
+  MPI_Status Info;
+  int jnk, this_rank, this_tag, nproc, ismsg;
+  unsigned int ndone, nsteps;
   std::pair<unsigned int, unsigned int> pr;
   double prob;
   
-  nproc = MPI::COMM_WORLD.Get_size();
+  MPI_Comm_size(MPI_COMM_WORLD, &nproc);
   nsteps = stepqueue.size();
   ndone = 0;
 
@@ -569,47 +568,45 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
 	pr = stepqueue.pop();
 	//Generate actual value into pstep
 	generateNewStep(pr.first, pr.second, pstep);
-
-	MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,this_rank,
-			     mcmc_affine::SENDINGPOINT);
-	pstep.sendSelf(MPI::COMM_WORLD,this_rank);
+	
+	MPI_Send(&jnk, 1, MPI_INT, this_rank, mcmc_affine::SENDINGPOINT,
+		 MPI_COMM_WORLD);
+	pstep.sendSelf(MPI_COMM_WORLD, this_rank);
       }
 
     //No available procs, so wait for some sort of message
     // We use Iprobe to see if a message is available, and if not
     // sleep for 1/100th of a second and try again
-    ismsg = MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, MPI::ANY_TAG,
-				   Info);
-    while (ismsg == false) {
+    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
+    while (ismsg == 0) {
       usleep(10000); //Sleep for 1/100th of a second
-      ismsg = MPI::COMM_WORLD.Iprobe(MPI::ANY_SOURCE, MPI::ANY_TAG,
-				     Info);
+      MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     }
 
     //There is a message, grab it and figure out what to do
-    MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,MPI::ANY_SOURCE,
-			 MPI::ANY_TAG,Info);
-    this_tag = Info.Get_tag();
-    this_rank = Info.Get_source();
+    MPI_Recv(&jnk, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, 
+	     MPI_COMM_WORLD, &Info);
+    this_tag = Info.MPI_TAG;
+    this_rank = Info.MPI_SOURCE;
     if (this_tag == mcmc_affine::ERROR) {
       //Slave had a problem
       //Send stop message to all slaves
-      for (unsigned int i = 1; i < nproc; ++i)
-	MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,mcmc_affine::STOP);
+      for (int i = 1; i < nproc; ++i)
+	MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
       throw affineExcept("affineEnsemble","emptyMasterQueue",
 			 "Problem encountered in slave",1);
     } else if (this_tag == mcmc_affine::SENDINGRESULT) {
       //Slave finished a computation, is sending us the result
       //Note we wait for a REQUESTPOINT to actually add it to the
       // list of available procs, which makes initialization easier
-      pstep.recieveCopy(MPI::COMM_WORLD,this_rank);
+      pstep.recieveCopy(MPI_COMM_WORLD, this_rank);
       
       //Make sure it's okay
       if (std::isinf(pstep.newLogLike) ||
-	   std::isnan(pstep.newLogLike)) {
+	  std::isnan(pstep.newLogLike)) {
 	//That's not good -- exit
-	for (unsigned int i = 1; i < nproc; ++i)
-	  MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,mcmc_affine::STOP);
+	for (int i = 1; i < nproc; ++i)
+	  MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
 	throw affineExcept("affineEnsemble","emptyMasterQueue",
 			   "Problem encountered in slave",2);
       }
@@ -642,8 +639,8 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
       sstream << "Master got unexpected message from " << this_rank
 	      << " with code: " << this_tag;
       //Tell slaves to stop
-      for (unsigned int i = 1; i < nproc; ++i)
-	MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,mcmc_affine::STOP);
+      for (int i = 1; i < nproc; ++i)
+	MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
       throw affineExcept("affineEnsemble","emptyMasterQueue",
 			 sstream.str(),4);
     }
@@ -660,44 +657,47 @@ void affineEnsemble::slaveSample() {
   initChains(); //Slave version
 
   int jnk;
-  MPI::Status Info;
+  MPI_Status Info;
 
   try {
     while (true) { //Runs until we get a STOP message
       //Ask for a new point
-      MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,mcmc_affine::REQUESTPOINT);
+      MPI_Send(&jnk, 1, MPI_INT, 0, mcmc_affine::REQUESTPOINT,
+	       MPI_COMM_WORLD);
 
       //Now wait for one
-      MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,0,MPI::ANY_TAG,Info);
+      MPI_Recv(&jnk, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &Info);
 
-      int tag = Info.Get_tag();
+      int tag = Info.MPI_TAG;
       if (tag == mcmc_affine::STOP) return; //Master says -- we're done!
       else if (tag == mcmc_affine::SENDINGPOINT) {
-	pstep.recieveCopy(MPI::COMM_WORLD,0);
+	pstep.recieveCopy(MPI_COMM_WORLD, 0);
 	
 	//Compute likelihood
 	pstep.newLogLike = getLogLike(pstep.newStep);
 
 	//Send it back
-	MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,mcmc_affine::SENDINGRESULT);
-	pstep.sendSelf(MPI::COMM_WORLD,0);
+	MPI_Send(&jnk, 1, MPI_INT, 0, mcmc_affine::SENDINGRESULT,
+		 MPI_COMM_WORLD);
+	pstep.sendSelf(MPI_COMM_WORLD, 0);
       } else {
 	std::cerr << "Unexpected message from master: "
                   << tag << " in slave: " << rank << std::endl;
-	MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,mcmc_affine::ERROR);
+	MPI_Send(&jnk, 1, MPI_INT, 0, mcmc_affine::ERROR,
+		 MPI_COMM_WORLD);
 	return;
       }
     }
   } catch (const affineExcept& ex) {
     std::cerr << "Error encountered for process: " << rank << std::endl;
     std::cerr << ex << std::endl;
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,mcmc_affine::ERROR);
+    MPI_Send(&jnk, 1, MPI_INT, 0, mcmc_affine::ERROR, MPI_COMM_WORLD);
     return;
   } catch (const std::bad_alloc& ba) {
     std::cerr << "Allocation error encountered for process: " << rank 
 	      << std::endl;
     std::cerr << ba.what() << std::endl;
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,mcmc_affine::ERROR);
+    MPI_Send(&jnk, 1, MPI_INT, 0, mcmc_affine::ERROR, MPI_COMM_WORLD);
     return;
   }
 }

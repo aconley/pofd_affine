@@ -30,8 +30,8 @@ public:
  
 };
 
-singleGauss::singleGauss( unsigned int NWALKERS,
-			  unsigned int NSAMPLES, double MN, double VAR) :
+singleGauss::singleGauss(unsigned int NWALKERS,
+			 unsigned int NSAMPLES, double MN, double VAR) :
   affineEnsemble(NWALKERS,1,NSAMPLES) {
     mean = MN;
     var  = VAR;
@@ -50,16 +50,16 @@ void singleGauss::initChains() {
   chains.clear();
   chains.addChunk(1);
   
-  paramSet p( 1 );
+  paramSet p(1);
   double logLike;
-  double rng = sqrt(var)*2.0;
-  double genmn = mean+0.5*rng;
+  double rng = sqrt(var) * 10.0;
+  double genmn = mean - 0.5*rng;
 
   unsigned int nwalk = getNWalkers();
   for (unsigned int i = 0; i < nwalk; ++i) {
-    p[0] = rng*rangen.doub() + genmn;
+    p[0] = rng * rangen.doub() + genmn;
     logLike = getLogLike(p);
-    chains.addNewStep( i, p, logLike );
+    chains.addNewStep(i, p, logLike);
     naccept[i] = 1;
   }
   chains.setSkipFirst();
@@ -67,40 +67,34 @@ void singleGauss::initChains() {
 
 double singleGauss::getLogLike(const paramSet& p) {
   double val = p[0] - mean;
-  return gfac*val*val;
+  return gfac * val * val;
 }
 
 int main(int argc, char** argv) {
 
-  unsigned int nwalkers, nsamples;
+  unsigned int nwalkers, nsamples, nburn;
   double mean, sigma;
   std::string outfile;
   bool verbose;
 
+  nburn = 20;
   verbose = false;
 
   int c;
   int option_index = 0;
   static struct option long_options[] = {
     {"help",no_argument,0,'h'},
+    {"nburn", required_argument, 0, 'n'},
     {"verbose",no_argument,0,'v'},
     {"Version",no_argument,0,'V'},
     {0,0,0,0}
   };
-  char optstring[] = "hvV";
+  char optstring[] = "hn:vV";
 
-  unsigned int rank, nproc;
-  MPI::Init(argc,argv);
-  rank = MPI::COMM_WORLD.Get_rank();
-  nproc = MPI::COMM_WORLD.Get_size();
-
-  if (nproc < 2) {
-    if (rank == 0) {
-      std::cerr << "Must run on multiple processes" << std::endl;
-    }
-    MPI::Finalize();
-    return 1;
-  }
+  int rank, nproc;
+  MPI_Init(&argc, &argv);
+  MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
                             &option_index ) ) != -1 ) 
@@ -113,8 +107,8 @@ int main(int argc, char** argv) {
 		  << std::endl;
 	std::cerr << std::endl;
 	std::cerr << "SYNOPSIS" << std::endl;
-	std::cerr << "\tsingle_gauss_example nwalkers nsamples mean sigma outfile"
-		  << std::endl;
+	std::cerr << "\tsingle_gauss_example nwalkers nsamples mean sigma "
+		  << "outfile" << std::endl;
 	std::cerr << "DESCRIPTION:" << std::endl;
 	std::cerr << "\tDraws samples from a Gaussian using"
 		  << std::endl;
@@ -126,6 +120,9 @@ int main(int argc, char** argv) {
 	std::cerr << "OPTIONS" << std::endl;
 	std::cerr << "\t-h, --help" << std::endl;
 	std::cerr << "\t\tOutput this help." << std::endl;
+	std::cerr << "\t-n, --nburn NBURN" << std::endl;
+	std::cerr << "\t\tNumber of burn-in steps to do per walker (def: 20)"
+		  << std::endl;
 	std::cerr << "\t-v, --verbose" << std::endl;
 	std::cerr << "\t\tOuput informational messages as it runs"
 		  << std::endl;
@@ -133,8 +130,11 @@ int main(int argc, char** argv) {
 	std::cerr << "\t\tOuput the version number of mcmc_affine in use"
 		  << std::endl;
       }
-      MPI::Finalize();
+      MPI_Finalize();
       return 0;
+      break;
+    case 'n':
+      nburn = atoi(optarg);
       break;
     case 'v' :
       verbose = true;
@@ -144,26 +144,34 @@ int main(int argc, char** argv) {
 	std::cerr << "mcmc_affine version number: " << mcmc_affine::version 
 		  << std::endl;
       }
-      MPI::Finalize();
+      MPI_Finalize();
       return 0;
       break;
     }
-  if ( optind >= argc-4 ) {
+
+  if (nproc < 2) {
     if (rank == 0) {
-      std::cerr << "Required arguments missing" << std::endl;
+      std::cerr << "Must run on multiple processes" << std::endl;
     }
-    MPI::Finalize();
+    MPI_Finalize();
     return 1;
   }
 
-  nwalkers = atoi( argv[optind] );
-  nsamples = atoi( argv[optind+1] );
-  mean     = atof( argv[optind+2] );
-  sigma    = atof( argv[optind+3] );
-  outfile  = std::string( argv[optind+4] );
+  if (optind >= argc - 4) {
+    if (rank == 0) {
+      std::cerr << "Required arguments missing" << std::endl;
+    }
+    MPI_Finalize();
+    return 1;
+  }
+  nwalkers = atoi(argv[optind]);
+  nsamples = atoi(argv[optind+1]);
+  mean     = atof(argv[optind+2]);
+  sigma    = atof(argv[optind+3]);
+  outfile  = std::string(argv[optind+4]);
 
   if (nwalkers == 0 || nsamples == 0) {
-    MPI::Finalize();
+    MPI_Finalize();
     return 0;
   }
 
@@ -176,7 +184,9 @@ int main(int argc, char** argv) {
     if (verbose && rank == 0)
       std::cout << "Entering main loop" << std::endl;
     sg->initChains();
-    sg->doSteps( sg->getNSteps() );
+
+    //Do actual computation
+    sg->doSteps(sg->getNSteps(), nburn);
 
     if (rank == 0) {
       std::vector<double> accept;
@@ -202,10 +212,10 @@ int main(int argc, char** argv) {
     int jnk;
     if (rank == 0)
       for (unsigned int i = 1; i < nproc; ++i)
-	MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,mcmc_affine::STOP);
-    MPI::Finalize();
+	MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
+    MPI_Finalize();
     return 1;
   }
-  MPI::Finalize();
+  MPI_Finalize();
   return 0;
 }
