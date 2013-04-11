@@ -15,19 +15,20 @@ queue_test_SOURCES = queue_test.cc
 queue_test_LDADD = $(OTHERDIR)/libaffine.la
 
 mpi_copy_test_SOURCES = mpi_copy_test.cc
-mpi_copy_test_LDADD = $(OTHERDIR)/libaffine.la $(OTHERDIR)/libpd.la
+mpi_copy_test_LDADD = $(OTHERDIR)/libpd.la
 
 initFile_test_SOURCES = initFile_test.cc
-initFile_test_LDADD = $(OTHERDIR)/libaffine.la $(OTHERDIR)/libpd.la
+initFile_test_LDADD = $(OTHERDIR)/libpd.la
 
 specFile_test_SOURCES = specFile_test.cc
-specFile_test_LDADD = $(OTHERDIR)/libaffine.la $(OTHERDIR)/libpd.la
+specFile_test_LDADD = $(OTHERDIR)/libpd.la
 
 model_test_SOURCES = model_test.cc
-model_test_LDADD = $(OTHERDIR)/libaffine.la $(OTHERDIR)/libpd.la
+model_test_LDADD = $(OTHERDIR)/libpd.la
 
 data_test_SOURCES = data_test.cc
-data_test_LDADD = $(OTHERDIR)/libaffine.la $(OTHERDIR)/libpd.la
+data_test_LDADD = $(OTHERDIR)/libpd.la
+
 endif
 
 EXTRA_DIST=testdata/testvec.txt testdata/testinvcov.txt \

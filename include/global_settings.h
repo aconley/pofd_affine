@@ -17,7 +17,7 @@ arXiv1202.3665F.
   \brief Global convenience variables
 */
 namespace mcmc_affine {
-  const char version[] = "0.2.0"; //!< Version number
+  const char version[] = "0.2.1"; //!< Version number
 
   const double pi = 3.141592653589793238462643383279502884197; //!< \f$\pi\f$
   const double two_pi = 2.0*pi; //!< \f$2 \pi \f$
@@ -36,7 +36,7 @@ namespace mcmc_affine {
   \brief P(D) convenience variables
 */
 namespace pofd_mcmc {
-  const char version[] = "0.2.0"; //!<Version number of P(D) library
+  const char version[] = "0.2.1"; //!<Version number of P(D) library
   const double n_sigma_shift = 8.0; //!< Shift amount
   const double n_sigma_pad = 10.0; //!< Noise padding size in sigma
   const double n_sigma_shift2d = 4.0; //!< Shift amount

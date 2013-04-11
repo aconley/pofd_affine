@@ -1,4 +1,5 @@
 #include<sstream>
+#include<unistd.h>
 
 #include "../include/pofdMCMCDouble.h"
 #include "../include/specFileDouble.h"
