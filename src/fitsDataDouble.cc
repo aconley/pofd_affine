@@ -289,6 +289,7 @@ void fitsDataDouble::readData(const std::string& file1,
   if (data2 != NULL) fftw_free(data2);
   if (binval != NULL) fftw_free(binval);
   is_binned = false;
+  n = 0;
 
   //Read data into temporary arrays
   bool hasmask1_, hasmask2_;
@@ -297,8 +298,8 @@ void fitsDataDouble::readData(const std::string& file1,
   int *mask1_, *mask2_;
   data1_ = data2_ = NULL;
   mask1_ = mask2_ = NULL;
-  hasmask1_ = readFile(file1,ndat1_,data1_,mask1_,ignore_mask);
-  hasmask2_ = readFile(file2,ndat2_,data2_,mask2_,ignore_mask);
+  hasmask1_ = readFile(file1, ndat1_, data1_, mask1_, ignore_mask);
+  hasmask2_ = readFile(file2, ndat2_, data2_, mask2_, ignore_mask);
 
   //Check to make sure they are the same size, etc.
   if (ndat1_ != ndat2_) {
@@ -311,17 +312,17 @@ void fitsDataDouble::readData(const std::string& file1,
   }
   
   //If neither has a mask, we can just copy directly
-  if ( ! (hasmask1_ || hasmask2_) ) {
+  if (!(hasmask1_ || hasmask2_)) {
     n = ndat1_;
     data1 = data1_;
     data2 = data2_;
   } else {
-    if ( hasmask1_ && hasmask2_ ) {
+    if (hasmask1_ && hasmask2_) {
       //Both have masks
       //First, count the number of bits to copy
       unsigned int nkeep = 0;
       for (unsigned int i = 0; i < ndat1_; ++i)
-	if ( (mask1_[i] & mask2_[i]) == 0 ) ++nkeep;
+	if ((mask1_[i] & mask2_[i]) == 0) ++nkeep;
       if (nkeep == 0) {
 	if (data1_ != NULL) fftw_free(data1_);
 	if (data2_ != NULL) fftw_free(data2_);
@@ -331,22 +332,23 @@ void fitsDataDouble::readData(const std::string& file1,
 			   "All data masked",2);
       }
       //Now actually copy
-      data1 = (double*) fftw_malloc(sizeof(double)*nkeep);
-      data2 = (double*) fftw_malloc(sizeof(double)*nkeep);
+      data1 = (double*) fftw_malloc(sizeof(double) * nkeep);
+      data2 = (double*) fftw_malloc(sizeof(double) * nkeep);
       unsigned int cntr = 0;
       for (unsigned int i = 0; i < ndat1_; ++i)
-	if ( (mask1_[i] & mask2_[i]) == 0 ) {
+	if ((mask1_[i] & mask2_[i]) == 0) {
 	  data1[cntr] = data1_[i];
 	  data2[cntr] = data2_[i];
 	  ++cntr;
 	}
+      n = nkeep;
     } else {
       //Only one has a mask
       int *msk;
       if (hasmask1_) msk = mask1_; else msk=mask2_;
       unsigned int nkeep = 0;
       for (unsigned int i = 0; i < ndat1_; ++i)
-	if ( msk[i] == 0 ) ++nkeep;
+	if (msk[i] == 0) ++nkeep;
       if (nkeep == 0) {
 	if (data1_ != NULL) fftw_free(data1_);
 	if (data2_ != NULL) fftw_free(data2_);
@@ -355,8 +357,8 @@ void fitsDataDouble::readData(const std::string& file1,
 	throw affineExcept("fitsDataDouble","readData",
 			   "All data masked",2);
       }
-      data1 = (double*) fftw_malloc(sizeof(double)*nkeep);
-      data2 = (double*) fftw_malloc(sizeof(double)*nkeep);
+      data1 = (double*) fftw_malloc(sizeof(double) * nkeep);
+      data2 = (double*) fftw_malloc(sizeof(double) * nkeep);
       unsigned int cntr = 0;
       for (unsigned int i = 0; i < ndat1_; ++i)
 	if ( msk[i] == 0 ) {
@@ -364,14 +366,13 @@ void fitsDataDouble::readData(const std::string& file1,
 	  data2[cntr] = data2_[i];
 	  ++cntr;
 	}
+      n = nkeep;
     }
     fftw_free(data1_);
     fftw_free(data2_);
   }
   if (mask1_ != NULL) fftw_free(mask1_);
   if (mask2_ != NULL) fftw_free(mask2_);
-  n = ndat1_;
-
   if (meansub) meanSubtract();
 }
 

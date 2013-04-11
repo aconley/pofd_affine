@@ -55,6 +55,7 @@ class fitsDataDouble {
   { return binval[i*nbins2+j]; } //!< Unchecked binned data access
   unsigned int getBinnedData(unsigned int i) const { return binval[i]; } //!< Unckecked binned data access
 
+  bool hasData() const { return n != 0; } //!< Has data been read?
   unsigned int getN() const { return n; } //!< Get number of data points
   const double* const getData1() const { return data1; } //!< Direct data access, band 1
   const double* const getData2() const { return data2; } //!< Direct data access, band 2

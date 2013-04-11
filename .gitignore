@@ -42,5 +42,6 @@ initFile_test
 specFile_test
 mpi_copy_test
 model_test
+data_test
 m4
 *.m4

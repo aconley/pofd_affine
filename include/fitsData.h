@@ -39,6 +39,7 @@ class fitsData {
   double getBinCent0() const { return bincent0; } //!< Gets center of 0th bin
   double getBinDelta() const { return bindelta; } //!< Gets size of bins
 
+  bool hasData() const { return n != 0; } //!< Has data been read
   unsigned int getN() const { return n; } //!< Number of data points
   const double* const getData() const { return data; } //!< Access to data
   /*! \brief Access to binned data */

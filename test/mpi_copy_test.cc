@@ -79,40 +79,43 @@ void master( int argc, char **argv ) {
       break;
     }
 
-  unsigned int rank, nproc;
-  rank = MPI::COMM_WORLD.Get_rank();
-  nproc = MPI::COMM_WORLD.Get_size();
+  int rank, nproc;
+  MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   int jnk;
 
   if (rank != 0) {
     std::cerr << "Master should only be run on node 0" << std::endl;
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,STOP);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Send(&jnk, 1, MPI_INT, i, STOP, MPI_COMM_WORLD);
     return;
   }
 
   if (earlyexit) {
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,STOP);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Send(&jnk, 1, MPI_INT, i, STOP, MPI_COMM_WORLD);
     return;
   }
 
   if (nproc < 2) {
     std::cerr << "Need at least two processes" << std::endl;
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,STOP);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Send(&jnk, 1, MPI_INT, i, STOP, MPI_COMM_WORLD);
     return;
   }
 
   //Hardwired test files
-  std::string fitsfile1 = "test/fiducial_2Dsim_PSW.fits";
-  std::string fitsfile2 = "test/fiducial_2Dsim_PMW.fits";
-  std::string psffile1 = "test/band1_beam.fits";
-  std::string psffile2 = "test/band2_beam.fits";
+  std::string fitsfile1 = "testdata/testmodel2D_band1.fits";
+  std::string fitsfile2 = "testdata/testmodel2D_band2.fits";
+  std::string psffile1 = "testdata/band1_beam.fits";
+  std::string psffile2 = "testdata/band2_beam.fits";
     
+
+  MPI_Status Info;
+
   //Start the testing
-  for (int i=1; i < static_cast<int>(nproc); ++i)
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,STARTTESTS);
+  for (int i = 1; i < nproc; ++i)
+    MPI_Send(&jnk, 1, MPI_INT, i, STARTTESTS, MPI_COMM_WORLD);
 
   //First, test beam
   try {
@@ -121,144 +124,144 @@ void master( int argc, char **argv ) {
 
     unsigned int n;
     n = bm.getNPos();
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Send(&n,1,MPI::UNSIGNED,i,SENDUIVAL);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Send(&n, 1, MPI_UNSIGNED, i, SENDUIVAL, MPI_COMM_WORLD);
 
     n = bm.getNNeg();
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Send(&n,1,MPI::UNSIGNED,i,SENDUIVAL);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Send(&n, 1, MPI_UNSIGNED, i, SENDUIVAL, MPI_COMM_WORLD);
 
     double val;
     val = bm.getEffectiveArea();
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Send(&val,1,MPI::DOUBLE,i,SENDDBLVAL);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Send(&val, 1, MPI_DOUBLE, i, SENDDBLVAL, MPI_COMM_WORLD);
 
     val = bm.getPixSize();
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Send(&val,1,MPI::DOUBLE,i,SENDDBLVAL);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Send(&val, 1, MPI_DOUBLE, i, SENDDBLVAL, MPI_COMM_WORLD);
 
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      bm.sendSelf(MPI::COMM_WORLD,i);
-    for (int i = 1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,i,TESTSUCCEEDED);
+    for (int i = 1; i < nproc; ++i)
+      bm.sendSelf(MPI_COMM_WORLD, i);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Recv(&jnk, 1, MPI_INT, i, TESTSUCCEEDED, MPI_COMM_WORLD, &Info);
     if (verbose) std::cout << "Beam test succeeded" << std::endl;
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
   
-  for (int i=1; i < static_cast<int>(nproc); ++i)
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,NEXTTEST);
+  for (int i=1; i < nproc; ++i)
+    MPI_Send(&jnk, 1, MPI_INT, i, NEXTTEST, MPI_COMM_WORLD);
 
   //Next doublebeam
   try {
     if (verbose) std::cout << "Doublebeam test" << std::endl;
-    doublebeam bm(psffile1,psffile2,true); //Test with histogramming
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      bm.sendSelf(MPI::COMM_WORLD,i);
-    for (int i = 1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,i,TESTSUCCEEDED);
+    doublebeam bm(psffile1, psffile2, true); //Test with histogramming
+    for (int i=1; i < nproc; ++i)
+      bm.sendSelf(MPI_COMM_WORLD, i);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Recv(&jnk, 1, MPI_INT, i, TESTSUCCEEDED, MPI_COMM_WORLD, &Info);
     if (verbose) std::cout << "Doublebeam test succeeded" << std::endl;
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
 
-  for (int i=1; i < static_cast<int>(nproc); ++i)
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,NEXTTEST);
+  for (int i=1; i < nproc; ++i)
+    MPI_Send(&jnk, 1, MPI_INT, i, NEXTTEST, MPI_COMM_WORLD);
 
   //fitsData
   try {
     if (verbose) std::cout << "fitsData test" << std::endl;
     fitsData data(fitsfile1);
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      data.sendSelf(MPI::COMM_WORLD,i);
+    for (int i=1; i < nproc; ++i)
+      data.sendSelf(MPI_COMM_WORLD, i);
     
     unsigned int n = data.getN();
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Send(&n,1,MPI::UNSIGNED,i,SENDUIVAL);
+    for (int i=1; i < nproc; ++i)
+      MPI_Send(&n, 1, MPI_UNSIGNED, i, SENDUIVAL, MPI_COMM_WORLD);
 
     double val = data.getMean();
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Send(&val,1,MPI::DOUBLE,i,SENDDBLVAL);
+    for (int i=1; i < nproc; ++i)
+      MPI_Send(&val, 1, MPI_DOUBLE, i, SENDDBLVAL, MPI_COMM_WORLD);
     val = data.getMin();
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Send(&val,1,MPI::DOUBLE,i,SENDDBLVAL);
+    for (int i=1; i < nproc; ++i)
+      MPI_Send(&val, 1, MPI_DOUBLE, i, SENDDBLVAL, MPI_COMM_WORLD);
     val = data.getMax();
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Send(&val,1,MPI::DOUBLE,i,SENDDBLVAL);
+    for (int i=1; i < nproc; ++i)
+      MPI_Send(&val, 1, MPI_DOUBLE, i, SENDDBLVAL, MPI_COMM_WORLD);
 
-    for (int i = 1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,i,TESTSUCCEEDED);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Recv(&jnk, 1, MPI_INT, i, TESTSUCCEEDED, MPI_COMM_WORLD, &Info);
 
     if (verbose) std::cout << "fitsData test succeeded" << std::endl;
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
 
-  for (int i=1; i < static_cast<int>(nproc); ++i)
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,NEXTTEST);
+  for (int i=1; i < nproc; ++i)
+    MPI_Send(&jnk, 1, MPI_INT, i, NEXTTEST, MPI_COMM_WORLD);
 
   //fitsDataDouble
   try {
     if (verbose) std::cout << "fitsDataDouble test" << std::endl;
     fitsDataDouble data(fitsfile1, fitsfile2);
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      data.sendSelf(MPI::COMM_WORLD,i);
+    for (int i=1; i < nproc; ++i)
+      data.sendSelf(MPI_COMM_WORLD, i);
 
     unsigned int n = data.getN();
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Send(&n,1,MPI::UNSIGNED,i,SENDUIVAL);
+    for (int i=1; i < nproc; ++i)
+      MPI_Send(&n, 1, MPI_UNSIGNED, i, SENDUIVAL, MPI_COMM_WORLD);
 
     std::pair<double,double> pr;
     pr = data.getMean();
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Send(&pr.first,1,MPI::DOUBLE,i,SENDDBLVAL);
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Send(&pr.second,1,MPI::DOUBLE,i,SENDDBLVAL);
+    for (int i=1; i < nproc; ++i)
+      MPI_Send(&pr.first, 1, MPI_DOUBLE, i, SENDDBLVAL, MPI_COMM_WORLD);
+    for (int i=1; i < nproc; ++i)
+      MPI_Send(&pr.second, 1, MPI_DOUBLE, i, SENDDBLVAL, MPI_COMM_WORLD);
     pr = data.getMin();
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Send(&pr.first,1,MPI::DOUBLE,i,SENDDBLVAL);
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Send(&pr.second,1,MPI::DOUBLE,i,SENDDBLVAL);
+    for (int i=1; i < nproc; ++i)
+      MPI_Send(&pr.first, 1, MPI_DOUBLE, i, SENDDBLVAL, MPI_COMM_WORLD);
+    for (int i=1; i < nproc; ++i)
+      MPI_Send(&pr.second, 1, MPI_DOUBLE, i, SENDDBLVAL, MPI_COMM_WORLD);
     pr = data.getMax();
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Send(&pr.first,1,MPI::DOUBLE,i,SENDDBLVAL);
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Send(&pr.second,1,MPI::DOUBLE,i,SENDDBLVAL);
+    for (int i=1; i < nproc; ++i)
+      MPI_Send(&pr.first, 1, MPI_DOUBLE, i, SENDDBLVAL, MPI_COMM_WORLD);
+    for (int i=1; i < nproc; ++i)
+      MPI_Send(&pr.second, 1, MPI_DOUBLE, i, SENDDBLVAL, MPI_COMM_WORLD);
 
-    for (int i = 1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,i,TESTSUCCEEDED);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Recv(&jnk, 1, MPI_INT, i, TESTSUCCEEDED, MPI_COMM_WORLD, &Info);
     if (verbose) std::cout << "fitsDataDouble test succeeded" << std::endl;
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
 
-  for (int i=1; i < static_cast<int>(nproc); ++i)
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,NEXTTEST);
+  for (int i=1; i < nproc; ++i)
+    MPI_Send(&jnk, 1, MPI_INT, i, NEXTTEST, MPI_COMM_WORLD);
 
   //paramSet
   try {
     if (verbose) std::cout << "paramSet test" << std::endl;
     paramSet pars(9);
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      pars.sendSelf(MPI::COMM_WORLD,i);
-    for (int i = 1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,i,TESTSUCCEEDED);
+    for (int i=1; i < nproc; ++i)
+      pars.sendSelf(MPI_COMM_WORLD, i);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Recv(&jnk, 1, MPI_INT, i, TESTSUCCEEDED, MPI_COMM_WORLD, &Info);
     if (verbose) std::cout << "paramSet test succeeded" << std::endl;
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  for (int i=1; i < static_cast<int>(nproc); ++i)
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,NEXTTEST);
+  for (int i=1; i < nproc; ++i)
+    MPI_Send(&jnk, 1, MPI_INT, i, NEXTTEST, MPI_COMM_WORLD);
 
   //proposedStep
   try {
@@ -267,18 +270,18 @@ void master( int argc, char **argv ) {
     pr.update_idx = 3;
     pr.oldLogLike = 5.0;
     pr.newLogLike = 2.0;
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      pr.sendSelf(MPI::COMM_WORLD,i);
-    for (int i = 1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,i,TESTSUCCEEDED);
+    for (int i=1; i < nproc; ++i)
+      pr.sendSelf(MPI_COMM_WORLD, i);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Recv(&jnk, 1, MPI_INT, i, TESTSUCCEEDED, MPI_COMM_WORLD, &Info);
     if (verbose) std::cout << "proposedStep test succeeded" << std::endl;
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  for (int i=1; i < static_cast<int>(nproc); ++i)
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,NEXTTEST);
+  for (int i=1; i < nproc; ++i)
+    MPI_Send(&jnk, 1, MPI_INT, i, NEXTTEST, MPI_COMM_WORLD);
 
   //numberCountsKnotsSpline
   try {
@@ -288,309 +291,309 @@ void master( int argc, char **argv ) {
     paramSet p(3, kval);
     numberCountsKnotsSpline model(3, kpos);
     model.setParams(p);
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      model.sendSelf(MPI::COMM_WORLD,i);
-    for (int i = 1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,i,TESTSUCCEEDED);
+    for (int i=1; i < nproc; ++i)
+      model.sendSelf(MPI_COMM_WORLD, i);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Recv(&jnk, 1, MPI_INT, i, TESTSUCCEEDED, MPI_COMM_WORLD, &Info);
     if (verbose) std::cout << "numberCountsDoubleLogNormal test succeeded" 
 			   << std::endl;
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  for (int i=1; i < static_cast<int>(nproc); ++i)
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,NEXTTEST);
+  for (int i=1; i < nproc; ++i)
+    MPI_Send(&jnk, 1, MPI_INT, i, NEXTTEST, MPI_COMM_WORLD);
 
   //initFileKnots
   try {
     if (verbose) std::cout << "initFileKnots test" << std::endl;
     initFileKnots ifile;
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      ifile.sendSelf(MPI::COMM_WORLD,i);
-    for (int i = 1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,i,TESTSUCCEEDED);
+    for (int i=1; i < nproc; ++i)
+      ifile.sendSelf(MPI_COMM_WORLD, i);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Recv(&jnk, 1, MPI_INT, i, TESTSUCCEEDED, MPI_COMM_WORLD, &Info);
     if (verbose) std::cout << "initFileKnots test succeeded" << std::endl;
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  for (int i=1; i < static_cast<int>(nproc); ++i)
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,NEXTTEST);
+  for (int i=1; i < nproc; ++i)
+    MPI_Send(&jnk, 1, MPI_INT, i, NEXTTEST, MPI_COMM_WORLD);
 
 
   //numberCountsDoubleLogNormal
   try {
     if (verbose) std::cout << "numberCountsDoubleLogNormal test" << std::endl;
-    numberCountsDoubleLogNormal model(8,4,3);
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      model.sendSelf(MPI::COMM_WORLD,i);
-    for (int i = 1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,i,TESTSUCCEEDED);
+    numberCountsDoubleLogNormal model(8, 4, 3);
+    for (int i=1; i < nproc; ++i)
+      model.sendSelf(MPI_COMM_WORLD, i);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Recv(&jnk, 1, MPI_INT, i, TESTSUCCEEDED, MPI_COMM_WORLD, &Info);
     if (verbose) std::cout << "numberCountsDoubleLogNormal test succeeded" 
 			   << std::endl;
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  for (int i=1; i < static_cast<int>(nproc); ++i)
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,NEXTTEST);
+  for (int i=1; i < nproc; ++i)
+    MPI_Send(&jnk, 1, MPI_INT, i, NEXTTEST, MPI_COMM_WORLD);
 
   //initFileDoubleLogNormal
   try {
     if (verbose) std::cout << "initFileDoubleLogNormal test" << std::endl;
     initFileDoubleLogNormal ifile;
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      ifile.sendSelf(MPI::COMM_WORLD,i);
-    for (int i = 1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,i,TESTSUCCEEDED);
+    for (int i=1; i < nproc; ++i)
+      ifile.sendSelf(MPI_COMM_WORLD, i);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Recv(&jnk, 1, MPI_INT, i, TESTSUCCEEDED, MPI_COMM_WORLD, &Info);
     if (verbose) std::cout << "initFileDoubleLogNormal test succeeded" 
 			   << std::endl;
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  for (int i=1; i < static_cast<int>(nproc); ++i)
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,NEXTTEST);
+  for (int i=1; i < nproc; ++i)
+    MPI_Send(&jnk, 1, MPI_INT, i, NEXTTEST, MPI_COMM_WORLD);
 
   //PDFactory
   try {
     if (verbose) std::cout << "PDFactory test" << std::endl;
     PDFactory pfactory(100);
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      pfactory.sendSelf(MPI::COMM_WORLD,i);
-    for (int i = 1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,i,TESTSUCCEEDED);
+    for (int i=1; i < nproc; ++i)
+      pfactory.sendSelf(MPI_COMM_WORLD, i);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Recv(&jnk, 1, MPI_INT, i, TESTSUCCEEDED, MPI_COMM_WORLD, &Info);
     if (verbose) std::cout << "PDFactory test succeeded" << std::endl;
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  for (int i=1; i < static_cast<int>(nproc); ++i)
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,NEXTTEST);
+  for (int i=1; i < nproc; ++i)
+    MPI_Send(&jnk, 1, MPI_INT, i, NEXTTEST, MPI_COMM_WORLD);
 
 
   //PDFactoryDouble
   try {
     if (verbose) std::cout << "PDFactoryDouble test" << std::endl;
     PDFactoryDouble pfactory(110);
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      pfactory.sendSelf(MPI::COMM_WORLD,i);
-    for (int i = 1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,i,TESTSUCCEEDED);
+    for (int i=1; i < nproc; ++i)
+      pfactory.sendSelf(MPI_COMM_WORLD, i);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Recv(&jnk, 1, MPI_INT, i, TESTSUCCEEDED, MPI_COMM_WORLD, &Info);
     if (verbose) std::cout << "PDFactoryDouble test succeeded" << std::endl;
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  for (int i=1; i < static_cast<int>(nproc); ++i)
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,NEXTTEST);
+  for (int i=1; i < nproc; ++i)
+    MPI_Send(&jnk, 1, MPI_INT, i, NEXTTEST, MPI_COMM_WORLD);
 
   //calcLikeSingle
   try {
     if (verbose) std::cout << "calcLikeSingle test" << std::endl;
     calcLikeSingle like(50);
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      like.sendSelf(MPI::COMM_WORLD,i);
-    for (int i = 1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,i,TESTSUCCEEDED);
+    for (int i=1; i < nproc; ++i)
+      like.sendSelf(MPI_COMM_WORLD, i);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Recv(&jnk, 1, MPI_INT, i, TESTSUCCEEDED, MPI_COMM_WORLD, &Info);
     if (verbose) std::cout << "calcLikeSingle test succeeded" << std::endl;
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  for (int i=1; i < static_cast<int>(nproc); ++i)
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,NEXTTEST);
+  for (int i=1; i < nproc; ++i)
+    MPI_Send(&jnk, 1, MPI_INT, i, NEXTTEST, MPI_COMM_WORLD);
 
   //calcLike
   try {
     if (verbose) std::cout << "calcLike test" << std::endl;
     calcLike like(2048, 130, false);
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      like.sendSelf(MPI::COMM_WORLD,i);
-    for (int i = 1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,i,TESTSUCCEEDED);
+    for (int i=1; i < nproc; ++i)
+      like.sendSelf(MPI_COMM_WORLD, i);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Recv(&jnk, 1, MPI_INT, i, TESTSUCCEEDED, MPI_COMM_WORLD, &Info);
     if (verbose) std::cout << "calcLike test succeeded" << std::endl;
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  for (int i=1; i < static_cast<int>(nproc); ++i)
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,NEXTTEST);
+  for (int i=1; i < nproc; ++i)
+    MPI_Send(&jnk, 1, MPI_INT, i, NEXTTEST, MPI_COMM_WORLD);
 
 
   //calcLikeDoubleSingle
   try {
     if (verbose) std::cout << "calcLikeDoubleSingle test" << std::endl;
     calcLikeDoubleSingle like(12);
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      like.sendSelf(MPI::COMM_WORLD,i);
-    for (int i = 1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,i,TESTSUCCEEDED);
+    for (int i=1; i < nproc; ++i)
+      like.sendSelf(MPI_COMM_WORLD, i);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Recv(&jnk, 1, MPI_INT, i, TESTSUCCEEDED, MPI_COMM_WORLD, &Info);
     if (verbose) std::cout << "calcLikeDoubleSingle test succeeded" 
 			   << std::endl;
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  for (int i=1; i < static_cast<int>(nproc); ++i)
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,NEXTTEST);
+  for (int i=1; i < nproc; ++i)
+    MPI_Send(&jnk, 1, MPI_INT, i, NEXTTEST, MPI_COMM_WORLD);
 
   //calcLikeDouble
   try {
     if (verbose) std::cout << "calcLike test" << std::endl;
     calcLikeDouble like(4096, 104, false, false);
-    for (int i=1; i < static_cast<int>(nproc); ++i)
-      like.sendSelf(MPI::COMM_WORLD,i);
-    for (int i = 1; i < static_cast<int>(nproc); ++i)
-      MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,i,TESTSUCCEEDED);
+    for (int i=1; i < nproc; ++i)
+      like.sendSelf(MPI_COMM_WORLD, i);
+    for (int i = 1; i < nproc; ++i)
+      MPI_Recv(&jnk, 1, MPI_INT, i, TESTSUCCEEDED, MPI_COMM_WORLD, &Info);
     if (verbose) std::cout << "calcLike test succeeded" << std::endl;
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  for (int i=1; i < static_cast<int>(nproc); ++i)
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,i,NEXTTEST);
+  for (int i=1; i < nproc; ++i)
+    MPI_Send(&jnk, 1, MPI_INT, i, NEXTTEST, MPI_COMM_WORLD);
 
-  for (int i=1; i < static_cast<int>(nproc); ++i)
-    MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,i,DONE);
+  for (int i=1; i < nproc; ++i)
+    MPI_Recv(&jnk, 1, MPI_INT, i, DONE, MPI_COMM_WORLD, &Info);
 
   std::cout << "Tests passed" << std::endl;
 
 }
 
 void slave() {
-  unsigned int rank;
-  rank = MPI::COMM_WORLD.Get_rank();
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   int jnk;
 
   //Wait for message, either starttests or stop
-  MPI::Status Info;
-  MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,0,MPI::ANY_TAG,Info);
-  int this_tag = Info.Get_tag();
+  MPI_Status Info;
+  MPI_Recv(&jnk, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &Info);
+  int this_tag = Info.MPI_TAG;
 
   if (this_tag == STOP) return;
 
   if (this_tag != STARTTESTS) {
     std::cerr << "Unexpected tag: " << this_tag << " in slave: "
 	      << rank << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
 
   //First, beam
   try {
     beam bm;
-    bm.recieveCopy(MPI::COMM_WORLD,0);
+    bm.recieveCopy(MPI_COMM_WORLD, 0);
 
     unsigned int n;
-    MPI::COMM_WORLD.Recv(&n,1,MPI::UNSIGNED,0,SENDUIVAL);
+    MPI_Recv(&n, 1, MPI_UNSIGNED, 0, SENDUIVAL, MPI_COMM_WORLD, &Info);
     if (n != bm.getNPos())
       throw affineExcept("test_copy","slave", "beam has wrong Npos",
 			 34);
-    MPI::COMM_WORLD.Recv(&n,1,MPI::UNSIGNED,0,SENDUIVAL);
+    MPI_Recv(&n, 1, MPI_UNSIGNED, 0, SENDUIVAL, MPI_COMM_WORLD, &Info);
     if (n != bm.getNNeg())
       throw affineExcept("test_copy","slave", "beam has wrong Nneg",
 			 35);
     double val;
-    MPI::COMM_WORLD.Recv(&val,1,MPI::DOUBLE,0,SENDDBLVAL);
+    MPI_Recv(&val, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
     double diff = (bm.getEffectiveArea() - val)/val;
     if (fabs(diff) > 1e-5)
       throw affineExcept("test_copy","slave", "beam has wrong Eff area",
 			 36);
 
-    MPI::COMM_WORLD.Recv(&val,1,MPI::DOUBLE,0,SENDDBLVAL);
+    MPI_Recv(&val, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
     diff = (bm.getPixSize() - val)/val;
     if (fabs(diff) > 1e-5)
       throw affineExcept("test_copy","slave", "beam has wrong pixel size",
 			 37);      
 
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,TESTSUCCEEDED);
+    MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
 
   //Make sure we get nexttest
-  MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,0,MPI::ANY_TAG,Info);
-  this_tag = Info.Get_tag();
+  MPI_Recv(&jnk, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &Info);
+  this_tag = Info.MPI_TAG;
   if (this_tag != NEXTTEST) {
     std::cerr << "MPI error encountered after beam test in slave: "
 	      << rank << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
 
   //Doublebeam, same story
   try {
     doublebeam bm;
-    bm.recieveCopy(MPI::COMM_WORLD,0);
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,TESTSUCCEEDED);
+    bm.recieveCopy(MPI_COMM_WORLD, 0);
+    MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,0,MPI::ANY_TAG,Info);
-  this_tag = Info.Get_tag();
+  MPI_Recv(&jnk, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &Info);
+  this_tag = Info.MPI_TAG;
   if (this_tag != NEXTTEST) {
     std::cerr << "MPI error encountered after doublebeam test in slave: "
 	      << rank << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
 
   //fitsData
   try {
     fitsData data;
-    data.recieveCopy(MPI::COMM_WORLD,0);
+    data.recieveCopy(MPI_COMM_WORLD, 0);
 
     //Image statistics
     unsigned int n;
-    MPI::COMM_WORLD.Recv(&n,1,MPI::UNSIGNED,0,SENDUIVAL);
+    MPI_Recv(&n, 1, MPI_UNSIGNED, 0, SENDUIVAL, MPI_COMM_WORLD, &Info);
     if (n != data.getN())
       throw affineExcept("test_copy","slave", "fitsData had wrong data size",
 			 23);
     double val;
-    MPI::COMM_WORLD.Recv(&val,1,MPI::DOUBLE,0,SENDDBLVAL);
+    MPI_Recv(&val, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
     double diff = (data.getMean() - val); //Mean close to zero
     if (fabs(diff) > 1e-5)
       throw affineExcept("test_copy","slave", "fitsData had wrong mean",
 			 24);
-    MPI::COMM_WORLD.Recv(&val,1,MPI::DOUBLE,0,SENDDBLVAL);
+    MPI_Recv(&val, 1, MPI_DOUBLE, 0 ,SENDDBLVAL, MPI_COMM_WORLD, &Info);
     diff = (data.getMin() - val)/val;
     if (fabs(diff) > 1e-5)
       throw affineExcept("test_copy","slave", "fitsData had wrong min",
 			 25);
-    MPI::COMM_WORLD.Recv(&val,1,MPI::DOUBLE,0,SENDDBLVAL);
+    MPI_Recv(&val, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
     diff = (data.getMax() - val)/val;
     if (fabs(diff) > 1e-5)
       throw affineExcept("test_copy","slave", "fitsData had wrong max",
 			 26);
 
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,TESTSUCCEEDED);
+    MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,0,MPI::ANY_TAG,Info);
-  this_tag = Info.Get_tag();
+  MPI_Recv(&jnk, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &Info);
+  this_tag = Info.MPI_TAG;
   if (this_tag != NEXTTEST) {
     std::cerr << "MPI error encountered after fitsData test in slave: "
 	      << rank << std::endl;
     std::cerr << "Got message code: " << this_tag << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
 
@@ -598,17 +601,17 @@ void slave() {
   //fitsDataDouble, same story
   try {
     fitsDataDouble data;
-    data.recieveCopy(MPI::COMM_WORLD,0);
+    data.recieveCopy(MPI_COMM_WORLD, 0);
 
     //Image statistics
     unsigned int n;
-    MPI::COMM_WORLD.Recv(&n,1,MPI::UNSIGNED,0,SENDUIVAL);
+    MPI_Recv(&n, 1, MPI_UNSIGNED, 0, SENDUIVAL, MPI_COMM_WORLD, &Info);
     if (n != data.getN())
       throw affineExcept("test_copy","slave", 
 			 "fitsDataDouble had wrong data size", 27);
     std::pair<double,double> pr;
-    MPI::COMM_WORLD.Recv(&pr.first,1,MPI::DOUBLE,0,SENDDBLVAL);
-    MPI::COMM_WORLD.Recv(&pr.second,1,MPI::DOUBLE,0,SENDDBLVAL);
+    MPI_Recv(&pr.first, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
+    MPI_Recv(&pr.second, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
     double diff = (data.getMean().first - pr.first); //Mean close to zero
     if (fabs(diff) > 1e-5)
       throw affineExcept("test_copy","slave", 
@@ -618,8 +621,8 @@ void slave() {
       throw affineExcept("test_copy","slave", 
 			 "fitsDataDouble had wrong mean2", 29);
 
-    MPI::COMM_WORLD.Recv(&pr.first,1,MPI::DOUBLE,0,SENDDBLVAL);
-    MPI::COMM_WORLD.Recv(&pr.second,1,MPI::DOUBLE,0,SENDDBLVAL);
+    MPI_Recv(&pr.first, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
+    MPI_Recv(&pr.second, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
     diff = (data.getMin().first - pr.first)/pr.first;
     if (fabs(diff) > 1e-5)
       throw affineExcept("test_copy","slave", "fitsData had wrong min1",
@@ -629,8 +632,8 @@ void slave() {
       throw affineExcept("test_copy","slave", "fitsData had wrong min2",
 			 31);
 
-    MPI::COMM_WORLD.Recv(&pr.first,1,MPI::DOUBLE,0,SENDDBLVAL);
-    MPI::COMM_WORLD.Recv(&pr.second,1,MPI::DOUBLE,0,SENDDBLVAL);
+    MPI_Recv(&pr.first, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
+    MPI_Recv(&pr.second, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
     diff = (data.getMax().first - pr.first)/pr.first;
     if (fabs(diff) > 1e-5)
       throw affineExcept("test_copy","slave", "fitsData had wrong max1",
@@ -640,50 +643,50 @@ void slave() {
       throw affineExcept("test_copy","slave", "fitsData had wrong max2",
 			 33);
 
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,TESTSUCCEEDED);
+    MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,0,MPI::ANY_TAG,Info);
-  this_tag = Info.Get_tag();
+  MPI_Recv(&jnk, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &Info);
+  this_tag = Info.MPI_TAG;
   if (this_tag != NEXTTEST) {
     std::cerr << "MPI error encountered after fitsDataDouble test in slave: "
 	      << rank << std::endl;
     std::cerr << "Got message code: " << this_tag << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
 
   //paramSet
   try {
     paramSet pars;
-    pars.recieveCopy(MPI::COMM_WORLD,0);
+    pars.recieveCopy(MPI_COMM_WORLD, 0);
     if (pars.getNParams() != 9)
       throw affineExcept("test_copy","slave", "paramSet should have 9 params",
 			 1);
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,TESTSUCCEEDED);
+    MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,0,MPI::ANY_TAG,Info);
-  this_tag = Info.Get_tag();
+  MPI_Recv(&jnk, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &Info);
+  this_tag = Info.MPI_TAG;
   if (this_tag != NEXTTEST) {
     std::cerr << "MPI error encountered after paramSet test in slave: "
 	      << rank << std::endl;
     std::cerr << "Expected: " << NEXTTEST << " got " << this_tag
 	      << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
 
   //proposedStep
   try {
     proposedStep pr(0);
-    pr.recieveCopy(MPI::COMM_WORLD,0);
+    pr.recieveCopy(MPI_COMM_WORLD, 0);
     if (pr.oldStep.getNParams() != 5)
       throw affineExcept("test_copy","slave", 
 			 "proposedStep.oldStep should have 5 params",1);
@@ -702,20 +705,20 @@ void slave() {
       throw affineExcept("test_copy","slave", 
 			 "proposedStep.newLogLike should be 5.0", 5);
 
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,TESTSUCCEEDED);
+    MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,0,MPI::ANY_TAG,Info);
-  this_tag = Info.Get_tag();
+  MPI_Recv(&jnk, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &Info);
+  this_tag = Info.MPI_TAG;
   if (this_tag != NEXTTEST) {
     std::cerr << "MPI error encountered after proposedStep test in slave: "
 	      << rank << std::endl;
     std::cerr << "Expected: " << NEXTTEST << " got " << this_tag
 	      << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
   
@@ -724,7 +727,7 @@ void slave() {
     const double kpos[] = {0.1, 0.3, 1.0};
     const double kval[] = {10, 5, 3};
     numberCountsKnotsSpline model;
-    model.recieveCopy(MPI::COMM_WORLD,0);
+    model.recieveCopy(MPI_COMM_WORLD, 0);
     if (model.getNKnots() != 3)
       throw affineExcept("test_copy","slave", 
 			 "numberCountsKnotsSpline.getNKnots() should be 3", 6);
@@ -745,44 +748,44 @@ void slave() {
       throw affineExcept("test_copy","slave", 
 			 "numberCountsKnotsSpline knot values are off", 22);
       
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,TESTSUCCEEDED);
+    MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,0,MPI::ANY_TAG,Info);
-  this_tag = Info.Get_tag();
+  MPI_Recv(&jnk, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &Info);
+  this_tag = Info.MPI_TAG;
   if (this_tag != NEXTTEST) {
     std::cerr << "MPI error encountered after numberCountsKnotsSpline test "
 	      << "in slave: " << rank << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
 
   //initFileKnots
   try {
     initFileKnots ifile;
-    ifile.recieveCopy(MPI::COMM_WORLD,0);
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,TESTSUCCEEDED);
+    ifile.recieveCopy(MPI_COMM_WORLD, 0);
+    MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,0,MPI::ANY_TAG,Info);
-  this_tag = Info.Get_tag();
+  MPI_Recv(&jnk, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &Info);
+  this_tag = Info.MPI_TAG;
   if (this_tag != NEXTTEST) {
     std::cerr << "MPI error encountered after initFileKnots test "
 	      << "in slave: " << rank << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
 
   //numberCountsDoubleLogNormal
   try {
     numberCountsDoubleLogNormal model;
-    model.recieveCopy(MPI::COMM_WORLD,0);
+    model.recieveCopy(MPI_COMM_WORLD, 0);
     if (model.getNKnots() != 8)
       throw affineExcept("test_copy","slave", 
 			 "numberCountsDoubleLogNormal.getNKnots() should be 8",
@@ -795,59 +798,59 @@ void slave() {
       throw affineExcept("test_copy","slave", 
 			 "numberCountsDoubleLogNormal.getNOffsets() should be 3",
 			 9);
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,TESTSUCCEEDED);
+    MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,0,MPI::ANY_TAG,Info);
-  this_tag = Info.Get_tag();
+  MPI_Recv(&jnk, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &Info);
+  this_tag = Info.MPI_TAG;
   if (this_tag != NEXTTEST) {
     std::cerr << "MPI error encountered after numberCountsDoubleLogNormal test "
 	      << "in slave: " << rank << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
 
   //initFileDoubleLogNormal
   try {
     initFileDoubleLogNormal ifile;
-    ifile.recieveCopy(MPI::COMM_WORLD,0);
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,TESTSUCCEEDED);
+    ifile.recieveCopy(MPI_COMM_WORLD, 0);
+    MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,0,MPI::ANY_TAG,Info);
-  this_tag = Info.Get_tag();
+  MPI_Recv(&jnk, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &Info);
+  this_tag = Info.MPI_TAG;
   if (this_tag != NEXTTEST) {
     std::cerr << "MPI error encountered after initFileDoubleLogNormal test "
 	      << "in slave: " << rank << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
 
   //PDFactory
   try {
     PDFactory pfactory;
-    pfactory.recieveCopy(MPI::COMM_WORLD,0);
+    pfactory.recieveCopy(MPI_COMM_WORLD, 0);
     if (pfactory.getNInterp() != 100)
       throw affineExcept("test_copy","slave", 
 			 "PDFactory.getNInterp() should be 100", 10);
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,TESTSUCCEEDED);
+    MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,0,MPI::ANY_TAG,Info);
-  this_tag = Info.Get_tag();
+  MPI_Recv(&jnk, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &Info);
+  this_tag = Info.MPI_TAG;
   if (this_tag != NEXTTEST) {
     std::cerr << "MPI error encountered after PDFactory test "
 	      << "in slave: " << rank << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
 
@@ -855,51 +858,51 @@ void slave() {
   //PDFactoryDouble
   try {
     PDFactoryDouble pfactory;
-    pfactory.recieveCopy(MPI::COMM_WORLD,0);
+    pfactory.recieveCopy(MPI_COMM_WORLD, 0);
     if (pfactory.getNEdge() != 110)
       throw affineExcept("test_copy","slave", 
 			 "PDFactoryDouble.getNEdge() should be 110", 11);
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,TESTSUCCEEDED);
+    MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,0,MPI::ANY_TAG,Info);
-  this_tag = Info.Get_tag();
+  MPI_Recv(&jnk, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &Info);
+  this_tag = Info.MPI_TAG;
   if (this_tag != NEXTTEST) {
     std::cerr << "MPI error encountered after PDFactoryDouble test "
 	      << "in slave: " << rank << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
 
   //calcLikeSingle
   try {
     calcLikeSingle like;
-    like.recieveCopy(MPI::COMM_WORLD,0);
+    like.recieveCopy(MPI_COMM_WORLD, 0);
     if (like.getNInterp() != 50)
       throw affineExcept("test_copy","slave", 
 			 "calcLikeSingle.getNInterp() should be 50", 12);
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,TESTSUCCEEDED);
+    MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,0,MPI::ANY_TAG,Info);
-  this_tag = Info.Get_tag();
+  MPI_Recv(&jnk, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &Info);
+  this_tag = Info.MPI_TAG;
   if (this_tag != NEXTTEST) {
     std::cerr << "MPI error encountered after calcLikeSingle test "
 	      << "in slave: " << rank << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
 
   //calcLike
   try {
     calcLike like;
-    like.recieveCopy(MPI::COMM_WORLD,0);
+    like.recieveCopy(MPI_COMM_WORLD, 0);
     if (like.getFFTSize() != 2048)
       throw affineExcept("test_copy","slave", 
 			 "calcLike.getFFTSize() should be 2048", 13);
@@ -912,47 +915,47 @@ void slave() {
     if (like.getEdgeFix())
       throw affineExcept("test_copy","slave", 
 			 "calcLike.getEdgeFix() should be false", 15);
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,TESTSUCCEEDED);
+    MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,0,MPI::ANY_TAG,Info);
-  this_tag = Info.Get_tag();
+  MPI_Recv(&jnk, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &Info);
+  this_tag = Info.MPI_TAG;
   if (this_tag != NEXTTEST) {
     std::cerr << "MPI error encountered after calcLike test "
 	      << "in slave: " << rank << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
 
   //calcLikeDoubleSingle
   try {
     calcLikeDoubleSingle like;
-    like.recieveCopy(MPI::COMM_WORLD,0);
+    like.recieveCopy(MPI_COMM_WORLD, 0);
     if (like.getNEdge() != 12)
       throw affineExcept("test_copy","slave", 
 			 "calcLikeDoubleSingle.getNEdge() should be 12", 16);
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,TESTSUCCEEDED);
+    MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,0,MPI::ANY_TAG,Info);
-  this_tag = Info.Get_tag();
+  MPI_Recv(&jnk, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &Info);
+  this_tag = Info.MPI_TAG;
   if (this_tag != NEXTTEST) {
     std::cerr << "MPI error encountered after calcLikeDoubleSingle test "
 	      << "in slave: " << rank << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
 
   //calcLikeDouble
   try {
     calcLikeDouble like;
-    like.recieveCopy(MPI::COMM_WORLD,0);
+    like.recieveCopy(MPI_COMM_WORLD, 0);
     if (like.getFFTSize() != 4096)
       throw affineExcept("test_copy","slave", 
 			 "calcLikeDouble.getFFTSize() should be 4096", 17);
@@ -965,36 +968,46 @@ void slave() {
     if (like.getEdgeInteg())
       throw affineExcept("test_copy","slave", 
 			 "calcLikeDouble.getEdgeInteg() should be false", 20);
-    MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,TESTSUCCEEDED);
+    MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
-  MPI::COMM_WORLD.Recv(&jnk,1,MPI::INT,0,MPI::ANY_TAG,Info);
-  this_tag = Info.Get_tag();
+  MPI_Recv(&jnk, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &Info);
+  this_tag = Info.MPI_TAG;
   if (this_tag != NEXTTEST) {
     std::cerr << "MPI error encountered after calcLike test "
 	      << "in slave: " << rank << std::endl;
-    MPI::Finalize();
+    MPI_Finalize();
     return;
   }
 
-
-
-  MPI::COMM_WORLD.Send(&jnk,1,MPI::INT,0,DONE);
+  MPI_Send(&jnk, 1, MPI_INT, 0, DONE, MPI_COMM_WORLD);
 
   std::cout << "Slave " << rank << " passed all tests" << std::endl;
 
 }
 
 int main(int argc, char **argv) {
-  unsigned int rank;
-  MPI::Init(argc,argv);
-  rank = MPI::COMM_WORLD.Get_rank();
+
+  MPI_Init(&argc, &argv);
+
+  int rank, nproc;
+  MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  
+  if (nproc == 0) {
+    if (rank == 0)
+      std::cerr << "Must run on more than one process";
+    MPI_Finalize();
+    return 1;
+  }
 
   if (rank == 0) master(argc,argv); else slave();
-  MPI::Finalize();
+
+  MPI_Finalize();
+
   return 0;
   
 }
