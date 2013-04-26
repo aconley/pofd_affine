@@ -497,10 +497,10 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
 void affineEnsemble::generateNewStep(unsigned int idx1, unsigned int idx2,
 				     proposedStep& prstep) const {
   //Assume prstep is the right size, don't check for speed
-  double zval = generateZ();
+  prstep.z = generateZ();
   //Get previous step for this walker
-  chains.generateNewStep(zval,idx1,idx2,prstep.oldStep,
-			 prstep.oldLogLike,prstep.newStep);
+  chains.generateNewStep(prstep.z, idx1, idx2, prstep.oldStep,
+			 prstep.oldLogLike, prstep.newStep);
   prstep.update_idx = idx1;
   prstep.newLogLike=std::numeric_limits<double>::quiet_NaN();
 }
@@ -549,7 +549,7 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
   int jnk, this_rank, this_tag, nproc, ismsg;
   unsigned int ndone, nsteps;
   std::pair<unsigned int, unsigned int> pr;
-  double prob;
+  double prob; //Probability of accepting a step
   
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
   nsteps = stepqueue.size();
@@ -612,24 +612,24 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
       }
 
       //Decide whether to accept the step or reject it, add to
-      // chunk
-      if (pstep.newLogLike > pstep.oldLogLike) {
-	//Accept
+      // chunk.  Note that the acceptance rule has a dependence
+      // on z, the strech step, so isn't just the same as for MH MCMC.
+      // In particular, we don't always accept a step with better logLike!
+      //The probability of acceptance is
+      // min(1, z^(n-1) P(new) / P(old)
+      //We ignore the 1 part, since if it's bigger our comparison number
+      // will still be less than 1, so it works the same
+      prob = exp((nparams - 1) * log(pstep.z) + pstep.newLogLike - 
+		 pstep.oldLogLike);
+      if (rangen.doub() < prob) {
+	//Accept!
 	chains.addNewStep(pstep.update_idx, pstep.newStep,
-			   pstep.newLogLike);
+			  pstep.newLogLike);
 	naccept[pstep.update_idx] += 1;
       } else {
-	prob = exp(pstep.newLogLike - pstep.oldLogLike);
-	if (rangen.doub() < prob) {
-	  //Also accept
-	  chains.addNewStep(pstep.update_idx, pstep.newStep,
-			     pstep.newLogLike);
-	  naccept[pstep.update_idx] += 1;
-	} else {
-	  //reject, keep old step
-	  chains.addNewStep(pstep.update_idx, pstep.oldStep,
-			    pstep.oldLogLike);
-	}
+	//reject, keep old step
+	chains.addNewStep(pstep.update_idx, pstep.oldStep,
+			  pstep.oldLogLike);
       }
       ndone += 1;
     } else if (this_tag == mcmc_affine::REQUESTPOINT) {

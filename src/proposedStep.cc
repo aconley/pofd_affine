@@ -7,12 +7,14 @@ proposedStep::proposedStep(unsigned int npar) : oldStep(npar), newStep(npar) {
   update_idx = 0;
   oldLogLike = std::numeric_limits<double>::quiet_NaN();
   newLogLike = std::numeric_limits<double>::quiet_NaN();
+  z = std::numeric_limits<double>::quiet_NaN();
 }
 
 proposedStep::proposedStep(const proposedStep& other) :
   update_idx(other.update_idx),
   oldStep(other.oldStep), newStep(other.newStep),
-  oldLogLike(other.oldLogLike), newLogLike(other.newLogLike) { }
+  oldLogLike(other.oldLogLike), newLogLike(other.newLogLike),
+  z (other.z) { }
 
 proposedStep::~proposedStep() {}
 
@@ -22,6 +24,7 @@ void proposedStep::clear() {
   newStep.clear();
   oldLogLike = std::numeric_limits<double>::quiet_NaN();
   newLogLike = std::numeric_limits<double>::quiet_NaN();
+  z = std::numeric_limits<double>::quiet_NaN();
 }
 
 /*!
@@ -41,6 +44,7 @@ proposedStep& proposedStep::operator=(const proposedStep& other) {
   newStep = other.newStep;
   oldLogLike = other.oldLogLike;
   newLogLike = other.newLogLike;
+  z = other.z;
   return *this;
 }
 
@@ -53,6 +57,8 @@ void proposedStep::sendSelf(MPI_Comm comm, int dest) const {
 	   mcmc_affine::PSTSENDOLIKE, comm);
   MPI_Send(const_cast<double*>(&newLogLike), 1, MPI_DOUBLE, dest, 
 	   mcmc_affine::PSTSENDNLIKE, comm);
+  MPI_Send(const_cast<double*>(&z), 1, MPI_DOUBLE, dest, 
+	   mcmc_affine::PSTSENDZ, comm);
 }
 
 void proposedStep::recieveCopy(MPI_Comm comm, int src) {
@@ -65,11 +71,14 @@ void proposedStep::recieveCopy(MPI_Comm comm, int src) {
 	   comm, &Info);
   MPI_Recv(&newLogLike, 1, MPI_DOUBLE, src, mcmc_affine::PSTSENDNLIKE, 
 	   comm, &Info);
+  MPI_Recv(&z, 1, MPI_DOUBLE, src, mcmc_affine::PSTSENDZ, 
+	   comm, &Info);
 }
 
 std::ostream& operator<<(std::ostream& os, const proposedStep& p) {
   os << "Update idx: " << p.update_idx << std::endl;
   os << "Old step: " << p.oldStep << " logLike: " << p.oldLogLike << std::endl;
-  os << "New step: " << p.newStep << " logLike: " << p.newLogLike;
+  os << "New step: " << p.newStep << " logLike: " << p.newLogLike << std::endl;
+  os << "z value: " << p.z;
   return os;
 }
