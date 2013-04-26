@@ -24,12 +24,14 @@ namespace mcmc_affine {
 
  //Messages we understand
   //These are hardwired to particular values to ease debugging if
-  // we get a message we don't expect.
+  // we get a message we don't expect.  These shouldn't overlap with
+  // pofd_messages, so are all < 1000
   /*! \brief MPI message numbers */
-  enum affine_messages {ERROR=1, STOP=2, REQUESTPOINT=3, SENDINGPOINT=4,
-			SENDINGRESULT=5, PSSENDNPARS=1000, PSSENDPVALS=1002,
-			PSTSENDIDX=1100, PSTSENDOLIKE=1101, 
-			PSTSENDNLIKE=1102 };
+  enum affine_messages { ERROR=1, STOP=2, REQUESTPOINT=3, SENDINGPOINT=4,
+			 SENDINGRESULT=5,
+			 PSSENDNPARS=100, PSSENDPVALS=101,
+			 PSTSENDIDX=110, PSTSENDOLIKE=111, 
+			 PSTSENDNLIKE=112, PSTSENDZ=113};
 }
 
 /*!
@@ -61,6 +63,7 @@ namespace pofd_mcmc {
 
 
   /*! \brief MPI message codes specific to P(D) routines */
+  // All 1000 or more to avoid overlap with affine_messages
   enum pofd_messages { BEAMSENDPIXSIZE=1000, BEAMSENDNPOS=1001,
 		       BEAMSENDHASPOSWEIGHTS=1002, BEAMSENDPOSPIXARR=1003,
 		       BEAMSENDINVPOSPIXARR=1004, BEAMSENDPOSWEIGHTS=1005,
@@ -142,7 +145,6 @@ namespace pofd_mcmc {
 		       IFDLNSENDHASUPLIM=6511, IFDLNSENDUPLIM=6512,
 		       PMCMCSENDINIT=10000, PMCMCSENDINGINIT=10001,
 		       PMCMCSENDNPAR=10002, PMCMCISREADY=10003};
-
 }
 
 #endif

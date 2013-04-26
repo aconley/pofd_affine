@@ -16,7 +16,8 @@ struct proposedStep {
   paramSet newStep; //!< New step to try
   double oldLogLike; //!< Log Likelihood of previous step
   double newLogLike; //!< Log Likelihood of new step
- 
+  double z; //!< Z value (stretch parameter)
+
   proposedStep(unsigned int); //!< Constructor with number of parameters
   proposedStep(const proposedStep&); //!< Copy constructor
   ~proposedStep(); //!< Destructor
