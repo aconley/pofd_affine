@@ -617,19 +617,25 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
       // In particular, we don't always accept a step with better logLike!
       //The probability of acceptance is
       // min(1, z^(n-1) P(new) / P(old)
-      //We ignore the 1 part, since if it's bigger our comparison number
-      // will still be less than 1, so it works the same
       prob = exp((nparams - 1) * log(pstep.z) + pstep.newLogLike - 
 		 pstep.oldLogLike);
-      if (rangen.doub() < prob) {
-	//Accept!
+      if (prob >= 1) {
+	//Will always be accepted; this is the min(1, part
+	// This saves us a call to rangen.doub
 	chains.addNewStep(pstep.update_idx, pstep.newStep,
 			  pstep.newLogLike);
 	naccept[pstep.update_idx] += 1;
       } else {
-	//reject, keep old step
-	chains.addNewStep(pstep.update_idx, pstep.oldStep,
-			  pstep.oldLogLike);
+	if (rangen.doub() < prob) {
+	  //Accept!
+	  chains.addNewStep(pstep.update_idx, pstep.newStep,
+			    pstep.newLogLike);
+	  naccept[pstep.update_idx] += 1;
+	} else {
+	  //reject, keep old step
+	  chains.addNewStep(pstep.update_idx, pstep.oldStep,
+			    pstep.oldLogLike);
+	}
       }
       ndone += 1;
     } else if (this_tag == mcmc_affine::REQUESTPOINT) {
