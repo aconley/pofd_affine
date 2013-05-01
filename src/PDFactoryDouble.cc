@@ -78,7 +78,7 @@ void PDFactoryDouble::init(unsigned int NEDGE) {
 
   verbose = false;
   has_wisdom = false;
-  fftw_plan_style = FFTW_ESTIMATE;
+  fftw_plan_style = FFTW_MEASURE;
 
   max_sigma1 = max_sigma2 = std::numeric_limits<double>::quiet_NaN();
   mn1 = mn2 = var_noi1 = var_noi2 = sg1 = sg2 = 
@@ -166,14 +166,14 @@ void PDFactoryDouble::allocateRvars() {
   if (currsize == 0)
     throw affineExcept("PDFactoryDouble","allocate_rvars",
 		       "Invalid (0) currsize",1);
-  RFlux1 = (double*) fftw_malloc(sizeof(double)*currsize);
-  RFlux2 = (double*) fftw_malloc(sizeof(double)*currsize);
+  RFlux1 = (double*) fftw_malloc(sizeof(double) * currsize);
+  RFlux2 = (double*) fftw_malloc(sizeof(double) * currsize);
   unsigned int fsize = currsize*currsize;
-  rvals = (double*) fftw_malloc(sizeof(double)*fsize);
-  pofd  = (double*) fftw_malloc(sizeof(double)*fsize);
-  fsize = currsize*(currsize/2+1);
-  rtrans = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*fsize);
-  pval = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*fsize);
+  rvals = (double*) fftw_malloc(sizeof(double) * fsize);
+  pofd  = (double*) fftw_malloc(sizeof(double) * fsize);
+  fsize = currsize * (currsize / 2 + 1);
+  rtrans = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * fsize);
+  pval = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * fsize);
 
   rvars_allocated = true;
   initialized = false;
@@ -237,7 +237,7 @@ bool PDFactoryDouble::addWisdom(const std::string& filename) {
     throw affineExcept("PDFactoryDouble","addWisdom",str.str(),2);
   }
   fclose(fp);
-  fftw_plan_style = FFTW_WISDOM_ONLY;
+  fftw_plan_style = FFTW_WISDOM_ONLY | FFTW_MEASURE;
   has_wisdom = true;
   wisdom_file = filename;
   if (plan != NULL) {
@@ -428,6 +428,44 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
   
   //Make sure we have enough room
   bool did_resize = resize(n);
+  if (!rvars_allocated) allocateRvars();
+
+  //Make the plans, or keep the old ones if possible
+  //Note that the forward transform dumps into rtrans
+  // but the backwards one comes from pval.  The idea
+  // is that out_part holds the working bit.  These are
+  // convolved together into pval.  This is inefficient
+  // if there is only one sign present, but the special
+  // case doesn't seem worth the effort
+  //We will have to use the advanced interfact to point
+  // specifically at the rvals subindex we are using on the
+  // forward plan, but the backwards plan is fine
+  int intn = static_cast<int>(n);
+  if (did_resize || (lastfftlen != n) || (plan == NULL) ) {
+    if (plan != NULL) fftw_destroy_plan(plan);
+    plan = fftw_plan_dft_r2c_2d(intn, intn, rvals, rtrans,
+				fftw_plan_style);
+  }
+  if (did_resize || (lastfftlen != n) || (plan_inv == NULL) ) {
+    if (plan_inv != NULL) fftw_destroy_plan(plan_inv);
+    plan_inv = fftw_plan_dft_c2r_2d(intn, intn, pval, pofd,
+				    fftw_plan_style);
+  }
+  if (plan == NULL) {
+    std::stringstream str;
+    str << "Plan creation failed for forward transform of size: " << n;
+    if (has_wisdom) str << std::endl << "Your wisdom file may not have"
+			<< " that size";
+    throw affineExcept("PDFactoryDouble","initPD",str.str(),14);
+  }
+  if (plan_inv == NULL) {
+    std::stringstream str;
+    str << "Plan creation failed for inverse transform of size: " << n;
+    if (has_wisdom) str << std::endl << "Your wisdom file may not have"
+			<< " that size";
+    throw affineExcept("PDFactoryDouble","initPD",str.str(),15);
+  }
+
 
   //Initial guess at dflux, will be changed later
   double inm1 = 1.0 / static_cast<double>(n-1);
@@ -435,7 +473,7 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
   dflux2 = maxflux2 * inm1;
 
   //Now fill R.  Some setup is required first
-  if (!rvars_allocated) allocateRvars();
+
   //Fill in flux values for main and edge pieces
   //Main bit
   for (unsigned int i = 0; i < n; ++i)
@@ -717,44 +755,6 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
       rptr[j] *= dfactor;
   }
   
-  //Make the plans, or keep the old ones if possible
-  //Note that the forward transform dumps into out_part,
-  // but the backwards one comes from pval.  The idea
-  // is that out_part holds the working bit.  These are
-  // convolved together into pval.  This is inefficient
-  // if there is only one sign present, but the special
-  // case doesn't seem worth the effort
-  //If we resized, we must make the new plans because the
-  // addresses changed
-  //We will have to use the advanced interfact to point
-  // specifically at the rvals subindex we are using on the
-  // forward plan, but the backwards plan is fine
-  int intn = static_cast<int>(n);
-  if ( did_resize || (lastfftlen != n) || (plan == NULL) ) {
-    if (plan != NULL) fftw_destroy_plan(plan);
-    plan = fftw_plan_dft_r2c_2d(intn, intn, rvals, rtrans,
-				fftw_plan_style);
-  }
-  if ( did_resize || (lastfftlen != n) || (plan_inv == NULL) ) {
-    if (plan_inv != NULL) fftw_destroy_plan(plan_inv);
-    plan_inv = fftw_plan_dft_c2r_2d(intn, intn, pval, pofd,
-				    fftw_plan_style);
-  }
-  if (plan == NULL) {
-    std::stringstream str;
-    str << "Plan creation failed for forward transform of size: " << n;
-    if (has_wisdom) str << std::endl << "Your wisdom file may not have"
-			<< " that size";
-    throw affineExcept("PDFactoryDouble","initPD",str.str(),14);
-  }
-  if (plan_inv == NULL) {
-    std::stringstream str;
-    str << "Plan creation failed for inverse transform of size: " << n;
-    if (has_wisdom) str << std::endl << "Your wisdom file may not have"
-			<< " that size";
-    throw affineExcept("PDFactoryDouble","initPD",str.str(),15);
-  }
-
   //Compute forward transform of this r value, store in rtrans
 #ifdef TIMING
   starttime = std::clock();

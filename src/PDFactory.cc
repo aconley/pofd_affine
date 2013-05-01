@@ -65,7 +65,7 @@ void PDFactory::init(unsigned int NINTERP) {
 
   verbose = false;
   has_wisdom = false;
-  fftw_plan_style = FFTW_ESTIMATE;
+  fftw_plan_style = FFTW_MEASURE;
 
   max_sigma = 0.0;
   initialized = false;
@@ -214,7 +214,7 @@ bool PDFactory::addWisdom(const std::string& filename) {
     throw affineExcept("PDFactory","addWisdom",str.str(),2);
   }
   fclose(fp);
-  fftw_plan_style = FFTW_WISDOM_ONLY | FFTW_ESTIMATE;
+  fftw_plan_style = FFTW_WISDOM_ONLY | FFTW_MEASURE;
   has_wisdom = true;
   wisdom_file = filename;
   if (plan != NULL) {
@@ -256,7 +256,49 @@ void PDFactory::initPD(unsigned int n, double sigma,
   //Make sure we have enough room
   bool did_resize = resize(n);
 
+  //Allocate memory if needed; this is a way of not allocating
+  // these until we run into something that needs them
+  if (!rvars_allocated) allocateRvars();
   if (!interpvars_allocated) allocateInterp();
+
+  //Make the plans, or keep the old ones if possible
+  // Note we have to do this before we fill R, as plan construction
+  // may overwrite the values.
+  //The transform plan is that the forward transform
+  // takes rvals to rtrans.  We then do things to rtrans
+  // to turn it into pval, including shifting, adding noise,
+  // etc, and then transform from pval to pofd.
+  //Only the rvals->rtrans transformation happens in this
+  // routine.  The other (pval->pofd), which depends on the value of
+  // sigma for each map, happens in getPD.  But we can make
+  // both plans here...
+  int intn = static_cast<int>(n);
+  if (did_resize || (lastfftlen != n) || (plan == NULL)) {
+    if (plan != NULL) fftw_destroy_plan(plan);
+    plan = fftw_plan_dft_r2c_1d(intn, rvals, rtrans,
+				fftw_plan_style);
+  }
+  if (plan == NULL) {
+    std::stringstream str;
+    str << "Plan creation failed for forward transform of size: " << n;
+    if (has_wisdom) str << std::endl << "Your wisdom file may not have"
+			<< " that size";
+    throw affineExcept("PDFactory","initPD",str.str(),2);
+  }
+
+  if (did_resize || (lastfftlen != n) || (plan_inv == NULL)) {
+    if (plan_inv != NULL) fftw_destroy_plan(plan_inv);
+    plan_inv = fftw_plan_dft_c2r_1d(intn, pval, pofd,
+				    fftw_plan_style);
+  }
+  if (plan_inv == NULL) {
+    std::stringstream str;
+    str << "Plan creation failed for inverse transform of size: " << n;
+    if (has_wisdom) str << std::endl << "Your wisdom file may not have"
+			<< " that size";
+    throw affineExcept("PDFactory","initPD",str.str(),3);
+  }
+
 
   //Set whether we have beam
   bool has_pos = bm.hasPos();
@@ -282,10 +324,6 @@ void PDFactory::initPD(unsigned int n, double sigma,
   // We do pos and neg seperately because the interpolation works
   // better on each component, rather than interpolating on
   // the sum of R.  At least, that's the theory.
-
-  //Allocate memory if needed; this is a way of not allocating
-  // these until we run into a beam that needs them
-  if (!rvars_allocated) allocateRvars();
 
   if (has_pos) {
     double mininterpflux = modelmin * subedgemult;
@@ -426,46 +464,6 @@ void PDFactory::initPD(unsigned int n, double sigma,
   // number of sources in each bin
   for (unsigned int i = 0; i < n; ++i)
     rvals[i] *= dflux;
-
-  //Make the plans, or keep the old ones if possible
-  //The transform plan is that the forward transform
-  // takes rvals to rtrans.  We then do things to rtrans
-  // to turn it into pval, including shifting, adding noise,
-  // etc, and then transform from pval to pofd.
-  //Only the rvals->rtrans transformation happens in this
-  // routine.  The other (pval->pofd), which depends on the value of
-  // sigma for each map, happens in getPD.  But we can make
-  // both plans here...
-
-  //If we resized, we must make the new plans because the
-  // addresses changed
-
-  int intn = static_cast<int>(n);
-  if ( did_resize || (lastfftlen != n) || (plan == NULL) ) {
-    if (plan != NULL) fftw_destroy_plan(plan);
-    plan = fftw_plan_dft_r2c_1d(intn, rvals, rtrans,
-				fftw_plan_style);
-  }
-  if (plan == NULL) {
-    std::stringstream str;
-    str << "Plan creation failed for forward transform of size: " << n;
-    if (has_wisdom) str << std::endl << "Your wisdom file may not have"
-			<< " that size";
-    throw affineExcept("PDFactory","initPD",str.str(),2);
-  }
-
-  if ( did_resize || (lastfftlen != n) || (plan_inv == NULL) ) {
-    if (plan_inv != NULL) fftw_destroy_plan(plan_inv);
-    plan_inv = fftw_plan_dft_c2r_1d(intn, pval, pofd,
-				    fftw_plan_style);
-  }
-  if (plan_inv == NULL) {
-    std::stringstream str;
-    str << "Plan creation failed for inverse transform of size: " << n;
-    if (has_wisdom) str << std::endl << "Your wisdom file may not have"
-			<< " that size";
-    throw affineExcept("PDFactory","initPD",str.str(),3);
-  }
 
   //Decide if we will shift and pad, and if so by how much
   //Only do shift if the noise is larger than one actual step size
