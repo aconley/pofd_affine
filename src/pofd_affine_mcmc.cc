@@ -4,41 +4,8 @@
 #include<getopt.h>
 
 #include "../include/pofdMCMC.h"
+#include "../include/pofdMCMCDouble.h"
 #include "../include/affineExcept.h"
-
-int mcmc_single(const std::string& initfile, const std::string specfile,
-		const std::string& outfile, unsigned int nwalkers, 
-		unsigned int nsamples, unsigned int init_steps, 
-		unsigned int min_burn, double burn_multiple, double scalefac) {
-
-  pofdMCMC engine(initfile, specfile, nwalkers, nsamples, init_steps,
-		  min_burn, burn_multiple, scalefac);
-  
-  if (rank == 0) std::cout << "Initializing chains" << std::endl;
-  engine.initChains();
-
-  if (rank == 0) std::cout << "Starting main loop" << std::endl;
-  engine.sample();
-
-  if (rank == 0) {
-    std::cout << "Done with sampling; write" << std::endl;
-    engine.writeToFile(outfile);
-  }
-
-  return 0;
-}
-
-///////////////////////////////////////////////////////
-
-int mcmc_double(const std::string& initfile, const std::string specfile,
-		const std::string& outfile, unsigned int nwalkers, 
-		unsigned int nsamples, unsigned int init_steps, 
-		unsigned int min_burn, double burn_multiple, double scalefac) {
-  std::cerr << "Not implemented" << std::endl;
-  return 1;
-}
-
-///////////////////////////////////////////////////////
 
 int main(int argc, char** argv) {
   bool twod;
@@ -192,15 +159,15 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  if (optind >= argc-2 ) {
+  if (optind >= argc - 2) {
     std::cerr << "Some required arguments missing" << std::endl;
     std::cerr << " Use --help for description of inputs and options"
 	      << std::endl;
     return 1;
   }
-  specfile = std::string( argv[optind] );
-  initfile = std::string( argv[optind+1] );
-  outfile = std::string( argv[optind+2] );
+  specfile = std::string(argv[optind]);
+  initfile = std::string(argv[optind+1]);
+  outfile = std::string(argv[optind+2]);
 
   //Test inputs
   if (nwalkers == 0) {
