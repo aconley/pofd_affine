@@ -16,12 +16,12 @@
 class paramSet {
  private:
   unsigned int nparams; //!< Number of parameters
-  double* paramvals;    //!< Array holding parameter values
+  float* paramvals;    //!< Array holding parameter values
  public:
   paramSet(); //!< Basic constructor
   paramSet(unsigned int NPARAMS); //!< Constructor with number of parameters
-  paramSet(unsigned int, const double* const); //!< Constructor with parameter c array
-  paramSet(const std::vector<double>&); //!< Constructor with parameter vector
+  paramSet(unsigned int, const float* const); //!< Constructor with parameter c array
+  paramSet(const std::vector<float>&); //!< Constructor with parameter vector
   paramSet(const paramSet&); //!< Copy constructor
   ~paramSet(); //!< Destructor
 
@@ -30,24 +30,24 @@ class paramSet {
 
   unsigned int getNParams() const { return nparams; } //!< Get number of parameters
   /*! \brief Return particular parameter value */
-  const double& operator[](unsigned int i) const { return paramvals[i]; }
+  const float& operator[](unsigned int i) const { return paramvals[i]; }
   /*! \brief Return particular parameter value */
-  double& operator[](unsigned int i) { return paramvals[i]; }
-  const double& at(unsigned int) const throw(std::range_error); //!< Element access with range check
-  double& at(unsigned int) throw(std::range_error); //!< Element access with range check
+  float& operator[](unsigned int i) { return paramvals[i]; }
+  const float& at(unsigned int) const throw(std::range_error); //!< Element access with range check
+  float& at(unsigned int) throw(std::range_error); //!< Element access with range check
 
   /*! \brief Set parameter values from vector */
-  void setParamValues(const std::vector<double>&);
+  void setParamValues(const std::vector<float>&);
   /*! \brief Set parameter values from c array */
-  void setParamValues(unsigned int, const double* const);
+  void setParamValues(unsigned int, const float* const);
   /*! \brief Set particular parameter value */
-  void setParamValue(unsigned int i, double val) { paramvals[i]=val; }
+  void setParamValue(unsigned int i, float val) { paramvals[i]=val; }
   /*! \brief Copy from other paramSet */
   paramSet& operator=(const paramSet&);
   /*! \brief Are parameter sets equal */
   bool operator==(const paramSet&) const;
   /*! \brief Get distance (euclidean) between two sets of parameters */
-  double getDist(const paramSet&) const;
+  float getDist(const paramSet&) const;
 
   //Input
   void readFromStream(std::istream& is);  //!< Read parameters from stream

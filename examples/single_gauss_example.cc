@@ -27,6 +27,7 @@ public:
 
   void initChains();
   double getLogLike(const paramSet&);
+  void getStats(float&, float&) const;
  
 };
 
@@ -69,6 +70,13 @@ double singleGauss::getLogLike(const paramSet& p) {
   double val = p[0] - mean;
   return gfac * val * val;
 }
+
+void singleGauss::getStats(float& mn, float& var) const {
+  float lowlim, uplim;
+  chains.getParamStats(0, mn, var, lowlim, uplim);
+}
+
+//////////////////////////////////
 
 int main(int argc, char** argv) {
 
@@ -189,7 +197,11 @@ int main(int argc, char** argv) {
     sg->doSteps(sg->getNSteps(), nburn);
 
     if (rank == 0) {
-      std::vector<double> accept;
+      float mn, var;
+      sg->getStats(mn, var);
+      std::cout << "Mean: " << mn << " sigma: " << sqrt(var) << std::endl;
+
+      std::vector<float> accept;
       sg->getAcceptanceFrac(accept);
       std::cout << "Acceptance fractions:";
       for (unsigned int i = 0; i < nwalkers; ++i)
@@ -197,7 +209,7 @@ int main(int argc, char** argv) {
       std::cout << std::endl;
       
       //Try to get the autocorrelation length
-      std::vector<double> acor;
+      std::vector<float> acor;
       bool succ = sg->getAcor(acor);
       if (succ) std::cout << "Autocorrelation length: " << acor[0] << std::endl;
       

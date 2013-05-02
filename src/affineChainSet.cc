@@ -9,9 +9,8 @@
 const unsigned int affineChainSet::taumax = 2; 
 //Autocovariance up to lag = winmult*tau
 const unsigned int affineChainSet::winmult = 5; 
-const unsigned int affineChainSet::maxlag = taumax*winmult;
+const unsigned int affineChainSet::maxlag = taumax * winmult;
 const unsigned int affineChainSet::minfac = 5;
-
 
 affineStepChunk::affineStepChunk(unsigned int NWALKERS,
 				 unsigned int NITERS,
@@ -23,8 +22,8 @@ affineStepChunk::affineStepChunk(unsigned int NWALKERS,
   //Allocate in large contiguous block for memory access efficiency
   unsigned int sz = nwalkers * niters * nparams;
   if (sz > 0) {
-    steps = new double[sz];
-    logLike = new double[nwalkers*niters];
+    steps = new float[sz];
+    logLike = new double[nwalkers * niters];
     nsteps = new unsigned int[nwalkers];
     for (unsigned int i = 0; i < nwalkers; ++i)
       nsteps[i] = 0;
@@ -43,7 +42,7 @@ affineStepChunk::affineStepChunk(const affineStepChunk& other) {
 
   unsigned int sz = nwalkers * niters * nparams;
   if (sz > 0) {
-    steps = new double[sz];
+    steps = new float[sz];
     for (unsigned int i = 0; i < sz; ++i)
       steps[i] = other.steps[i];
     logLike = new double[nwalkers * niters];
@@ -89,7 +88,7 @@ void affineStepChunk::fillFromLastStep(const affineStepChunk& other)
     niters = 1;
     sz = nwalkers * niters * nparams;
     if (sz > 0) {
-      steps = new double[sz];
+      steps = new float[sz];
       logLike = new double[nwalkers*niters];
       nsteps = new unsigned int[nwalkers];
       for (unsigned int i = 0; i < nwalkers; ++i)
@@ -104,15 +103,15 @@ void affineStepChunk::fillFromLastStep(const affineStepChunk& other)
 
   //Now, for each walker, set the last param
   unsigned int laststep;
-  double *ptro, *ptrn;
+  float *ptro, *ptrn;
   for (unsigned int i = 0; i < nwalkers; ++i) {
     laststep = other.nsteps[i]-1;
-    ptro = other.getParamPointer(i,laststep);
-    ptrn = getParamPointer(i,0);
+    ptro = other.getParamPointer(i, laststep);
+    ptrn = getParamPointer(i, 0);
     for (unsigned int j = 0; j < nparams; ++j)
       ptrn[j] = ptro[j];
     //Recall logLike is nwalkers * niters, and niters is one
-    logLike[i] = other.getLogLike(i,laststep);
+    logLike[i] = other.getLogLike(i, laststep);
     nsteps[i] = 1;
   }
 }
@@ -161,7 +160,7 @@ affineStepChunk& affineStepChunk::operator=(const affineStepChunk& other) {
     sz = nwalkers * niters * nparams;
 
     if (sz > 0) {
-      steps = new double[sz];
+      steps = new float[sz];
       logLike = new double[nwalkers*niters];
       nsteps = new unsigned int[nwalkers];
     } 
@@ -255,11 +254,11 @@ bool affineStepChunk::addStep(unsigned int walker_idx,
   unsigned int iter = nsteps[walker_idx];
   if (iter >= niters) return false; //No more room
 
-  logLike[walker_idx*niters+iter] = lglike;  
-  double *ptr;
-  ptr = getParamPointer(walker_idx,iter);
+  float *ptr;
+  ptr = getParamPointer(walker_idx, iter);
   for (unsigned int i = 0; i < nparams; ++i) ptr[i] = pars[i];
   nsteps[walker_idx] += 1;
+  logLike[walker_idx * niters + iter] = lglike;  
   return true;
 }
 
@@ -294,28 +293,28 @@ bool affineStepChunk::getStep(unsigned int walker_idx, unsigned int iter_idx,
 }
 
 
-double* affineStepChunk::getParamPointer(unsigned int walker_idx,
-					  unsigned int iter_idx) {
+float* affineStepChunk::getParamPointer(unsigned int walker_idx,
+					unsigned int iter_idx) {
   if (walker_idx >= nwalkers) return NULL;
   if (iter_idx >= niters) return NULL;
   return steps + (niters * walker_idx + iter_idx) * nparams;
 }
 
-double* const affineStepChunk::getParamPointer(unsigned int walker_idx,
-						unsigned int iter_idx) const {
+float* const affineStepChunk::getParamPointer(unsigned int walker_idx,
+					      unsigned int iter_idx) const {
   if (walker_idx >= nwalkers) return NULL;
   if (iter_idx >= niters) return NULL;
   return steps + (niters * walker_idx + iter_idx) * nparams;
 }
 
-double* affineStepChunk::getLastParamPointer(unsigned int walker_idx) {
+float* affineStepChunk::getLastParamPointer(unsigned int walker_idx) {
   if (walker_idx >= nwalkers) return NULL;
   unsigned int iter_idxp1 = nsteps[walker_idx];
   if (iter_idxp1 == 0) return NULL;
   return steps + (niters * walker_idx + iter_idxp1 - 1) * nparams;
 }
 
-double* const affineStepChunk::getLastParamPointer(unsigned int walker_idx) 
+float* const affineStepChunk::getLastParamPointer(unsigned int walker_idx) 
   const {
   if (walker_idx >= nwalkers) return NULL;
   unsigned int iter_idxp1 = nsteps[walker_idx];
@@ -327,11 +326,11 @@ void affineStepChunk::writeToStream(std::ostream& os) const {
   //Do each walker in turn
   if (nparams == 0 || nwalkers == 0 || niters == 0) return;
   unsigned int curr_nsteps;
-  double *ptr;
+  float *ptr;
   for (unsigned int i = 0; i < nwalkers; ++i) {
     curr_nsteps = nsteps[i];
     for (unsigned int j = 0; j < curr_nsteps; ++j) {
-      ptr = getParamPointer(i,j);
+      ptr = getParamPointer(i, j);
       os << ptr[0];
       for (unsigned int k = 1; k < nparams; ++k)
 	os << " " << ptr[k];
@@ -487,28 +486,29 @@ generateNewStep(double zval, unsigned int idx1, unsigned int idx2,
 
   //Get pointers to the parameter sets we are playing with
   //Old step (to update)
-  double *ptr1 = cptr1->getLastParamPointer(idx1);
+  float *ptr1 = cptr1->getLastParamPointer(idx1);
   //Step to combine with old step
-  double *ptr2 = cptr2->getLastParamPointer(idx2);
+  float *ptr2 = cptr2->getLastParamPointer(idx2);
 
   oldStep.setParamValues(nparams, ptr1);
   oldLogLike = cptr1->getLogLike(idx1, csteps1 - 1);
 
   //Compute stretch move
-  double val, omz;
-  omz = 1.0 - zval;
+  float fz, val, omz;
+  fz = static_cast<float>(zval);
+  omz = 1.0 - fz;
   for (unsigned int i = 0; i < nparams; ++i) 
     if (param_state[i] & mcmc_affine::FIXED) {
       //Fixed parameter, keep previous
       newStep.setParamValue(i, ptr1[i]);
     } else {
-      val = zval * ptr1[i] + omz * ptr2[i];
+      val = fz * ptr1[i] + omz * ptr2[i];
       newStep.setParamValue(i, val);
     }
 }
 
 void affineChainSet::getLastStep(unsigned int walker_idx,
-				  paramSet& par, double& lglike) const 
+				 paramSet& par, double& lglike) const 
   throw (affineExcept) {
   if (steps.size() == 0) 
     throw affineExcept("affineChainSet","getLastStep",
@@ -665,7 +665,7 @@ void affineChainSet::getMaxLogLikeParam(double& maxval, paramSet& p) const {
 
 void affineChainSet::getParamVector(unsigned int walkeridx,
 				    unsigned int paramidx,
-				    std::vector<double>& pvec) const 
+				    std::vector<float>& pvec) const 
   throw (affineExcept) {
   if (walkeridx >= nwalkers) 
     throw affineExcept("affineChainSet","getParamVector",
@@ -680,7 +680,7 @@ void affineChainSet::getParamVector(unsigned int walkeridx,
   
   unsigned int chunksz, ctr = 0, nciters, ncpars;
   const affineStepChunk* chunkptr;
-  double *sgl_ptr;
+  float *sgl_ptr;
   unsigned int firststep = 0;
   if (skipfirst) firststep = 1;
   for (unsigned int i = firststep; i < steps.size(); ++i) {
@@ -690,7 +690,7 @@ void affineChainSet::getParamVector(unsigned int walkeridx,
     chunksz = chunkptr->nsteps[walkeridx];
     sgl_ptr = chunkptr->steps+(walkeridx*nciters*ncpars);
     for (unsigned int j = 0; j < chunksz; ++j)
-      pvec[ctr++] = sgl_ptr[j*ncpars+paramidx];
+      pvec[ctr++] = sgl_ptr[j * ncpars + paramidx];
   }
 }
 
@@ -700,7 +700,7 @@ void affineChainSet::getParamVector(unsigned int walkeridx,
  */
 
 void affineChainSet::getAverageParamVector(unsigned int paramidx,
-					   std::vector<double>& pvec) const 
+					   std::vector<float>& pvec) const 
   throw (affineExcept) {
   if (paramidx >= nparams) 
     throw affineExcept("affineChainSet","getAverageParamVector",
@@ -714,8 +714,8 @@ void affineChainSet::getAverageParamVector(unsigned int paramidx,
   }
 
   unsigned int ctr, nsteps, currsteps, nciters, ncpars;
-  double cumval;
-  double norm = 1.0/static_cast<double>(nwalkers);
+  double cumval; //Do in double precision, then convert back
+  double norm = 1.0 / static_cast<double>(nwalkers);
   ctr = 0;
   const affineStepChunk* chunkptr;
   unsigned int firststep = 0;
@@ -735,10 +735,10 @@ void affineChainSet::getAverageParamVector(unsigned int paramidx,
     if (nsteps == 0) continue; //None
 
     for (unsigned int j = 0; j < nsteps; ++j) {
-      cumval = chunkptr->steps[ j*ncpars + paramidx ]; //Walker 0
+      cumval = chunkptr->steps[j * ncpars + paramidx]; //Walker 0
       for (unsigned int k = 1; k < nwalkers; ++k)
-	cumval += chunkptr->steps[ (k*nciters+j)*ncpars + paramidx ];
-      pvec[ctr++] = norm*cumval;
+	cumval += chunkptr->steps[(k * nciters + j) * ncpars + paramidx];
+      pvec[ctr++] = static_cast<float>(norm * cumval);
     }
   }
   pvec.resize(ctr); //Should be non-destructive
@@ -761,7 +761,7 @@ void affineChainSet::getAverageParamVector(unsigned int paramidx,
 //  code.  Basically, it's a good idea to do the first L < minfac*maxlag
 //  test before calling this.
 int affineChainSet::acor(double& mean, double& sigma,
-			 double& tau, std::vector<double>& X,
+			 double& tau, std::vector<float>& X,
 			 unsigned int L) 
   const throw (affineExcept) {
 
@@ -848,7 +848,7 @@ double affineChainSet::getAcor(unsigned int paramidx, double& mean,
   tau = std::numeric_limits<double>::quiet_NaN();
 
   //Get the averaged parameters
-  std::vector<double> pvec;
+  std::vector<float> pvec;
   getAverageParamVector(paramidx, pvec);
 
   //Make sure initial vector is long enough to allow for computation
@@ -865,19 +865,18 @@ double affineChainSet::getAcor(unsigned int paramidx, double& mean,
 /*!
   \returns True if the autocorrelation vector was computed for all params
  */
-bool affineChainSet::getAcorVector(std::vector<double>& tau) const 
+bool affineChainSet::getAcorVector(std::vector<float>& tau) const 
   throw (affineExcept) {
-  double mn,sigma; //Throw away
+  double mn, sigma; //Throw away
   tau.resize(nparams);
   bool succ, indiv_succ;
   succ = true;
   for (unsigned int i = 0; i < nparams; ++i) {
-    tau[i] = getAcor(i, mn, sigma, indiv_succ);
+    tau[i] = static_cast<float>(getAcor(i, mn, sigma, indiv_succ));
     succ &= indiv_succ;
   }
   return succ;
 }
-
 
 /*!
   \param[out] tau Autocorrelation length for each parameter
@@ -886,7 +885,7 @@ bool affineChainSet::getAcorVector(std::vector<double>& tau) const
   \returns True if the autocorrelation vector was computed for all params
             that were not ignored
  */
-bool affineChainSet::getAcorVector(std::vector<double>& tau,
+bool affineChainSet::getAcorVector(std::vector<float>& tau,
 				   const std::vector<int> param_state) 
   const 
   throw (affineExcept) {
@@ -899,24 +898,24 @@ bool affineChainSet::getAcorVector(std::vector<double>& tau,
   succ = true;
   for (unsigned int i = 0; i < nparams; ++i) {
     if (param_state[i] & mcmc_affine::ACIGNORE)
-      tau[i] = std::numeric_limits<double>::quiet_NaN();
+      tau[i] = std::numeric_limits<float>::quiet_NaN();
     else {
-      tau[i] = getAcor(i, mn, sigma, indiv_succ);
+      tau[i] = static_cast<float>(getAcor(i, mn, sigma, indiv_succ));
       succ &= indiv_succ;
     }
   }
   return succ;
 }
 
-double affineChainSet::getParamMean(unsigned int paridx) const 
+float affineChainSet::getParamMean(unsigned int paridx) const 
   throw (affineExcept) {
   if (paridx >= nparams)
     throw affineExcept("affineChainSet","getParamMean",
 		       "Invalid parameter index",1);
-  double mean = 0;
+  double mean = 0; //Do computation internally in double
   unsigned int chunksz, nciters, ncpars, ctr = 0;
   const affineStepChunk* chunkptr;
-  double *ptr;
+  float *ptr;
   for (unsigned int i = 0; i < steps.size(); ++i) {
     chunkptr = steps[i];
     nciters = chunkptr->niters;
@@ -930,8 +929,11 @@ double affineChainSet::getParamMean(unsigned int paridx) const
       }
     }
   }
-  if (ctr == 0) return std::numeric_limits<double>::quiet_NaN();
-  else return mean /= static_cast<double>(ctr);
+  if (ctr == 0) return std::numeric_limits<float>::quiet_NaN();
+  else {
+    mean /= static_cast<double>(ctr);
+    return static_cast<float>(mean);
+  }
 }
 
 /*!
@@ -944,18 +946,18 @@ double affineChainSet::getParamMean(unsigned int paridx) const
 
   Requires temporary storage equal to the total number of steps
 */
-void affineChainSet::getParamStats(unsigned int paridx, double& mean,
-				   double& var, double& lowlimit,
-				   double& uplimit, double conflevel) const 
+void affineChainSet::getParamStats(unsigned int paridx, float& mean,
+				   float& var, float& lowlimit,
+				   float& uplimit, float conflevel) const 
   throw (affineExcept) {
   if (paridx >= nparams)
-    throw affineExcept("affineChainSet","getParamStats",
-		       "Invalid parameter index",1);
+    throw affineExcept("affineChainSet", "getParamStats",
+		       "Invalid parameter index", 1);
 
-  mean = std::numeric_limits<double>::quiet_NaN();
-  var = std::numeric_limits<double>::quiet_NaN();
-  lowlimit = std::numeric_limits<double>::quiet_NaN();
-  uplimit = std::numeric_limits<double>::quiet_NaN();
+  mean = std::numeric_limits<float>::quiet_NaN();
+  var = std::numeric_limits<float>::quiet_NaN();
+  lowlimit = std::numeric_limits<float>::quiet_NaN();
+  uplimit = std::numeric_limits<float>::quiet_NaN();
 
   //We will copy the full params into a vector for ease of sorting,
   // computation
@@ -963,16 +965,16 @@ void affineChainSet::getParamStats(unsigned int paridx, double& mean,
   if (sz == 0) return;
   if (skipfirst && steps.size() == 1) return;
 
-  std::vector< double > pvec;
+  std::vector<float> pvec;
   pvec.resize(sz);
   
-  //Stick in vector and add to mean as we go
-  double val;
-  unsigned int chunksz, ctr = 0, nciters, ncpars;
+  //Stick in vector and add to mean as we go.  Use double internally
+  float val, *ptr;
+  double imean;
+  unsigned int chunksz, firstidx, ctr, nciters, ncpars;
   const affineStepChunk* chunkptr;
-  double *ptr;
-  mean = 0.0;
-  unsigned int firstidx = 0;
+  imean = 0.0;
+  ctr = firstidx = 0;
   if (skipfirst) firstidx = 1;
   for (unsigned int stepidx = firstidx; stepidx < steps.size(); ++stepidx) {
     //For each chunk
@@ -988,37 +990,41 @@ void affineChainSet::getParamStats(unsigned int paridx, double& mean,
 	//ptr = chunkptr->getParamPointer(i,j);
 	//val = ptr[ paridx ];
 	val = ptr[j * ncpars + paridx];
-	mean += val;
+	imean += val;
 	pvec[ctr++] = val;
       }
     }
   }
   if (ctr != sz) 
-    throw affineExcept("affineChainSet","getParamStats",
+    throw affineExcept("affineChainSet", "getParamStats",
 		       "Didn't get the number of expected steps",2);
 
   double norm = 1.0 / static_cast<double>(sz);
-  mean *= norm;
+  imean *= norm;
+
+  mean = static_cast<float>(imean);
 
   //Now compute variance using two-pass algorithm
-  double delta, sumdelta;
-  var = sumdelta = 0.0;
+  // Again, work in double precision internally
+  double delta, sumdelta, ivar;
+  ivar = sumdelta = 0.0;
   for (unsigned int i = 0; i < sz; ++i) {
-    delta = pvec[i] - mean;
+    delta = pvec[i] - imean;
     sumdelta += delta;
-    var += delta * delta;
+    ivar += delta * delta;
   }
-  var -= sumdelta * norm;
-  var /= static_cast<double>(sz) - 1.0;
+  ivar -= sumdelta * norm;
+  ivar /= static_cast<double>(sz) - 1.0;
+  var = static_cast<float>(ivar);
   if (var == 0.0) return; //Can't compute limits
   
   //Compute limits
   if (conflevel < 0)
-    throw affineExcept("affineChainSet","getParamStats",
-		       "Invalid (negative) conf level",4);
+    throw affineExcept("affineChainSet", "getParamStats",
+		       "Invalid (negative) conf level",3 );
   if (conflevel > 1)
-    throw affineExcept("affineChainSet","getParamStats",
-		       "Invalid (>1) conf level",8);
+    throw affineExcept("affineChainSet", "getParamStats",
+		       "Invalid (>1) conf level", 4);
 
   std::sort(pvec.begin(), pvec.end());
   //Now do the lower limit, rounding to get that index
@@ -1035,22 +1041,25 @@ void affineChainSet::getParamStats(unsigned int paridx, double& mean,
 /*!
   Requires temporary storage equal to the full size of the chain
 */
-void affineChainSet::makeCovMatrix(double** covmat) const {
+void affineChainSet::makeCovMatrix(float** covmat) const {
+
+  //Do internal computations in double precision
+
   if (nparams == 0 || nwalkers == 0) return;
   unsigned int sz = getMinNIters();
   if (sz < 2) {
     for (unsigned int i = 0; i < nparams; ++i)
       for (unsigned int j = 0; j < nparams; ++j)
-	covmat[i][j] = std::numeric_limits<double>::quiet_NaN();
+	covmat[i][j] = std::numeric_limits<float>::quiet_NaN();
     return;
   }
 
   //We copy everything into an array, nparams x sz
-  double *tmpdata;
-  tmpdata = new double[nparams*sz];
+  float *tmpdata;
+  tmpdata = new float[nparams * sz];
   unsigned int chunksz, ctr, ctrbase, nciters, ncpars;
   const affineStepChunk* chunkptr;
-  double *ptr;
+  float *ptr;
   //Take at most sz from each
   for (unsigned int i = 0; i < nparams; ++i) {
     ctrbase = sz * i;
@@ -1063,14 +1072,14 @@ void affineChainSet::makeCovMatrix(double** covmat) const {
 	    chunksz = chunkptr->nsteps[k];
 	    ptr = chunkptr->steps + k * nciters * ncpars;
 	    for (unsigned int m = 0; (m < chunksz) && (ctr <= sz); ++m) {
-	      tmpdata[ctrbase+ctr] = ptr[j * ncpars + i];
+	      tmpdata[ctrbase + ctr] = ptr[j * ncpars + i];
 	      ++ctr;
 	    }
 	  }
       }
   }
 
-  //Now, mean subtract each
+  //Now, mean subtract each parameter value
   double mean, norm;
   norm = 1.0 / static_cast<double>(sz);
   for (unsigned int i = 0; i < nparams; ++i) {
@@ -1080,30 +1089,31 @@ void affineChainSet::makeCovMatrix(double** covmat) const {
       mean += ptr[j];
     mean *= norm;
     for (unsigned int j = 0; j < sz; ++j)
-      ptr[j] -= mean;
+      ptr[j] -= static_cast<float>(mean);
   }
 
   //And compute covariances
-  double norm2 = 1.0 / static_cast<double>(sz-1);
-  double val, sumsq, *ptr2;
+  float *ptr2;
+  double val, sumsq, norm2;
+  norm2 = 1.0 / static_cast<double>(sz-1);
   for (unsigned int i = 0; i < nparams; ++i) {
     ptr = tmpdata + sz * i;
     //Diagonal
-    val = ptr[0];
+    val = static_cast<double>(ptr[0]);
     sumsq = val * val;
     for (unsigned int j = 1; j < sz; ++j) {
-      val = ptr[j];
+      val = static_cast<double>(ptr[j]);
       sumsq += val * val;
     }
-    covmat[i][i] = sumsq * norm2;
+    covmat[i][i] = static_cast<float>(sumsq * norm2);
 
     //Off diag, take advantage of symmetry
     for (unsigned int j = 0; j < i; ++j) {
       ptr2 = tmpdata + sz * j;
-      sumsq = ptr[0] * ptr2[0];
+      sumsq = static_cast<double>(ptr[0] * ptr2[0]);
       for (unsigned int k = 1; k < sz; ++k)
-	sumsq += ptr[k]*ptr2[k];
-      covmat[i][j] = covmat[j][i] = sumsq * norm2;
+	sumsq += static_cast<double>(ptr[k] * ptr2[k]);
+      covmat[i][j] = covmat[j][i] = static_cast<float>(sumsq * norm2);
     }
   }
 

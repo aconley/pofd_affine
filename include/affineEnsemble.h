@@ -26,7 +26,7 @@ private:
   std::vector<bool> has_name; //!< Does a given param have a name
   std::vector< std::string > parnames; //!< Optional names of params
 
-  double scalefac; //!< Scaling parameter for proposal unsigned
+  float scalefac; //!< Scaling parameter for proposal unsigned
 
   // Keep track of special parameter states
   unsigned int nfixed; //!< Number of fixed params
@@ -35,10 +35,10 @@ private:
 
   unsigned int init_steps; //!< Number of initial steps to do before starting burn-in check
   unsigned int min_burn; //!< Minimum number of burn steps to do
-  unsigned int burn_multiple; //!< Multiple of autocorrelation steps to do for burn
+  float burn_multiple; //!< Multiple of autocorrelation steps to do for burn
   unsigned int nsteps; //!< Number of steps to do after burn per walker
 
-  mutable std::vector<double> acor; //!< Holds autocorrelation
+  mutable std::vector<float> acor; //!< Holds autocorrelation
   mutable bool acor_set; //!< Has acor been computed?
 
   /*! \brief For keeping track of available procs */
@@ -48,7 +48,7 @@ private:
   affineQueue< std::pair<int, int> > stepqueue;
   mutable proposedStep pstep; //!< Convenience variable for new steps
 
-  double getMaxAcor() const; //!< Return maximum autocorrelation length
+  float getMaxAcor() const; //!< Return maximum autocorrelation length
 
   //Primary sampling routines
   void masterSample(); //!< Master node sampler routine
@@ -77,7 +77,7 @@ protected:
 public:
   /* \brief Constructor */
   affineEnsemble(unsigned int, unsigned int, unsigned int,
-		 unsigned int=50, unsigned int=50, double=5, double=2);
+		 unsigned int=50, unsigned int=50, float=5, float=2);
   ~affineEnsemble(); //!< Destructor
 
   bool isValid() const; //!< Are params valid?
@@ -94,11 +94,11 @@ public:
   unsigned int getNChunks() const { return chains.getNChunks(); } //!< Get number of chunks
   unsigned int getMinNIters() const { return chains.getMinNIters(); } //!< Get minimum number of iterations across all walkers
   unsigned int getNSteps() const { return nsteps; } //!< Get number of steps
-  double getScalefac() const { return scalefac; } //!< Get scalefac
-  void setScalefac(double val) { scalefac = val; } //!< Return scalefac
+  float getScalefac() const { return scalefac; } //!< Get scalefac
+  void setScalefac(float val) { scalefac = val; } //!< Set scalefac
 
   double getMaxLogLike() const; //!< Get Maximum recorded Log Likelihood
-  void getMaxLogLikeParam(double& val, paramSet& p) const; //!< Get parameters corresponding to maximum recorded log likelihood
+  void getMaxLogLikeParam(double&, paramSet&) const; //!< Get parameters corresponding to maximum recorded log likelihood
 
   // Interact with parameter states
   // Fixing a parameter will also make it ignored
@@ -122,10 +122,10 @@ public:
 
   bool computeAcor() const; //!< Computes autocorrelation
 
-  bool getAcor(std::vector<double>&) const; //!< Returns acor, or computes it if not set
-  void getAcceptanceFrac(std::vector<double>&) const; //!< Returns acceptance fraction for each walker
+  bool getAcor(std::vector<float>&) const; //!< Returns acor, or computes it if not set
+  void getAcceptanceFrac(std::vector<float>&) const; //!< Returns acceptance fraction for each walker
 
-  void printStatistics(double=0.683, std::ostream& = std::cout) const; //!< Output statistics for run
+  void printStatistics(float=0.683, std::ostream& = std::cout) const; //!< Output statistics for run
 
   //User must subclass these for their likelihood function
   virtual void initChains() = 0; //!< Initialize first step in chains

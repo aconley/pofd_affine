@@ -40,12 +40,12 @@ TEST(paramSetTest, SetRecover) {
   EXPECT_THROW(p.at(3), std::range_error) << "Out of range didn't throw";
 
   //Set with wrong length
-  std::vector<double> v1(2);
+  std::vector<float> v1(2);
   EXPECT_THROW(p.setParamValues(v1), affineExcept) 
     << "Set with wrong vector size didn't throw";
   
   //Set with right length, recover
-  std::vector<double> v2(3);
+  std::vector<float> v2(3);
   v2[0] = -1.5; v2[1] = -3.0; v2[2] = 10.5;
   ASSERT_NO_THROW(p.setParamValues(v2)) << "Setting param values failed";
   for (unsigned int i = 0; i < 3; ++i)
@@ -326,13 +326,13 @@ TEST(affineChainSetTest, Averaging) {
   ASSERT_TRUE(chains.addNewStep(0,p,logLike)) << "Failed to add step";
   p[0] = 1.5; p[1] = 1.7; p[2] = 2.0;
   ASSERT_TRUE(chains.addNewStep(1,p,logLike)) << "Failed to add step";
-  double p1av0 = 0.5*(2.0+1.0);  //First step
-  double p1av1 = 0.5*(1.0+1.7);  //Second step
+  float p1av0 = 0.5*(2.0+1.0);  //First step
+  float p1av1 = 0.5*(1.0+1.7);  //Second step
 
   //First, check recovery of specific entry
   // This should get the values of parameter 2 from walker 1.  We
   // have entered two values, so we should get two back
-  std::vector<double> parvec;
+  std::vector<float> parvec;
   chains.getParamVector(1, 2, parvec);
   ASSERT_EQ(parvec.size(), 2U) <<
     "Vector from chains::getParamVector not of expected length (2)";
@@ -514,7 +514,7 @@ TEST(affineChainSetTest, GenerateNewPoint) {
   for (unsigned int i = 0; i < nparams; ++i)
     EXPECT_FLOAT_EQ(pold[i], p[i]) << "Didn't recover old step: " << 
       std::endl << p[i] << std::endl << pold[i];
-  double expval = zval*0.5+(1-zval)*1.5; //Expected value, new step param 0
+  float expval = zval*0.5+(1-zval)*1.5; //Expected value, new step param 0
   EXPECT_FLOAT_EQ(expval, pnew[0]) <<
     "Param 0 of new step didn't match expectation";
   expval = zval*1.0+(1-zval)*2.0; //Param 1
@@ -533,12 +533,13 @@ TEST(affineChainSetTest, Acor) {
   affineChainSet chains3(1,1);
   chains3.addChunk(ntest);
   paramSet p(1);
-  double val;
+  float val;
   double logLike = 1.0;
   for (unsigned int i = 0; i < ntest; ++i) {
     ifs >> val;
     p[0] = val;
-    ASSERT_TRUE(chains3.addNewStep(0,p,logLike)) << "Failed to add step " << i;
+    ASSERT_TRUE(chains3.addNewStep(0, p, logLike)) << 
+      "Failed to add step " << i;
   }
   ifs.close();
   double tau, mean, sigma;

@@ -15,7 +15,7 @@ paramSet::paramSet(unsigned int NPARAMS) {
   setNParams(NPARAMS);
 }
 
-paramSet::paramSet(const std::vector<double>& vec) {
+paramSet::paramSet(const std::vector<float>& vec) {
   nparams = 0;
   paramvals = NULL;
   setNParams(vec.size());
@@ -23,7 +23,7 @@ paramSet::paramSet(const std::vector<double>& vec) {
 		     paramvals[i]=vec[i];
 }
 
-paramSet::paramSet(unsigned int N, const double* const VAL) {
+paramSet::paramSet(unsigned int N, const float* const VAL) {
   nparams = 0;
   paramvals = NULL;
   setNParams(N);
@@ -55,7 +55,7 @@ void paramSet::clear() {
 void paramSet::setNParams(unsigned int npar) {
   if (npar == nparams) return;
   if (paramvals != NULL) delete[] paramvals;
-  if (npar > 0) paramvals = new double[npar]; else paramvals=NULL;
+  if (npar > 0) paramvals = new float[npar]; else paramvals=NULL;
   nparams=npar;
 }
 
@@ -82,12 +82,12 @@ bool paramSet::operator==(const paramSet& other) const {
 /*!
   \returns Square root of the sum of the differences
  */
-double paramSet::getDist(const paramSet& other) const {
+float paramSet::getDist(const paramSet& other) const {
   if (other.nparams != nparams)
     throw affineExcept("paramSet","getDist",
 		       "Input paramSets don't have the same size",1);
   if (nparams == 0) return 0.0; //ambigouous case
-  double val, distsq;
+  float val, distsq;
   val = paramvals[0] - other.paramvals[0];
   distsq = val*val;
   for (unsigned int i = 1; i < nparams; ++i) {
@@ -97,12 +97,12 @@ double paramSet::getDist(const paramSet& other) const {
   return sqrt(val);
 }
 
-const double& paramSet::at(unsigned int i) const throw(std::range_error) {
+const float& paramSet::at(unsigned int i) const throw(std::range_error) {
   if (i >= nparams) throw std::range_error("paramSet at out of range access");
   return paramvals[i];
 }
 
-double& paramSet::at(unsigned int i) throw(std::range_error) {
+float& paramSet::at(unsigned int i) throw(std::range_error) {
   if (i >= nparams) throw std::range_error("paramSet at out of range access");
   return paramvals[i];
 }
@@ -111,7 +111,7 @@ double& paramSet::at(unsigned int i) throw(std::range_error) {
   \param[in] vec Input parameter vector
   Doesn't allow for resizing, doesn't change noise values
  */
-void paramSet::setParamValues(const std::vector<double>& vec) {
+void paramSet::setParamValues(const std::vector<float>& vec) {
   if (vec.size() != nparams)
     throw affineExcept("paramSet","setParamValues",
 		     "Input vector wrong length",1);
@@ -122,7 +122,7 @@ void paramSet::setParamValues(const std::vector<double>& vec) {
 /*!
   Doesn't allow for resizing
  */
-void paramSet::setParamValues(unsigned int N, const double* const VAL) {
+void paramSet::setParamValues(unsigned int N, const float* const VAL) {
   if (N != nparams)
     throw affineExcept("paramSet","setParamValues",
 		       "Input array wrong length",1);
@@ -147,7 +147,7 @@ bool paramSet::writeToStream(std::ostream& os) const {
 void paramSet::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<unsigned int*>(&nparams), 1, MPI_UNSIGNED, 
 	   dest, mcmc_affine::PSSENDNPARS, comm);
-  MPI_Send(paramvals, nparams, MPI_DOUBLE, dest, mcmc_affine::PSSENDPVALS,
+  MPI_Send(paramvals, nparams, MPI_FLOAT, dest, mcmc_affine::PSSENDPVALS,
 	   comm);
 }
 
@@ -157,7 +157,7 @@ void paramSet::recieveCopy(MPI_Comm comm, int src) {
   MPI_Recv(&newpars, 1, MPI_UNSIGNED, src, mcmc_affine::PSSENDNPARS, 
 	   comm, &Info);
   setNParams(newpars);
-  MPI_Recv(paramvals, newpars, MPI_DOUBLE, src, mcmc_affine::PSSENDPVALS,
+  MPI_Recv(paramvals, newpars, MPI_FLOAT, src, mcmc_affine::PSSENDPVALS,
 	   comm, &Info);
 }
 

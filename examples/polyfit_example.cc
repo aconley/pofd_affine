@@ -280,7 +280,7 @@ int main(int argc, char** argv) {
     ply.doSteps(ply.getNSteps(), burnsteps);
     
     if (rank == 0) {
-      std::vector<double> accept;
+      std::vector<float> accept;
       ply.getAcceptanceFrac(accept);
       double mnacc = accept[0];
       for (unsigned int i = 1; i < nwalkers; ++i)
@@ -288,7 +288,7 @@ int main(int argc, char** argv) {
       std::cout << "Mean acceptance: " << mnacc / static_cast<double>(nwalkers)
 		<< std::endl;
 
-      std::vector<double> acor;
+      std::vector<float> acor;
       bool succ = ply.getAcor(acor);
       if (succ) {
 	std::cout << "Autocorrelation length:";
