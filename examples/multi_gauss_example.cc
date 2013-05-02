@@ -4,6 +4,7 @@
 #include<iostream>
 #include<fstream>
 #include<cstdlib>
+#include<vector>
 
 #include<getopt.h>
 
@@ -31,7 +32,7 @@ public:
 
   void initChains();
   double getLogLike(const paramSet&);
- 
+  void getStats(std::vector<float>&, std::vector<float>&) const;
 };
 
 multiGauss::multiGauss( unsigned int NWALKERS, unsigned int NPARAMS,
@@ -111,6 +112,21 @@ double multiGauss::getLogLike(const paramSet& p) {
 
   return -0.5*sum;
 }
+
+void multiGauss::getStats(std::vector<float>& mn, 
+			  std::vector<float>& var) const {
+  unsigned int npar = getNParams();
+  mn.resize(npar);
+  var.resize(npar);
+  float cmn, cvar, lowlim, uplim;
+  for (unsigned int i = 0; i < npar; ++i) {
+    chains.getParamStats(i, cmn, cvar, lowlim, uplim);
+    mn[i] = cmn;
+    var[i] = cvar;
+  }
+}
+
+///////////////////////////////////
 
 int main(int argc, char** argv) {
 
@@ -235,7 +251,14 @@ int main(int argc, char** argv) {
     mg->doSteps(mg->getNSteps(), nburn);
     
     if (rank == 0) {
-      std::vector<double> accept;
+      std::vector<float> mn, var;
+      mg->getStats(mn, var);
+      std::cout << "Results" << std::endl;
+      for (unsigned int i = 0; i < mn.size(); ++i)
+	std::cout << "  Param " << i << " " << mn[i] << " +- "
+		  << sqrt(var[i]) << std::endl;
+
+      std::vector<float> accept;
       mg->getAcceptanceFrac(accept);
       double mnacc = accept[0];
       for (unsigned int i = 1; i < nwalkers; ++i)
@@ -243,7 +266,7 @@ int main(int argc, char** argv) {
       std::cout << "Mean acceptance: " << mnacc / static_cast<double>(nwalkers)
 		<< std::endl;
       
-      std::vector<double> acor;
+      std::vector<float> acor;
       bool succ = mg->getAcor(acor);
       if (succ) {
 	std::cout << "Autocorrelation length: " << acor[0];

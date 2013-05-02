@@ -19,6 +19,8 @@ class ran {
   ran(unsigned long long int seed=10214L) { setSeed(seed); }
   void setSeed(unsigned long long int); //!< Set the seed
   unsigned long long int int64(); //!< Get uniform 64 bit integer
+  /*! \brief Get uniform float */
+  float flt() { return 5.42101086242752217E-20 * int64(); }
   /*! \brief Get uniform double */
   double doub() { return 5.42101086242752217E-20 * int64(); }
   /*! \brief Get uniform 32 bit integer */

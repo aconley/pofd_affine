@@ -178,7 +178,7 @@ int main(int argc, char** argv) {
     rd.doSteps(rd.getNSteps(), nburn);
     
     if (rank == 0) {
-      std::vector<double> accept;
+      std::vector<float> accept;
       rd.getAcceptanceFrac(accept);
       double mnacc = accept[0];
       for (unsigned int i = 1; i < nwalkers; ++i)
@@ -186,7 +186,7 @@ int main(int argc, char** argv) {
       std::cout << "Mean acceptance: " << mnacc / static_cast<double>(nwalkers)
 		<< std::endl;
 
-      std::vector<double> acor;
+      std::vector<float> acor;
       bool succ = rd.getAcor(acor);
       if (succ) std::cout << "Autocorrelation length: " << acor[0] 
 			  << " " << acor[1] << std::endl; 

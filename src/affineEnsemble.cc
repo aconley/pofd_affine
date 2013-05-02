@@ -26,7 +26,7 @@
 affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
 			       unsigned int NSAMPLES, unsigned int INIT_STEPS,
 			       unsigned int MIN_BURN,
-			       double BURN_MULTIPLE, double SCALEFAC) :
+			       float BURN_MULTIPLE, float SCALEFAC) :
   nwalkers(NWALKERS), nparams(NPARAMS), has_any_names(false), 
   scalefac(SCALEFAC), init_steps(INIT_STEPS), min_burn(MIN_BURN), 
   burn_multiple(BURN_MULTIPLE), pstep(NPARAMS), chains(NWALKERS,NPARAMS) {
@@ -36,7 +36,7 @@ affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
   parnames.resize(nparams);
 
   //Set number of steps per walker, which won't quite match nsamples
-  nsteps = static_cast<unsigned int>(NSAMPLES/static_cast<double>(nwalkers)
+  nsteps = static_cast<unsigned int>(NSAMPLES/static_cast<float>(nwalkers)
 				     + 0.999999999999);
 
 
@@ -116,7 +116,7 @@ void affineEnsemble::setNWalkers(unsigned int n) {
   chains.setNWalkers(n);
   
   unsigned int nsamples = nsteps * nwalkers;
-  nsteps = static_cast<unsigned int>(nsamples/static_cast<double>(n)
+  nsteps = static_cast<unsigned int>(nsamples/static_cast<float>(n)
 				     + 0.999999999999);
 
   if (rank == 0) {
@@ -256,19 +256,19 @@ bool affineEnsemble::computeAcor() const {
   return success;
 }
 
-bool affineEnsemble::getAcor(std::vector<double>& retval) const {
+bool affineEnsemble::getAcor(std::vector<float>& retval) const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble","getAcor","Don't call on slave",1);
   bool success;
-  if (! acor_set) success = computeAcor(); else success=true;
-  if (! success) return success;
+  if (!acor_set) success = computeAcor(); else success=true;
+  if (!success) return success;
   retval.resize(nparams);
   for (unsigned int i = 0; i < nparams; ++i)
     retval[i] = acor[i];
   return success;
 }
 
-void affineEnsemble::getAcceptanceFrac(std::vector<double>& retval) const {
+void affineEnsemble::getAcceptanceFrac(std::vector<float>& retval) const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble","getAcceptanceFrac",
 		       "Don't call on slave",1);
@@ -280,14 +280,14 @@ void affineEnsemble::getAcceptanceFrac(std::vector<double>& retval) const {
   for (unsigned int i = 0; i < nwalkers; ++i) {
     unsigned int ncurrsteps = chains.getNIters(i);
     if (ncurrsteps == 0)
-      retval[i] = std::numeric_limits<double>::quiet_NaN();
+      retval[i] = std::numeric_limits<float>::quiet_NaN();
     else 
-      retval[i] = static_cast<double>(naccept[i]) /
-	static_cast<double>(ncurrsteps);
+      retval[i] = static_cast<float>(naccept[i]) /
+	static_cast<float>(ncurrsteps);
   }
 }
 
-void affineEnsemble::printStatistics(double conflevel, 
+void affineEnsemble::printStatistics(float conflevel, 
 				     std::ostream& os) const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble","printStatistics",
@@ -296,11 +296,11 @@ void affineEnsemble::printStatistics(double conflevel,
     throw affineExcept("affineEnsemble","printStatistics",
 		       "Sampler not in valid state",1);
   std::string parname;
-  double mn, var, low, up;
+  float mn, var, low, up;
   for (unsigned int i = 0; i < nparams; ++i) {
     if (!has_name[i]) parname = "Unknown"; else
       parname = parnames[i];
-    chains.getParamStats(i,mn,var,low,up,conflevel);
+    chains.getParamStats(i, mn, var, low, up, conflevel);
     os << "Parameter: " << parname << " Mean: " << mn << " Stdev: "
        << sqrt(var) << std::endl;
     os << "  lower limit: " << low << " upper limit: "
@@ -399,11 +399,11 @@ void affineEnsemble::masterSample() {
     MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
 }
 
-double affineEnsemble::getMaxAcor() const {
+float affineEnsemble::getMaxAcor() const {
   if (! acor_set) 
     throw affineExcept("affineEnsemble","getMaxAcor",
 		       "Called without acor available",1);
-  double maxval;
+  float maxval;
   unsigned int start_idx;
   for (start_idx = 0; start_idx < nparams; ++start_idx)
     if ((param_state[start_idx] | mcmc_affine::ACIGNORE) == 0) break;
@@ -459,7 +459,7 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
   }
   
   //Okay, we have an acor estimate of some sort
-  double max_acor = getMaxAcor();
+  float max_acor = getMaxAcor();
   if (verbose)
     std::cout << "After " << chains.getMinNIters() 
 	      << " steps, maximum autocorrelation is: "

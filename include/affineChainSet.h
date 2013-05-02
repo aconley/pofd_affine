@@ -10,10 +10,13 @@
   \brief Set of params and likelihoods
 */
 struct affineStepChunk {
+  // The parameters are kept as floats, but the likelihoods as doubles
+  // because they may have large constant factors (since normalization
+  // is hard).
   unsigned int nwalkers; //!< Number of walkers
   unsigned int niters; //!< Number of steps in this chunk
   unsigned int nparams; //!< Number of params
-  double* steps; //!< holds steps: nwalkers by niter by nparams
+  float* steps; //!< holds steps: nwalkers by niter by nparams
   double* logLike; //!< Log likelihoods, nwalkers by niters
   unsigned int *nsteps; //!< Number of filled elements for each walker (size nwalkers)
 
@@ -46,13 +49,13 @@ struct affineStepChunk {
   bool getLastStep(unsigned int, paramSet&, double&) const;
   
   /*! \brief Get pointer to particular set of parameters */
-  double* getParamPointer(unsigned int, unsigned int); 
+  float* getParamPointer(unsigned int, unsigned int); 
   /*! \brief Get pointer to particular set of parameters */
-  double* const getParamPointer(unsigned int, unsigned int) const;
+  float* const getParamPointer(unsigned int, unsigned int) const;
   /*! \brief Get pointer to last set of parameters for a given walker*/
-  double* getLastParamPointer(unsigned int);
+  float* getLastParamPointer(unsigned int);
   /*! \brief Get pointer to last set of parameters for a given walker*/
-  double* const getLastParamPointer(unsigned int) const;
+  float* const getLastParamPointer(unsigned int) const;
 
   /*! \brief Get log likelihood for a particular walker and step */
   double getLogLike(unsigned int i1, unsigned int i2) const {
@@ -86,7 +89,7 @@ class affineChainSet {
   std::vector< affineStepChunk* > steps; //!< Holds pointers to nwalker by niter by nparams arrays
 
   /*! \brief Autocorrelation engine */
-  int acor(double&,double&,double&,std::vector<double>&,
+  int acor(double&, double&, double&, std::vector<float>&,
 	   unsigned int) const throw (affineExcept);
 
   bool skipfirst; //!< True if the first chunk is just the initialization, and should be ignored in stats, etc.
@@ -114,13 +117,13 @@ class affineChainSet {
   void unsetSkipFirst() { skipfirst = false; } //!< Don't skip the first step
 
   double getMaxLogLike() const; //!< Return maximum log likelihood over all walkers
-  void getMaxLogLikeParam(double&,paramSet&) const; //!< Return best Log Likelihood step and it's likelihood over all walkers
+  void getMaxLogLikeParam(double&, paramSet&) const; //!< Return best Log Likelihood step and it's likelihood over all walkers
 
   void addChunk(unsigned int); //!< Adds a new chunk of specified size
   bool addNewStep(unsigned int, const paramSet&, double); //!< Adds a new step
 
   /*! \brief Create a new step */
-  void generateNewStep(double,unsigned int, unsigned int,
+  void generateNewStep(double, unsigned int, unsigned int,
 		       const std::vector<int>&, paramSet&, double&, paramSet&) 
     const throw (affineExcept);
 
@@ -134,28 +137,28 @@ class affineChainSet {
 
   /*! \brief Fills vector with param info */
   void getParamVector(unsigned int, unsigned int,
-		      std::vector<double>& pvec) const throw (affineExcept);
+		      std::vector<float>& pvec) const throw (affineExcept);
   /*! \brief Fills vector with param info averaged over walkers*/
-  void getAverageParamVector(unsigned int, std::vector<double>&) const 
+  void getAverageParamVector(unsigned int, std::vector<float>&) const 
     throw (affineExcept);
 
   /*! \brief Autocorrelation length for a particular parameter */
   double getAcor(unsigned int, double&, double&, 
 		 bool&) const throw (affineExcept);
-  bool getAcorVector(std::vector<double>&) const throw (affineExcept); //!< Autocorrelation length for all params
-  bool getAcorVector(std::vector<double>&, 
+  bool getAcorVector(std::vector<float>&) const throw (affineExcept); //!< Autocorrelation length for all params
+  bool getAcorVector(std::vector<float>&, 
 		     const std::vector<int> param_state) 
     const throw(affineExcept); //!< Autocorrelation length for all params
   
   affineChainSet& operator=(const affineChainSet&); //!< Replace this chain set with a copy of another
   affineChainSet& operator+=(const affineChainSet&) throw (affineExcept);  //!<Merge another chain set onto this
 
-  double getParamMean(unsigned int) const throw (affineExcept); //!< Get mean value of param across all walkers
+  float getParamMean(unsigned int) const throw (affineExcept); //!< Get mean value of param across all walkers
   /* \brief Get statistics on a given parameter across all walkers */
-  void getParamStats(unsigned int, double&, double&, double&,
-		     double&, double=0.683) const
+  void getParamStats(unsigned int, float&, float&, float&,
+		     float&, float=0.683) const
     throw (affineExcept); 
-  void makeCovMatrix(double** covmat) const; //!< Get covariance of all params
+  void makeCovMatrix(float** covmat) const; //!< Get covariance of all params
 
   void writeToFile(const std::string&) const throw (affineExcept); //!< Write to file
 
