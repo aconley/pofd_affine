@@ -121,9 +121,19 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   numberCountsDoubleLogNormal(); //!< Default
   explicit numberCountsDoubleLogNormal(unsigned int, unsigned int, 
 				       unsigned int); //!< Constructor
+
+  /*! \brief Constructor */
+  numberCountsDoubleLogNormal(const std::vector<float>&, 
+			      const std::vector<float>&,
+			      const std::vector<float>&); //!< Constructor
+  /*! \brief Constructor */
   numberCountsDoubleLogNormal(const std::vector<double>&, 
 			      const std::vector<double>&,
 			      const std::vector<double>&); //!< Constructor
+  /*! \brief Constructor */
+  numberCountsDoubleLogNormal(unsigned int, const float* const,
+			      unsigned int, const float* const,
+			      unsigned int, const float* const);
   /*! \brief Constructor */
   numberCountsDoubleLogNormal(unsigned int, const double* const,
 			      unsigned int, const double* const,
@@ -140,7 +150,11 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   void setNKnots(unsigned int n); //!< Sets number of knots in band 1
   unsigned int getNKnots() const { return nknots; } //!< Number of knots in band 1 spline
   /*! \brief Sets knot positions, band 1, vector version */
+  void setKnotPositions(const std::vector<float>&);
+  /*! \brief Sets knot positions, band 1, vector version */
   void setKnotPositions(const std::vector<double>&);
+  /*! \brief Sets knot positions, band 1, c array version */
+  void setKnotPositions(unsigned int, const float* const);
   /*! \brief Sets knot positions, band 1, c array version */
   void setKnotPositions(unsigned int, const double* const);
   /*! \brief Sets number of sigma positions for color model */
@@ -148,7 +162,11 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   /*! \brief Gets number of sigma knots in band 2 color model */
   unsigned int getNSigmas() const { return nsigmaknots; }
   /*! \brief Sets knot positions for band 2 sigma model, vector version */
+  void setSigmaPositions(const std::vector<float>&);
+  /*! \brief Sets knot positions for band 2 sigma model, vector version */
   void setSigmaPositions(const std::vector<double>&);
+  /*! \brief Sets knot positions for band 2 sigma model, c array version */
+  void setSigmaPositions(unsigned int, const float* const);
   /*! \brief Sets knot positions for band 2 sigma model, c array version */
   void setSigmaPositions(unsigned int, const double* const);
   /*! \brief Sets number of offset positions for color model */
@@ -156,7 +174,11 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   /*! \brief Gets number of offset knots in band 2 color model */
   unsigned int getNOffsets() const { return noffsetknots; }
   /*! \brief Sets knot positions for band 2 offset model, vector version */
+  void setOffsetPositions(const std::vector<float>&);
+  /*! \brief Sets knot positions for band 2 offset model, vector version */
   void setOffsetPositions(const std::vector<double>&);
+  /*! \brief Sets knot positions for band 2 offset model, c array version */
+  void setOffsetPositions(unsigned int, const float* const);
   /*! \brief Sets knot positions for band 2 offset model, c array version */
   void setOffsetPositions(unsigned int, const double* const);
 
@@ -169,7 +191,10 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   unsigned int getNParams() const { return nknots+nsigmaknots+noffsetknots; }
   /*! \brief Gets positions of all knots */
   void getPositions(std::vector<double>&, std::vector<double>&,
-		    std::vector<double>&) const; 
+		    std::vector<double>&) const;
+  /*! \brief Sets positions of all knots */
+  void setPositions(const std::vector<float>&,const std::vector<float>&,
+		    const std::vector<float>&); 
   /*! \brief Sets positions of all knots */
   void setPositions(const std::vector<double>&,const std::vector<double>&,
 		    const std::vector<double>&);

@@ -30,6 +30,23 @@ numberCountsKnotsSpline::numberCountsKnotsSpline(unsigned int NKNOTS) :
   varr = new void*[5];
 }
 
+numberCountsKnotsSpline::numberCountsKnotsSpline(const std::vector<float>& v):
+  numberCountsKnots(v) {
+  if (nknots > 0) {
+    logknots = new double[nknots]; 
+    for (unsigned int i = 0; i < nknots; ++i)
+      logknots[i] = log2(static_cast<double>(knots[i]));
+  } else logknots = NULL;
+  acc = gsl_interp_accel_alloc();
+  if (v.size() > 0)
+    splinelog = gsl_spline_alloc(gsl_interp_cspline,
+				 static_cast<size_t>(v.size()));
+  else
+    splinelog = NULL;
+  gsl_work = gsl_integration_workspace_alloc(1000);
+  varr = new void*[5];
+}
+
 numberCountsKnotsSpline::numberCountsKnotsSpline(const std::vector<double>& v):
   numberCountsKnots(v) {
   if (nknots > 0) {
@@ -46,6 +63,22 @@ numberCountsKnotsSpline::numberCountsKnotsSpline(const std::vector<double>& v):
   gsl_work = gsl_integration_workspace_alloc(1000);
   varr = new void*[5];
 }
+
+numberCountsKnotsSpline::numberCountsKnotsSpline(unsigned int n, 
+						 const float* const S) :
+  numberCountsKnots(n, S) {
+  if (nknots > 0) {
+    logknots = new double[nknots]; 
+    for (unsigned int i = 0; i < nknots; ++i)
+      logknots[i] = log2(static_cast<double>(knots[i]));
+  } else logknots = NULL;
+  acc = gsl_interp_accel_alloc();
+  splinelog = gsl_spline_alloc(gsl_interp_cspline,
+			       static_cast<size_t>(n));
+  gsl_work = gsl_integration_workspace_alloc(1000);
+  varr = new void*[5];
+}
+
 numberCountsKnotsSpline::numberCountsKnotsSpline(unsigned int n, 
 						 const double* const S) :
   numberCountsKnots(n, S) {
@@ -61,8 +94,8 @@ numberCountsKnotsSpline::numberCountsKnotsSpline(unsigned int n,
   varr = new void*[5];
 }
 
-numberCountsKnotsSpline::numberCountsKnotsSpline(const numberCountsKnotsSpline& 
-						 other){
+numberCountsKnotsSpline::
+numberCountsKnotsSpline(const numberCountsKnotsSpline& other){
   if (this == &other) return; //Self-copy
   nknots = 0;
   knots = logknots = logknotvals = NULL;
@@ -145,10 +178,23 @@ numberCountsKnotsSpline::operator=(const numberCountsKnotsSpline& other) {
   return *this;
 }
  
+void numberCountsKnotsSpline::setKnotPositions(const std::vector<float>& vec) {
+  numberCountsKnots::setKnotPositions(vec);
+  for (unsigned int i = 0; i < nknots; ++i)
+    logknots[i] = log2(static_cast<double>(knots[i]));
+}
+
 void numberCountsKnotsSpline::setKnotPositions(const std::vector<double>& vec) {
   numberCountsKnots::setKnotPositions(vec);
   for (unsigned int i = 0; i < nknots; ++i)
     logknots[i] = log2(knots[i]);
+}
+
+void numberCountsKnotsSpline::setKnotPositions(unsigned int n, 
+					       const float* const vals) {
+  numberCountsKnots::setKnotPositions(n,vals);
+  for (unsigned int i = 0; i < nknots; ++i)
+    logknots[i] = log2(static_cast<double>(knots[i]));
 }
 
 void numberCountsKnotsSpline::setKnotPositions(unsigned int n, 
@@ -168,7 +214,7 @@ void numberCountsKnotsSpline::setParams(const paramSet& F) {
     throw affineExcept("numberCountsKnotsSpline", "setKnots",
 		       "Number of knot values different than expected", 1);
   for (unsigned int i = 0; i < nknots; ++i)
-    logknotvals[i] = pofd_mcmc::logfac*F[i];
+    logknotvals[i] = pofd_mcmc::logfac * static_cast<double>(F[i]);
   gsl_spline_init(splinelog, logknots, logknotvals,
 		  static_cast<size_t>(nknots));
   knotvals_loaded = true;

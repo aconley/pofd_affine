@@ -313,8 +313,8 @@ TEST(model1DTest, SetPositions) {
 //Test set params
 TEST(model1DTest, SetParams) {
   const unsigned int nknots = 5;
-  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
-  const double knotval[nknots] = { 10.0, 7.0, 5.0, 4.0, -1.0 };
+  const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
+  const float knotval[nknots] = { 10.0, 7.0, 5.0, 4.0, -1.0 };
 
   numberCountsKnotsSpline model(nknots, knotpos);
   ASSERT_EQ(nknots, model.getNKnots()) << "Model has wrong number of knots";
@@ -346,8 +346,8 @@ TEST(model1DTest, SetParams) {
 //Test operator=
 TEST(model1DTest, Equals) {
   const unsigned int nknots = 5;
-  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.050 };
-  const double knotval[nknots] = { 10.0, 7.0, 5.0, 4.0, -1.0 };
+  const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.050 };
+  const float knotval[nknots] = { 10.0, 7.0, 5.0, 4.0, -1.0 };
 
   numberCountsKnotsSpline model1(nknots, knotpos);
   ASSERT_EQ(nknots, model1.getNKnots()) << "Model has wrong number of knots";
@@ -376,8 +376,8 @@ TEST(model1DTest, Equals) {
 // Hence, it's a little hard to say exactly what the results should be.
 TEST(model1DTest, NumberCounts) {
   const unsigned int nknots = 5;
-  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.050 };
-  const double knotval[nknots] = { 10.0, 7.0, 5.0, 4.0, -1.0 };
+  const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.050 };
+  const float knotval[nknots] = { 10.0, 7.0, 5.0, 4.0, -1.0 };
 
   numberCountsKnotsSpline model(nknots, knotpos);
   paramSet p(nknots, knotval);
@@ -402,8 +402,8 @@ TEST(model1DTest, NumberCounts) {
 //Model integration -- also hard to ensure the values are right
 TEST(model1DTest, Integration) {
   const unsigned int nknots = 5;
-  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.050 };
-  const double knotval[nknots] = { 10.0, 7.0, 5.0, 4.0, -1.0 };
+  const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.050 };
+  const float knotval[nknots] = { 10.0, 7.0, 5.0, 4.0, -1.0 };
 
   numberCountsKnotsSpline model(nknots, knotpos);
   paramSet p(nknots, knotval);
@@ -423,8 +423,8 @@ TEST(model1DTest, Integration) {
 // Hence, it's a little hard to say exactly what the results should be.
 TEST(model1DTest, getR) {
   const unsigned int nknots = 5;
-  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.050 };
-  const double knotval[nknots] = { 10.0, 7.0, 5.0, 4.0, -1.0 };
+  const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.050 };
+  const float knotval[nknots] = { 10.0, 7.0, 5.0, 4.0, -1.0 };
 
   numberCountsKnotsSpline model(nknots, knotpos);
   paramSet p(nknots, knotval);
@@ -458,8 +458,8 @@ TEST(model1DTest, getR) {
 //Test getting R with histogrammed beam
 TEST(model1DTest, getRHist) {
   const unsigned int nknots = 5;
-  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.050 };
-  const double knotval[nknots] = { 10.0, 7.0, 5.0, 4.0, -1.0 };
+  const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.050 };
+  const float knotval[nknots] = { 10.0, 7.0, 5.0, 4.0, -1.0 };
 
   numberCountsKnotsSpline model(nknots, knotpos);
   paramSet p(nknots, knotval);
@@ -499,11 +499,11 @@ TEST(model1DTest, getRHist) {
 //Basic Instantiation
 TEST(model2DTest, Init) {
   const unsigned int nknots = 5;
-  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
+  const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
   const unsigned int nsigmas = 2;
-  const double sigmapos[nsigmas] = { 0.002, 0.020 };
+  const float sigmapos[nsigmas] = { 0.002, 0.020 };
   const unsigned int noffsets = 2;
-  const double offsetpos[noffsets] = { 0.03, 0.05 };
+  const float offsetpos[noffsets] = { 0.03, 0.05 };
   
   //Just set size version, no positions set
   numberCountsDoubleLogNormal model1(nknots, nsigmas, noffsets);
@@ -589,11 +589,11 @@ TEST(model2DTest, Init) {
 //Test set positions
 TEST(model2DTest, SetPositions) {
   const unsigned int nknots = 5;
-  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
+  const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
   const unsigned int nsigmas = 2;
-  const double sigmapos[nsigmas] = { 0.002, 0.020 };
+  const float sigmapos[nsigmas] = { 0.002, 0.020 };
   const unsigned int noffsets = 2;
-  const double offsetpos[noffsets] = { 0.03, 0.05 };
+  const float offsetpos[noffsets] = { 0.03, 0.05 };
 
   //Make it with fewer knots -- set should resize
   numberCountsDoubleLogNormal model1(nknots-1, nsigmas, noffsets+1);
@@ -622,7 +622,7 @@ TEST(model2DTest, SetPositions) {
       "After setOffsetPositions, didn't find expected offset position at " << i;
   
   //Reject negative knot positions
-  const double knotpos2[nknots] = { -0.002, 0.005, 0.010, 0.020, 0.040 };
+  const float knotpos2[nknots] = { -0.002, 0.005, 0.010, 0.020, 0.040 };
   EXPECT_THROW(model1.setKnotPositions(nknots, knotpos2), affineExcept) <<
     "Trying to set a negative knot position should throw an exception";
   EXPECT_THROW(model1.setSigmaPositions(nknots, knotpos2), affineExcept) <<
@@ -634,13 +634,13 @@ TEST(model2DTest, SetPositions) {
 //Test set params
 TEST(model2DTest, SetGetParams) {
   const unsigned int nknots = 5;
-  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
+  const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
   const unsigned int nsigmas = 2;
-  const double sigmapos[nsigmas] = { 0.002, 0.020 };
+  const float sigmapos[nsigmas] = { 0.002, 0.020 };
   const unsigned int noffsets = 1;
-  const double offsetpos[noffsets] = { 0.03 };
+  const float offsetpos[noffsets] = { 0.03 };
   const unsigned int ntot = nknots + nsigmas + noffsets;
-  const double pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, 0.2, -0.03 };
+  const float pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, 0.2, -0.03 };
 
   numberCountsDoubleLogNormal model(nknots, knotpos, nsigmas, sigmapos,
 				    noffsets, offsetpos);
@@ -676,13 +676,13 @@ TEST(model2DTest, SetGetParams) {
 // they were written as a check against things changing unexpectedly later.
 TEST(model2DTest, NumberCounts) {
   const unsigned int nknots = 5;
-  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
+  const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
   const unsigned int nsigmas = 2;
-  const double sigmapos[nsigmas] = { 0.002, 0.020 };
+  const float sigmapos[nsigmas] = { 0.002, 0.020 };
   const unsigned int noffsets = 1;
-  const double offsetpos[noffsets] = { 0.03 };
+  const float offsetpos[noffsets] = { 0.03 };
   const unsigned int ntot = nknots + nsigmas + noffsets;
-  const double pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, 0.2, -0.03 };
+  const float pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, 0.2, -0.03 };
 
   numberCountsDoubleLogNormal model(nknots, knotpos, nsigmas, sigmapos,
 				    noffsets, offsetpos);
@@ -708,13 +708,13 @@ TEST(model2DTest, NumberCounts) {
 
 TEST(model2DTest, Integration) {
   const unsigned int nknots = 5;
-  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
+  const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
   const unsigned int nsigmas = 2;
-  const double sigmapos[nsigmas] = { 0.002, 0.020 };
+  const float sigmapos[nsigmas] = { 0.002, 0.020 };
   const unsigned int noffsets = 1;
-  const double offsetpos[noffsets] = { 0.03 };
+  const float offsetpos[noffsets] = { 0.03 };
   const unsigned int ntot = nknots + nsigmas + noffsets;
-  const double pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, 0.2, -0.03 };
+  const float pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, 0.2, -0.03 };
 
   numberCountsDoubleLogNormal model(nknots, knotpos, nsigmas, sigmapos,
 				    noffsets, offsetpos);
@@ -732,13 +732,13 @@ TEST(model2DTest, Integration) {
 
 TEST(model2DTest, getR) {
   const unsigned int nknots = 5;
-  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
+  const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
   const unsigned int nsigmas = 2;
-  const double sigmapos[nsigmas] = { 0.002, 0.020 };
+  const float sigmapos[nsigmas] = { 0.002, 0.020 };
   const unsigned int noffsets = 1;
-  const double offsetpos[noffsets] = { 0.03 };
+  const float offsetpos[noffsets] = { 0.03 };
   const unsigned int ntot = nknots + nsigmas + noffsets;
-  const double pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, 0.2, -0.03 };
+  const float pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, 0.2, -0.03 };
 
   numberCountsDoubleLogNormal model(nknots, knotpos, nsigmas, sigmapos,
 				    noffsets, offsetpos);
@@ -790,13 +790,13 @@ TEST(model2DTest, getR) {
 //Same test, but with histogrammed beam
 TEST(model2DTest, getRHist) {
   const unsigned int nknots = 5;
-  const double knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
+  const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
   const unsigned int nsigmas = 2;
-  const double sigmapos[nsigmas] = { 0.002, 0.020 };
+  const float sigmapos[nsigmas] = { 0.002, 0.020 };
   const unsigned int noffsets = 1;
-  const double offsetpos[noffsets] = { 0.03 };
+  const float offsetpos[noffsets] = { 0.03 };
   const unsigned int ntot = nknots + nsigmas + noffsets;
-  const double pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, 0.2, -0.03 };
+  const float pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, 0.2, -0.03 };
 
   numberCountsDoubleLogNormal model(nknots, knotpos, nsigmas, sigmapos,
 				    noffsets, offsetpos);

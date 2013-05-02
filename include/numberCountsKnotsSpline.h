@@ -43,11 +43,12 @@ class numberCountsKnotsSpline : public numberCountsKnots {
   void getRNeg(unsigned int n,const double* const,
 	       const beam&,double*) const;
 
-
  public :
   numberCountsKnotsSpline(); //!< Default
   explicit numberCountsKnotsSpline(unsigned int); //!< Constructor with number of knots
+  numberCountsKnotsSpline(const std::vector<float>&); //!< Vector constructor
   numberCountsKnotsSpline(const std::vector<double>&); //!< Vector constructor
+  numberCountsKnotsSpline(unsigned int, const float* const); //!< C array constructor
   numberCountsKnotsSpline(unsigned int, const double* const); //!< C array constructor
   numberCountsKnotsSpline(const numberCountsKnotsSpline&); //!< Copy constructor
   ~numberCountsKnotsSpline(); //!< Destructor
@@ -55,6 +56,8 @@ class numberCountsKnotsSpline : public numberCountsKnots {
   /*! \brief copy operator */
   numberCountsKnotsSpline& operator=(const numberCountsKnotsSpline&);
  
+  void setKnotPositions(const std::vector<float>&); //!< Set knot positions
+  void setKnotPositions(unsigned int, const float* const); //!< Set knot positions
   void setKnotPositions(const std::vector<double>&); //!< Set knot positions
   void setKnotPositions(unsigned int, const double* const); //!< Set knot positions
 

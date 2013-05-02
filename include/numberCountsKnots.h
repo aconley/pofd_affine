@@ -34,7 +34,9 @@ class numberCountsKnots : public numberCounts {
  public:
   numberCountsKnots(); //!< Default constructor
   explicit numberCountsKnots(unsigned int); //!< Constructor with number of knots
+  numberCountsKnots(const std::vector<float>&); //!< Vector constructor
   numberCountsKnots(const std::vector<double>&); //!< Vector constructor
+  numberCountsKnots(unsigned int, const float* const); //!< C array constructor
   numberCountsKnots(unsigned int, const double* const); //!< C array constructor
   numberCountsKnots(const numberCountsKnots&); //!< Copy constructor
   ~numberCountsKnots(); //!< Destructor
@@ -45,6 +47,10 @@ class numberCountsKnots : public numberCounts {
   virtual void setKnotPositions(const std::vector<double>&);
   /*! \brief Set knot positions, c array version */
   virtual void setKnotPositions(unsigned int, const double* const);
+  /*! \brief Set knot positions, vector version */
+  virtual void setKnotPositions(const std::vector<float>&);
+  /*! \brief Set knot positions, c array version */
+  virtual void setKnotPositions(unsigned int, const float* const);
 
   virtual void getParams(paramSet&) const; //!< Return current parameters
   virtual void setParams(const paramSet&); //!< Set parameters

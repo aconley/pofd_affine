@@ -286,8 +286,8 @@ void master( int argc, char **argv ) {
   //numberCountsKnotsSpline
   try {
     if (verbose) std::cout << "numberCountsKnotsSpline test" << std::endl;
-    const double kpos[] = {0.1, 0.3, 1.0};
-    const double kval[] = {10, 5, 3};
+    const float kpos[] = {0.1, 0.3, 1.0};
+    const float kval[] = {10, 5, 3};
     paramSet p(3, kval);
     numberCountsKnotsSpline model(3, kpos);
     model.setParams(p);

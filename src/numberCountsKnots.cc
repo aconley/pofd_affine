@@ -33,6 +33,14 @@ numberCountsKnots::numberCountsKnots(unsigned int NKNOTS) :
   knotvals_loaded = false;
 }  
 
+numberCountsKnots::numberCountsKnots(const std::vector<float>& S) {
+  nknots = 0;
+  knots = NULL;
+  logknotvals = NULL;
+  setKnotPositions(S);
+  knotvals_loaded = false;
+}
+
 numberCountsKnots::numberCountsKnots(const std::vector<double>& S) {
   nknots = 0;
   knots = NULL;
@@ -41,11 +49,19 @@ numberCountsKnots::numberCountsKnots(const std::vector<double>& S) {
   knotvals_loaded = false;
 }
 
+numberCountsKnots::numberCountsKnots(unsigned int n, const float* const S) {
+  nknots = 0;
+  knots = NULL;
+  logknotvals = NULL;
+  setKnotPositions(n, S);
+  knotvals_loaded = false;
+}
+
 numberCountsKnots::numberCountsKnots(unsigned int n, const double* const S) {
   nknots = 0;
   knots = NULL;
   logknotvals = NULL;
-  setKnotPositions(n,S);
+  setKnotPositions(n, S);
   knotvals_loaded = false;
 }
 
@@ -96,6 +112,20 @@ void numberCountsKnots::getKnotPositions(std::vector<double>& S) const {
 /*!
   \param[in] S Input knot positions
 */
+void numberCountsKnots::setKnotPositions(const std::vector<float>& S) {
+  unsigned int n = S.size();
+  if (n != nknots) setNKnots(n);
+  for (unsigned int i = 0; i < nknots; ++i)
+    if (S[i] <= 0.0)
+      throw affineExcept("numberCountsKnots","setKnots",
+			 "Negative knot positions not allowed",1);
+  for (unsigned int i = 0; i < nknots; ++i)
+    knots[i] = static_cast<double>(S[i]);
+}
+
+/*!
+  \param[in] S Input knot positions
+*/
 void numberCountsKnots::setKnotPositions(const std::vector<double>& S) {
   unsigned int n = S.size();
   if (n != nknots) setNKnots(n);
@@ -105,6 +135,21 @@ void numberCountsKnots::setKnotPositions(const std::vector<double>& S) {
 			 "Negative knot positions not allowed",1);
   for (unsigned int i = 0; i < nknots; ++i)
     knots[i] = S[i];
+}
+
+/*!
+  \param[in] n Number of knots
+  \param[in] S Input knot positions
+*/
+void numberCountsKnots::setKnotPositions(unsigned int n, 
+					 const float* const S) {
+  if (n != nknots) setNKnots(n);
+  for (unsigned int i = 0; i < nknots; ++i)
+    if (S[i] <= 0.0)
+      throw affineExcept("numberCountsKnots","setKnots",
+			 "Negative knot positions not allowed",1);
+  for (unsigned int i = 0; i < nknots; ++i)
+    knots[i] = static_cast<double>(S[i]);
 }
 
 /*!
@@ -151,8 +196,9 @@ void numberCountsKnots::setParams(const paramSet& F) {
   if (nknots != (F.getNParams())) 
     throw affineExcept("numberCountsKnots","setKnots",
 		       "Number of knot values different than expected",2);
+  // Internal storage is base 2 (and double)
   for (unsigned int i = 0; i < nknots; ++i)
-    logknotvals[i] = pofd_mcmc::logfac * F[i]; //convert to base 2
+    logknotvals[i] = pofd_mcmc::logfac * static_cast<double>(F[i]); 
   knotvals_loaded = true;
 }
 

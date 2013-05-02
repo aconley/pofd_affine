@@ -107,6 +107,37 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
   \param[in] OFFSETS Model knots positions for band 2 color model offset
 */
 numberCountsDoubleLogNormal::
+numberCountsDoubleLogNormal(const std::vector<float>& KNOTS,
+			    const std::vector<float>& SIGMAS,
+			    const std::vector<float>& OFFSETS) :
+  knots_valid(false), sigmas_valid(false), offsets_valid(false),
+  knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
+  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
+  nRWork(0), RWorkValid(NULL), RWork1(NULL), RWork2(NULL), RWork3(NULL) {
+
+  knots = 0; knots = logknots = logknotvals = NULL; 
+  splinelog = NULL; 
+  setKnotPositions(KNOTS);
+  acc = gsl_interp_accel_alloc();
+
+  nsigmaknots = 0; sigmaknots = sigmavals = NULL; sigmainterp = NULL;
+  setSigmaPositions(SIGMAS);
+  accsigma = gsl_interp_accel_alloc();
+
+  noffsetknots = 0; offsetknots = offsetvals = NULL; offsetinterp = NULL;
+  setOffsetPositions(OFFSETS);
+  accoffset = gsl_interp_accel_alloc();
+
+  gsl_work = gsl_integration_workspace_alloc(1000);
+  varr = new void*[nvarr];
+}
+
+/*!
+  \param[in] KNOTS Model knots positions for band 1 counts model
+  \param[in] SIGMAS Model knots positions for band 2 color model sigma
+  \param[in] OFFSETS Model knots positions for band 2 color model offset
+*/
+numberCountsDoubleLogNormal::
 numberCountsDoubleLogNormal(const std::vector<double>& KNOTS,
 			    const std::vector<double>& SIGMAS,
 			    const std::vector<double>& OFFSETS) :
@@ -126,6 +157,39 @@ numberCountsDoubleLogNormal(const std::vector<double>& KNOTS,
 
   noffsetknots = 0; offsetknots = offsetvals = NULL; offsetinterp = NULL;
   setOffsetPositions(OFFSETS);
+  accoffset = gsl_interp_accel_alloc();
+
+  gsl_work = gsl_integration_workspace_alloc(1000);
+  varr = new void*[nvarr];
+}
+
+/*!
+  \param[in] nk Number of elements in K
+  \param[in] K Model knots positions for band 1 counts model
+  \param[in] ns Number of elements in S
+  \param[in] S Model knots positions for band 2 color model sigma  
+  \param[in] no Number of elements in O
+  \param[in] O Model knots positions for band 2 color model offset
+*/
+numberCountsDoubleLogNormal::
+numberCountsDoubleLogNormal(unsigned int nk, const float* const K,
+			    unsigned int ns, const float* const S,
+			    unsigned int no, const float* const O) :
+  knots_valid(false), sigmas_valid(false), offsets_valid(false),
+  knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
+  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
+  nRWork(0), RWorkValid(NULL), RWork1(NULL), RWork2(NULL), RWork3(NULL) {
+
+  knots = 0; knots = logknots = logknotvals = NULL; splinelog = NULL;
+  setKnotPositions(nk,K);
+  acc = gsl_interp_accel_alloc();
+
+  nsigmaknots = 0; sigmaknots = sigmavals = NULL; sigmainterp = NULL;
+  setSigmaPositions(ns,S);
+  accsigma = gsl_interp_accel_alloc();
+
+  noffsetknots = 0; offsetknots = offsetvals = NULL; offsetinterp = NULL;
+  setOffsetPositions(no,O);
   accoffset = gsl_interp_accel_alloc();
 
   gsl_work = gsl_integration_workspace_alloc(1000);
@@ -417,6 +481,24 @@ void numberCountsDoubleLogNormal::setNOffsets(unsigned int n) {
   \param[in] S Input knot positions for band 1 model
 */
 void numberCountsDoubleLogNormal::
+setKnotPositions(const std::vector<float>& S) {
+  unsigned int n = S.size();
+  setNKnots(n); //Also invalidates everything
+  for (unsigned int i = 0; i < nknots; ++i)
+    if (S[i] <= 0.0)
+      throw affineExcept("numberCountsDoubleLogNormal","setKnotPositions",
+			 "Non-positive knot positions not allowed",1);
+  for (unsigned int i = 0; i < nknots; ++i)
+    knots[i] = static_cast<double>(S[i]);
+  for (unsigned int i = 0; i < nknots; ++i)
+    logknots[i] = log2(knots[i]);
+  if (nknots > 0) knotpos_loaded = true;
+}
+
+/*!
+  \param[in] S Input knot positions for band 1 model
+*/
+void numberCountsDoubleLogNormal::
 setKnotPositions(const std::vector<double>& S) {
   unsigned int n = S.size();
   setNKnots(n); //Also invalidates everything
@@ -426,6 +508,24 @@ setKnotPositions(const std::vector<double>& S) {
 			 "Non-positive knot positions not allowed",1);
   for (unsigned int i = 0; i < nknots; ++i)
     knots[i] = S[i];
+  for (unsigned int i = 0; i < nknots; ++i)
+    logknots[i] = log2(knots[i]);
+  if (nknots > 0) knotpos_loaded = true;
+}
+
+/*!
+  \param[in] n Number of knots in band 1 model
+  \param[in] S Input knot positions
+*/
+void numberCountsDoubleLogNormal::setKnotPositions(unsigned int n, 
+						   const float* const S) {
+  setNKnots(n); //Also Invalidates everything
+  for (unsigned int i = 0; i < nknots; ++i)
+    if (S[i] <= 0.0)
+      throw affineExcept("numberCountsDoubleLogNormal","setKnotPositions",
+			 "Non-positive knot positions not allowed",1);
+  for (unsigned int i = 0; i < nknots; ++i)
+    knots[i] = static_cast<double>(S[i]);
   for (unsigned int i = 0; i < nknots; ++i)
     logknots[i] = log2(knots[i]);
   if (nknots > 0) knotpos_loaded = true;
@@ -460,6 +560,22 @@ getKnotPosition(const unsigned int i) const {
   return knots[i];
 }
 
+/*!
+  \param[in] S Input knot positions for band 2 color model sigma
+*/
+void numberCountsDoubleLogNormal::
+setSigmaPositions(const std::vector<float>& S) {
+  unsigned int n = S.size();
+  setNSigmas(n); //Also invalidates
+  for (unsigned int i = 0; i < n; ++i)
+    if (S[i] <= 0.0)
+      throw affineExcept("numberCountsDoubleLogNormal","setSigmaPositions",
+			 "Non-positive sigma knot positions not allowed",1);
+  for (unsigned int i = 0; i < n; ++i)
+    sigmaknots[i] = static_cast<double>(S[i]);
+  if (nsigmaknots > 0) sigmapos_loaded = true;
+}
+
 
 /*!
   \param[in] S Input knot positions for band 2 color model sigma
@@ -474,6 +590,22 @@ setSigmaPositions(const std::vector<double>& S) {
 			 "Non-positive sigma knot positions not allowed",1);
   for (unsigned int i = 0; i < n; ++i)
     sigmaknots[i] = S[i];
+  if (nsigmaknots > 0) sigmapos_loaded = true;
+}
+
+/*!
+  \param[in] n Number of knots for band 2 color model sigma
+  \param[in] S Input knot positions
+*/
+void numberCountsDoubleLogNormal::setSigmaPositions(unsigned int n, 
+						    const float* const S) {
+  setNSigmas(n); //Invalidates
+  for (unsigned int i = 0; i < n; ++i)
+    if (S[i] <= 0.0)
+      throw affineExcept("numberCountsDoubleLogNormal","setKnots",
+			 "Non-positive sigma knot positions not allowed",1);
+  for (unsigned int i = 0; i < n; ++i)
+    sigmaknots[i] = static_cast<double>(S[i]);
   if (nsigmaknots > 0) sigmapos_loaded = true;
 }
 
@@ -499,9 +631,26 @@ void numberCountsDoubleLogNormal::setSigmaPositions(unsigned int n,
 
   Access is not checked.
 */
+
 double numberCountsDoubleLogNormal::
 getSigmaPosition(const unsigned int i) const {
   return sigmaknots[i];
+}
+
+/*!
+  \param[in] S Input knot positions for band 2 color model offset
+*/
+void numberCountsDoubleLogNormal::
+setOffsetPositions(const std::vector<float>& S) {
+  unsigned int n = S.size();
+  setNOffsets(n);
+  for (unsigned int i = 0; i < n; ++i)
+    if (S[i] <= 0.0)
+      throw affineExcept("numberCountsDoubleLogNormal","setOffsetPositions",
+			 "Non-positive offset knot positions not allowed",1);
+  for (unsigned int i = 0; i < n; ++i)
+    offsetknots[i] = static_cast<double>(S[i]);
+  if (noffsetknots > 0) offsetpos_loaded = true;
 }
 
 /*!
@@ -529,6 +678,22 @@ setOffsetPositions(const std::vector<double>& S) {
 double numberCountsDoubleLogNormal::
 getOffsetPosition(const unsigned int i) const {
   return offsetknots[i];
+}
+
+/*!
+  \param[in] n Number of knots for band 2 color model offset
+  \param[in] S Input knot positions
+*/
+void numberCountsDoubleLogNormal::setOffsetPositions(unsigned int n, 
+						     const float* const S) {
+  setNOffsets(n);
+  for (unsigned int i = 0; i < n; ++i)
+    if (S[i] <= 0.0)
+      throw affineExcept("numberCountsDoubleLogNormal","setKnots",
+			 "Non-positive offset knot positions not allowed",1);
+  for (unsigned int i = 0; i < n; ++i)
+    offsetknots[i] = static_cast<double>(S[i]);
+  if (noffsetknots > 0) offsetpos_loaded = true;
 }
 
 /*!
@@ -585,6 +750,19 @@ getPositions(std::vector<double>& K, std::vector<double>& S,
   \param[in] O Band 2 color model offset knot positions vector 
 */
 void numberCountsDoubleLogNormal::
+setPositions(const std::vector<float>& K, const std::vector<float>& S,
+	     const std::vector<float>& O) {
+  setKnotPositions(K);
+  setSigmaPositions(S);
+  setOffsetPositions(O);
+}
+
+/*!
+  \param[in] K Band 1 knot positions vector
+  \param[in] S Band 2 color model sigma knot positions vector 
+  \param[in] O Band 2 color model offset knot positions vector 
+*/
+void numberCountsDoubleLogNormal::
 setPositions(const std::vector<double>& K, const std::vector<double>& S,
 	     const std::vector<double>& O) {
   setKnotPositions(K);
@@ -632,15 +810,16 @@ void numberCountsDoubleLogNormal::getParams(paramSet& F) const {
     throw affineExcept("numberCountsDoubleLogNormal", "getKnots",
 		       "Not enough space in output variable", 1);
   if (knotvals_loaded && offsetvals_loaded && sigmavals_loaded) {
+    //External storage is base 10 (and float)
     for (unsigned int i = 0; i < nknots; ++i)
-      F[i] = pofd_mcmc::ilogfac * logknotvals[i]; //Convert to base 10
+      F[i] = static_cast<float>(pofd_mcmc::ilogfac * logknotvals[i]); 
     for (unsigned int i = 0; i < nsigmaknots; ++i)
-      F[i + nknots] = sigmavals[i];
+      F[i + nknots] = static_cast<float>(sigmavals[i]);
     for (unsigned int i = 0; i < noffsetknots; ++i)
-      F[i + nknots + nsigmaknots] = offsetvals[i];
+      F[i + nknots + nsigmaknots] = static_cast<float>(offsetvals[i]);
   } else 
     for (unsigned int i = 0; i < nneeded; ++i)
-      F[i] = std::numeric_limits<double>::quiet_NaN();
+      F[i] = std::numeric_limits<float>::quiet_NaN();
 }
 
 /*!
@@ -657,8 +836,9 @@ void numberCountsDoubleLogNormal::setParams(const paramSet& F) {
     throw affineExcept("numberCountsDoubleLogNormal","setKnots",
 		       "Some positions not set", 2);
 
+  // Internal storage is log2 and double, inputs are log10 float
   for (unsigned int i = 0; i < nknots; ++i)
-    logknotvals[i] = pofd_mcmc::logfac*F[i]; //Convert to base 2
+    logknotvals[i] = pofd_mcmc::logfac * static_cast<double>(F[i]); 
   if (nknots > 2) 
     gsl_spline_init(splinelog, logknots, logknotvals,
 		    static_cast<size_t>(nknots));
@@ -668,7 +848,7 @@ void numberCountsDoubleLogNormal::setParams(const paramSet& F) {
   checkKnotsValid();
 
   for (unsigned int i = nknots; i < nknots+nsigmaknots; ++i)
-    sigmavals[i-nknots] = F[i];
+    sigmavals[i-nknots] = static_cast<double>(F[i]);
   if (nsigmaknots > 1)
     gsl_interp_init(sigmainterp, sigmaknots, sigmavals,
 		    static_cast<size_t>(nsigmaknots));
@@ -677,7 +857,7 @@ void numberCountsDoubleLogNormal::setParams(const paramSet& F) {
   
   unsigned int istart = nknots+nsigmaknots;
   for (unsigned int i = istart; i < istart+noffsetknots; ++i)
-    offsetvals[i-istart] = F[i];
+    offsetvals[i-istart] = static_cast<double>(F[i]);
   if (noffsetknots > 1)
     gsl_interp_init(offsetinterp, offsetknots, offsetvals,
 		    static_cast<size_t>(noffsetknots));
