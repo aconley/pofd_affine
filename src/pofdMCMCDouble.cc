@@ -50,7 +50,7 @@ bool pofdMCMCDouble::initChainsMaster() {
 
   //Number of parameters is number of knots (ntot) + 2 for the
   // sigma in each band -- although some may be fixed
-  unsigned int npar = ntot+2;
+  unsigned int npar = ntot + 2;
   setNParams(npar);
 
   //Set up parameter names
@@ -76,12 +76,11 @@ bool pofdMCMCDouble::initChainsMaster() {
   setParamName(ntot, "SigmaMult1");
   setParamName(ntot + 1, "SigmaMult2");
 
-  //For now just ignore where fixed
+  // Set which parameters are fixed
   for (unsigned int i = 0; i < ntot; ++i)
-    if (ifile.isKnotFixed(i)) this->ignoreParam(i);
-  //Ignore sigma if we aren't fitting it
-  if (! spec_info.fit_sigma1) this->ignoreParam(ntot);
-  if (! spec_info.fit_sigma2) this->ignoreParam(ntot + 1);
+    if (ifile.isKnotFixed(i)) this->fixParam(i);
+  if (!spec_info.fit_sigma1) this->fixParam(ntot);
+  if (!spec_info.fit_sigma2) this->fixParam(ntot + 1);
 
   //Initialize likelihood information -- priors, data, etc.
   likeSet.setFFTSize(spec_info.fftsize);

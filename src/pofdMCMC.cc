@@ -62,11 +62,10 @@ bool pofdMCMC::initChainsMaster() {
   }
   this->setParamName(nknots, "SigmaMult");
 
-  //For now just ignore where fixed
+  // Set which parameters are fixed
   for (unsigned int i = 0; i < nknots; ++i)
-    if (ifile.isKnotFixed(i)) this->ignoreParam(i);
-  //Ignore sigma if we aren't fitting it
-  if (! spec_info.fit_sigma) this->ignoreParam(nknots);
+    if (ifile.isKnotFixed(i)) this->fixParam(i);
+  if (!spec_info.fit_sigma) this->fixParam(nknots);
 
   //Initialize likelihood information -- priors, data, etc.
   likeSet.setFFTSize(spec_info.fftsize);
