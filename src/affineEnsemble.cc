@@ -19,17 +19,21 @@
   \param[in] INIT_STEPS Number of initialization steps, which are thrown away
                          even before starting burn-in process
   \param[in] MIN_BURN Minimum number of steps before burn-in
+  \param[in] FIXED_BURN Do a fixed burn in of length MIN_BURN, not using
+                         autocorrelation length to decide when burn in is 
+                         finished
   \param[in] BURN_MULTIPLE This fraction of autocorrelation steps to add
                             before checking burn-in again
   \param[in] SCALEFAC Scale factor of Z distribution			    
  */
 affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
 			       unsigned int NSAMPLES, unsigned int INIT_STEPS,
-			       unsigned int MIN_BURN,
+			       unsigned int MIN_BURN, bool FIXED_BURN,
 			       float BURN_MULTIPLE, float SCALEFAC) :
   nwalkers(NWALKERS), nparams(NPARAMS), has_any_names(false), 
   scalefac(SCALEFAC), init_steps(INIT_STEPS), min_burn(MIN_BURN), 
-  burn_multiple(BURN_MULTIPLE), pstep(NPARAMS), chains(NWALKERS,NPARAMS) {
+  fixed_burn(FIXED_BURN), burn_multiple(BURN_MULTIPLE), pstep(NPARAMS), 
+  chains(NWALKERS,NPARAMS) {
   
   has_name.resize(nparams);
   has_name.assign(nparams, false);
@@ -38,7 +42,6 @@ affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
   //Set number of steps per walker, which won't quite match nsamples
   nsteps = static_cast<unsigned int>(NSAMPLES/static_cast<float>(nwalkers)
 				     + 0.999999999999);
-
 
   acor_set = false;
 
@@ -83,7 +86,7 @@ bool affineEnsemble::isValid() const {
   if (nparams == 0) return false;
   if (nsteps == 0) return false;
   if (min_burn < 10) return false;
-  if (burn_multiple <= 1.0) return false;
+  if ((!fixed_burn) && (burn_multiple <= 1.0)) return false;
   if (scalefac <= 0.0) return false;
   if (nfixed == nparams) return false; //!< All params fixed
   return true;
@@ -433,80 +436,97 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
   for (unsigned int i = 0; i < min_burn; ++i)
     doMasterStep();
 
-  //See if we are burned in
-  bool acor_success = computeAcor();
+  if (fixed_burn) {
+    if (verbose) {
+      std::cout << "Did fixed burn in of " << min_burn << " steps per"
+		<< " walker." << std::endl;
+      //Try to compute the acor and report it, but don't worry about
+      // it if we can't
+      bool acor_success = computeAcor();
+      if (acor_success) {
+	float max_acor = getMaxAcor();
+	std::cout << " Maximum autocorrelation is: "
+		  << max_acor << std::endl;
+       }
+    }
+  } else {
+    //Autocorrelation based burn-in test
+    //See if we are burned in
+    bool acor_success = computeAcor();
   
-  //If it failed, we need more steps.  Add 50% of min burn
-  // up to 50 times
-  const unsigned int max_burn_iter = 50;
-  unsigned int nextra = 10;
-  if (! acor_success) {
-    nextra = static_cast<unsigned int>(min_burn * 0.5);
-    if (nextra < 10) nextra = 10;
-    for (unsigned int i = 0; i < max_burn_iter; ++i) {
-      if (verbose)
-	std::cout << "Failed to compute acor after " << chains.getMinNIters()
-		  << " steps.  Adding " << nextra << " more" << std::endl;
+    //If it failed, we need more steps.  Add 50% of min burn
+    // up to 50 times
+    const unsigned int max_burn_iter = 50;
+    unsigned int nextra = 10;
+    if (!acor_success) {
+      nextra = static_cast<unsigned int>(min_burn * 0.5);
+      if (nextra < 10) nextra = 10;
+      for (unsigned int i = 0; i < max_burn_iter; ++i) {
+	if (verbose)
+	  std::cout << "Failed to compute acor after " << chains.getMinNIters()
+		    << " steps.  Adding " << nextra << " more" << std::endl;
       chains.addChunk(nextra);
       for (unsigned int i = 0; i < nextra; ++i)
 	doMasterStep();
       acor_success = computeAcor();
       if (acor_success) break;
+      }
+      if (!acor_success)
+	throw affineExcept("affineEnsemble","doBurnIn",
+			   "Can't compute acor; increase min_burn",1);
     }
-    if (!acor_success)
-      throw affineExcept("affineEnsemble","doBurnIn",
-			 "Can't compute acor; increase min_burn",1);
-  }
   
-  //Okay, we have an acor estimate of some sort
-  float max_acor = getMaxAcor();
-  if (verbose)
-    std::cout << "After " << chains.getMinNIters() 
-	      << " steps, maximum autocorrelation is: "
-	      << max_acor << std::endl;
+    //Okay, we have an acor estimate of some sort
+    float max_acor = getMaxAcor();
+    if (verbose)
+      std::cout << "After " << chains.getMinNIters() 
+		<< " steps, maximum autocorrelation is: "
+		<< max_acor << std::endl;
   
-  unsigned int nsteps = min_burn;
-  unsigned int nminsteps = 
-    static_cast<unsigned int>(burn_multiple*max_acor + 0.999999999999999);
-  bool burned_in = (nsteps > nminsteps);
-  while (! burned_in) {
-    //Figure out how many more steps to do.  Do half of the number
-    // estimated
-    unsigned int nmore = (nminsteps-nsteps)/2 + 1;
-    if (verbose) std::cout << "Doing " << nmore << " additional steps"
-			   << std::endl;
-    chains.addChunk(nmore);
-    for (unsigned int i = 0; i < nmore; ++i)
-      doMasterStep();
-    nsteps += nmore;
-
-    //Update acor, same as before
-    acor_success = computeAcor();
-
-    //Again, add more steps if we must
-    nextra = static_cast<unsigned int>(min_burn * 0.5);
-    if (nextra < 10) nextra = 10;
-    for (unsigned int i = 0; i < max_burn_iter; ++i) {
-      if (verbose)
-	std::cout << "Failed to compute acor after " << chains.getMinNIters()
-		  << " steps.  Adding " << nextra << " more" << std::endl;
-      chains.addChunk(nextra);
-      for (unsigned int i = 0; i < nextra; ++i)
-	doMasterStep();
-      acor_success = computeAcor();
-      if (acor_success) break;
-    }
-    if (!acor_success)
-      throw affineExcept("affineEnsemble","doBurnIn",
-			 "Can't compute acor; increase min_burn",1);
-
-    max_acor = getMaxAcor();
-    nminsteps = 
+    unsigned int nsteps = min_burn;
+    unsigned int nminsteps = 
       static_cast<unsigned int>(burn_multiple*max_acor + 0.999999999999999);
-    burned_in = (nsteps > nminsteps);
+    bool burned_in = (nsteps > nminsteps);
+    while (! burned_in) {
+      //Figure out how many more steps to do.  Do half of the number
+      // estimated
+      unsigned int nmore = (nminsteps-nsteps)/2 + 1;
+      if (verbose) std::cout << "Doing " << nmore << " additional steps"
+			     << std::endl;
+      chains.addChunk(nmore);
+      for (unsigned int i = 0; i < nmore; ++i)
+	doMasterStep();
+      nsteps += nmore;
+      
+      //Update acor, same as before
+      acor_success = computeAcor();
+      
+      //Again, add more steps if we must
+      nextra = static_cast<unsigned int>(min_burn * 0.5);
+      if (nextra < 10) nextra = 10;
+      for (unsigned int i = 0; i < max_burn_iter; ++i) {
+	if (verbose)
+	  std::cout << "Failed to compute acor after " << chains.getMinNIters()
+		    << " steps.  Adding " << nextra << " more" << std::endl;
+	chains.addChunk(nextra);
+	for (unsigned int i = 0; i < nextra; ++i)
+	  doMasterStep();
+	acor_success = computeAcor();
+	if (acor_success) break;
+      }
+      if (!acor_success)
+	throw affineExcept("affineEnsemble","doBurnIn",
+			   "Can't compute acor; increase min_burn",1);
+      
+      max_acor = getMaxAcor();
+      nminsteps = 
+	static_cast<unsigned int>(burn_multiple*max_acor + 0.999999999999999);
+      burned_in = (nsteps > nminsteps);
+    }
   }
 
   //Throw away burn in, keeping last step as first step of new one
+  // We will not count that last step as part of our statistics
   chains.clearPreserveLast(); 
   for (unsigned int i = 0; i < naccept.size(); ++i)
     naccept[i] = 0;

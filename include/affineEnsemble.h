@@ -35,6 +35,7 @@ private:
 
   unsigned int init_steps; //!< Number of initial steps to do before starting burn-in check
   unsigned int min_burn; //!< Minimum number of burn steps to do
+  bool fixed_burn; //!< Do fixed burn in rather than using autocorrelation
   float burn_multiple; //!< Multiple of autocorrelation steps to do for burn
   unsigned int nsteps; //!< Number of steps to do after burn per walker
 
@@ -77,7 +78,8 @@ protected:
 public:
   /* \brief Constructor */
   affineEnsemble(unsigned int, unsigned int, unsigned int,
-		 unsigned int=50, unsigned int=50, float=5, float=2);
+		 unsigned int=50, unsigned int=50, bool=false, 
+		 float=5, float=2);
   ~affineEnsemble(); //!< Destructor
 
   bool isValid() const; //!< Are params valid?
