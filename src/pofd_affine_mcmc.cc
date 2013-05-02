@@ -16,6 +16,8 @@ int main(int argc, char** argv) {
   unsigned int init_steps; 
   // Minimum number of steps before burn check after init_Steps
   unsigned int min_burn;
+  // Do fixed burn-in length
+  bool fixed_burn;
   // Fraction of autocorr steps to add before rechecking burn-in
   double burn_multiple; 
   // Scale fac for Z generation (controls how new steps are generated)
@@ -27,6 +29,7 @@ int main(int argc, char** argv) {
   nsamples = 10000;
   init_steps = 30;
   min_burn = 30;
+  fixed_burn = false;
   burn_multiple = 1.5;
   scalefac = 2.0;
 
@@ -40,6 +43,7 @@ int main(int argc, char** argv) {
     {"burnmult",required_argument,0,'b'},
     {"help", no_argument, 0, 'h'},
     {"double",no_argument,0,'d'},
+    {"fixedburn", no_argument, 0, 'f'},
     {"initsteps",required_argument,0,'i'},
     {"minburn",required_argument,0,'m'},
     {"nsamples",required_argument,0,'n'},
@@ -48,7 +52,7 @@ int main(int argc, char** argv) {
     {"version",no_argument,0,'V'}, //Below here not parsed in main routine
     {0,0,0,0}
   };
-  char optstring[] = "b:hdi:m:n:N:s:V";
+  char optstring[] = "b:hdfi:m:n:N:s:V";
   int c;
   int option_index = 0;
 
@@ -91,6 +95,16 @@ int main(int argc, char** argv) {
 	std::cerr << "\t\tlength (def: 1.5)" << std::endl;
 	std::cerr << "\t-d, --double" << std::endl;
 	std::cerr << "\t\tUse the 2D model." << std::endl;
+	std::cerr << "\t-f, --fixedburn" << std::endl;
+	std::cerr << "\t\tUsed a fixed burn in length before starting main"
+		  << " sample," << std::endl;
+	std::cerr << "\t\trather than using the autocorrelation.  With this"
+		  << " set" << std::endl;
+	std::cerr << "\t\tmin_burn steps will be carried out, then the"
+		  << " main" << std::endl;
+	std::cerr << "\t\tmain sampling will start -- in other words,"
+		  << " initsteps is" << std::endl;
+	std::cerr << "\t\tset to zero." << std::endl;
 	std::cerr << "\t-h, --help" << std::endl;
 	std::cerr << "\t\tOutput this help message and exit." << std::endl;
 	std::cerr << "\t-i, --initsteps INITIAL_STEPS" << std::endl;
@@ -125,6 +139,9 @@ int main(int argc, char** argv) {
       break;
     case 'd' :
       twod = true;
+      break;
+    case 'f':
+      fixed_burn = true;
       break;
     case 'i' :
       init_steps = atoi(optarg);
@@ -169,6 +186,8 @@ int main(int argc, char** argv) {
   initfile = std::string(argv[optind+1]);
   outfile = std::string(argv[optind+2]);
 
+  if (fixed_burn) init_steps = 0;
+
   //Test inputs
   if (nwalkers == 0) {
     if (rank == 0)
@@ -204,7 +223,7 @@ int main(int argc, char** argv) {
   try {
     if (! twod) {
       pofdMCMC engine(initfile, specfile, nwalkers, nsamples, init_steps,
-		      min_burn, burn_multiple, scalefac);
+		      min_burn, fixed_burn, burn_multiple, scalefac);
       
       if (rank == 0) std::cout << "Initializing chains" << std::endl;
       engine.initChains();
@@ -221,7 +240,7 @@ int main(int argc, char** argv) {
     } else {
       
       pofdMCMCDouble engine(initfile, specfile, nwalkers, nsamples, init_steps,
-			    min_burn, burn_multiple, scalefac);
+			    min_burn, fixed_burn, burn_multiple, scalefac);
       
       if (rank == 0) std::cout << "Initializing chains" << std::endl;
       engine.initChains();

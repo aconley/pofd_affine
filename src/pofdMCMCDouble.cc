@@ -14,6 +14,9 @@
   \param[in] INIT_STEPS Number of initialization steps, which are thrown away
                          even before starting burn-in process
   \param[in] MIN_BURN Minimum number of steps before burn-in
+  \param[in] FIXED_BURN Do a fixed burn in of length MIN_BURN, not using
+                         autocorrelation length to decide when burn in is 
+                         finished
   \param[in] BURN_MULTIPLE This fraction of autocorrelation steps to add
                             before checking burn-in again
   \param[in] SCALEFAC Scale factor of Z distribution			    
@@ -22,9 +25,10 @@ pofdMCMCDouble::pofdMCMCDouble(const std::string& INITFILE,
 			       const std::string& SPECFILE,
 			       unsigned int NWALKERS, unsigned int NSAMPLES, 
 			       unsigned int INIT_STEPS, unsigned int MIN_BURN, 
-			       double BURN_MULTIPLE, double SCALEFAC) :
+			       bool FIXED_BURN, float BURN_MULTIPLE, 
+			       float SCALEFAC) :
   affineEnsemble(NWALKERS, 1, NSAMPLES, INIT_STEPS, MIN_BURN,
-		 BURN_MULTIPLE, SCALEFAC) {
+		 FIXED_BURN, BURN_MULTIPLE, SCALEFAC) {
   //Note that we set NPARAMS to a bogus value (1) above, then 
   // have to change it later once we know how many model params we have
   // All of this is done in initChains

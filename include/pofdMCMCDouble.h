@@ -24,7 +24,8 @@ public:
   pofdMCMCDouble(const std::string& initfile, const std::string& specfile,
 		 unsigned int NWALKERS, unsigned int NSAMPLES, 
 		 unsigned int INIT_STEPS=50, unsigned int MIN_BURN=50, 
-		 double BURN_MULTIPLE=5.0, double SCALEFAC=2.0); 
+		 bool FIXED_BURN=false, float BURN_MULTIPLE=5.0, 
+		 float SCALEFAC=2.0); //!< Constructor
   ~pofdMCMCDouble() {}; //!< Destructor
 
   void initChains(); //!< Initializes data between MPI jobs
