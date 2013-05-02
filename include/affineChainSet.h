@@ -5,7 +5,7 @@
 
 #include "paramSet.h"
 #include "affineExcept.h"
-
+#include "global_settings.h"
 /*!
   \brief Set of params and likelihoods
 */
@@ -120,8 +120,9 @@ class affineChainSet {
   bool addNewStep(unsigned int, const paramSet&, double); //!< Adds a new step
 
   /*! \brief Create a new step */
-  void generateNewStep(double,unsigned int, unsigned int, paramSet&,
-		       double&, paramSet&) const throw (affineExcept);
+  void generateNewStep(double,unsigned int, unsigned int,
+		       const std::vector<int>&, paramSet&, double&, paramSet&) 
+    const throw (affineExcept);
 
   /*! \brief Returns the most recent step for the specified walker */
   void getLastStep(unsigned int, paramSet&, double&) const
@@ -142,7 +143,8 @@ class affineChainSet {
   double getAcor(unsigned int, double&, double&, 
 		 bool&) const throw (affineExcept);
   bool getAcorVector(std::vector<double>&) const throw (affineExcept); //!< Autocorrelation length for all params
-  bool getAcorVector(std::vector<double>&, const std::vector<bool> ignore) 
+  bool getAcorVector(std::vector<double>&, 
+		     const std::vector<int> param_state) 
     const throw(affineExcept); //!< Autocorrelation length for all params
   
   affineChainSet& operator=(const affineChainSet&); //!< Replace this chain set with a copy of another

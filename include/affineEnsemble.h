@@ -10,6 +10,7 @@
 #include "proposedStep.h"
 #include "paramSet.h"
 #include "ran.h"
+#include "global_settings.h"
 
 /*!
   \brief Affine MCMC ensemble sampler.  See Foreman-Mackey et al. 2012
@@ -25,10 +26,12 @@ private:
   std::vector<bool> has_name; //!< Does a given param have a name
   std::vector< std::string > parnames; //!< Optional names of params
 
-  double scalefac; //!< Scaling parameter for proposal density
+  double scalefac; //!< Scaling parameter for proposal unsigned
 
-  unsigned int nignore; //!< Number of params to ignore in burn-in computation
-  std::vector<bool> ignore_params; //!< Which params to ignore in burn-in
+  // Keep track of special parameter states
+  unsigned int nfixed; //!< Number of fixed params
+  unsigned int nignore; //!< Number ignored in acor
+  std::vector<int> param_state; //!< Set to param_statue enum values
 
   unsigned int init_steps; //!< Number of initial steps to do before starting burn-in check
   unsigned int min_burn; //!< Minimum number of burn steps to do
@@ -97,14 +100,17 @@ public:
   double getMaxLogLike() const; //!< Get Maximum recorded Log Likelihood
   void getMaxLogLikeParam(double& val, paramSet& p) const; //!< Get parameters corresponding to maximum recorded log likelihood
 
-  //Dealing with ignorable params
-  unsigned int getNIgnoreParams() const { return nignore; } //!< Return number of parameters being ignored for burn-in check
-  void attentionAllParams(); //!< Don't ignore any parameters in burn-in check
-  bool ignoreParam(unsigned int); //!< Ignore this parameter in burn-in check
-  bool attentionParam(unsigned int); //!< Don't ignore this parameter is burn-in check
-  /*! \brief Is a particular parameter being ignored in burn-in */
-  bool isParamIgnored(unsigned int idx) const { return ignore_params[idx]; }
-  
+  // Interact with parameter states
+  // Fixing a parameter will also make it ignored
+  void clearParamState(); //!< Fit all params and use all params in autocorrelation
+  unsigned int getNFitParams() const; //!< Return number of params being fit
+  unsigned int getNAcorParams() const; //!< Return number of parameters used in autocorrelation (burn in) check
+  void fixParam(unsigned int); //!< Treat parameter as fixed
+  bool isParamFixed(unsigned int) const; //!< Is a particular parameter fixed?
+  void ignoreParamAcor(unsigned int); //!< Ignore parameter in acor computation
+  bool isParamIgnoredAcor(unsigned int) const; //!< Is a parameter being ignored?
+
+  // Parameter names
   void setParamName(unsigned int, const std::string&); //!< Set param names
   void unsetParamName(unsigned int); //!< Unset parameter name
   bool hasName(unsigned int idx) const { return has_name[idx]; } //!< Does a particular parameter have a name?

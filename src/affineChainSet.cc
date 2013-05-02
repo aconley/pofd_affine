@@ -434,6 +434,7 @@ void affineChainSet::addChunk(unsigned int sz) {
   \param[in] zval        Value of Z
   \param[in] idx1        Index of walker we are updating
   \param[in] idx2        Index of walker we are updating from
+  \param[in] param_state State of parameters (fixed, etc.)
   \param[out] oldStep    Previous step from idx1
   \param[out] oldLogLike Previous Log Likelihood of idx1 walker
   \param[out] newStep    Proposed new step
@@ -441,11 +442,11 @@ void affineChainSet::addChunk(unsigned int sz) {
   Takes the most recent available step for the specified walkers
  */
 
-void affineChainSet::generateNewStep(double zval, unsigned int idx1,
-				     unsigned int idx2, paramSet& oldStep,
-				     double& oldLogLike, 
-				     paramSet& newStep) const 
-  throw (affineExcept) {
+void affineChainSet::
+generateNewStep(double zval, unsigned int idx1, unsigned int idx2, 
+		const std::vector<int>& param_state,
+		paramSet& oldStep, double& oldLogLike, 
+		paramSet& newStep) const throw (affineExcept) {
   unsigned int nsteps = steps.size();
   if (nsteps == 0) 
     throw affineExcept("affineChainSet","generateNewStep",
@@ -455,7 +456,10 @@ void affineChainSet::generateNewStep(double zval, unsigned int idx1,
 		       "Invalid walker index for first walker",2);
   if (idx2 >= nwalkers) 
     throw affineExcept("affineChainSet","generateNewStep",
-		       "Invalid walker index for second walker",4);
+		       "Invalid walker index for second walker",3);
+  if (param_state.size() < nparams)
+    throw affineExcept("affineChainSet","generateNewStep",
+		       "Param state vector too short",4);
 
   if (oldStep.getNParams() != nparams) oldStep.setNParams(nparams);
   if (newStep.getNParams() != nparams) newStep.setNParams(nparams);
@@ -493,10 +497,14 @@ void affineChainSet::generateNewStep(double zval, unsigned int idx1,
   //Compute stretch move
   double val, omz;
   omz = 1.0 - zval;
-  for (unsigned int i = 0; i < nparams; ++i) {
-    val = zval * ptr1[i] + omz * ptr2[i];
-    newStep.setParamValue(i,val);
-  }
+  for (unsigned int i = 0; i < nparams; ++i) 
+    if (param_state[i] & mcmc_affine::FIXED) {
+      //Fixed parameter, keep previous
+      newStep.setParamValue(i, ptr1[i]);
+    } else {
+      val = zval * ptr1[i] + omz * ptr2[i];
+      newStep.setParamValue(i, val);
+    }
 }
 
 void affineChainSet::getLastStep(unsigned int walker_idx,
@@ -873,27 +881,29 @@ bool affineChainSet::getAcorVector(std::vector<double>& tau) const
 
 /*!
   \param[out] tau Autocorrelation length for each parameter
-  \param[in] ignore Set to true where to ignore params.  tau is set to NaN
-                    where this is true
+  \param[in] ignore Set to mcmc_affine::ACIGNORE where to ignore params.  
+                    tau is set to NaN where this is true
   \returns True if the autocorrelation vector was computed for all params
             that were not ignored
  */
 bool affineChainSet::getAcorVector(std::vector<double>& tau,
-				   const std::vector<bool> ignore) const 
+				   const std::vector<int> param_state) 
+  const 
   throw (affineExcept) {
-  if (ignore.size() < nparams)
+  if (param_state.size() < nparams)
     throw affineExcept("affineChainSet","getAcorVector",
-		       "ignore is shorter than number of params",1);
-  double mn,sigma; //Throw away
+		       "param_state is shorter than number of params",1);
+  double mn, sigma; //Throw away
   tau.resize(nparams);
   bool succ, indiv_succ;
   succ = true;
   for (unsigned int i = 0; i < nparams; ++i) {
-    if (! ignore[i]) {
+    if (param_state[i] & mcmc_affine::ACIGNORE)
+      tau[i] = std::numeric_limits<double>::quiet_NaN();
+    else {
       tau[i] = getAcor(i, mn, sigma, indiv_succ);
       succ &= indiv_succ;
-    } else
-      tau[i] = std::numeric_limits<double>::quiet_NaN();
+    }
   }
   return succ;
 }

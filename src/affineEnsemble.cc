@@ -35,8 +35,6 @@ affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
   has_name.assign(nparams, false);
   parnames.resize(nparams);
 
-  nignore = 0;
-
   //Set number of steps per walker, which won't quite match nsamples
   nsteps = static_cast<unsigned int>(NSAMPLES/static_cast<double>(nwalkers)
 				     + 0.999999999999);
@@ -59,8 +57,11 @@ affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
     //Master node; slaves don't need this
     naccept.resize(nwalkers);
     naccept.assign(nwalkers, 0);
-    ignore_params.resize(nparams);
-    ignore_params.assign(nparams, false);
+    nfixed = 0;
+    nignore = 0;
+    
+    param_state.resize(nparams);
+    param_state.assign(nparams, 0);
 
     //Set random number generator seed from time
     unsigned long long int seed;
@@ -84,7 +85,7 @@ bool affineEnsemble::isValid() const {
   if (min_burn < 10) return false;
   if (burn_multiple <= 1.0) return false;
   if (scalefac <= 0.0) return false;
-  if (nignore == nparams) return false;
+  if (nfixed == nparams) return false; //!< All params fixed
   return true;
 
 }
@@ -140,6 +141,7 @@ void affineEnsemble::setNParams(unsigned int n) {
 		       "n must be positive", 1);
 
   chains.setNParams(n);
+  nfixed = 0;
   nignore = 0;
 
   has_name.resize(n);
@@ -147,8 +149,8 @@ void affineEnsemble::setNParams(unsigned int n) {
   parnames.resize(n);
 
   if (rank == 0) {
-    ignore_params.resize(n);
-    ignore_params.assign(n, false);
+    param_state.resize(n);
+    clearParamState();
   }
 
   nparams = n;
@@ -170,34 +172,50 @@ void affineEnsemble::getMaxLogLikeParam(double& val, paramSet& p) const {
   chains.getMaxLogLikeParam(val,p);
 }
 
-void affineEnsemble::attentionAllParams() {
+void affineEnsemble::clearParamState() {
   if (rank != 0) return;
-  ignore_params.assign(ignore_params.size(), false);
+  param_state.assign(param_state.size(), 0);
+  nfixed = nignore = 0;
+}
+
+unsigned int affineEnsemble::getNFitParams() const {
+  return nparams - nfixed;
+}
+
+unsigned int affineEnsemble::getNAcorParams() const {
+  return nparams - nignore;
+}
+
+void affineEnsemble::fixParam(unsigned int idx) {
+  if (rank != 0) return;
+  param_state[idx] |= mcmc_affine::FIXED;
+  param_state[idx] |= mcmc_affine::ACIGNORE;
+
+  nfixed = 0;
+  for (unsigned int i = 0; i < nparams; ++i)
+    if (param_state[idx] & mcmc_affine::FIXED) ++nfixed;
   nignore = 0;
+  for (unsigned int i = 0; i < nparams; ++i)
+    if (param_state[idx] & mcmc_affine::ACIGNORE) ++nignore;
 }
 
-/*!
-  \returns True if anything was actually done, False if the parameter
-           was already ignored
- */
-bool affineEnsemble::ignoreParam(unsigned int idx) {
+bool affineEnsemble::isParamFixed(unsigned int idx) const {
   if (rank != 0) return false;
-  if (ignore_params[idx]) return false;
-  ignore_params[idx] = true;
-  nignore += 1;
-  return true;
+  return param_state[idx] & mcmc_affine::FIXED;
 }
 
-/*!
-  \returns True if anything was actually done, False if the parameter
-           was already being paid attention to
- */
-bool affineEnsemble::attentionParam(unsigned int idx) {
+void affineEnsemble::ignoreParamAcor(unsigned int idx) {
+  if (rank != 0) return;
+  param_state[idx] |= mcmc_affine::ACIGNORE;
+
+  nignore = 0;
+  for (unsigned int i = 0; i < nparams; ++i)
+    if (param_state[idx] & mcmc_affine::ACIGNORE) ++nignore;
+}
+
+bool affineEnsemble::isParamIgnoredAcor(unsigned int idx) const {
   if (rank != 0) return false;
-  if (!ignore_params[idx]) return false;
-  ignore_params[idx] = false;
-  nignore -= 1;
-  return true;
+  return param_state[idx] & mcmc_affine::ACIGNORE;
 }
 
 void affineEnsemble::setParamName(unsigned int idx, const std::string& parnm) {
@@ -233,7 +251,7 @@ bool affineEnsemble::computeAcor() const {
   
   if (acor.size() < nparams) acor.resize(nparams);
   bool success;
-  success = chains.getAcorVector(acor, ignore_params);
+  success = chains.getAcorVector(acor, param_state);
   if (success) acor_set = true;
   return success;
 }
@@ -388,13 +406,14 @@ double affineEnsemble::getMaxAcor() const {
   double maxval;
   unsigned int start_idx;
   for (start_idx = 0; start_idx < nparams; ++start_idx)
-    if (! ignore_params[start_idx]) break;
+    if ((param_state[start_idx] | mcmc_affine::ACIGNORE) == 0) break;
   if (start_idx == nparams)
     throw affineExcept("affineEnsemble","getMaxAcor",
 		       "All params ignored",2);
   maxval = acor[start_idx];
   for (unsigned int i = start_idx+1; i < nparams; ++i)
-    if ((!ignore_params[i]) && acor[i] > maxval) maxval = acor[i];
+    if (((param_state[i] | mcmc_affine::ACIGNORE) == 0) && 
+	acor[i] > maxval) maxval = acor[i];
   return maxval;
 }
 
@@ -499,7 +518,7 @@ void affineEnsemble::generateNewStep(unsigned int idx1, unsigned int idx2,
   //Assume prstep is the right size, don't check for speed
   prstep.z = generateZ();
   //Get previous step for this walker
-  chains.generateNewStep(prstep.z, idx1, idx2, prstep.oldStep,
+  chains.generateNewStep(prstep.z, idx1, idx2, param_state, prstep.oldStep,
 			 prstep.oldLogLike, prstep.newStep);
   prstep.update_idx = idx1;
   prstep.newLogLike=std::numeric_limits<double>::quiet_NaN();
@@ -579,7 +598,7 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
     // sleep for 1/100th of a second and try again
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     while (ismsg == 0) {
-      usleep(10000); //Sleep for 1/100th of a second
+      usleep(mcmc_affine::usleeplen); //Sleep for 1/100th of a second
       MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     }
 
@@ -617,7 +636,7 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
       // In particular, we don't always accept a step with better logLike!
       //The probability of acceptance is
       // min(1, z^(n-1) P(new) / P(old)
-      prob = exp((nparams - 1) * log(pstep.z) + pstep.newLogLike - 
+      prob = exp((nparams - nfixed - 1) * log(pstep.z) + pstep.newLogLike - 
 		 pstep.oldLogLike);
       if (prob >= 1) {
 	//Will always be accepted; this is the min(1, part

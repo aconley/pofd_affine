@@ -32,6 +32,12 @@ namespace mcmc_affine {
 			 PSSENDNPARS=100, PSSENDPVALS=101,
 			 PSTSENDIDX=110, PSTSENDOLIKE=111, 
 			 PSTSENDNLIKE=112, PSTSENDZ=113};
+			 
+  // Keeps track of special states for parameters
+  enum { FIXED=1, ACIGNORE=2 };
+  
+  // Sleep time if no message ready
+  const useconds_t usleeplen = 1; //in usec
 }
 
 /*!
