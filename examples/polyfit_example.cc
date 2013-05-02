@@ -166,14 +166,6 @@ int main(int argc, char** argv) {
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  if (nproc < 2) {
-    if (rank == 0) {
-      std::cerr << "Must run on multiple processes" << std::endl;
-    }
-    MPI_Finalize();
-    return 1;
-  }
-
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
                             &option_index ) ) != -1 ) 
     switch(c) {
@@ -241,6 +233,15 @@ int main(int argc, char** argv) {
       return 0;
       break;
     }
+
+  if (nproc < 2) {
+    if (rank == 0) {
+      std::cerr << "Must run on multiple processes" << std::endl;
+    }
+    MPI_Finalize();
+    return 1;
+  }
+
   if ( optind >= argc-3 ) {
     if (rank == 0) {
       std::cerr << "Required arguments missing" << std::endl;

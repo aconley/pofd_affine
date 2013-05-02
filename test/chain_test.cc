@@ -505,8 +505,9 @@ TEST(affineChainSetTest, GenerateNewPoint) {
   
   double zval = 1.3;
   paramSet pold(nparams), pnew(nparams);
+  std::vector<int> pstate(nparams, 0);
   //This puts the previous step in pold, the new in pnew; p should hold the old
-  chains.generateNewStep(zval,0,1,pold,logLike2,pnew);
+  chains.generateNewStep(zval, 0, 1, pstate, pold, logLike2, pnew);
 
   EXPECT_FLOAT_EQ(logLike2, logLike) <<
     "logLike of old step didn't match expectation";

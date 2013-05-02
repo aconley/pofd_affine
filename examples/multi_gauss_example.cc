@@ -12,6 +12,10 @@
 #include "../include/affineEnsemble.h"
 #include "../include/paramSet.h"
 
+//The covariance matrix is set up as
+// 1) A correlation matrix with the band structure [-0.1, 0.2, 1, 0.2, 0.1]
+// 2) Sigmas of [1.0, 0.9, 0.8, 0.7, 0.6]
+
 /*!
   \brief Multi-dimensional Gaussian, centered at 0.5 in all dimensions
 */
@@ -78,7 +82,7 @@ void multiGauss::initChains() {
     for (unsigned int j = 0; j < npar; ++j)
       p[j] = rangen.doub();
     logLike = getLogLike(p);
-    chains.addNewStep( i, p, logLike );
+    chains.addNewStep(i, p, logLike);
     naccept[i] = 1;
   }
   chains.setSkipFirst();
@@ -110,8 +114,9 @@ double multiGauss::getLogLike(const paramSet& p) {
 
 int main(int argc, char** argv) {
 
+  const unsigned int ndim = 5;
   unsigned int nwalkers, nsamples, nburn;
-  std::string covfile, outfile;
+  std::string invcovfile, outfile;
   bool verbose;
 
   verbose = false;
@@ -133,14 +138,6 @@ int main(int argc, char** argv) {
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  if (nproc < 2) {
-    if (rank == 0) {
-      std::cerr << "Must run on multiple processes" << std::endl;
-    }
-    MPI_Finalize();
-    return 1;
-  }
-
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
                             &option_index ) ) != -1 ) 
     switch(c) {
@@ -148,12 +145,12 @@ int main(int argc, char** argv) {
       if (rank == 0) {
 	std::cerr << "NAME" << std::endl;
 	std::cerr << "\tmulti_gauss_example -- draws samples from a "
-		  << " 10-dimensional " 
+		  << " 5-dimensional " 
 		  << std::endl;
 	std::cerr << "\t\tmulti-variate Gaussian" << std::endl;
 	std::cerr << std::endl;
 	std::cerr << "SYNOPSIS" << std::endl;
-	std::cerr << "\tmulti_gauss_example covfile nwalkers nsamples outfile"
+	std::cerr << "\tmulti_gauss_example nwalkers nsamples outfile"
 		  << std::endl;
 	std::cerr << "DESCRIPTION:" << std::endl;
 	std::cerr << "\tDraws samples from a multi-variate Gaussian using"
@@ -162,7 +159,11 @@ int main(int argc, char** argv) {
 		  << std::endl;
 	std::cerr << "\tand generating (approximately) nsamples samples.  The"
 		  << std::endl;
-	std::cerr << "\tresults are written to outfile." << std::endl;
+	std::cerr << "\tresults are written to outfile.  The input covariance" 
+		  << std::endl;
+	std::cerr << "\tmatrix is fixed, and the mean is 0.5 in all " << 
+	  "dimensions." << std::endl;
+	std::cerr << std::endl;
 	std::cerr << "OPTIONS" << std::endl;
 	std::cerr << "\t-h, --help" << std::endl;
 	std::cerr << "\t\tOutput this help." << std::endl;
@@ -194,7 +195,16 @@ int main(int argc, char** argv) {
       return 0;
       break;
     }
-  if ( optind >= argc-3 ) {
+
+  if (nproc < 2) {
+    if (rank == 0) {
+      std::cerr << "Must run on multiple processes" << std::endl;
+    }
+    MPI_Finalize();
+    return 1;
+  }
+
+  if ( optind >= argc-2 ) {
     if (rank == 0) {
       std::cerr << "Required arguments missing" << std::endl;
     }
@@ -202,20 +212,21 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  covfile  = std::string(argv[optind]);
-  nwalkers = atoi(argv[optind+1]);
-  nsamples = atoi(argv[optind+2]);
-  outfile  = std::string(argv[optind+3]);
+  nwalkers = atoi(argv[optind]);
+  nsamples = atoi(argv[optind+1]);
+  outfile  = std::string(argv[optind+2]);
 
   if (nwalkers == 0 || nsamples == 0) {
     MPI_Finalize();
     return 0;
   }
 
+  invcovfile = "exampledata/test_invcovmat.txt";
+
   //Hardwired cov matrix
   try {
-    multiGauss *mg = new multiGauss(nwalkers,10,nsamples,
-				    covfile);
+    multiGauss *mg = new multiGauss(nwalkers, ndim, nsamples,
+				    invcovfile);
     if (verbose) mg->setVerbose();
     
     if (verbose && rank == 0)
@@ -234,9 +245,12 @@ int main(int argc, char** argv) {
       
       std::vector<double> acor;
       bool succ = mg->getAcor(acor);
-      if (succ) std::cout << "Autocorrelation length: " << acor[0] 
-			  << " " << acor[1] << std::endl; 
-      else std::cout << "Failed to compute autocorrelation" << std::endl;
+      if (succ) {
+	std::cout << "Autocorrelation length: " << acor[0];
+	for (unsigned int i = 1; i < acor.size(); ++i)
+	  std::cout << " " << acor[i];
+	std::cout << std::endl;
+      } else std::cout << "Failed to compute autocorrelation" << std::endl;
   
       //Write
       mg->writeToFile(outfile);
