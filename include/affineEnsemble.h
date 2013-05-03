@@ -74,6 +74,7 @@ protected:
   int rank; //!< Which node is this; if 0 master, otherwise slave
 
   bool verbose; //!< Ouput information messages as we run
+  bool ultraverbose; //!< Output even more information during run
 
 public:
   /* \brief Constructor */
@@ -86,6 +87,8 @@ public:
 
   void setVerbose() { verbose = true; } //!< Set verbose mode
   void unsetVerbose() { verbose = false; } //!< Turn off verbose mode
+  void setUltraVerbose() { ultraverbose = true; } //!< Set ultra-verbose mode
+  void unsetUltraVerbose() { ultraverbose = false; } //!< Turn off ultra-verbose mode
 
   unsigned int getNWalkers() const { return nwalkers; } //!< Get number of walkers
   void setNWalkers(unsigned int); //!< Set the number of walkers

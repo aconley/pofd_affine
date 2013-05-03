@@ -33,7 +33,7 @@ affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
   nwalkers(NWALKERS), nparams(NPARAMS), has_any_names(false), 
   scalefac(SCALEFAC), init_steps(INIT_STEPS), min_burn(MIN_BURN), 
   fixed_burn(FIXED_BURN), burn_multiple(BURN_MULTIPLE), pstep(NPARAMS), 
-  chains(NWALKERS,NPARAMS) {
+  chains(NWALKERS,NPARAMS), verbose(false), ultraverbose(false) {
   
   has_name.resize(nparams);
   has_name.assign(nparams, false);
@@ -48,8 +48,8 @@ affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
   int nproc;
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
   if (nproc < 2)
-    throw affineExcept("affineEnsemble","affineEnsemble",
-		       "Must have at least 2 nodes",1);
+    throw affineExcept("affineEnsemble", "affineEnsemble",
+		       "Must have at least 2 nodes", 1);
 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   if (rank == 0) {
@@ -222,16 +222,16 @@ bool affineEnsemble::isParamIgnoredAcor(unsigned int idx) const {
 }
 
 void affineEnsemble::setParamName(unsigned int idx, const std::string& parnm) {
-  if (idx >= nparams) throw affineExcept("affineEnsemble","setParamName",
-					 "Invalid index",1);
+  if (idx >= nparams) throw affineExcept("affineEnsemble", "setParamName",
+					 "Invalid index", 1);
   has_any_names = true;
   has_name[idx] = true;
   parnames[idx] = parnm;
 }
 
 void affineEnsemble::unsetParamName(unsigned int idx) {
-  if (idx >= nparams) throw affineExcept("affineEnsemble","unsetParamName",
-					 "Invalid index",1);
+  if (idx >= nparams) throw affineExcept("affineEnsemble", "unsetParamName",
+					 "Invalid index", 1);
   if (!has_name[idx]) return; //Wasn't set anyways
   has_name[idx] = false;
   has_any_names = has_name[idx];
@@ -240,8 +240,8 @@ void affineEnsemble::unsetParamName(unsigned int idx) {
 }
 
 std::string affineEnsemble::getParamName(unsigned int idx) const {
-  if (idx >= nparams) throw affineExcept("affineEnsemble","getParamName",
-					 "Invalid index",1);
+  if (idx >= nparams) throw affineExcept("affineEnsemble", "getParamName",
+					 "Invalid index", 1);
   if (!has_name[idx]) return std::string();
   return parnames[idx];
 }
@@ -249,8 +249,8 @@ std::string affineEnsemble::getParamName(unsigned int idx) const {
 bool affineEnsemble::computeAcor() const {
   if (rank != 0) return false;
   if (!isValid())
-    throw affineExcept("affineEnsemble","computeAcor",
-		       "Sampler not in valid state",1);
+    throw affineExcept("affineEnsemble", "computeAcor",
+		       "Sampler not in valid state", 1);
   
   if (acor.size() < nparams) acor.resize(nparams);
   bool success;
@@ -261,7 +261,7 @@ bool affineEnsemble::computeAcor() const {
 
 bool affineEnsemble::getAcor(std::vector<float>& retval) const {
   if (rank != 0) 
-    throw affineExcept("affineEnsemble","getAcor","Don't call on slave",1);
+    throw affineExcept("affineEnsemble", "getAcor", "Don't call on slave", 1);
   bool success;
   if (!acor_set) success = computeAcor(); else success=true;
   if (!success) return success;
@@ -273,11 +273,11 @@ bool affineEnsemble::getAcor(std::vector<float>& retval) const {
 
 void affineEnsemble::getAcceptanceFrac(std::vector<float>& retval) const {
   if (rank != 0) 
-    throw affineExcept("affineEnsemble","getAcceptanceFrac",
-		       "Don't call on slave",1);
+    throw affineExcept("affineEnsemble", "getAcceptanceFrac",
+		       "Don't call on slave", 1);
   if (!isValid())
-    throw affineExcept("affineEnsemble","computeAcceptanceFrac",
-		       "Sampler not in valid state",1);
+    throw affineExcept("affineEnsemble", "computeAcceptanceFrac",
+		       "Sampler not in valid state", 2);
   
   retval.resize(nwalkers);
   for (unsigned int i = 0; i < nwalkers; ++i) {
@@ -293,11 +293,11 @@ void affineEnsemble::getAcceptanceFrac(std::vector<float>& retval) const {
 void affineEnsemble::printStatistics(float conflevel, 
 				     std::ostream& os) const {
   if (rank != 0) 
-    throw affineExcept("affineEnsemble","printStatistics",
-		       "Don't call on slave",1);
+    throw affineExcept("affineEnsemble", "printStatistics",
+		       "Don't call on slave", 1);
   if (!isValid())
-    throw affineExcept("affineEnsemble","printStatistics",
-		       "Sampler not in valid state",1);
+    throw affineExcept("affineEnsemble", "printStatistics",
+		       "Sampler not in valid state", 2);
   std::string parname;
   float mn, var, low, up;
   for (unsigned int i = 0; i < nparams; ++i) {
@@ -307,7 +307,7 @@ void affineEnsemble::printStatistics(float conflevel,
     os << "Parameter: " << parname << " Mean: " << mn << " Stdev: "
        << sqrt(var) << std::endl;
     os << "  lower limit: " << low << " upper limit: "
-       << up << " (" << conflevel*100.0 << "% limit)" << std::endl;
+       << up << " (" << conflevel * 100.0 << "% limit)" << std::endl;
   }
 
 }
@@ -344,8 +344,8 @@ void affineEnsemble::sample() {
 void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
   if (rank == 0) {
     if (!isValid())
-      throw affineExcept("affineEnsemble","doSteps",
-			 "Calling with invalid model setup",1);
+      throw affineExcept("affineEnsemble", "doSteps",
+			 "Calling with invalid model setup", 1);
     int jnk;
 
     if (initsteps > 0) {
@@ -372,15 +372,15 @@ void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
 
 void affineEnsemble::masterSample() {
   if (!isValid())
-    throw affineExcept("affineEnsemble","masterSample",
-		       "Calling with invalid model setup",1);
+    throw affineExcept("affineEnsemble", "masterSample",
+		       "Calling with invalid model setup", 1);
   
   //Initialize chains; should also reserve space and clear old
   initChains();
 
   //Do burn in
   doBurnIn();
-  if (verbose)
+  if (verbose || ultraverbose)
     std::cout << "Burned in after: " << chains.getMinNIters() 
 	      << " steps" << std::endl;
 
@@ -388,9 +388,10 @@ void affineEnsemble::masterSample() {
     naccept[i] = 1; //Guess the last one was accepted...
 
   //Then do extra steps
-  if (verbose) std::cout << "Doing " << nsteps << " additional steps per"
-			 << " walker, for " << nsteps*nwalkers
-			 << " total steps" << std::endl;
+  if (verbose || ultraverbose) 
+    std::cout << "Doing " << nsteps << " additional steps per"
+	      << " walker, for " << nsteps*nwalkers
+	      << " total steps" << std::endl;
   chains.addChunk(nsteps);
   for (unsigned int i = 0; i < nsteps; ++i)
     doMasterStep();  
@@ -404,15 +405,15 @@ void affineEnsemble::masterSample() {
 
 float affineEnsemble::getMaxAcor() const {
   if (! acor_set) 
-    throw affineExcept("affineEnsemble","getMaxAcor",
-		       "Called without acor available",1);
+    throw affineExcept("affineEnsemble", "getMaxAcor",
+		       "Called without acor available", 1);
   float maxval;
   unsigned int start_idx;
   for (start_idx = 0; start_idx < nparams; ++start_idx)
     if ((param_state[start_idx] | mcmc_affine::ACIGNORE) == 0) break;
   if (start_idx == nparams)
-    throw affineExcept("affineEnsemble","getMaxAcor",
-		       "All params ignored",2);
+    throw affineExcept("affineEnsemble", "getMaxAcor",
+		       "All params ignored", 2);
   maxval = acor[start_idx];
   for (unsigned int i = start_idx+1; i < nparams; ++i)
     if (((param_state[i] | mcmc_affine::ACIGNORE) == 0) && 
@@ -437,7 +438,7 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
     doMasterStep();
 
   if (fixed_burn) {
-    if (verbose) {
+    if (verbose || ultraverbose) {
       std::cout << "Did fixed burn in of " << min_burn << " steps per"
 		<< " walker." << std::endl;
       //Try to compute the acor and report it, but don't worry about
@@ -462,7 +463,7 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
       nextra = static_cast<unsigned int>(min_burn * 0.5);
       if (nextra < 10) nextra = 10;
       for (unsigned int i = 0; i < max_burn_iter; ++i) {
-	if (verbose)
+	if (verbose || ultraverbose)
 	  std::cout << "Failed to compute acor after " << chains.getMinNIters()
 		    << " steps.  Adding " << nextra << " more" << std::endl;
       chains.addChunk(nextra);
@@ -472,13 +473,13 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
       if (acor_success) break;
       }
       if (!acor_success)
-	throw affineExcept("affineEnsemble","doBurnIn",
-			   "Can't compute acor; increase min_burn",1);
+	throw affineExcept("affineEnsemble", "doBurnIn",
+			   "Can't compute acor; increase min_burn", 1);
     }
   
     //Okay, we have an acor estimate of some sort
     float max_acor = getMaxAcor();
-    if (verbose)
+    if (verbose || ultraverbose)
       std::cout << "After " << chains.getMinNIters() 
 		<< " steps, maximum autocorrelation is: "
 		<< max_acor << std::endl;
@@ -491,8 +492,8 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
       //Figure out how many more steps to do.  Do half of the number
       // estimated
       unsigned int nmore = (nminsteps-nsteps)/2 + 1;
-      if (verbose) std::cout << "Doing " << nmore << " additional steps"
-			     << std::endl;
+      if (verbose || ultraverbose) 
+	std::cout << "Doing " << nmore << " additional steps" << std::endl;
       chains.addChunk(nmore);
       for (unsigned int i = 0; i < nmore; ++i)
 	doMasterStep();
@@ -505,7 +506,7 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
       nextra = static_cast<unsigned int>(min_burn * 0.5);
       if (nextra < 10) nextra = 10;
       for (unsigned int i = 0; i < max_burn_iter; ++i) {
-	if (verbose)
+	if (verbose || ultraverbose)
 	  std::cout << "Failed to compute acor after " << chains.getMinNIters()
 		    << " steps.  Adding " << nextra << " more" << std::endl;
 	chains.addChunk(nextra);
@@ -515,8 +516,8 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
 	if (acor_success) break;
       }
       if (!acor_success)
-	throw affineExcept("affineEnsemble","doBurnIn",
-			   "Can't compute acor; increase min_burn",1);
+	throw affineExcept("affineEnsemble", "doBurnIn",
+			   "Can't compute acor; increase min_burn", 2);
       
       max_acor = getMaxAcor();
       nminsteps = 
@@ -550,11 +551,11 @@ void affineEnsemble::doMasterStep() throw (affineExcept) {
   // half, and update each half from the opposite one
   //Fill in queue
   if (rank != 0)
-    throw affineExcept("affineEnsemble","doMasterStep",
-		       "Should only be called from master node",1);
+    throw affineExcept("affineEnsemble", "doMasterStep",
+		       "Should only be called from master node", 1);
   if (! stepqueue.empty())
-    throw affineExcept("affineEnsemble","doMasterStep",
-		       "step queue should be empty at start",4);
+    throw affineExcept("affineEnsemble", "doMasterStep",
+		       "step queue should be empty at start", 2);
 
   unsigned int minidx, maxidx;
   std::pair<unsigned int, unsigned int> pr;
@@ -563,7 +564,7 @@ void affineEnsemble::doMasterStep() throw (affineExcept) {
   maxidx = nwalkers;
   for (unsigned int i = 0; i < nwalkers/2; ++i) {
     pr.first  = i;
-    pr.second = rangen.selectFromRange(minidx,maxidx);
+    pr.second = rangen.selectFromRange(minidx, maxidx);
     stepqueue.push(pr);
   }
 
@@ -575,7 +576,7 @@ void affineEnsemble::doMasterStep() throw (affineExcept) {
   maxidx = nwalkers/2;
   for (unsigned int i = nwalkers/2; i < nwalkers; ++i) {
     pr.first  = i;
-    pr.second = rangen.selectFromRange(minidx,maxidx);
+    pr.second = rangen.selectFromRange(minidx, maxidx);
     stepqueue.push(pr);
   }
   emptyMasterQueue();
@@ -588,7 +589,8 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
   int jnk, this_rank, this_tag, nproc, ismsg;
   unsigned int ndone, nsteps;
   std::pair<unsigned int, unsigned int> pr;
-  double prob; //Probability of accepting a step
+  double prob; // Probability of accepting a step
+  double rval; // Random comparison value
   
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
   nsteps = stepqueue.size();
@@ -632,8 +634,8 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
       //Send stop message to all slaves
       for (int i = 1; i < nproc; ++i)
 	MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
-      throw affineExcept("affineEnsemble","emptyMasterQueue",
-			 "Problem encountered in slave",1);
+      throw affineExcept("affineEnsemble", "emptyMasterQueue",
+			 "Problem encountered in slave", 1);
     } else if (this_tag == mcmc_affine::SENDINGRESULT) {
       //Slave finished a computation, is sending us the result
       //Note we wait for a REQUESTPOINT to actually add it to the
@@ -646,8 +648,8 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
 	//That's not good -- exit
 	for (int i = 1; i < nproc; ++i)
 	  MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
-	throw affineExcept("affineEnsemble","emptyMasterQueue",
-			   "Problem encountered in slave",2);
+	throw affineExcept("affineEnsemble", "emptyMasterQueue",
+			   "Invalid likelihood", 2);
       }
 
       //Decide whether to accept the step or reject it, add to
@@ -658,20 +660,35 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
       // min(1, z^(n-1) P(new) / P(old)
       prob = exp((nparams - nfixed - 1) * log(pstep.z) + pstep.newLogLike - 
 		 pstep.oldLogLike);
+      if (ultraverbose) {
+	std::cout << "Got new step for " << pstep.update_idx 
+		  << " from slave " << this_rank << std::endl;
+	std::cout << pstep << std::endl;
+      }
+
       if (prob >= 1) {
 	//Will always be accepted; this is the min(1, part
 	// This saves us a call to rangen.doub
+	if (ultraverbose)
+	  std::cout << " Accepting new step" << std::endl;
 	chains.addNewStep(pstep.update_idx, pstep.newStep,
 			  pstep.newLogLike);
 	naccept[pstep.update_idx] += 1;
       } else {
-	if (rangen.doub() < prob) {
+	rval = rangen.doub();
+	if (rval < prob) {
 	  //Accept!
+	  if (ultraverbose)
+	    std::cout << " Accepting new step (prob: "
+		      << prob << " rval: " << rval <<")" << std::endl;
 	  chains.addNewStep(pstep.update_idx, pstep.newStep,
 			    pstep.newLogLike);
 	  naccept[pstep.update_idx] += 1;
 	} else {
 	  //reject, keep old step
+	  if (ultraverbose)
+	    std::cout << " Rejecting new step (prob: "
+		      << prob << " rval: " << rval <<")" << std::endl;
 	  chains.addNewStep(pstep.update_idx, pstep.oldStep,
 			    pstep.oldLogLike);
 	}
@@ -686,8 +703,8 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
       //Tell slaves to stop
       for (int i = 1; i < nproc; ++i)
 	MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
-      throw affineExcept("affineEnsemble","emptyMasterQueue",
-			 sstream.str(),4);
+      throw affineExcept("affineEnsemble", "emptyMasterQueue",
+			 sstream.str(), 3);
     }
   }
 
@@ -696,8 +713,8 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
 void affineEnsemble::slaveSample() {
   //This one just sits here and computes likelihoods
   if (rank == 0)
-    throw affineExcept("affineEnsemble","slaveSample",
-		       "Should not be called from master node",1);
+    throw affineExcept("affineEnsemble", "slaveSample",
+		       "Should not be called from master node", 1);
   
   initChains(); //Slave version
 
@@ -753,7 +770,7 @@ void affineEnsemble::slaveSample() {
  */
 void affineEnsemble::writeToFile(const std::string& filename) const {
   if (rank != 0) 
-    throw affineExcept("affineEnsemble","writeToFile",
-		       "Should only be called from master node",1);  
+    throw affineExcept("affineEnsemble", "writeToFile",
+		       "Should only be called from master node", 1);  
   chains.writeToFile(filename);
 }
