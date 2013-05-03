@@ -61,7 +61,7 @@ void calcLikeSingle::resize(unsigned int n) {
     for (unsigned int i = 0; i < n; ++i)
       like_offset[i] = std::numeric_limits<double>::quiet_NaN();
     for (unsigned int i = 0; i < n; ++i)
-      like_norm[i]   = 1.0;
+      like_norm[i] = 1.0;
   } else {
     data        = NULL;
     sigma_base  = NULL;
@@ -89,23 +89,24 @@ void calcLikeSingle::readDataFromFile(const std::string& datafile,
 				      bool BINDATA, unsigned int NBINS) {
   resize(1);
 
-  data[0].readData(datafile,IGNOREMASK,MEANSUB);
-  unsigned int n = data[0].getN();
-  if (n == 0)
-    throw affineExcept("calcLikeSingle","readDataFromFile",
-		       "No unmasked pixels in data",1);
+  data[0].readData(datafile, IGNOREMASK, MEANSUB);
+  unsigned int nd = data[0].getN();
+  if (nd == 0)
+    throw affineExcept("calcLikeSingle", "readDataFromFile",
+		       "No unmasked pixels in data", 1);
   if (BINDATA) data[0].applyBinning(NBINS);
   
   maxflux = data[0].getMax();
   if (std::isnan(maxflux) || std::isinf(maxflux))
-    throw affineExcept("calcLikeSingle","readDataFromFile",
-		       "Problem with maxflux",2);
+    throw affineExcept("calcLikeSingle", "readDataFromFile",
+		       "Problem with maxflux", 2);
   maxflux *= calcLikeSingle::flux_safety;
 
   //log(N!)
-  like_offset[0] = n*log(n) - n + 0.5*log(2.0*M_PI*n) + 
-    1.0/(12.0*n) - 1.0/(360.0*n*n*n) + 1/(1260.0*n*n*n*n*n) -
-    1.0/(1680.0*pow(n,7));
+  double ndd = static_cast<double>(nd);
+  like_offset[0] = ndd*log(ndd) - ndd + 0.5*log(2.0*M_PI*ndd) + 
+    1.0/(12.0*ndd) - 1.0/(360.0*ndd*ndd*ndd) + 
+    1/(1260.0*ndd*ndd*ndd*ndd*ndd) - 1.0/(1680.0*pow(ndd,7));
 
   data_read = true;
 }
@@ -123,39 +124,40 @@ readDataFromFiles(const std::vector<std::string>& datafiles,
 		  unsigned int NBINS) {
   unsigned int n = datafiles.size();
   if (n == 0)
-    throw affineExcept("calcLikeSingle","readDataFromFile",
-		       "No data sets",1);
+    throw affineExcept("calcLikeSingle", "readDataFromFile",
+		       "No data sets", 1);
   resize(n);
 
   for (unsigned int i = 0; i < n; ++i) {
-    data[i].readData(datafiles[i],IGNOREMASK,MEANSUB);
+    data[i].readData(datafiles[i], IGNOREMASK, MEANSUB);
     unsigned int nd = data[i].getN();
     if (nd == 0) {
       std::stringstream errstr("");
       errstr << "No unmasked pixels in data file: "
 	     << datafiles[i];
-      throw affineExcept("calcLikeSingle","readDataFromFile",
-			 errstr.str(),3);
+      throw affineExcept("calcLikeSingle", "readDataFromFile",
+			 errstr.str(), 3);
     }
     if (BINDATA) data[i].applyBinning(NBINS);
 
     //log(N!)
-    like_offset[i] = nd*log(nd) - nd + 0.5*log(2.0*M_PI*nd) + 
-      1.0/(12.0*nd) - 1.0/(360.0*nd*nd*nd) + 1/(1260.0*nd*nd*nd*nd*nd) -
-      1.0/(1680.0*pow(nd,7));
+    double ndd = static_cast<double>(nd);
+    like_offset[i] = ndd*log(ndd) - ndd + 0.5*log(2.0*M_PI*ndd) + 
+      1.0/(12.0*ndd) - 1.0/(360.0*ndd*ndd*ndd) + 
+      1/(1260.0*ndd*ndd*ndd*ndd*ndd) - 1.0/(1680.0*pow(ndd,7));
   }
 
   //Determine maximum flux (with safety factor) for all this data
   double cmaxflux;
   maxflux = data[0].getMax();
   if (std::isnan(maxflux) || std::isinf(maxflux))
-    throw affineExcept("calcLikeSingle","readDataFromFile",
-		       "Problem with maxflux",4);
+    throw affineExcept("calcLikeSingle", "readDataFromFile",
+		       "Problem with maxflux", 4);
   for (unsigned int i = 1; i < n; ++i) {
     cmaxflux = data[i].getMax();
     if (std::isnan(cmaxflux) || std::isinf(cmaxflux))
-      throw affineExcept("calcLikeSingle","readDataFromFile",
-			 "Problem with maxflux",5);
+      throw affineExcept("calcLikeSingle", "readDataFromFile",
+			 "Problem with maxflux", 5);
     if (cmaxflux > maxflux) maxflux=cmaxflux;
   }
 
@@ -189,7 +191,7 @@ void calcLikeSingle::removeBinning() {
 void calcLikeSingle::setLikeNorm(const std::vector<double>& lnorm) {
   unsigned int n = lnorm.size();
   if (n != ndatasets)
-    throw affineExcept("calcLikeSingle","setLikeNorm",
+    throw affineExcept("calcLikeSingle", "setLikeNorm",
 		       "like_norm vector not same size as number of data sets",
 		       1);
   if (n == 0) return;
@@ -200,7 +202,7 @@ void calcLikeSingle::setLikeNorm(const std::vector<double>& lnorm) {
 void calcLikeSingle::setLikeNorm(unsigned int n, 
 			   const double* const lnorm) {
   if (n != ndatasets)
-    throw affineExcept("calcLikeSingle","setLikeNorm",
+    throw affineExcept("calcLikeSingle", "setLikeNorm",
 		       "like_norm array not same size as number of data sets",
 		       1);
   if (n == 0) return;
@@ -211,8 +213,8 @@ void calcLikeSingle::setLikeNorm(unsigned int n,
 void calcLikeSingle::setSigmaBase(const std::vector<double>& s) {
   unsigned int n = s.size();
   if (n != ndatasets)
-    throw affineExcept("calcLikeSingle","setSigmaBase",
-		       "sigma vectors not same size as number of data sets",1);
+    throw affineExcept("calcLikeSingle", "setSigmaBase",
+		       "sigma vectors not same size as number of data sets", 1);
   if (n == 0) return;
   for (unsigned int i = 0; i < ndatasets; ++i)
     sigma_base[i] = s[i];
@@ -223,8 +225,8 @@ void calcLikeSingle::setSigmaBase(const std::vector<double>& s) {
 
 void calcLikeSingle::setSigmaBase(unsigned int n,const double* const s) {
   if (n != ndatasets)
-    throw affineExcept("calcLikeSingle","setSigmaBase",
-		       "sigma arrays not same size as number of data sets",1);
+    throw affineExcept("calcLikeSingle", "setSigmaBase",
+		       "sigma arrays not same size as number of data sets", 1);
   if (n == 0) return;
   for (unsigned int i = 0; i < ndatasets; ++i)
     sigma_base[i] = s[i];
@@ -249,38 +251,31 @@ calcLikeSingle::getLogLike(const numberCounts& model, double sigmult,
 			   unsigned int fftsize, bool edgefix) const {
 
   if (!data_read)
-    throw affineExcept("calcLikeSingle","getNegLogLike",
-		       "Data not read",1);
+    throw affineExcept("calcLikeSingle", "getNegLogLike",
+		       "Data not read", 1);
   if (!has_beam)
-    throw affineExcept("calcLikeSingle","getNegLogLike",
-		       "Beam not read",2);
+    throw affineExcept("calcLikeSingle", "getNegLogLike",
+		       "Beam not read", 2);
 
   //Maximum noise value with multiplier 
   double max_sigma = maxsigma_base * sigmult;
   if (max_sigma < 0.0) return calcLikeSingle::bad_like;
 
   //Initialize P(D)
-  pdfac.initPD(fftsize,max_sigma,maxflux,model,bm);
+  pdfac.initPD(fftsize, max_sigma, maxflux, model, bm);
 
   //Compute likelihood of each bit of data
-  double curr_LogLike, lnorm, LogLike, bmarea;
-  bmarea = bm.getEffectiveArea();
+  double curr_LogLike, LogLike;
   LogLike = 0.0;
   for (unsigned int i = 0; i < ndatasets; ++i) {
-    //Get PD for this particuar set of sigmas
-    pdfac.getPD(sigmult*sigma_base[i], pd, true, edgefix);
+    // Get PD for this particuar set of sigmas
+    pdfac.getPD(sigmult * sigma_base[i], pd, true, edgefix);
 
-    //Get log like
+    // Get log like
     curr_LogLike = pd.getLogLike(data[i]) - like_offset[i];
 
-    //Beam norm
-    lnorm = like_norm[i];
-    if (lnorm > 0)
-      curr_LogLike /= lnorm * bmarea;
-    else if (lnorm < 0)
-      curr_LogLike /= fabs(lnorm);
-
-    LogLike += curr_LogLike;
+    // Apply beam norm factor and add in
+    LogLike += curr_LogLike / like_norm[i];
   }
   
   return LogLike;
@@ -415,17 +410,17 @@ void calcLike::readDataFromFiles(const std::vector<std::string>& datafiles,
   //Make sure they are all the same length
   unsigned int ndat = datafiles.size();
   if (ndat == 0)
-    throw affineExcept("calcLike","readDataFromFiles",
-		       "No datafiles",1);
+    throw affineExcept("calcLike", "readDataFromFiles",
+		       "No datafiles", 1);
   if (ndat != beamfiles.size())
-    throw affineExcept("calcLike","readDataFromFiles",
-		       "datafiles and beamfiles not same length",2);
+    throw affineExcept("calcLike", "readDataFromFiles",
+		       "datafiles and beamfiles not same length", 2);
   if (ndat != sigmas.size())
-    throw affineExcept("calcLike","readDataFromFiles",
-		       "datafiles and sigma not same length",3);
+    throw affineExcept("calcLike", "readDataFromFiles",
+		       "datafiles and sigma not same length", 3);
   if (ndat != like_norms.size())
-    throw affineExcept("calcLike","readDataFromFiles",
-		       "datafiles and like_norm not same length",4);
+    throw affineExcept("calcLike", "readDataFromFiles",
+		       "datafiles and like_norm not same length", 4);
   
   //Use a map.  Could also use a multi-map, but meh
   std::map< std::string, beam_group > grpmap;
@@ -548,15 +543,15 @@ double calcLike::getLogLike(const paramSet& p) const {
 
   if (nbeamsets == 0) return std::numeric_limits<double>::quiet_NaN();
   unsigned int npar = p.getNParams();
-  if (npar < 2) throw affineExcept("calcLike","getLogLike",
-				   "Not enough elements in params",1);
+  if (npar < 2) throw affineExcept("calcLike", "getLogLike",
+				   "Not enough elements in params", 1);
   unsigned int nknots = model.getNKnots();
   if (nknots == 0)
-    throw affineExcept("calcLike","getLogLike",
-		       "Model knot positions not loaded",2);
+    throw affineExcept("calcLike", "getLogLike",
+		       "Model knot positions not loaded", 2);
   if (nknots > (npar-1))
-    throw affineExcept("calcLike","getLogLike",
-		       "Not enough elements in paramSet",3);
+    throw affineExcept("calcLike", "getLogLike",
+		       "Not enough elements in paramSet", 3);
 
   //Set the model
   model.setParams(p);
@@ -566,7 +561,7 @@ double calcLike::getLogLike(const paramSet& p) const {
   //Do the datasets likelihood
   double sigmult = p[nknots]; //Sigma multiplier is after knot values
   for (unsigned int i = 0; i < nbeamsets; ++i)
-    LogLike += beamsets[i].getLogLike(model,sigmult,fftsize,edgeFix);
+    LogLike += beamsets[i].getLogLike(model, sigmult, fftsize, edgeFix);
 
   //Add on cfirb prior and sigma prior if needed
   //Only do this once for all data sets so as not to multi-count the prior

@@ -24,7 +24,8 @@
 	            psffile1, psffile2 are FITS files giving the beam in each 
                       band
 	            like_norm is an optional input controlling how the
-	              likelihood is normalized for the beam area (def: 1)
+	              likelihood is normalized for the beam area. The likelihood
+		      is divided by this number (def: 1.0).
    bin_data=    nbins
                   Turns on binning of data files with specified number 
                   of bins.

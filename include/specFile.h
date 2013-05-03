@@ -22,7 +22,8 @@
 		   units as the data in datafile (e.g., Jy)
 		  psffile is a FITS file giving the beam
 		  like_norm is an optional input controlling how the
-		   likelihood is normalized for the beam area (def: 1)
+		   likelihood is normalized for the beam area.  The likelihood
+		   is divided by this number (def: 1.0).
    bin_data=    nbins
                   Turns on binning of data files with specified number 
                   of bins
