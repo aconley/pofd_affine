@@ -26,5 +26,5 @@ pofd_affine_getLike_SOURCES = pofd_affine_getLike.cc
 pofd_affine_getLike_LDADD = libpd.la
 
 pofd_affine_mcmc_SOURCES = pofdMCMC.cc pofdMCMCDouble.cc \
-	pofd_affine_getLike.cc 
+	pofd_affine_mcmc.cc 
 pofd_affine_mcmc_LDADD = libpd.la

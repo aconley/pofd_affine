@@ -8,7 +8,7 @@
 #include "../include/affineExcept.h"
 
 int main(int argc, char** argv) {
-  bool twod;
+  bool twod, verbose, ultraverbose;
   std::string initfile, specfile, outfile;
   unsigned int nwalkers;
   unsigned int nsamples;
@@ -25,13 +25,15 @@ int main(int argc, char** argv) {
 
   //Defaults
   twod = false;
-  nwalkers = 250;
-  nsamples = 10000;
+  nwalkers = 200;
+  nsamples = 2000;
   init_steps = 30;
   min_burn = 30;
   fixed_burn = false;
   burn_multiple = 1.5;
   scalefac = 2.0;
+  verbose = false;
+  ultraverbose = false;
 
   MPI_Init(&argc, &argv);
 
@@ -49,7 +51,9 @@ int main(int argc, char** argv) {
     {"nsamples",required_argument,0,'n'},
     {"nwalkers",required_argument,0,'N'},
     {"scalefac",required_argument,0,'s'},
-    {"version",no_argument,0,'V'}, //Below here not parsed in main routine
+    {"ultraverbose", no_argument, 0, 'u'},
+    {"verbose", no_argument, 0, 'v'},
+    {"version",no_argument,0,'V'}, 
     {0,0,0,0}
   };
   char optstring[] = "b:hdfi:m:n:N:s:V";
@@ -111,20 +115,29 @@ int main(int argc, char** argv) {
 	std::cerr << "\t\tThis many steps per walker are taken and thrown away"
 		  << std::endl;
 	std::cerr << "\t\t first (def: 30)." << std::endl;
+	std::cerr << "\t-m, --minburn NSTEPS" << std::endl;
 	std::cerr << "\t\tThis many steps are taken per walker before the burn"
 		  << std::endl;
-	std::cerr << "\t\tin is checked.  Note that these are not thrown away"
+	std::cerr << "\t\tin is checked.  This also controls how many "
+		  << "additional"
 		  << std::endl;
-	std::cerr << "\t\tunlike the initsteps steps (def: 30)."
-		  << std::endl;
+	std::cerr << "\t\tsteps get taken if burn in hasn't happened, in"
+		  << " combination" << std::endl;
+	std::cerr << "\t\twith bunmult (def: 30)." << std::endl;
 	std::cerr << "\t-n, --nsamples NSAMPLES" << std::endl;
 	std::cerr << "\t\tNumber of total samples to generate across all "
 		  << "walkers." << std::endl;
 	std::cerr << "\t\tThis is rounded to an integer power of the number of"
 		  << std::endl;
-	std::cerr << "\t\twalkers (def: 10000)." << std::endl;
+	std::cerr << "\t\twalkers (def: 2000)." << std::endl;
 	std::cerr << "\t-N, --nwalkers NWALKERS" << std::endl;
-	std::cerr << "\t\tNumber of walkers to use (def: 250)." << std::endl;
+	std::cerr << "\t\tNumber of walkers to use (def: 200)." << std::endl;
+	std::cerr << "\t-u, --verbose" << std::endl;
+	std::cerr << "\t\tPrint out step by step informational messages "
+		  << "as MCMC runs." << std::endl;
+	std::cerr << "\t-v, --verbose" << std::endl;
+	std::cerr << "\t\tPrint out informational messages as MCMC runs."
+		  << std::endl;
 	std::cerr << "\t-V, --version" << std::endl;
 	std::cerr << "\t\tOutput the version number and exit" << std::endl;
 	std::cerr << "\t-s, --scalefac SCALEFACTOR" << std::endl;
@@ -158,6 +171,12 @@ int main(int argc, char** argv) {
     case 's' :
       scalefac = atof(optarg);
       break;
+    case 'u':
+      ultraverbose = true;
+      break;
+    case 'v':
+      verbose = true;
+      break;
     case 'V' :
       if (rank == 0) 
 	std::cerr << "pofd_mcmc version number: " << pofd_mcmc::version 
@@ -166,7 +185,6 @@ int main(int argc, char** argv) {
       return 0;
       break;
     }
-
 
   if (nproc < 2) {
     if (rank == 0) {
@@ -225,6 +243,9 @@ int main(int argc, char** argv) {
       pofdMCMC engine(initfile, specfile, nwalkers, nsamples, init_steps,
 		      min_burn, fixed_burn, burn_multiple, scalefac);
       
+      if (verbose) engine.setVerbose();
+      if (ultraverbose) engine.setUltraVerbose();
+
       if (rank == 0) std::cout << "Initializing chains" << std::endl;
       engine.initChains();
       
@@ -242,6 +263,9 @@ int main(int argc, char** argv) {
       pofdMCMCDouble engine(initfile, specfile, nwalkers, nsamples, init_steps,
 			    min_burn, fixed_burn, burn_multiple, scalefac);
       
+      if (verbose) engine.setVerbose();
+      if (ultraverbose) engine.setUltraVerbose();
+
       if (rank == 0) std::cout << "Initializing chains" << std::endl;
       engine.initChains();
       
