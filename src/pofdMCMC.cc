@@ -78,14 +78,14 @@ bool pofdMCMC::initChainsMaster() {
   likeSet.setNBins(spec_info.nbins);
   if (spec_info.has_wisdom_file) likeSet.addWisdom(spec_info.wisdom_file);
 
-  //Set priors 
+  // Set priors 
   if (spec_info.has_cfirbprior)
     likeSet.setCFIRBPrior(spec_info.cfirbprior_mean,
 			  spec_info.cfirbprior_stdev);
   if (spec_info.fit_sigma && spec_info.has_sigprior)
     likeSet.setSigmaPrior(spec_info.sigprior_stdev);
 
-  //Read in data files
+  // Read in data files
   if (spec_info.verbose || spec_info.ultraverbose)
       std::cout << "Reading in data files" << std::endl;
   likeSet.readDataFromFiles(spec_info.datafiles, spec_info.psffiles, 
@@ -93,6 +93,9 @@ bool pofdMCMC::initChainsMaster() {
 			    spec_info.ignore_mask, spec_info.mean_sub, 
 			    spec_info.beam_histogram);
 
+  // Verbosity
+  if (spec_info.verbose) setVerbose();
+  if (spec_info.ultraverbose) setUltraVerbose();
 
   //Now, copy that information over to slaves
   int nproc;

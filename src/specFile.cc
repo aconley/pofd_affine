@@ -27,7 +27,7 @@ void specFile::init() {
   fftsize = 131072;
   ninterp = 1024;
   edge_fix = true;
-  beam_histogram = false;
+  beam_histogram = true;
   fit_sigma = false;
   has_sigprior = false;
   sigprior_stdev = 0.0;

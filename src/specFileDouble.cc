@@ -33,7 +33,7 @@ void specFileDouble::init() {
   edge_set = true;
   nedge = 256;
   edge_fix = true;
-  beam_histogram = false;
+  beam_histogram = true;
   fit_sigma1 = false;
   has_sigprior1 = false;
   sigprior_stdev1 = 0.0;

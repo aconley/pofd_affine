@@ -38,7 +38,7 @@
    edge_fix=    bool
                   Apply edge fix to P(D).  On by default.		  
    beam_histogram= bool
-                  Activates beam histogramming
+                  Activates beam histogramming.  On by default.
    fit_sigma=   value
                   If value is true, this turns on fitting for sigma
    sigmaprior=  stdev

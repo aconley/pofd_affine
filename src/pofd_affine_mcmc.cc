@@ -8,7 +8,7 @@
 #include "../include/affineExcept.h"
 
 int main(int argc, char** argv) {
-  bool twod, verbose, ultraverbose;
+  bool twod;
   std::string initfile, specfile, outfile;
   unsigned int nwalkers;
   unsigned int nsamples;
@@ -32,8 +32,6 @@ int main(int argc, char** argv) {
   fixed_burn = false;
   burn_multiple = 1.5;
   scalefac = 2.0;
-  verbose = false;
-  ultraverbose = false;
 
   MPI_Init(&argc, &argv);
 
@@ -51,8 +49,6 @@ int main(int argc, char** argv) {
     {"nsamples",required_argument,0,'n'},
     {"nwalkers",required_argument,0,'N'},
     {"scalefac",required_argument,0,'s'},
-    {"ultraverbose", no_argument, 0, 'u'},
-    {"verbose", no_argument, 0, 'v'},
     {"version",no_argument,0,'V'}, 
     {0,0,0,0}
   };
@@ -132,12 +128,6 @@ int main(int argc, char** argv) {
 	std::cerr << "\t\twalkers (def: 2000)." << std::endl;
 	std::cerr << "\t-N, --nwalkers NWALKERS" << std::endl;
 	std::cerr << "\t\tNumber of walkers to use (def: 200)." << std::endl;
-	std::cerr << "\t-u, --verbose" << std::endl;
-	std::cerr << "\t\tPrint out step by step informational messages "
-		  << "as MCMC runs." << std::endl;
-	std::cerr << "\t-v, --verbose" << std::endl;
-	std::cerr << "\t\tPrint out informational messages as MCMC runs."
-		  << std::endl;
 	std::cerr << "\t-V, --version" << std::endl;
 	std::cerr << "\t\tOutput the version number and exit" << std::endl;
 	std::cerr << "\t-s, --scalefac SCALEFACTOR" << std::endl;
@@ -170,12 +160,6 @@ int main(int argc, char** argv) {
       break;
     case 's' :
       scalefac = atof(optarg);
-      break;
-    case 'u':
-      ultraverbose = true;
-      break;
-    case 'v':
-      verbose = true;
       break;
     case 'V' :
       if (rank == 0) 
@@ -243,9 +227,6 @@ int main(int argc, char** argv) {
       pofdMCMC engine(initfile, specfile, nwalkers, nsamples, init_steps,
 		      min_burn, fixed_burn, burn_multiple, scalefac);
       
-      if (verbose) engine.setVerbose();
-      if (ultraverbose) engine.setUltraVerbose();
-
       if (rank == 0) std::cout << "Initializing chains" << std::endl;
       engine.initChains();
       
@@ -263,9 +244,6 @@ int main(int argc, char** argv) {
       pofdMCMCDouble engine(initfile, specfile, nwalkers, nsamples, init_steps,
 			    min_burn, fixed_burn, burn_multiple, scalefac);
       
-      if (verbose) engine.setVerbose();
-      if (ultraverbose) engine.setUltraVerbose();
-
       if (rank == 0) std::cout << "Initializing chains" << std::endl;
       engine.initChains();
       

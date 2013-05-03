@@ -120,6 +120,9 @@ bool pofdMCMCDouble::initChainsMaster() {
 			    spec_info.like_norm, spec_info.ignore_mask, 
 			    spec_info.mean_sub, spec_info.beam_histogram);
 
+  // Verbosity
+  if (spec_info.verbose) setVerbose();
+  if (spec_info.ultraverbose) setUltraVerbose();
 
   //Now, copy that information over to slaves
   int nproc;

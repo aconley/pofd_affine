@@ -41,7 +41,7 @@
    nedge=       value
                   Set size of edge interpolation (def: 256).
    beam_histogram= bool
-                  Activates beam histogramming
+                  Activates beam histogramming.  On by default.
    edge_fix=    bool
                   Apply edge fix to P(D). On by default.
    fit_sigma1=  value
