@@ -88,7 +88,7 @@ bool affineEnsemble::isValid() const {
   if (min_burn < 10) return false;
   if ((!fixed_burn) && (burn_multiple <= 1.0)) return false;
   if (scalefac <= 0.0) return false;
-  if (nfixed == nparams) return false; //!< All params fixed
+  if (getNFitParams() == 0) return false; //!< All params fixed
   return true;
 
 }
@@ -196,10 +196,10 @@ void affineEnsemble::fixParam(unsigned int idx) {
 
   nfixed = 0;
   for (unsigned int i = 0; i < nparams; ++i)
-    if (param_state[idx] & mcmc_affine::FIXED) ++nfixed;
+    if (param_state[i] & mcmc_affine::FIXED) ++nfixed;
   nignore = 0;
   for (unsigned int i = 0; i < nparams; ++i)
-    if (param_state[idx] & mcmc_affine::ACIGNORE) ++nignore;
+    if (param_state[i] & mcmc_affine::ACIGNORE) ++nignore;
 }
 
 bool affineEnsemble::isParamFixed(unsigned int idx) const {
@@ -213,7 +213,7 @@ void affineEnsemble::ignoreParamAcor(unsigned int idx) {
 
   nignore = 0;
   for (unsigned int i = 0; i < nparams; ++i)
-    if (param_state[idx] & mcmc_affine::ACIGNORE) ++nignore;
+    if (param_state[i] & mcmc_affine::ACIGNORE) ++nignore;
 }
 
 bool affineEnsemble::isParamIgnoredAcor(unsigned int idx) const {
