@@ -227,9 +227,6 @@ int main(int argc, char** argv) {
       pofdMCMC engine(initfile, specfile, nwalkers, nsamples, init_steps,
 		      min_burn, fixed_burn, burn_multiple, scalefac);
       
-      if (rank == 0) std::cout << "Initializing chains" << std::endl;
-      engine.initChains();
-      
       if (rank == 0) std::cout << "Starting main loop" << std::endl;
       engine.sample();
       
@@ -243,9 +240,6 @@ int main(int argc, char** argv) {
       
       pofdMCMCDouble engine(initfile, specfile, nwalkers, nsamples, init_steps,
 			    min_burn, fixed_burn, burn_multiple, scalefac);
-      
-      if (rank == 0) std::cout << "Initializing chains" << std::endl;
-      engine.initChains();
       
       if (rank == 0) std::cout << "Starting main loop" << std::endl;
       engine.sample();

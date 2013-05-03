@@ -25,9 +25,9 @@ pofdMCMC::pofdMCMC(const std::string& INITFILE, const std::string& SPECFILE,
 		   unsigned int NWALKERS, unsigned int NSAMPLES, 
 		   unsigned int INIT_STEPS, unsigned int MIN_BURN, 
 		   bool FIXED_BURN, float BURN_MULTIPLE, float SCALEFAC) :
-  initfile(INITFILE), specfile(SPECFILE),
   affineEnsemble(NWALKERS, 1, NSAMPLES, INIT_STEPS, MIN_BURN,
-		 FIXED_BURN, BURN_MULTIPLE, SCALEFAC) {
+		 FIXED_BURN, BURN_MULTIPLE, SCALEFAC),
+  initfile(INITFILE), specfile(SPECFILE) {
   //Note that we set NPARAMS to a bogus value (1) above, then 
   // have to change it later once we know how many model params we have
   // All of this is done in initChains
@@ -101,11 +101,15 @@ bool pofdMCMC::initChainsMaster() {
   //Now, copy that information over to slaves
   int nproc;
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+  if (ultraverbose)
+    std::cout << "Initializing " << nproc - 1 << " slave nodes from master"
+	      << std::endl;
 
   int nnotinitialized;
-  std::vector<bool> initialized(false, nproc);
+  std::vector<bool> initialized(nproc, false);
   initialized[0] = true; //Master is initialized
-  nnotinitialized = nproc-1;
+  nnotinitialized = std::count(initialized.begin(), initialized.end(),
+			       false);
 
   MPI_Status Info;
   int jnk, ismsg;
@@ -113,7 +117,7 @@ bool pofdMCMC::initChainsMaster() {
     //See if a message is available, wait for one if it isn't
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     while (ismsg == 0) {
-      usleep(10000); //Sleep for 1/100th of a second
+      usleep(mcmc_affine::usleeplen); //Sleep for 1/100th of a second
       MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     }
 
@@ -135,11 +139,17 @@ bool pofdMCMC::initChainsMaster() {
       likeSet.sendSelf(MPI_COMM_WORLD, this_rank);
       
     } else if (this_tag == pofd_mcmc::PMCMCISREADY) {
+      if (ultraverbose)
+	std::cout << " Slave node: " << this_rank << " initialized"
+		  << std::endl;
       initialized[this_rank] = true;
     }
     nnotinitialized = std::count(initialized.begin(), initialized.end(),
 				 false);
+
   }
+  if (ultraverbose)
+    std::cout << "All slave nodes initialized" << std::endl;
 
   //We can free all the data storage, since master doesn't need
   // any of it
@@ -147,6 +157,8 @@ bool pofdMCMC::initChainsMaster() {
   
   //Generate initial parameters for each walker
   //First, set up space to hold that first parameter
+  if (ultraverbose)
+    std::cout << "Setting up initial parameters" << std::endl;
   chains.clear();
   chains.addChunk(1);
   chains.setSkipFirst();
@@ -201,6 +213,8 @@ bool pofdMCMC::initChainsMaster() {
   }
   
   //That's it!
+  if (ultraverbose)
+    std::cout << "Initialization completed" << std::endl;
   return true;
 }
 
@@ -219,7 +233,7 @@ bool pofdMCMC::initChainsSlave() {
   //See if a message is available, wait for one if it isn't
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
   while (ismsg == 0) {
-    usleep(10000); //Sleep for 1/100th of a second
+    usleep(mcmc_affine::usleeplen); //Sleep for 1/100th of a second
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
   }
 

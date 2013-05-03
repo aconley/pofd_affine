@@ -136,8 +136,8 @@ void PDFactory::strict_resize(unsigned int NSIZE) {
 void PDFactory::allocateRvars() {
   if (rvars_allocated) return;
   if (currsize == 0)
-    throw affineExcept("PDFactory","allocate_rvars",
-		       "Invalid (0) currsize",1);
+    throw affineExcept("PDFactory", "allocate_rvars",
+		       "Invalid (0) currsize", 1);
   rvals = (double*) fftw_malloc(sizeof(double)*currsize);
   pofd = (double*) fftw_malloc(sizeof(double)*currsize);
   unsigned int fsize = currsize/2+1;
@@ -170,8 +170,8 @@ void PDFactory::setNInterp(unsigned int NINTERP) {
 void PDFactory::allocateInterp() {
   if (interpvars_allocated) return;
   if (ninterp == 0)
-    throw affineExcept("PDFactory","allocateInterp",
-		       "Invalid (0) ninterp",1);
+    throw affineExcept("PDFactory", "allocateInterp",
+		       "Invalid (0) ninterp", 1);
   
   //Note that acc is always allocated
   spline = gsl_spline_alloc( gsl_interp_cspline, 
@@ -202,19 +202,19 @@ void PDFactory::free() {
 */
 bool PDFactory::addWisdom(const std::string& filename) {
   FILE *fp = NULL;
-  fp = fopen( filename.c_str(), "r" );
-  if (!fp) {
+  fp = fopen(filename.c_str(), "r");
+  if (fp == NULL) {
     std::stringstream str;
     str << "Error opening wisdom file: " << filename;
-    throw affineExcept("PDFactory","addWisdom",str.str(),1);
+    throw affineExcept("PDFactory", "addWisdom", str.str(), 1);
   }
   if (fftw_import_wisdom_from_file(fp) == 0) {
     std::stringstream str;
-    str << "Error reading wisdom file: " << wisdom_file;
-    throw affineExcept("PDFactory","addWisdom",str.str(),2);
+    str << "Error reading wisdom file: " << filename;
+    throw affineExcept("PDFactory", "addWisdom", str.str(), 2);
   }
   fclose(fp);
-  fftw_plan_style = FFTW_WISDOM_ONLY | FFTW_MEASURE;
+  fftw_plan_style = FFTW_WISDOM_ONLY;
   has_wisdom = true;
   wisdom_file = filename;
   if (plan != NULL) {
@@ -283,7 +283,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
     str << "Plan creation failed for forward transform of size: " << n;
     if (has_wisdom) str << std::endl << "Your wisdom file may not have"
 			<< " that size";
-    throw affineExcept("PDFactory","initPD",str.str(),2);
+    throw affineExcept("PDFactory", "initPD", str.str(), 1);
   }
 
   if (did_resize || (lastfftlen != n) || (plan_inv == NULL)) {
@@ -296,7 +296,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
     str << "Plan creation failed for inverse transform of size: " << n;
     if (has_wisdom) str << std::endl << "Your wisdom file may not have"
 			<< " that size";
-    throw affineExcept("PDFactory","initPD",str.str(),3);
+    throw affineExcept("PDFactory", "initPD", str.str(), 2);
   }
 
 
@@ -304,8 +304,8 @@ void PDFactory::initPD(unsigned int n, double sigma,
   bool has_pos = bm.hasPos();
   bool has_neg = bm.hasNeg();
   if ( ! ( has_pos || has_neg ) )
-    throw affineExcept("PDFactory","initPD",
-		       "Beam has neither positive nor negative bits",1);
+    throw affineExcept("PDFactory", "initPD",
+		       "Beam has neither positive nor negative bits", 3);
 
   //Set min/max interpolation is filled in for; the lower
   // limit is tricky.  For now controlled by user
@@ -501,17 +501,17 @@ void PDFactory::initPD(unsigned int n, double sigma,
     if (contam < 0) maxidx = n; else {
       double topflux = maxflux - contam;
       if (topflux < 0)
-	throw affineExcept("PDFactory","initPD","Padding problem",5);
+	throw affineExcept("PDFactory", "initPD", "Padding problem", 5);
       maxidx = static_cast< unsigned int>( topflux/dflux );
       if (maxidx > n)
-	throw affineExcept("PDFactory","initPD","Padding problem",6);
+	throw affineExcept("PDFactory", "initPD", "Padding problem", 6);
       //Actual padding
       for (unsigned int i = maxidx; i < n; ++i)
 	rvals[i] = 0.0;
     }
   } else maxidx = n;
   if (maxidx == 0)
-    throw affineExcept("PDFactory","initPD","maxidx is 0, which is bad",7);
+    throw affineExcept("PDFactory", "initPD", "maxidx is 0, which is bad", 7);
 
   //Compute forward transform of this r value, store in rtrans
   //Have to use argument version, since the address of rtrans can move
@@ -554,15 +554,15 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog,
   // for output
 
   if (! initialized )
-    throw affineExcept("PDFactory","getPD",
-		       "Must call initPD first",1);
+    throw affineExcept("PDFactory", "getPD",
+		       "Must call initPD first", 1);
   if (sigma > max_sigma) {
     std::stringstream errstr("");
     errstr << "Sigma value " << sigma
 	   << " larger than maximum prepared value " << max_sigma
 	   << std::endl;
     errstr << "initPD should have been called with at least " << sigma;
-    throw affineExcept("PDFactory","getPD",errstr.str(),2);
+    throw affineExcept("PDFactory", "getPD", errstr.str(), 2);
   }
 
   //Output array from 2D FFT is n/2+1
@@ -680,7 +680,7 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog,
     std::stringstream str;
     str << "Un-shift amounts not finite: " << tmn << " " << std::endl;
     str << "At length: " << n << " with noise: " << sigma;
-    throw affineExcept("PDFactory","getPD",str.str(),3);
+    throw affineExcept("PDFactory", "getPD", str.str(), 3);
   }
   if (verbose) {
     std::cerr << " Expected mean: " << shift+mn 
