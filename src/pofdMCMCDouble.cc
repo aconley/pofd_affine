@@ -88,6 +88,7 @@ bool pofdMCMCDouble::initChainsMaster() {
   if (!spec_info.fit_sigma2) this->fixParam(ntot + 1);
 
   //Initialize likelihood information -- priors, data, etc.
+  likeSet.setPositions(ifile);
   likeSet.setFFTSize(spec_info.fftsize);
   if (spec_info.edge_fix) likeSet.setEdgeFix(); else likeSet.unSetEdgeFix();
   if (spec_info.edge_set) {
@@ -313,6 +314,7 @@ bool pofdMCMCDouble::initChainsSlave() {
 
 void pofdMCMCDouble::initChains() {
   if (rank == 0) initChainsMaster(); else initChainsSlave();
+  MPI_Barrier(MPI_COMM_WORLD);
 }
 
 /*!

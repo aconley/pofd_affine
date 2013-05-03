@@ -488,6 +488,15 @@ setKnotPositions(const std::vector<float>& S) {
     if (S[i] <= 0.0)
       throw affineExcept("numberCountsDoubleLogNormal","setKnotPositions",
 			 "Non-positive knot positions not allowed",1);
+  // Knot positions -must- increase, the GSL requires
+  for (unsigned int i = 1; i < nknots; ++i)
+    if (S[i] <= S[i-1]) {
+      std::stringstream errstr;
+      errstr << "Knot positions not monotonically increasing: S[" << i-1 
+	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
+      throw affineExcept("numberCountsDoubleLogNormal", "setKnotPositions",
+			 errstr.str(), 2);
+    }
   for (unsigned int i = 0; i < nknots; ++i)
     knots[i] = static_cast<double>(S[i]);
   for (unsigned int i = 0; i < nknots; ++i)
@@ -506,6 +515,15 @@ setKnotPositions(const std::vector<double>& S) {
     if (S[i] <= 0.0)
       throw affineExcept("numberCountsDoubleLogNormal","setKnotPositions",
 			 "Non-positive knot positions not allowed",1);
+  // Knot positions -must- increase, the GSL requires
+  for (unsigned int i = 1; i < nknots; ++i)
+    if (S[i] <= S[i-1]) {
+      std::stringstream errstr;
+      errstr << "Knot positions not monotonically increasing: S[" << i-1 
+	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
+      throw affineExcept("numberCountsDoubleLogNormal", "setKnotPositions",
+			 errstr.str(), 2);
+    }
   for (unsigned int i = 0; i < nknots; ++i)
     knots[i] = S[i];
   for (unsigned int i = 0; i < nknots; ++i)
@@ -524,6 +542,14 @@ void numberCountsDoubleLogNormal::setKnotPositions(unsigned int n,
     if (S[i] <= 0.0)
       throw affineExcept("numberCountsDoubleLogNormal","setKnotPositions",
 			 "Non-positive knot positions not allowed",1);
+  for (unsigned int i = 1; i < nknots; ++i)
+    if (S[i] <= S[i-1]) {
+      std::stringstream errstr;
+      errstr << "Knot positions not monotonically increasing: S[" << i-1 
+	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
+      throw affineExcept("numberCountsDoubleLogNormal", "setKnotPositions",
+			 errstr.str(), 2);
+    }
   for (unsigned int i = 0; i < nknots; ++i)
     knots[i] = static_cast<double>(S[i]);
   for (unsigned int i = 0; i < nknots; ++i)
@@ -542,6 +568,14 @@ void numberCountsDoubleLogNormal::setKnotPositions(unsigned int n,
     if (S[i] <= 0.0)
       throw affineExcept("numberCountsDoubleLogNormal","setKnotPositions",
 			 "Non-positive knot positions not allowed",1);
+  for (unsigned int i = 1; i < nknots; ++i)
+    if (S[i] <= S[i-1]) {
+      std::stringstream errstr;
+      errstr << "Knot positions not monotonically increasing: S[" << i-1 
+	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
+      throw affineExcept("numberCountsDoubleLogNormal", "setKnotPositions",
+			 errstr.str(), 2);
+    }
   for (unsigned int i = 0; i < nknots; ++i)
     knots[i] = S[i];
   for (unsigned int i = 0; i < nknots; ++i)
@@ -569,8 +603,16 @@ setSigmaPositions(const std::vector<float>& S) {
   setNSigmas(n); //Also invalidates
   for (unsigned int i = 0; i < n; ++i)
     if (S[i] <= 0.0)
-      throw affineExcept("numberCountsDoubleLogNormal","setSigmaPositions",
-			 "Non-positive sigma knot positions not allowed",1);
+      throw affineExcept("numberCountsDoubleLogNormal", "setSigmaPositions",
+			 "Non-positive sigma knot positions not allowed", 1);
+  for (unsigned int i = 1; i < nsigmaknots; ++i)
+    if (S[i] <= S[i-1]) {
+      std::stringstream errstr;
+      errstr << "Sigma positions not monotonically increasing: S[" << i-1 
+	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
+      throw affineExcept("numberCountsDoubleLogNormal", "setSigmaPositions",
+			 errstr.str(), 2);
+    }
   for (unsigned int i = 0; i < n; ++i)
     sigmaknots[i] = static_cast<double>(S[i]);
   if (nsigmaknots > 0) sigmapos_loaded = true;
@@ -586,8 +628,16 @@ setSigmaPositions(const std::vector<double>& S) {
   setNSigmas(n); //Also invalidates
   for (unsigned int i = 0; i < n; ++i)
     if (S[i] <= 0.0)
-      throw affineExcept("numberCountsDoubleLogNormal","setSigmaPositions",
-			 "Non-positive sigma knot positions not allowed",1);
+      throw affineExcept("numberCountsDoubleLogNormal", "setSigmaPositions",
+			 "Non-positive sigma knot positions not allowed", 1);
+  for (unsigned int i = 1; i < nsigmaknots; ++i)
+    if (S[i] <= S[i-1]) {
+      std::stringstream errstr;
+      errstr << "Sigma positions not monotonically increasing: S[" << i-1 
+	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
+      throw affineExcept("numberCountsDoubleLogNormal", "setSigmaPositions",
+			 errstr.str(), 2);
+    }
   for (unsigned int i = 0; i < n; ++i)
     sigmaknots[i] = S[i];
   if (nsigmaknots > 0) sigmapos_loaded = true;
@@ -602,8 +652,16 @@ void numberCountsDoubleLogNormal::setSigmaPositions(unsigned int n,
   setNSigmas(n); //Invalidates
   for (unsigned int i = 0; i < n; ++i)
     if (S[i] <= 0.0)
-      throw affineExcept("numberCountsDoubleLogNormal","setKnots",
-			 "Non-positive sigma knot positions not allowed",1);
+      throw affineExcept("numberCountsDoubleLogNormal", "setKnots",
+			 "Non-positive sigma knot positions not allowed", 1);
+  for (unsigned int i = 1; i < nsigmaknots; ++i)
+    if (S[i] <= S[i-1]) {
+      std::stringstream errstr;
+      errstr << "Sigma positions not monotonically increasing: S[" << i-1 
+	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
+      throw affineExcept("numberCountsDoubleLogNormal", "setSigmaPositions",
+			 errstr.str(), 2);
+    }
   for (unsigned int i = 0; i < n; ++i)
     sigmaknots[i] = static_cast<double>(S[i]);
   if (nsigmaknots > 0) sigmapos_loaded = true;
@@ -618,8 +676,16 @@ void numberCountsDoubleLogNormal::setSigmaPositions(unsigned int n,
   setNSigmas(n); //Invalidates
   for (unsigned int i = 0; i < n; ++i)
     if (S[i] <= 0.0)
-      throw affineExcept("numberCountsDoubleLogNormal","setKnots",
-			 "Non-positive sigma knot positions not allowed",1);
+      throw affineExcept("numberCountsDoubleLogNormal", "setKnots",
+			 "Non-positive sigma knot positions not allowed", 1);
+  for (unsigned int i = 1; i < nsigmaknots; ++i)
+    if (S[i] <= S[i-1]) {
+      std::stringstream errstr;
+      errstr << "Sigma positions not monotonically increasing: S[" << i-1 
+	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
+      throw affineExcept("numberCountsDoubleLogNormal", "setSigmaPositions",
+			 errstr.str(), 2);
+    }
   for (unsigned int i = 0; i < n; ++i)
     sigmaknots[i] = S[i];
   if (nsigmaknots > 0) sigmapos_loaded = true;
@@ -646,8 +712,16 @@ setOffsetPositions(const std::vector<float>& S) {
   setNOffsets(n);
   for (unsigned int i = 0; i < n; ++i)
     if (S[i] <= 0.0)
-      throw affineExcept("numberCountsDoubleLogNormal","setOffsetPositions",
-			 "Non-positive offset knot positions not allowed",1);
+      throw affineExcept("numberCountsDoubleLogNormal", "setOffsetPositions",
+			 "Non-positive offset knot positions not allowed", 1);
+  for (unsigned int i = 1; i < noffsetknots; ++i)
+    if (S[i] <= S[i-1]) {
+      std::stringstream errstr;
+      errstr << "Offset positions not monotonically increasing: S[" << i-1 
+	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
+      throw affineExcept("numberCountsDoubleLogNormal", "setOffsetPositions",
+			 errstr.str(), 2);
+    }
   for (unsigned int i = 0; i < n; ++i)
     offsetknots[i] = static_cast<double>(S[i]);
   if (noffsetknots > 0) offsetpos_loaded = true;
@@ -662,8 +736,16 @@ setOffsetPositions(const std::vector<double>& S) {
   setNOffsets(n);
   for (unsigned int i = 0; i < n; ++i)
     if (S[i] <= 0.0)
-      throw affineExcept("numberCountsDoubleLogNormal","setOffsetPositions",
-			 "Non-positive offset knot positions not allowed",1);
+      throw affineExcept("numberCountsDoubleLogNormal", "setOffsetPositions",
+			 "Non-positive offset knot positions not allowed", 1);
+  for (unsigned int i = 1; i < noffsetknots; ++i)
+    if (S[i] <= S[i-1]) {
+      std::stringstream errstr;
+      errstr << "Offset positions not monotonically increasing: S[" << i-1 
+	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
+      throw affineExcept("numberCountsDoubleLogNormal", "setOffsetPositions",
+			 errstr.str(), 2);
+    }
   for (unsigned int i = 0; i < n; ++i)
     offsetknots[i] = S[i];
   if (noffsetknots > 0) offsetpos_loaded = true;
@@ -691,6 +773,14 @@ void numberCountsDoubleLogNormal::setOffsetPositions(unsigned int n,
     if (S[i] <= 0.0)
       throw affineExcept("numberCountsDoubleLogNormal","setKnots",
 			 "Non-positive offset knot positions not allowed",1);
+  for (unsigned int i = 1; i < noffsetknots; ++i)
+    if (S[i] <= S[i-1]) {
+      std::stringstream errstr;
+      errstr << "Offset positions not monotonically increasing: S[" << i-1 
+	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
+      throw affineExcept("numberCountsDoubleLogNormal", "setOffsetPositions",
+			 errstr.str(), 2);
+    }
   for (unsigned int i = 0; i < n; ++i)
     offsetknots[i] = static_cast<double>(S[i]);
   if (noffsetknots > 0) offsetpos_loaded = true;
@@ -707,6 +797,14 @@ void numberCountsDoubleLogNormal::setOffsetPositions(unsigned int n,
     if (S[i] <= 0.0)
       throw affineExcept("numberCountsDoubleLogNormal","setKnots",
 			 "Non-positive offset knot positions not allowed",1);
+  for (unsigned int i = 1; i < noffsetknots; ++i)
+    if (S[i] <= S[i-1]) {
+      std::stringstream errstr;
+      errstr << "Offset positions not monotonically increasing: S[" << i-1 
+	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
+      throw affineExcept("numberCountsDoubleLogNormal", "setOffsetPositions",
+			 errstr.str(), 2);
+    }
   for (unsigned int i = 0; i < n; ++i)
     offsetknots[i] = S[i];
   if (noffsetknots > 0) offsetpos_loaded = true;

@@ -72,6 +72,7 @@ bool pofdMCMC::initChainsMaster() {
   if (!spec_info.fit_sigma) this->fixParam(nknots);
 
   //Initialize likelihood information -- priors, data, etc.
+  likeSet.setKnotPositions(ifile);
   likeSet.setFFTSize(spec_info.fftsize);
   if (spec_info.edge_fix) likeSet.setEdgeFix(); else likeSet.unSetEdgeFix();
   likeSet.setNInterp(spec_info.ninterp);
@@ -267,6 +268,7 @@ bool pofdMCMC::initChainsSlave() {
 
 void pofdMCMC::initChains() {
   if (rank == 0) initChainsMaster(); else initChainsSlave();
+  MPI_Barrier(MPI_COMM_WORLD);
 }
 
 /*!

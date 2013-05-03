@@ -181,7 +181,7 @@ numberCountsKnotsSpline::operator=(const numberCountsKnotsSpline& other) {
 void numberCountsKnotsSpline::setKnotPositions(const std::vector<float>& vec) {
   numberCountsKnots::setKnotPositions(vec);
   for (unsigned int i = 0; i < nknots; ++i)
-    logknots[i] = log2(static_cast<double>(knots[i]));
+    logknots[i] = log2(knots[i]);
 }
 
 void numberCountsKnotsSpline::setKnotPositions(const std::vector<double>& vec) {
@@ -192,14 +192,14 @@ void numberCountsKnotsSpline::setKnotPositions(const std::vector<double>& vec) {
 
 void numberCountsKnotsSpline::setKnotPositions(unsigned int n, 
 					       const float* const vals) {
-  numberCountsKnots::setKnotPositions(n,vals);
+  numberCountsKnots::setKnotPositions(n, vals);
   for (unsigned int i = 0; i < nknots; ++i)
-    logknots[i] = log2(static_cast<double>(knots[i]));
+    logknots[i] = log2(knots[i]);
 }
 
 void numberCountsKnotsSpline::setKnotPositions(unsigned int n, 
 					       const double* const vals) {
-  numberCountsKnots::setKnotPositions(n,vals);
+  numberCountsKnots::setKnotPositions(n, vals);
   for (unsigned int i = 0; i < nknots; ++i)
     logknots[i] = log2(knots[i]);
 }
@@ -545,23 +545,23 @@ void numberCountsKnotsSpline::getR(unsigned int n,const double* const flux,
   default :
     std::stringstream errstr;
     errstr << "Unknown R beam specification: " << rt;
-    throw affineExcept("numberCountsKnotsSpline","getR",
-		       errstr.str(),1);
+    throw affineExcept("numberCountsKnotsSpline", "getR",
+		       errstr.str(), 1);
   }
   return;
 }
 
 void numberCountsKnotsSpline::sendSelf(MPI_Comm comm, int dest) const {
   numberCountsKnots::sendSelf(comm, dest);
-  if (knotvals_loaded)
-    MPI_Send(logknots, nknots, MPI_DOUBLE, dest,
+  if (nknots > 0)
+    MPI_Send(logknots, nknots, MPI_DOUBLE, dest, 
 	     pofd_mcmc::NCKSSENDLOGKNOTS, comm);
 }
 
 void numberCountsKnotsSpline::recieveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
   unsigned int oldnknots = nknots;
-  numberCountsKnots::recieveCopy(comm,src);
+  numberCountsKnots::recieveCopy(comm, src);
 
   if (nknots != oldnknots) {
     if (splinelog != NULL) gsl_spline_free(splinelog);
@@ -571,11 +571,12 @@ void numberCountsKnotsSpline::recieveCopy(MPI_Comm comm, int src) {
     else
       splinelog = NULL;
   }
-  if (knotvals_loaded) {
+  if (nknots > 0) {
     MPI_Recv(logknots, nknots, MPI_DOUBLE, src, pofd_mcmc::NCKSSENDLOGKNOTS,
 	     comm, &Info);
-    gsl_spline_init(splinelog, logknots, logknotvals,
-		    static_cast<size_t>(nknots));
+    if (knotvals_loaded)
+      gsl_spline_init(splinelog, logknots, logknotvals,
+		      static_cast<size_t>(nknots));
   }
 }
 

@@ -119,6 +119,15 @@ void numberCountsKnots::setKnotPositions(const std::vector<float>& S) {
     if (S[i] <= 0.0)
       throw affineExcept("numberCountsKnots","setKnots",
 			 "Negative knot positions not allowed",1);
+  // Knot positions -must- increase, the GSL requires
+  for (unsigned int i = 1; i < nknots; ++i)
+    if (S[i] <= S[i-1]) {
+      std::stringstream errstr;
+      errstr << "Knot positions not monotonically increasing: S[" << i-1 
+	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
+      throw affineExcept("numberCountsKnots", "setKnotPositions",
+			 errstr.str(), 1);
+    }
   for (unsigned int i = 0; i < nknots; ++i)
     knots[i] = static_cast<double>(S[i]);
 }
@@ -133,6 +142,15 @@ void numberCountsKnots::setKnotPositions(const std::vector<double>& S) {
     if (S[i] <= 0.0)
       throw affineExcept("numberCountsKnots","setKnots",
 			 "Negative knot positions not allowed",1);
+  // Knot positions -must- increase, the GSL requires
+  for (unsigned int i = 1; i < nknots; ++i)
+    if (S[i] <= S[i-1]) {
+      std::stringstream errstr;
+      errstr << "Knot positions not monotonically increasing: S[" << i-1 
+	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
+      throw affineExcept("numberCountsKnots", "setKnotPositions",
+			 errstr.str(), 1);
+    }
   for (unsigned int i = 0; i < nknots; ++i)
     knots[i] = S[i];
 }
@@ -148,6 +166,15 @@ void numberCountsKnots::setKnotPositions(unsigned int n,
     if (S[i] <= 0.0)
       throw affineExcept("numberCountsKnots","setKnots",
 			 "Negative knot positions not allowed",1);
+  // Knot positions -must- increase, the GSL requires
+  for (unsigned int i = 1; i < nknots; ++i)
+    if (S[i] <= S[i-1]) {
+      std::stringstream errstr;
+      errstr << "Knot positions not monotonically increasing: S[" << i-1 
+	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
+      throw affineExcept("numberCountsKnots", "setKnotPositions",
+			 errstr.str(), 1);
+    }
   for (unsigned int i = 0; i < nknots; ++i)
     knots[i] = static_cast<double>(S[i]);
 }
@@ -163,6 +190,15 @@ void numberCountsKnots::setKnotPositions(unsigned int n,
     if (S[i] <= 0.0)
       throw affineExcept("numberCountsKnots","setKnots",
 			 "Negative knot positions not allowed",1);
+  // Knot positions -must- increase, the GSL requires
+  for (unsigned int i = 1; i < nknots; ++i)
+    if (S[i] <= S[i-1]) {
+      std::stringstream errstr;
+      errstr << "Knot positions not monotonically increasing: S[" << i-1 
+	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
+      throw affineExcept("numberCountsKnots", "setKnotPositions",
+			 errstr.str(), 1);
+    }
   for (unsigned int i = 0; i < nknots; ++i)
     knots[i] = S[i];
 }
