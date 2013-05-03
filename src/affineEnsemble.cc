@@ -315,16 +315,20 @@ void affineEnsemble::printStatistics(float conflevel,
 /*!
   Manages the sampling.  Should be called for both master and slave
   processes.
-  //It proceeds as follows:
-  //  1) First, possibly do init_burn steps in each walker, and discard
-  //  2) Then do min_burn steps in each walker
-  //  2) Compute the autocorrelation length
-  //  4) Do enough additional steps so that burn_multiple*acor steps have
-  //     been done
-  //  5) Compute acor again and make sure we still satisfy that criterion;
-  //      if not do more steps, if so discard the previous steps
-  //  6) Then do nsteps additional steps
- */
+  It proceeds as follows:
+    1) Initialize the chains by calling initChains
+    2) Possibly do initsteps steps in each walker, and discard
+    3) Then do min_burn steps in each walker
+    4) Compute the autocorrelation length
+    5) Do enough additional steps so that burn_multiple*acor steps have
+       been done
+    6) Compute acor again and make sure we still satisfy that criterion;
+        if not do more steps, if so discard the previous steps
+    7) Then do nsteps additional steps
+  Note that this generally should not be called more than once -- this
+  is a driver that tries to do all steps.  For more fine grained control,
+  use doSteps.
+*/
 void affineEnsemble::sample() {
   //This routine is where all of the parallel bits happen
   // Different things happen if this is the master node or a slave one;
