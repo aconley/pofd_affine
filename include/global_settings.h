@@ -2,6 +2,7 @@
 #define __global_settings__
 
 #include<cmath>
+#include<unistd.h>
 
 /*!
   \brief Global convenience variables
