@@ -184,11 +184,9 @@ int main(int argc, char** argv) {
 	      << std::endl;
     return 1;
   }
-  specfile = std::string(argv[optind]);
-  initfile = std::string(argv[optind+1]);
+  initfile = std::string(argv[optind]);
+  specfile = std::string(argv[optind+1]);
   outfile = std::string(argv[optind+2]);
-
-  if (fixed_burn) init_steps = 0;
 
   //Test inputs
   if (nwalkers == 0) {
@@ -221,9 +219,11 @@ int main(int argc, char** argv) {
 		<< scalefac << std::endl;
     return 1;
   }
+
+  if (fixed_burn) init_steps = 0;
     
   try {
-    if (! twod) {
+    if (!twod) {
       pofdMCMC engine(initfile, specfile, nwalkers, nsamples, init_steps,
 		      min_burn, fixed_burn, burn_multiple, scalefac);
       

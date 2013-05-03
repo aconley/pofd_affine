@@ -27,6 +27,7 @@ pofdMCMCDouble::pofdMCMCDouble(const std::string& INITFILE,
 			       unsigned int INIT_STEPS, unsigned int MIN_BURN, 
 			       bool FIXED_BURN, float BURN_MULTIPLE, 
 			       float SCALEFAC) :
+  initfile(INITFILE), specfile(SPECFILE),
   affineEnsemble(NWALKERS, 1, NSAMPLES, INIT_STEPS, MIN_BURN,
 		 FIXED_BURN, BURN_MULTIPLE, SCALEFAC) {
   //Note that we set NPARAMS to a bogus value (1) above, then 
