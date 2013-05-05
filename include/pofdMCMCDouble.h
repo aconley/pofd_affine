@@ -16,6 +16,8 @@ private:
 
   calcLikeDouble likeSet; //!< Does likelihood calculation
   
+  // We don't support multiple attempts to initialize
+  bool is_initialized; //!< Has this been initialized
   bool initChainsMaster(); //!< Initialization routine for master node
   bool initChainsSlave(); //!< Initialization routine for slave node
 

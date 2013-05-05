@@ -29,7 +29,7 @@ pofdMCMCDouble::pofdMCMCDouble(const std::string& INITFILE,
 			       float SCALEFAC) :
   affineEnsemble(NWALKERS, 1, NSAMPLES, INIT_STEPS, MIN_BURN,
 		 FIXED_BURN, BURN_MULTIPLE, SCALEFAC),
-  initfile(INITFILE), specfile(SPECFILE) {
+  initfile(INITFILE), specfile(SPECFILE), is_initialized(false) {
   //Note that we set NPARAMS to a bogus value (1) above, then 
   // have to change it later once we know how many model params we have
   // All of this is done in initChains
@@ -313,7 +313,9 @@ bool pofdMCMCDouble::initChainsSlave() {
 }
 
 void pofdMCMCDouble::initChains() {
+  if (is_initialized) return;
   if (rank == 0) initChainsMaster(); else initChainsSlave();
+  is_initialized = true;
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
@@ -321,5 +323,8 @@ void pofdMCMCDouble::initChains() {
   \param[in] p Parameters to evaluate model for
  */
 double pofdMCMCDouble::getLogLike(const paramSet& p) {
+  if (!is_initialized)
+    throw affineExcept("pofdMCMC", "getLogLike",
+		       "Called on unitialized object", 1);
   return likeSet.getLogLike(p);
 }
