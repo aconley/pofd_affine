@@ -414,13 +414,13 @@ float affineEnsemble::getMaxAcor() const {
   float maxval;
   unsigned int start_idx;
   for (start_idx = 0; start_idx < nparams; ++start_idx)
-    if ((param_state[start_idx] | mcmc_affine::ACIGNORE) == 0) break;
+    if ((param_state[start_idx] & mcmc_affine::ACIGNORE) == 0) break;
   if (start_idx == nparams)
     throw affineExcept("affineEnsemble", "getMaxAcor",
 		       "All params ignored", 2);
   maxval = acor[start_idx];
   for (unsigned int i = start_idx+1; i < nparams; ++i)
-    if (((param_state[i] | mcmc_affine::ACIGNORE) == 0) && 
+    if (((param_state[i] & mcmc_affine::ACIGNORE) == 0) && 
 	acor[i] > maxval) maxval = acor[i];
   return maxval;
 }
@@ -557,7 +557,7 @@ void affineEnsemble::doMasterStep() throw (affineExcept) {
   if (rank != 0)
     throw affineExcept("affineEnsemble", "doMasterStep",
 		       "Should only be called from master node", 1);
-  if (! stepqueue.empty())
+  if (!stepqueue.empty())
     throw affineExcept("affineEnsemble", "doMasterStep",
 		       "step queue should be empty at start", 2);
 
@@ -566,23 +566,33 @@ void affineEnsemble::doMasterStep() throw (affineExcept) {
   //Do the first half
   minidx = nwalkers/2; //Generate from second half
   maxidx = nwalkers;
-  for (unsigned int i = 0; i < nwalkers/2; ++i) {
+  if (ultraverbose)
+    std::cout << "Generating new steps for 0:" << nwalkers/2
+	      << " from " << minidx << ":" << maxidx << std::endl;
+  for (unsigned int i = 0; i < nwalkers / 2; ++i) {
     pr.first  = i;
     pr.second = rangen.selectFromRange(minidx, maxidx);
     stepqueue.push(pr);
   }
 
   //Now run that
+  if (ultraverbose)
+    std::cout << "Evaluating likelihoods" << std::endl;
   emptyMasterQueue();
 
   //Then the second
   minidx = 0;
   maxidx = nwalkers/2;
+  if (ultraverbose)
+    std::cout << "Generating new steps for " << nwalkers/2 << ":" << nwalkers
+	      << " from " << minidx << ":" << maxidx << std::endl;
   for (unsigned int i = nwalkers/2; i < nwalkers; ++i) {
     pr.first  = i;
     pr.second = rangen.selectFromRange(minidx, maxidx);
     stepqueue.push(pr);
   }
+  if (ultraverbose)
+    std::cout << "Evaluating likelihoods" << std::endl;
   emptyMasterQueue();
 
 }
@@ -614,6 +624,9 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
 	//Generate actual value into pstep
 	generateNewStep(pr.first, pr.second, pstep);
 	
+	if (ultraverbose)
+	  std::cout << "Evaluating new step for walker: " << pr.first
+		    << " using slave: " << this_rank << std::endl;
 	MPI_Send(&jnk, 1, MPI_INT, this_rank, mcmc_affine::SENDINGPOINT,
 		 MPI_COMM_WORLD);
 	pstep.sendSelf(MPI_COMM_WORLD, this_rank);
@@ -668,6 +681,8 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
 	std::cout << "Got new step for " << pstep.update_idx 
 		  << " from slave " << this_rank << std::endl;
 	std::cout << pstep << std::endl;
+	std::cout << "Delta likelihood: "
+		  << pstep.newLogLike - pstep.oldLogLike << std::endl;
       }
 
       if (prob >= 1) {
