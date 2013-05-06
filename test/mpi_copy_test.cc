@@ -290,9 +290,12 @@ void master( int argc, char **argv ) {
     const float kval[] = {10, 5, 3};
     paramSet p(3, kval);
     numberCountsKnotsSpline model(3, kpos);
+    double nkval = model.getNumberCounts(0.2);
     model.setParams(p);
     for (int i=1; i < nproc; ++i)
       model.sendSelf(MPI_COMM_WORLD, i);
+    for (int i=1; i < nproc; ++i)
+      MPI_Send(&nkval, 1, MPI_DOUBLE, i, SENDDBLVAL, MPI_COMM_WORLD);
     for (int i = 1; i < nproc; ++i)
       MPI_Recv(&jnk, 1, MPI_INT, i, TESTSUCCEEDED, MPI_COMM_WORLD, &Info);
     if (verbose) std::cout << "numberCountsDoubleLogNormal test succeeded" 
@@ -727,7 +730,9 @@ void slave() {
     const double kpos[] = {0.1, 0.3, 1.0};
     const double kval[] = {10, 5, 3};
     numberCountsKnotsSpline model;
+    double nkval, nkval_this;
     model.recieveCopy(MPI_COMM_WORLD, 0);
+    MPI_Recv(&nkval, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
     if (model.getNKnots() != 3)
       throw affineExcept("test_copy","slave", 
 			 "numberCountsKnotsSpline.getNKnots() should be 3", 6);
@@ -748,6 +753,10 @@ void slave() {
       throw affineExcept("test_copy","slave", 
 			 "numberCountsKnotsSpline knot values are off", 22);
       
+    nkval_this = model.getNumberCounts(0.2);
+    if (fabs((nkval_this - nkval)/nkval) > 1e-4)
+      throw affineExcept("test_copy","slave", 
+			 "numberCountsKnotsSpline number counts are off", 34);
     MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;

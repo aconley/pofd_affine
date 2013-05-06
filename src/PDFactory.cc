@@ -483,8 +483,14 @@ void PDFactory::initPD(unsigned int n, double sigma,
 
   //Make sure that maxflux is large enough that we don't get
   // bad aliasing wrap from the top around into the lower P(D) values.
-  if (maxflux <= pofd_mcmc::n_sigma_pad*sg)
-    throw affineExcept("PDFactory", "initPD", "Top wrap problem", 4);
+  if (maxflux <= pofd_mcmc::n_sigma_pad * sg) {
+    std::stringstream errstr;
+    errstr << "Top wrap problem, with maxflux: " << maxflux
+	   << " sigma value: " << sigma 
+	   << " and current sigma estimate: " << sg << std::endl;
+    errstr << "For model: " << model;
+    throw affineExcept("PDFactory", "initPD", errstr.str(), 4);
+  }
 
   //The other side of the equation is that we want to zero-pad the
   // top, and later discard that stuff.
@@ -500,18 +506,37 @@ void PDFactory::initPD(unsigned int n, double sigma,
     double contam = pofd_mcmc::n_sigma_pad*sg - (mn+shift);
     if (contam < 0) maxidx = n; else {
       double topflux = maxflux - contam;
-      if (topflux < 0)
-	throw affineExcept("PDFactory", "initPD", "Padding problem", 5);
-      maxidx = static_cast< unsigned int>( topflux/dflux );
-      if (maxidx > n)
-	throw affineExcept("PDFactory", "initPD", "Padding problem", 6);
-      //Actual padding
+      if (topflux < 0) {
+	std::stringstream errstr;
+	errstr << "Padding problem with with maxflux: " << maxflux
+	   << " sigma value: " << sigma 
+	   << " and contam value: " << contam << std::endl;
+	errstr << "For model: " << model;
+	throw affineExcept("PDFactory", "initPD", errstr.str(), 5);
+      }
+      maxidx = static_cast< unsigned int>(topflux / dflux);
+      if (maxidx > n) {
+	std::stringstream errstr;
+	errstr << "Padding index problem with with maxflux: " << maxflux
+	   << " sigma value: " << sigma 
+	   << " and contam value: " << contam << std::endl;
+	errstr << "For model: " << model;
+	throw affineExcept("PDFactory", "initPD", errstr.str(), 6);
+      }
+      if (maxidx == 0) {
+	std::stringstream errstr;
+	errstr << "maxidx=0 problem with with maxflux: " << maxflux
+	   << " sigma value: " << sigma 
+	   << " and contam value: " << contam << std::endl;
+	errstr << "For model: " << model;
+	throw affineExcept("PDFactory", "initPD", 
+			   errstr.str(), 7);
+      }
+      // Apply the padding
       for (unsigned int i = maxidx; i < n; ++i)
 	rvals[i] = 0.0;
     }
   } else maxidx = n;
-  if (maxidx == 0)
-    throw affineExcept("PDFactory", "initPD", "maxidx is 0, which is bad", 7);
 
   //Compute forward transform of this r value, store in rtrans
   //Have to use argument version, since the address of rtrans can move

@@ -678,12 +678,28 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
 
   //Make sure that maxflux is large enough that we don't get
   // bad aliasing wrap from the top around into the lower P(D) values.
-  if (maxflux1 <= pofd_mcmc::n_sigma_pad*sg1)
+  if (maxflux1 <= pofd_mcmc::n_sigma_pad * sg1) {
+    std::stringstream errstr;
+    errstr << "Top wrap problem, dimension 1; with sigma1 estimate: " 
+	   << sg1 << std::endl;
+    errstr << " sigma1: " << sigma1 << " sigma2: " << sigma2 << std::endl;
+    errstr << " maxflux1: " << maxflux1 << " maxflux2: " << maxflux2
+	   << std::endl;
+    errstr << "For model: " << model;
     throw affineExcept("PDFactoryDouble", "initPD",
-		       "Top wrap problem, dimension 1", 6);
-  if (maxflux2 <= pofd_mcmc::n_sigma_pad*sg2)
+		       errstr.str(), 6);
+  }
+  if (maxflux2 <= pofd_mcmc::n_sigma_pad * sg2) {
+    std::stringstream errstr;
+    errstr << "Top wrap problem, dimension 2; with sigma2 estimate: " 
+	   << sg2 << std::endl;
+    errstr << " sigma1: " << sigma1 << " sigma2: " << sigma2 << std::endl;
+    errstr << " maxflux1: " << maxflux1 << " maxflux2: " << maxflux2
+	   << std::endl;
+    errstr << "For model: " << model;
     throw affineExcept("PDFactoryDouble", "initPD",
-		       "Top wrap problem, dimension 2", 7);
+		       errstr.str(), 7);
+  }
 
   //The other side of the equation is that we want to zero-pad the
   // top, and later discard that stuff.  The idea is as follows:
@@ -698,13 +714,32 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
     double contam = pofd_mcmc::n_sigma_pad2d*sg1 - (mn1+shift1);
     if (contam <= 0) maxidx1 = n; else {
       double topflux = maxflux1 - contam;
-      if (topflux < 0)
+      if (topflux < 0) {
+	std::stringstream errstr;
+	errstr << "Pad problem, dimension 1; with contam estimate: " 
+	       << contam << std::endl;
+	errstr << " sigma1: " << sigma1 << " sigma2: " << sigma2 << std::endl;
+	errstr << " maxflux1: " << maxflux1 << " maxflux2: " << maxflux2
+	       << std::endl;
+	errstr << "For model: " << model;
 	throw affineExcept("PDFactoryDouble", "initPD",
-			   "Padding problem, dimension 1", 8);
+			   errstr.str(), 8);
+      }
       maxidx1 = static_cast< unsigned int>(topflux / dflux1);
-      if (maxidx1 > n)
+      if (maxidx1 > n) {
+	std::stringstream errstr;
+	errstr << "Pad problem, dimension 1; with maxidx1: " 
+	       << maxidx1 << std::endl;
+	errstr << " sigma1: " << sigma1 << " sigma2: " << sigma2 << std::endl;
+	errstr << " maxflux1: " << maxflux1 << " maxflux2: " << maxflux2
+	       << std::endl;
+	errstr << "For model: " << model;
 	throw affineExcept("PDFactoryDouble", "initPD",
-			   "Padding problem, dimension 1", 9);
+			   errstr.str(), 9);
+      }
+      if (maxidx1 == 0) 
+	throw affineExcept("PDFactoryDouble", "initPD",
+			   "maxidx1 is 0, which is a problem", 10);
       //Now pad!
       for (unsigned int i = maxidx1; i < n; ++i) {
 	rptr = rvals + n*i;
@@ -713,21 +748,38 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
       }
     }
   } else maxidx1 = n;
-  if (maxidx1 == 0) 
-    throw affineExcept("PDFactoryDouble", "initPD",
-		       "maxidx1 is 0, which is a problem", 10);
+
 
   if (dopad2) {
     double contam = pofd_mcmc::n_sigma_pad2d*sg2 - (mn2+shift2);
       if (contam <= 0) maxidx2 = n; else {
       double topflux = maxflux2 - contam;
-      if (topflux < 0)
+      if (topflux < 0) {
+	std::stringstream errstr;
+	errstr << "Pad problem, dimension 2; with contam estimate: " 
+	       << contam << std::endl;
+	errstr << " sigma1: " << sigma1 << " sigma2: " << sigma2 << std::endl;
+	errstr << " maxflux1: " << maxflux1 << " maxflux2: " << maxflux2
+	       << std::endl;
+	errstr << "For model: " << model;
 	throw affineExcept("PDFactoryDouble", "initPD",
-			   "Padding problem, dimension 2", 11);
+			   errstr.str(), 11);
+      }
       maxidx2 = static_cast< unsigned int>(topflux / dflux2);
-      if (maxidx2 > n)
+      if (maxidx2 > n) {
+	std::stringstream errstr;
+	errstr << "Pad problem, dimension 2; with maxidx2: " 
+	       << maxidx2 << std::endl;
+	errstr << " sigma1: " << sigma1 << " sigma2: " << sigma2 << std::endl;
+	errstr << " maxflux1: " << maxflux1 << " maxflux2: " << maxflux2
+	       << std::endl;
+	errstr << "For model: " << model;
 	throw affineExcept("PDFactoryDouble", "initPD",
-			   "Padding problem, dimension 2", 12);
+			   errstr.str(), 12);
+      }
+      if (maxidx2 == 0) 
+	throw affineExcept("PDFactoryDouble", "initPD",
+			   "maxidx2 is 0, which is a problem", 13);
       for (unsigned int i = 0; i < maxidx1; ++i) {
 	rptr = rvals + n*i;
 	for (unsigned int j = maxidx2; j < n; ++j)
@@ -740,9 +792,6 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
       }
     }
   } else maxidx2 = n;
-  if (maxidx2 == 0) 
-    throw affineExcept("PDFactoryDouble", "initPD",
-		       "maxidx2 is 0, which is a problem", 13);
 
   //Multiply r by dflux factor to represent the actual
   // number of sources in each bin.  Note we do this
