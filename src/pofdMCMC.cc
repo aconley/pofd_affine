@@ -2,7 +2,6 @@
 #include<unistd.h>
 
 #include "../include/pofdMCMC.h"
-#include "../include/specFile.h"
 #include "../include/affineExcept.h"
 
 /*!
@@ -27,7 +26,7 @@ pofdMCMC::pofdMCMC(const std::string& INITFILE, const std::string& SPECFILE,
 		   bool FIXED_BURN, float BURN_MULTIPLE, float SCALEFAC) :
   affineEnsemble(NWALKERS, 1, NSAMPLES, INIT_STEPS, MIN_BURN,
 		 FIXED_BURN, BURN_MULTIPLE, SCALEFAC),
-  initfile(INITFILE), specfile(SPECFILE), is_initialized(false) {
+  initfile(INITFILE), specfile(SPECFILE) {
   //Note that we set NPARAMS to a bogus value (1) above, then 
   // have to change it later once we know how many model params we have
   // All of this is done in initChains
@@ -35,21 +34,21 @@ pofdMCMC::pofdMCMC(const std::string& INITFILE, const std::string& SPECFILE,
 
 bool pofdMCMC::initChainsMaster() {
   if (rank != 0)
-    throw affineExcept("pofdMCMC","initChainsMaster",
-		       "Should not be called except on master node",1);
+    throw affineExcept("pofdMCMC", "initChainsMaster",
+		       "Should not be called except on master node", 1);
 
   //Model initialization file
-  ifile.readFile(initfile,true,true);
+  ifile.readFile(initfile, true, true);
   unsigned int nknots = ifile.getNKnots();
   if (nknots == 0)
-    throw affineExcept("pofdMCMC","initChainsMaster",
-		       "No model knots read in",2);
+    throw affineExcept("pofdMCMC", "initChainsMaster",
+		       "No model knots read in", 2);
   
   //Data/fit initialization file
-  specFile spec_info(specfile);
+  spec_info.readFile(specfile);
   if (spec_info.datafiles.size() == 0)
-      throw affineExcept("pofdMCMC","initChainsMaster",
-			 "No data files read",3);
+      throw affineExcept("pofdMCMC", "initChainsMaster",
+			 "No data files read", 3);
 
 
   //Number of parameters is number of knots + 1 for the
@@ -156,18 +155,42 @@ bool pofdMCMC::initChainsMaster() {
   // any of it
   likeSet.freeData();
   
-  //Generate initial parameters for each walker
-  //First, set up space to hold that first parameter
+  // Generate initial positions
   if (ultraverbose)
     std::cout << "Setting up initial parameters" << std::endl;
+  paramSet p(npar); //Generated parameter
+  ifile.getParams(p); //Get central values from initialization file
+  generateInitialPosition(p);
+
+  is_init = true;
+  
+  //That's it!
+  if (ultraverbose)
+    std::cout << "Initialization completed" << std::endl;
+  return true;
+}
+
+void pofdMCMC::generateInitialPosition(const paramSet& p) {
+  //Generate initial parameters for each walker
+  if (rank != 0) return;
+
+  unsigned int nknots = ifile.getNKnots();
+  if (nknots == 0)
+    throw affineExcept("pofdMCMC", "generateInitialPosition",
+		       "No model knots read in", 1);
+  
+  unsigned int npar = p.getNParams();
+  if (npar < getNParams())
+    throw affineExcept("pofdMCMC", "generateInitialPosition",
+		       "Wrong number of params in input", 2);
+
   chains.clear();
   chains.addChunk(1);
-  chains.setSkipFirst();
 
   //Rather than generate actual likelihoods -- which would require some
   // complicated stuff -- we will assign them -infinite likelihood so 
   // that the first step is always taken
-  paramSet p(npar); //Generated parameter
+  paramSet pnew(npar); //Generated parameter
 
   //We may have to do trials to set up initial parameters, 
   const unsigned int maxtrials = 1000; //!< Maximum number of trials
@@ -187,7 +210,7 @@ bool pofdMCMC::initChainsMaster() {
     //Fill in knot values.  Note that fixed parameters (sigma==0)
     // all get the same values for all walkers, which means all linear
     // combinations get the same value, so the parameter stays fixed
-    ifile.generateRandomKnotValues(p);
+    ifile.generateRandomKnotValues(pnew, p);
 
     //Sigma multiplier value
     if (spec_info.fit_sigma) {
@@ -196,27 +219,20 @@ bool pofdMCMC::initChainsMaster() {
 	trialval = 1.0 + sm_stdev * rangen.gauss(); 
 	if (trialval > 0) break;
       }
-      if (j == maxtrials) {
-	for (int k = 1; k < nproc; ++k) //Tell slaves to stop
-	  MPI_Send(&jnk, 1, MPI_INT, k, mcmc_affine::STOP,
-		   MPI_COMM_WORLD);
-	throw affineExcept("pofdMCMC", "initChainsMaster",
-			   "Couldn't generate sigma multiplier value", 4);
-      }
-      p[nknots] = trialval;
-    } else p[nknots] = 1.0;
+      if (j == maxtrials)
+	throw affineExcept("pofdMCMC", "generateInitialPosition",
+			   "Couldn't generate sigma multiplier value", 3);
+      pnew[nknots] = trialval;
+    } else pnew[nknots] = 1.0;
     
     //Add to chain
     //It's possible that -infinity will not be available on some
     // architectures -- the c++ standard is oddly quiet about this.
     //It seems to work on g++-4.7 though
-    chains.addNewStep(i, p, -std::numeric_limits<double>::infinity());
+    chains.addNewStep(i, pnew, -std::numeric_limits<double>::infinity());
+    naccept[i] = 0;
   }
-  
-  //That's it!
-  if (ultraverbose)
-    std::cout << "Initialization completed" << std::endl;
-  return true;
+  chains.setSkipFirst();
 }
 
 bool pofdMCMC::initChainsSlave() {
@@ -263,13 +279,12 @@ bool pofdMCMC::initChainsSlave() {
     }
   }
 
+  is_init = true;
   return true;
 }
 
 void pofdMCMC::initChains() {
-  if (is_initialized) return;
   if (rank == 0) initChainsMaster(); else initChainsSlave();
-  is_initialized = true;
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
@@ -277,8 +292,8 @@ void pofdMCMC::initChains() {
   \param[in] p Parameters to evaluate model for
  */
 double pofdMCMC::getLogLike(const paramSet& p) {
-  if (!is_initialized)
+  if (!is_init)
     throw affineExcept("pofdMCMC", "getLogLike",
-		       "Called on unitialized object", 1);
+		       "Called on uninitialized object", 1);
   return likeSet.getLogLike(p);
 }

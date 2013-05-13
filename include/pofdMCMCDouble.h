@@ -2,6 +2,7 @@
 #include<string>
 
 #include "../include/affineEnsemble.h"
+#include "../include/specFileDouble.h"
 #include "../include/calcLikeDouble.h"
 
 /*!
@@ -13,11 +14,10 @@ private:
   std::string specfile; //!< File to read spec from
 
   initFileDoubleLogNormal ifile; //!< Stores initial values and limits on parameters
+  specFileDouble spec_info; //!< Controls how fit is done
 
   calcLikeDouble likeSet; //!< Does likelihood calculation
   
-  // We don't support multiple attempts to initialize
-  bool is_initialized; //!< Has this been initialized
   bool initChainsMaster(); //!< Initialization routine for master node
   bool initChainsSlave(); //!< Initialization routine for slave node
 
@@ -31,6 +31,7 @@ public:
   ~pofdMCMCDouble() {}; //!< Destructor
 
   void initChains(); //!< Initializes data between MPI jobs
+  void generateInitialPosition(const paramSet&); //!< Sets up initial position
   double getLogLike(const paramSet&); //!< Evaluates log likelihood
 };
 

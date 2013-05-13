@@ -2249,25 +2249,66 @@ void initFileDoubleLogNormal::getParams(paramSet& p) const {
 /*
   \param[out] p Filled on output with the mean knot values.
 
-  This only fills the first nknots+nsigmas+noffsets parameters
+  This only fills the first nknots+nsigmas+noffsets parameters.  It uses
+  the central values from the initialization file
  */
-void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
+void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& pnew) const {
+  paramSet pcen(pnew.getNParams());
+  getParams(pcen); //Load central values into pcen
+  generateRandomKnotValues(pnew, pcen); //Get new values
+}
+
+/*
+  \param[out] pnew New parameter set generated
+  \param[in] pcen  Central parameter values
+
+  This only fills the first nknots parameters.  This version
+  allows the caller to use different central values than the ones
+  from the initial file, but keep the sigmas, limits, etc.
+*/
+void initFileDoubleLogNormal::
+generateRandomKnotValues(paramSet& pnew, const paramSet& pcen) const {
   const unsigned int maxiters = 1000; //Maximum number of generation attempts
+
   unsigned int ntot = nknots + noffsets + nsigmas;
   if (ntot == 0)
     throw affineExcept("initFileDoubleLogNormal", "generateRandomKnotValues",
 		       "No knot information read in", 1);
     
   //Make sure p is big enough; don't resize, complain
-  if (p.getNParams() < ntot)
+  // Note that setting the sigma multipliers is not handled here,
+  // so we don't test for those slots
+  if (pnew.getNParams() < ntot)
     throw affineExcept("initFileDoubleLogNormal", "generateRandomKnotValues",
 		       "Not enough space in provided paramSet", 2);
 
+  if (pcen.getNParams() < ntot)
+    throw affineExcept("initFileDoubleLogNormal", "generateRandomKnotValues",
+		       "Not enough params in central param Set", 3);
+
   //Deal with simple case -- everything fixed
-  //So just return central values
+  //So just return pcen -- but check it first
   if (!has_sigma) {
+    if (has_lower_limits)
+      for (unsigned int i = 0; i < ntot; ++i)
+	if (has_lowlim[i] && (pcen[i] < lowlim[i])) {
+	  std::stringstream errstr;
+	  errstr << "For parameter " << i << " user provided central value "
+		 << pcen[i] << " is below lower limit " << lowlim[i];
+	  throw affineExcept("initFileKnots", "generateRandomKnotValues",
+			     errstr.str(), 4);
+	}
+    if (has_upper_limits)
+      for (unsigned int i = 0; i < ntot; ++i)
+	if (has_uplim[i] && (pcen[i] > uplim[i])) {
+	  std::stringstream errstr;
+	  errstr << "For parameter " << i << " user provided central value "
+		 << pcen[i] << " is above upper limit " << uplim[i];
+	  throw affineExcept("initFileKnots", "generateRandomKnotValues",
+			     errstr.str(), 5);
+	}
     for (unsigned int i = 0; i < ntot; ++i)
-      p[i] = knotval[i];
+      pnew[i] = pcen[i];
     return;
   }
 
@@ -2276,7 +2317,7 @@ void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
   // have to do trials.
   if (!(has_lower_limits || has_upper_limits)) {
     for (unsigned int i = 0; i < ntot; ++i)
-      p[i] = rangen.gauss() * sigma[i] + knotval[i];
+      pnew[i] = rangen.gauss() * sigma[i] + pcen[i];
   } else {
     //Both sigmas and limits
     bool goodval;
@@ -2285,31 +2326,33 @@ void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
     for (unsigned int i = 0; i < ntot; ++i) {
       if (sigma[i] > 0) {
 	//Some sanity checks
-	if (has_lowlim[i] && (lowlim[i] > knotval[i]+sigma[i]*4.0)) {
+	if (has_lowlim[i] && (lowlim[i] > pcen[i] + sigma[i] * 4.0)) {
 	  std::stringstream errstr;
 	  errstr << "Lower limit is too far above central value; will take too"
 		 << " long to " << std::endl << "generate value for param idx: "
-		 << i;
+		 << i << " with lowlim: " << lowlim[i] << " central: " 
+		 << pcen[i];
 	  throw affineExcept("initFileDoubleLogNormal",
 			     "generateRandomKnotValues",
-			     errstr.str(), 3);
+			     errstr.str(), 6);
 	}
-	if (has_uplim[i] && (uplim[i] < knotval[i]-sigma[i]*4.0)) {
+	if (has_uplim[i] && (uplim[i] < pcen[i] - sigma[i] * 4.0)) {
 	  std::stringstream errstr;
 	  errstr << "Upper limit is too far below central value; will take too"
 		 << " long to " << std::endl << "generate value for param idx: "
-		 << i;
+		 << i << " with uplim: " << uplim[i] << " central: " 
+		 << pcen[i];
 	  throw affineExcept("initFileDoubleLogNormal",
 			     "generateRandomKnotValues",
-			     errstr.str(), 4);
+			     errstr.str(), 7);
 	}
-	
+
 	if (has_lowlim[i] && has_uplim[i]) {
 	  //If range between them is much smaller than
 	  // sigma, just chose uniformly to save time
 	  double rng = uplim[i] - lowlim[i];
 	  if (rng < 1e-4*sigma[i]) {
-	    p[i] = lowlim[i] + rng*rangen.doub();
+	    pnew[i] = lowlim[i] + rng*rangen.doub();
 	  } else {
 	    //Trial
 	    goodval = false;
@@ -2321,14 +2364,14 @@ void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
 		       << i << " after " << iters << " attempts";
 		throw affineExcept("initFileDoubleLogNormal",
 				   "generateRandomKnotValues",
-				   errstr.str(), 5);
+				   errstr.str(), 8);
 	      }
-	      trialval = rangen.gauss() * sigma[i] + knotval[i];
+	      trialval = rangen.gauss() * sigma[i] + pcen[i];
 	      if ((trialval >= lowlim[i]) && (trialval <= uplim[i])) 
 		goodval = true;
 	      ++iters;
 	    }
-	    p[i] = trialval;
+	    pnew[i] = trialval;
 	  }
 	} else if (has_lowlim[i]) {
 	  //Lower limit only
@@ -2341,13 +2384,13 @@ void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
 		     << i << " after " << iters << " attempts";
 	      throw affineExcept("initFileDoubleLogNormal",
 				 "generateRandomKnotValues",
-				 errstr.str(), 6);
+				 errstr.str(), 9);
 	    }
-	    trialval = rangen.gauss() * sigma[i] + knotval[i];
+	    trialval = rangen.gauss() * sigma[i] + pcen[i];
 	    if (trialval >= lowlim[i]) goodval = true;
 	    ++iters;
 	  }
-	  p[i] = trialval;
+	  pnew[i] = trialval;
 	} else if (has_uplim[i]) {
 	  //Upper limit only
 	  goodval = false;
@@ -2359,21 +2402,36 @@ void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& p) const {
 		     << i << " after " << iters << " attempts";
 	      throw affineExcept("initFileDoubleLogNormal",
 				 "generateRandomKnotValues",
-				 errstr.str(), 7);
+				 errstr.str(), 10);
 	    }
-	    trialval = rangen.gauss() * sigma[i] + knotval[i];
+	    trialval = rangen.gauss() * sigma[i] + pcen[i];
 	    if (trialval <= uplim[i]) goodval = true;
 	    ++iters;
 	  }
-	  p[i] = trialval;
+	  pnew[i] = trialval;
 	} else {
 	  //No limit, easy cakes
-	  p[i] = rangen.gauss() * sigma[i] + knotval[i];
+	  pnew[i] = rangen.gauss() * sigma[i] + pcen[i];
 	}
       } else {
-	//Sigma is 0.  The read operation makes sure that, in this case,
-	// the limits include the mean.
-	p[i] = knotval[i];
+	//Sigma is 0.  Check to make sure this is within the limits
+	if (has_lowlim[i] && (pcen[i] < lowlim[i])) {
+	  std::stringstream errstr;
+	  errstr << "For parameter " << i << " user provided central value "
+		 << pcen[i] << " is below lower limit " << lowlim[i];
+	  throw affineExcept("initFileDoubleLogNormal", 
+			     "generateRandomKnotValues",
+			     errstr.str(), 4);
+	}
+	if (has_uplim[i] && (pcen[i] > uplim[i])) {
+	  std::stringstream errstr;
+	  errstr << "For parameter " << i << " user provided central value "
+		 << pcen[i] << " is above upper limit " << uplim[i];
+	  throw affineExcept("initFileDoubleLogNormal", 
+			     "generateRandomKnotValues",
+			     errstr.str(), 5);
+	}
+	pnew[i] = pcen[i];
       }
     }
   }

@@ -432,18 +432,26 @@ void initFileKnots::readFile(const std::string& flname,
     }
     if (read_limits) { 
       if (words.size() > 3) {
-	has_lower_limits = true;
-	str.str(words[3]); str.clear(); str >> currval;
-	hl.push_back(true);
-	kl.push_back(currval);
-	if (words.size() > 4) {
-	  has_upper_limits = true;
-	  str.str(words[4]); str.clear(); str >> currval;
-	  hu.push_back(true);
-	  ku.push_back(currval);
-	} else {
+	if (has_sigma && ks.back() > 0) {
+	  // ignore limits if sigma is zero, since they are irrelevant
+	  hl.push_back(false);
+	  kl.push_back(std::numeric_limits<double>::quiet_NaN());
 	  hu.push_back(false);
 	  ku.push_back(std::numeric_limits<double>::quiet_NaN());
+	} else {
+	  has_lower_limits = true;
+	  str.str(words[3]); str.clear(); str >> currval;
+	  hl.push_back(true);
+	  kl.push_back(currval);
+	  if (words.size() > 4) {
+	    has_upper_limits = true;
+	    str.str(words[4]); str.clear(); str >> currval;
+	    hu.push_back(true);
+	    ku.push_back(currval);
+	  } else {
+	    hu.push_back(false);
+	    ku.push_back(std::numeric_limits<double>::quiet_NaN());
+	  }
 	}
       } else {
 	hl.push_back(false);
@@ -619,24 +627,66 @@ void initFileKnots::getParams(paramSet& p) const {
 }
 
 /*
-  This only fills the first nknots parameters
+  \param[out] pnew New parameter set generated
+
+  This only fills the first nknots parameters.  It uses the central
+  values from the initFile
+*/
+void initFileKnots::generateRandomKnotValues(paramSet& pnew) const {
+  paramSet pcen(pnew.getNParams());
+  getParams(pcen); //Load central values into pcen
+  generateRandomKnotValues(pnew, pcen); //Get new values
+}
+
+/*
+  \param[out] pnew New parameter set generated
+  \param[in] pcen  Central parameter values
+
+  This only fills the first nknots parameters.  This version
+  allows the caller to use different central values than the ones
+  from the initial file, but keep the sigmas, limits, etc.
  */
-void initFileKnots::generateRandomKnotValues(paramSet& p) const {
+void initFileKnots::generateRandomKnotValues(paramSet& pnew, 
+					     const paramSet& pcen) const {
   const unsigned int maxiters = 1000; //Maximum number of generation attempts
+
   if (nknots == 0)
-    throw affineExcept("initFileKnots","generateRandomKnotValues",
-		       "No knot information read in",1);
+    throw affineExcept("initFileKnots", "generateRandomKnotValues",
+		       "No knot information read in", 1);
     
   //Make sure p is big enough; don't resize, complain
-  if (p.getNParams() < nknots)
-    throw affineExcept("initFileKnots","generateRandomKnotValues",
-		       "Not enough space in provided paramSet",2);
+  if (pnew.getNParams() < nknots)
+    throw affineExcept("initFileKnots", "generateRandomKnotValues",
+		       "Not enough space in provided new paramSet", 2);
+  if (pcen.getNParams() < nknots)
+    throw affineExcept("initFileKnots", "generateRandomKnotValues",
+		       "Not enough values in provided central values", 3);
 
   //Deal with simple case -- everything fixed
-  //So just return central values
+  //So just return pcen
   if (!has_sigma) {
+    //Check pcen is within limits
+    if (has_lower_limits)
+      for (unsigned int i = 0; i < nknots; ++i)
+	if (has_lowlim[i] && (pcen[i] < lowlim[i])) {
+	  std::stringstream errstr;
+	  errstr << "For parameter " << i << " user provided central value "
+		 << pcen[i] << " is below lower limit " << lowlim[i];
+	  throw affineExcept("initFileKnots", "generateRandomKnotValues",
+			     errstr.str(), 4);
+	}
+    if (has_upper_limits)
+      for (unsigned int i = 0; i < nknots; ++i)
+	if (has_uplim[i] && (pcen[i] > uplim[i])) {
+	  std::stringstream errstr;
+	  errstr << "For parameter " << i << " user provided central value "
+		 << pcen[i] << " is above upper limit " << uplim[i];
+	  throw affineExcept("initFileKnots", "generateRandomKnotValues",
+			     errstr.str(), 5);
+	}
+    
     for (unsigned int i = 0; i < nknots; ++i)
-      p[i] = knotval[i];
+      pnew[i] = pcen[i];
     return;
   }
 
@@ -646,9 +696,9 @@ void initFileKnots::generateRandomKnotValues(paramSet& p) const {
   if (!(has_lower_limits || has_upper_limits)) {
     for (unsigned int i = 0; i < nknots; ++i)
       if (sigma[i] > 0)
-	p[i] = rangen.gauss() * sigma[i] + knotval[i];
+	pnew[i] = rangen.gauss() * sigma[i] + pcen[i];
       else
-	p[i] = knotval[i];
+	pnew[i] = pcen[i];
   } else {
     //Both sigmas and limits
     bool goodval;
@@ -657,21 +707,23 @@ void initFileKnots::generateRandomKnotValues(paramSet& p) const {
     for (unsigned int i = 0; i < nknots; ++i) {
       if (sigma[i] > 0) {
 	//Some sanity checks
-	if (has_lowlim[i] && (lowlim[i] > knotval[i]+sigma[i]*4.0)) {
+	if (has_lowlim[i] && (lowlim[i] > pcen[i] + sigma[i] * 4.0)) {
 	  std::stringstream errstr;
 	  errstr << "Lower limit is too far above central value; will take too"
 		 << " long to " << std::endl << "generate value for param idx: "
-		 << i;
+		 << i << " with lowlim: " << lowlim[i] << " central: " 
+		 << pcen[i];
 	  throw affineExcept("initFileKnots","generateRandomKnotValues",
-			     errstr.str(),3);
+			     errstr.str(),6);
 	}
-	if (has_uplim[i] && (uplim[i] < knotval[i]-sigma[i]*4.0)) {
+	if (has_uplim[i] && (uplim[i] < pcen[i] - sigma[i] * 4.0)) {
 	  std::stringstream errstr;
 	  errstr << "Upper limit is too far below central value; will take too"
 		 << " long to " << std::endl << "generate value for param idx: "
-		 << i;
+		 << i << " with uplim: " << uplim[i] << " central: " 
+		 << pcen[i];
 	  throw affineExcept("initFileKnots","generateRandomKnotValues",
-			     errstr.str(),4);
+			     errstr.str(),7);
 	}
 	
 	if (has_lowlim[i] && has_uplim[i]) {
@@ -679,7 +731,7 @@ void initFileKnots::generateRandomKnotValues(paramSet& p) const {
 	  // sigma, just chose uniformly to save time
 	  double rng = uplim[i] - lowlim[i];
 	  if (rng < 1e-4*sigma[i]) {
-	    p[i] = lowlim[i] + rng*rangen.doub();
+	    pnew[i] = lowlim[i] + rng*rangen.doub();
 	  } else {
 	    //Trial
 	    goodval = false;
@@ -689,15 +741,15 @@ void initFileKnots::generateRandomKnotValues(paramSet& p) const {
 		std::stringstream errstr;
 		errstr << "Failed to generate acceptable value for param "
 		       << i << " after " << iters << " attempts";
-		throw affineExcept("initFileKnots","generateRandomKnotValues",
-				   errstr.str(),5);
+		throw affineExcept("initFileKnots", "generateRandomKnotValues",
+				   errstr.str(), 8);
 	      }
-	      trialval = rangen.gauss() * sigma[i] + knotval[i];
+	      trialval = rangen.gauss() * sigma[i] + pcen[i];
 	      if ((trialval >= lowlim[i]) && (trialval <= uplim[i])) 
 		goodval = true;
 	      ++iters;
 	    }
-	    p[i] = trialval;
+	    pnew[i] = trialval;
 	  }
 	} else if (has_lowlim[i]) {
 	  //Lower limit only
@@ -709,13 +761,13 @@ void initFileKnots::generateRandomKnotValues(paramSet& p) const {
 	      errstr << "Failed to generate acceptable value for param "
 		     << i << " after " << iters << " attempts";
 	      throw affineExcept("initFileKnots","generateRandomKnotValues",
-				 errstr.str(),6);
+				 errstr.str(), 9);
 	    }
-	    trialval = rangen.gauss() * sigma[i] + knotval[i];
+	    trialval = rangen.gauss() * sigma[i] + pcen[i];
 	    if (trialval >= lowlim[i]) goodval = true;
 	    ++iters;
 	  }
-	  p[i] = trialval;
+	  pnew[i] = trialval;
 	} else if (has_uplim[i]) {
 	  //Upper limit only
 	  goodval = false;
@@ -726,25 +778,37 @@ void initFileKnots::generateRandomKnotValues(paramSet& p) const {
 	      errstr << "Failed to generate acceptable value for param "
 		     << i << " after " << iters << " attempts";
 	      throw affineExcept("initFileKnots","generateRandomKnotValues",
-				 errstr.str(),7);
+				 errstr.str(), 10);
 	    }
-	    trialval = rangen.gauss() * sigma[i] + knotval[i];
+	    trialval = rangen.gauss() * sigma[i] + pcen[i];
 	    if (trialval <= uplim[i]) goodval = true;
 	    ++iters;
 	  }
-	  p[i] = trialval;
+	  pnew[i] = trialval;
 	} else {
 	  //No limit, easy cakes
-	  p[i] = rangen.gauss() * sigma[i] + knotval[i];
+	  pnew[i] = rangen.gauss() * sigma[i] + pcen[i];
 	}
       } else {
-	//Sigma is 0.  The read operation makes sure that, in this case,
-	// the limits include the mean.
-	p[i] = knotval[i];
+	//Sigma is 0.  Check to make sure this is within the limits
+	if (has_lowlim[i] && (pcen[i] < lowlim[i])) {
+	  std::stringstream errstr;
+	  errstr << "For parameter " << i << " user provided central value "
+		 << pcen[i] << " is below lower limit " << lowlim[i];
+	  throw affineExcept("initFileKnots", "generateRandomKnotValues",
+			     errstr.str(), 4);
+	}
+	if (has_uplim[i] && (pcen[i] > uplim[i])) {
+	  std::stringstream errstr;
+	  errstr << "For parameter " << i << " user provided central value "
+		 << pcen[i] << " is above upper limit " << uplim[i];
+	  throw affineExcept("initFileKnots", "generateRandomKnotValues",
+			     errstr.str(), 5);
+	}
+	pnew[i] = pcen[i];
       }
     }
   }
-
 }
 
 double initFileKnots::getKnotSigma(unsigned int idx) const {

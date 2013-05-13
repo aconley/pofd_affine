@@ -121,8 +121,9 @@ class initFileKnots {
   double getKnotPos(unsigned int) const; //!< Get knot position
   double getKnotValue(unsigned int) const; //!< Get knot value
 
-  void getParams(paramSet& p) const; //!< Sets knot values to central values
-  void generateRandomKnotValues(paramSet& p) const; //!< Seed knot values
+  void getParams(paramSet& p) const; //!< Sets param values to central values
+  void generateRandomKnotValues(paramSet& pnew) const; //!< Seed knot values
+  void generateRandomKnotValues(paramSet& pnew, const paramSet& pcen) const; //!< Seed knot values
 
   double getKnotSigma(unsigned int) const; //!< Get knot sigma
   bool isKnotFixed(unsigned int) const; //!< Is a knot fixed?

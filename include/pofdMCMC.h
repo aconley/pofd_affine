@@ -3,6 +3,7 @@
 
 #include "../include/affineEnsemble.h"
 #include "../include/calcLike.h"
+#include "../include/specFile.h"
 
 /*!
   \brief Class for doing 1D P(D) fits
@@ -13,11 +14,10 @@ private:
   std::string specfile; //!< File to read spec from
 
   initFileKnots ifile; //!< Stores initial values and limits on parameters
+  specFile spec_info; //!< Controls how fit is done
 
   calcLike likeSet; //!< Does likelihood calculation
 
-  // We don't support multiple attempts to initialize
-  bool is_initialized; //!< Has this been initialized.
   bool initChainsMaster(); //!< Initialization routine for master node
   bool initChainsSlave(); //!< Initialization routine for slave node
 
@@ -30,7 +30,6 @@ public:
   ~pofdMCMC() {}; //!< Destructor
 
   void initChains(); //!< Initializes data between MPI jobs
+  void generateInitialPosition(const paramSet&); //!< Sets up initial position
   double getLogLike(const paramSet&); //!< Evaluates log likelihood
 };
-
-

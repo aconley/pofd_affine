@@ -294,9 +294,10 @@ class initFileDoubleLogNormal {
   void getOffsetVals(std::vector<double>&) const; //!< Gets the knot values for color model offset
 
   void getModelPositions(numberCountsDoubleLogNormal&) const; //!< Sets knot locations in model for all model components
-  void getParams(paramSet& p) const; //!< Sets knot values to central values
-  void generateRandomKnotValues(paramSet& p) const; //!< Seed knot values
-  
+  void getParams(paramSet& p) const; //!< Sets param values to central values
+  void generateRandomKnotValues(paramSet& pnew) const; //!< Seed knot values
+  void generateRandomKnotValues(paramSet& pnew, const paramSet& pcen) const; //!< Seed knot values
+
   double getKnotSigma(unsigned int) const; //!< Get knot sigma
   bool isKnotFixed(unsigned int) const; //!< Is a knot fixed?
 

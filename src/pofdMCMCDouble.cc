@@ -2,7 +2,6 @@
 #include<unistd.h>
 
 #include "../include/pofdMCMCDouble.h"
-#include "../include/specFileDouble.h"
 #include "../include/affineExcept.h"
 
 /*!
@@ -29,7 +28,7 @@ pofdMCMCDouble::pofdMCMCDouble(const std::string& INITFILE,
 			       float SCALEFAC) :
   affineEnsemble(NWALKERS, 1, NSAMPLES, INIT_STEPS, MIN_BURN,
 		 FIXED_BURN, BURN_MULTIPLE, SCALEFAC),
-  initfile(INITFILE), specfile(SPECFILE), is_initialized(false) {
+  initfile(INITFILE), specfile(SPECFILE) {
   //Note that we set NPARAMS to a bogus value (1) above, then 
   // have to change it later once we know how many model params we have
   // All of this is done in initChains
@@ -48,7 +47,7 @@ bool pofdMCMCDouble::initChainsMaster() {
 		       "No model parameters read in",2);
   
   //Data/fit initialization file
-  specFileDouble spec_info(specfile);
+  spec_info.readFile(specfile);
   if (spec_info.datafiles1.size() == 0)
       throw affineExcept("pofdMCMCDouble","initChainsMaster",
 			 "No data files read",3);
@@ -182,19 +181,44 @@ bool pofdMCMCDouble::initChainsMaster() {
   //We can free all the data storage, since master doesn't need
   // any of it
   likeSet.freeData();
-  
-  //Generate initial parameters for each walker
-  //First, set up space to hold that first parameter
+
+  // Generate initial positions
   if (ultraverbose)
     std::cout << "Setting up initial parameters" << std::endl;
+  paramSet p(npar); //Generated parameter
+  ifile.getParams(p); //Get central values from initialization file
+  generateInitialPosition(p);
+
+  is_init = true;
+
+  //That's it!
+  if (ultraverbose)
+    std::cout << "Initialization completed" << std::endl;
+  return true;
+}
+
+void pofdMCMCDouble::generateInitialPosition(const paramSet& p) {
+  
+  //Generate initial parameters for each walker
+  if (rank != 0) return;
+
+  unsigned int ntot = ifile.getNTot();
+  if (ntot == 0)
+    throw affineExcept("pofdMCMCDouble", "generateInitialPosition",
+		       "No model info read in", 1);
+
+  unsigned int npar = getNParams();
+  if (p.getNParams() < npar)
+    throw affineExcept("pofdMCMCDouble", "generateInitialPosition",
+		       "Wrong number of params in input", 2);
+
   chains.clear();
   chains.addChunk(1);
-  chains.setSkipFirst();
 
   //Rather than generate actual likelihoods -- which would require some
   // complicated stuff -- we will assign them -infinite likelihood so 
   // that the first step is always taken
-  paramSet p(npar); //Generated parameter
+  paramSet pnew(npar); //Generated parameter
 
   //We may have to do trials to set up initial parameters, 
   const unsigned int maxtrials = 1000; //!< Maximum number of trials
@@ -218,7 +242,7 @@ bool pofdMCMCDouble::initChainsMaster() {
     //Fill in knot values.  Note that fixed parameters (sigma==0)
     // all get the same values for all walkers, which means all linear
     // combinations get the same value, so the parameter stays fixed
-    ifile.generateRandomKnotValues(p);
+    ifile.generateRandomKnotValues(pnew, p);
 
     //Sigma multiplier value, one copy for each band
     if (spec_info.fit_sigma1) {
@@ -227,15 +251,11 @@ bool pofdMCMCDouble::initChainsMaster() {
 	trialval = 1.0 + sm_stdev1 * rangen.gauss(); 
 	if (trialval > 0) break;
       }
-      if (j == maxtrials) {
-	for (int k = 1; k < nproc; ++k) //Tell slaves to stop
-	  MPI_Send(&jnk, 1, MPI_INT, k, mcmc_affine::STOP,
-		   MPI_COMM_WORLD);
+      if (j == maxtrials)
 	throw affineExcept("pofdMCMCDouble", "initChainsMaster",
-			   "Couldn't generate sigma multiplier1 value", 4);
-      }
-      p[ntot] = trialval;
-    } else p[ntot] = 1.0;
+			   "Couldn't generate sigma multiplier1 value", 3);
+      pnew[ntot] = trialval;
+    } else pnew[ntot] = 1.0;
 
     if (spec_info.fit_sigma2) {
       unsigned int j;
@@ -243,27 +263,20 @@ bool pofdMCMCDouble::initChainsMaster() {
 	trialval = 1.0 + sm_stdev2 * rangen.gauss(); 
 	if (trialval > 0) break;
       }
-      if (j == maxtrials) {
-	for (int k = 1; k < nproc; ++k) //Tell slaves to stop
-	  MPI_Send(&jnk, 1, MPI_INT, k, mcmc_affine::STOP,
-		   MPI_COMM_WORLD);
+      if (j == maxtrials)
 	throw affineExcept("pofdMCMCDouble", "initChainsMaster",
-			   "Couldn't generate sigma multiplier2 value", 5);
-      }
-      p[ntot + 1] = trialval;
-    } else p[ntot + 1] = 1.0;
+			   "Couldn't generate sigma multiplier2 value", 4);
+      pnew[ntot + 1] = trialval;
+    } else pnew[ntot + 1] = 1.0;
     
     //Add to chain
     //It's possible that -infinity will not be available on some
     // architectures -- the c++ standard is oddly quiet about this.
     //It seems to work on g++-4.7 though
-    chains.addNewStep(i, p, -std::numeric_limits<double>::infinity());
+    chains.addNewStep(i, pnew, -std::numeric_limits<double>::infinity());
+    naccept[i] = 0;
   }
-  
-  //That's it!
-  if (ultraverbose)
-    std::cout << "Initialization completed" << std::endl;
-  return true;
+  chains.setSkipFirst();
 }
 
 bool pofdMCMCDouble::initChainsSlave() {
@@ -308,14 +321,13 @@ bool pofdMCMCDouble::initChainsSlave() {
 	       MPI_COMM_WORLD);
     }
   }
-
+  
+  is_init = true;
   return true;
 }
 
 void pofdMCMCDouble::initChains() {
-  if (is_initialized) return;
   if (rank == 0) initChainsMaster(); else initChainsSlave();
-  is_initialized = true;
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
@@ -323,7 +335,7 @@ void pofdMCMCDouble::initChains() {
   \param[in] p Parameters to evaluate model for
  */
 double pofdMCMCDouble::getLogLike(const paramSet& p) {
-  if (!is_initialized)
+  if (!is_init)
     throw affineExcept("pofdMCMC", "getLogLike",
 		       "Called on unitialized object", 1);
   return likeSet.getLogLike(p);
