@@ -19,6 +19,7 @@ public:
   ~testEnsemble() {};
 
   void initChains();
+  void generateInitialPosition(const paramSet&);
   double getLogLike(const paramSet&);
 };
 
@@ -29,23 +30,31 @@ testEnsemble::testEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
 void testEnsemble::initChains() {
   //Just generate random positions from zero to one for
   // initial vectors
+  is_init = true;
+  if (rank != 0) return;
 
+  unsigned int npar = getNParams();
+  paramSet p(npar);
+  for (unsigned int i = 0; i < npar; ++i)
+    p[i] = 0.5;
+  generateInitialPosition(p);
+}
+
+void testEnsemble::generateInitialPosition(const paramSet& p) {
   if (rank != 0) return;
 
   //For master
   chains.clear();
   chains.addChunk(1);
-    
-  paramSet p( getNParams() );
-  double logLike;
+
   unsigned int npar = getNParams();
+  paramSet p2(npar);
   unsigned int nwalk = getNWalkers();
   for (unsigned int i = 0; i < nwalk; ++i) {
     for (unsigned int j = 0; j < npar; ++j)
-      p[j] = rangen.doub();
-    logLike = getLogLike(p);
-    chains.addNewStep( i, p, logLike );
-    naccept[i] = 1;
+      p2[j] = rangen.doub() - 0.5 + p[i];
+    chains.addNewStep(i, p2, -std::numeric_limits<double>::infinity());
+    naccept[i] = 0;
   }
 }
 
