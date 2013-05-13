@@ -21,7 +21,7 @@
   \param[in] MIN_BURN Minimum number of steps before burn-in
   \param[in] FIXED_BURN Do a fixed burn in of length MIN_BURN, not using
                          autocorrelation length to decide when burn in is 
-                         finished
+                         finished.  If this is set, INIT_STEPS is ignored.
   \param[in] BURN_MULTIPLE This fraction of autocorrelation steps to add
                             before checking burn-in again
   \param[in] SCALEFAC Scale factor of Z distribution			    
@@ -82,6 +82,7 @@ affineEnsemble::~affineEnsemble() {}
  */
 bool affineEnsemble::isValid() const {
   if (rank != 0) return true;
+  if (!is_init) return false;
   if (nwalkers < 2) return false; //Need at least 2!
   if (nparams == 0) return false;
   if (nsteps == 0) return false;
@@ -345,7 +346,7 @@ void affineEnsemble::printStatistics(float conflevel,
   Manages the sampling.  Should be called for both master and slave
   processes.
   It proceeds as follows:
-    1) Initialize the chains by calling initChains
+    1) Initialize the chains by calling initChains if not already done
     2) Possibly do initsteps steps in each walker, and discard
     3) Then do min_burn steps in each walker
     4) If fixed_burn is not set:
@@ -367,7 +368,7 @@ void affineEnsemble::sample() {
   // Different things happen if this is the master node or a slave one;
   //  slave ones just compute likelihoods, the master node suggests new
   //  steps and decides whether to accept them or not
-
+  if (!is_init) initChains();
   if (rank == 0) masterSample(); else slaveSample();
 }
 
@@ -376,9 +377,13 @@ void affineEnsemble::sample() {
   Assumes that initChains is already called.
 
   \param[in] nsteps  Number of steps to do in each walker
-  \param[in] initsteps Number of initial steps to do then discard
+  \param[in] initsteps Number of initial steps to do then discard.
+                       If this is non-zero, the parameters are re-initialized
+		       by calling generateInitialPosition with the best
+		       step from this set.
  */
 void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
+  if (!is_init) initChains();
   if (rank == 0) {
     if (!isValid())
       throw affineExcept("affineEnsemble", "doSteps",
@@ -389,12 +394,20 @@ void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
       chains.addChunk(initsteps);
       for (unsigned int i = 0; i < initsteps; ++i)
 	doMasterStep();
-      chains.clearPreserveLast();
-      for (unsigned int i = 0; i < naccept.size(); ++i)
-	naccept[i] = 0;
-      chains.setSkipFirst();
+
+      // Get best step, regenerate from that
+      paramSet p(nparams);
+      double llike;
+      chains.getMaxLogLikeParam(llike, p);
+      if (ultraverbose) {
+	std::cout << " Best likelihood from initial steps: " << llike
+		  << std::endl;
+	std::cout << "  For: " << p << std::endl;
+      }
+      generateInitialPosition(p);
     }
 
+    // Follow with main step loop
     chains.addChunk(nsteps);
     for (unsigned int i = 0; i < nsteps; ++i)
       doMasterStep();
@@ -412,14 +425,8 @@ void affineEnsemble::masterSample() {
     throw affineExcept("affineEnsemble", "masterSample",
 		       "Calling with invalid model setup", 1);
   
-  //Initialize chains; should also reserve space and clear old
-  initChains();
-
   //Do burn in
   doBurnIn();
-
-  for (unsigned int i = 0; i < nwalkers; ++i)
-    naccept[i] = 1; //Guess the last one was accepted...
 
   //Then do extra steps
   if (verbose || ultraverbose) 
@@ -455,19 +462,41 @@ float affineEnsemble::getMaxAcor() const {
   return maxval;
 }
 
+// This does the burn in in a few steps.  Only called from master node
+// 1) Possibly do init_steps, taking the best one to re-seed the
+//     initial position for burn-in
+// 2) Do the burn in 
+//    a) if fixed_burn is set, just do that many steps
+//    b) if not, do steps until the number of steps is greater than
+//        burn_mult * autocorrelation 
+// 3) Throw away all steps, keeping the last step as the first one of
+//     the main loop (but don't count it in any statistics, etc.)
 void affineEnsemble::doBurnIn() throw(affineExcept) {
+
   const unsigned int max_acor_iters = 20;
   const unsigned int max_burn_iters = 30;
 
+  if (rank != 0) 
+    throw affineExcept("affineEnsemble", "doBurnIn", "Don't call on slave", 1);
 
   if (init_steps > 0) {
+    if (verbose || ultraverbose) 
+      std::cout << "Doing " << init_steps << " initial steps for walker"
+		<< std::endl;
     chains.addChunk(init_steps);
     for (unsigned int i = 0; i < init_steps; ++i)
       doMasterStep();
-    //Throw away burn in, keeping last step as first step of new one
-    chains.clearPreserveLast(); 
-    for (unsigned int i = 0; i < naccept.size(); ++i)
-      naccept[i] = 0;
+
+    // Get best step, regenerate from that
+    paramSet p(nparams);
+    double llike;
+    chains.getMaxLogLikeParam(llike, p);
+    if (ultraverbose) {
+      std::cout << " Best likelihood from initial steps: " << llike
+		<< std::endl;
+      std::cout << "  For: " << p << std::endl;
+    }
+    generateInitialPosition(p);
   }
 
   //First do min_burn steps in each walker
@@ -489,19 +518,20 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
        }
     }
   } else {
-    //Autocorrelation based burn-in test
-    //See if we are burned in
+    // Autocorrelation based burn-in test
+    // Compute the autocorrelation -- we may need to add more steps
+    // to get this to work
     bool acor_success = computeAcor();
   
-    //If it failed, we need more steps.  Add 50% of min burn
-    // and try again.  Refues to do this more than max_acor_iters times.
+    //If it failed, we need more steps.  Add 25% of min burn
+    // and try again.  Refuse to do this more than max_acor_iters times.
     unsigned int nextra = 10;
     if (!acor_success) {
-      nextra = static_cast<unsigned int>(min_burn * 0.5);
-      if (nextra < 10) nextra = 10;
+      nextra = static_cast<unsigned int>(min_burn * 0.25);
+      if (nextra < 10) nextra = 10; // Always do at least 10 steps
       for (unsigned int i = 0; i < max_acor_iters; ++i) {
 	if (verbose || ultraverbose)
-	  std::cout << "Failed to compute acor after " << chains.getMinNIters()
+	  std::cout << " Failed to compute acor after " << chains.getMinNIters()
 		    << " steps.  Adding " << nextra << " more" << std::endl;
 	chains.addChunk(nextra);
 	for (unsigned int i = 0; i < nextra; ++i)
@@ -523,7 +553,7 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
 		<< " steps, maximum autocorrelation is: "
 		<< max_acor << std::endl;
   
-    unsigned int nsteps = min_burn;
+    unsigned int nsteps = chains.getMinNIters();
     unsigned int nminsteps = 
       static_cast<unsigned int>(burn_multiple*max_acor + 0.999999999999999);
     bool burned_in = (nsteps > nminsteps);
@@ -537,7 +567,7 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
       // estimated
       unsigned int nmore = (nminsteps - nsteps) / 2 + 1;
       if (verbose || ultraverbose) 
-	std::cout << "Doing " << nmore << " additional steps" << std::endl;
+	std::cout << " Doing " << nmore << " additional steps" << std::endl;
       chains.addChunk(nmore);
       for (unsigned int i = 0; i < nmore; ++i)
 	doMasterStep();
@@ -546,23 +576,27 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
       //Update acor, same as before
       acor_success = computeAcor();
       
-      //Again, add more steps if we must to get acor
-      nextra = static_cast<unsigned int>(min_burn * 0.5);
+      //Again, add more steps if we must to get acor; even though
+      // we got it successfully before, it may not converge this time,
+      // so we may need to do additional steps.
+      nextra = static_cast<unsigned int>(min_burn * 0.25);
       if (nextra < 10) nextra = 10;
       for (unsigned int i = 0; i < max_acor_iters; ++i) {
 	if (verbose || ultraverbose)
-	  std::cout << "Failed to compute acor after " << chains.getMinNIters()
+	  std::cout << " Failed to compute acor after " << chains.getMinNIters()
 		    << " steps.  Adding " << nextra << " more" << std::endl;
 	chains.addChunk(nextra);
 	for (unsigned int i = 0; i < nextra; ++i)
 	  doMasterStep();
 	acor_success = computeAcor();
 	if (acor_success) break;
+	nsteps += nextra;
       }
       if (!acor_success)
 	throw affineExcept("affineEnsemble", "doBurnIn",
 			   "Can't compute acor; increase min_burn", 2);
       
+      // Ok, we have an acor.  Now check to see if we have enough!
       max_acor = getMaxAcor();
       nminsteps = 
 	static_cast<unsigned int>(burn_multiple*max_acor + 0.999999999999999);
@@ -780,8 +814,6 @@ void affineEnsemble::slaveSample() {
     throw affineExcept("affineEnsemble", "slaveSample",
 		       "Should not be called from master node", 1);
   
-  initChains(); //Slave version
-
   int jnk;
   MPI_Status Info;
 

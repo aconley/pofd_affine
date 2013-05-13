@@ -65,6 +65,7 @@ private:
 
 
 protected:
+  bool is_init; //!< Have the chains been initialized?
 
   affineChainSet chains; //!< Holds actual steps
   std::vector<unsigned int> naccept; //!< Number of accepted steps
@@ -135,8 +136,10 @@ public:
 		     float&, float=0.683) const;
   virtual void printStatistics(float=0.683, std::ostream& = std::cout) const; //!< Output statistics for run
 
-  //User must subclass these for their likelihood function
-  virtual void initChains() = 0; //!< Initialize first step in chains
+  //User must subclass these for their use.
+  // Note that initChains should set up some sort of initial position as well
+  virtual void initChains() = 0; //!< Set up information in each chain.  Must set is_init to true
+  virtual void generateInitialPosition(const paramSet&) = 0; //!< Generate initial position based on input parameter Set
   virtual double getLogLike(const paramSet&) = 0; //!< Computes log likelihood
 
   void sample(); //!< Get samples

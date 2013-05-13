@@ -22,48 +22,58 @@ private:
   double var; //!< Variance
   double gfac; //!< -1/(2*var)
 public:
-  singleGauss(double, double, unsigned int, unsigned int,
+  singleGauss(double, double, unsigned int, unsigned int, unsigned int,
 	      unsigned int, bool);
   virtual ~singleGauss();
 
   void initChains();
+  void generateInitialPosition(const paramSet&);
   double getLogLike(const paramSet&);
   void getStats(float&, float&) const;
  
 };
 
-singleGauss::singleGauss(double MN, double VAR,
+singleGauss::singleGauss(double MN, double SIGMA,
 			 unsigned int NWALKERS, unsigned int NSAMPLES, 
-			 unsigned int MIN_BURN, bool FIXED_BURN=false) :
-  affineEnsemble(NWALKERS, 1, NSAMPLES, 0, MIN_BURN, FIXED_BURN) {
+			 unsigned int INIT_STEPS, unsigned int MIN_BURN, 
+			 bool FIXED_BURN=false) :
+  affineEnsemble(NWALKERS, 1, NSAMPLES, INIT_STEPS, MIN_BURN, FIXED_BURN) {
     mean = MN;
-    var  = VAR;
+    var  = SIGMA * SIGMA;
     gfac = - 1.0/(2.0*var);
 }
 
 singleGauss::~singleGauss() {}
 
 void singleGauss::initChains() {
-  //Just generate random positions from mean-sigma*5 to mean+sigma*5
-  // initial vectors
+  // For this example, this doesn't do much of anything except
+  // call generateInitialPosition around mean
+  is_init = true;
 
   if (rank != 0) return;
 
-  //For master
+  paramSet p(1);
+  //Don't quite start in the right place
+  p[0] = mean + 2 * sqrt(var) * rangen.gauss(); 
+  generateInitialPosition(p);
+}
+
+void singleGauss::generateInitialPosition(const paramSet& p) {
+  if (rank != 0) return;
+
   chains.clear();
   chains.addChunk(1);
-  
-  paramSet p(1);
-  double logLike;
-  double rng = sqrt(var) * 10.0;
-  double genmn = mean - 0.5*rng;
 
+  //Just generate random positions from mean-sigma*5 to mean+sigma*5
+  double rng = sqrt(var) * 10.0;
+  double genmn = p[0] - 0.5*rng;
+  
   unsigned int nwalk = getNWalkers();
+  paramSet p2(1);
   for (unsigned int i = 0; i < nwalk; ++i) {
-    p[0] = rng * rangen.doub() + genmn;
-    logLike = getLogLike(p);
-    chains.addNewStep(i, p, logLike);
-    naccept[i] = 1;
+    p2[0] = rng * rangen.doub() + genmn;
+    chains.addNewStep(i, p2, -std::numeric_limits<double>::infinity());
+    naccept[i] = 0;
   }
   chains.setSkipFirst();
 }
@@ -82,12 +92,13 @@ void singleGauss::getStats(float& mn, float& var) const {
 
 int main(int argc, char** argv) {
 
-  unsigned int nwalkers, nsamples, nburn;
+  unsigned int nwalkers, nsamples, min_burn, init_steps;
   double mean, sigma;
   std::string outfile;
   bool verbose, fixed_burn;
 
-  nburn = 20;
+  min_burn = 20;
+  init_steps = 20;
   verbose = false;
   fixed_burn = false;
 
@@ -96,12 +107,13 @@ int main(int argc, char** argv) {
   static struct option long_options[] = {
     {"help",no_argument,0,'h'},
     {"fixedburn", no_argument, 0, 'f'},
-    {"nburn", required_argument, 0, 'n'},
+    {"initsteps", required_argument, 0, 'i'},
+    {"minburn", required_argument, 0, 'm'},
     {"verbose",no_argument,0,'v'},
     {"Version",no_argument,0,'V'},
     {0,0,0,0}
   };
-  char optstring[] = "hfn:vV";
+  char optstring[] = "hfi:m:vV";
 
   int rank, nproc;
   MPI_Init(&argc, &argv);
@@ -137,7 +149,12 @@ int main(int argc, char** argv) {
                   << " sample," << std::endl;
         std::cerr << "\t\trather than using the autocorrelation."
 		  << std::endl;
-	std::cerr << "\t-n, --nburn NBURN" << std::endl;
+	std::cerr << "\t-i, --initsteps STEPS" << std::endl;
+	std::cerr << "\t\tTake this many initial steps per walker, then "
+		  << "recenter" << std::endl;
+	std::cerr << "\t\taround the best one before starting burn in"
+		  << " (def: 20)" << std::endl;
+	std::cerr << "\t-m, --minburn NSTEPS" << std::endl;
 	std::cerr << "\t\tNumber of burn-in steps to do per walker (def: 20)"
 		  << std::endl;
 	std::cerr << "\t-v, --verbose" << std::endl;
@@ -153,8 +170,11 @@ int main(int argc, char** argv) {
     case 'f':
       fixed_burn = true;
       break;
-    case 'n':
-      nburn = atoi(optarg);
+    case 'i':
+      init_steps = atoi(optarg);
+      break;
+    case 'm':
+      min_burn = atoi(optarg);
       break;
     case 'v' :
       verbose = true;
@@ -197,32 +217,28 @@ int main(int argc, char** argv) {
 
   //Hardwired cov matrix
   try {
-    singleGauss *sg = new singleGauss(mean, sigma*sigma,
-				      nwalkers, nsamples, nburn,
-				      fixed_burn);
-    
-    if (verbose) sg->setVerbose();
+    singleGauss sg(mean, sigma, nwalkers, nsamples, 
+		   init_steps, min_burn, fixed_burn);
+    if (verbose) sg.setVerbose();
     
     if (verbose && rank == 0)
       std::cout << "Entering main loop" << std::endl;
-    sg->sample();
+    sg.sample(); //Also initializes
 
     if (rank == 0) {
       float mn, var;
-      sg->getStats(mn, var);
+      sg.getStats(mn, var);
       std::cout << "Mean: " << mn << " sigma: " << sqrt(var) << std::endl;
 
       std::vector<float> accept;
-      sg->getAcceptanceFrac(accept);
+      sg.getAcceptanceFrac(accept);
       std::cout << "Acceptance fractions:";
       for (unsigned int i = 0; i < nwalkers; ++i)
 	std::cout << " " << accept[i];
       std::cout << std::endl;
       
-      sg->writeToFile(outfile);
+      sg.writeToFile(outfile);
     }
-
-    delete sg;
 
   } catch ( const affineExcept& ex ) {
     std::cerr << "Error encountered" << std::endl;

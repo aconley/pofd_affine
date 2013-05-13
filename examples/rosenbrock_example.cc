@@ -17,69 +17,80 @@ class rosenbrockDensity : public affineEnsemble {
 private :
   double a1, a2;
 public:
-  rosenbrockDensity(double, double, unsigned int, 
-		    unsigned int, unsigned int);
+  rosenbrockDensity(double, double, unsigned int, unsigned int,
+		    unsigned int, unsigned int, bool);
   void initChains();
+  void generateInitialPosition(const paramSet&);
   double getLogLike(const paramSet&);
 };
 
-rosenbrockDensity::rosenbrockDensity( double A1, double A2, 
-				      unsigned int NWALKERS, 
-				      unsigned int NPARAMS,
-				      unsigned int NSAMPLES ) :
-  affineEnsemble(NWALKERS,NPARAMS,NSAMPLES), a1(A1), a2(A2) { }
+rosenbrockDensity::rosenbrockDensity(double A1, double A2, 
+				     unsigned int NWALKERS, 
+				     unsigned int NSAMPLES,
+				     unsigned int INIT_STEPS,
+				     unsigned int MIN_BURN,
+				     bool FIXED_BURN=false) :
+  affineEnsemble(NWALKERS, 2, NSAMPLES, INIT_STEPS, MIN_BURN, FIXED_BURN), 
+  a1(A1), a2(A2) { }
   
-
 void rosenbrockDensity::initChains() {
-  //Just generate random positions from zero to two for
-  // initial vectors
+  is_init = true;
+  paramSet p(2);
+  p[0] = a1 + 0.25 * rangen.gauss();
+  p[1] = a2 + 0.15 * rangen.gauss();
+  generateInitialPosition(p);
 
+}
+
+void rosenbrockDensity::generateInitialPosition(const paramSet& p) {
+  // Uniform initial values
   if (rank != 0) return;
 
   chains.clear();
   chains.addChunk(1);
 
-  paramSet p( getNParams() );
-  double logLike;
-  unsigned int npar = getNParams();
+  paramSet p2(2);
   unsigned int nwalk = getNWalkers();
   for (unsigned int i = 0; i < nwalk; ++i) {
-    for (unsigned int j = 0; j < npar; ++j)
-      p[j] = 2*rangen.doub();
-    logLike = getLogLike(p);
-    chains.addNewStep( i, p, logLike );
-    naccept[i] = 1;
+    p2[0] = 2.0*rangen.doub() - 1.0 + p[0];
+    p2[1] = rangen.doub() - 0.5 + p[1];
+    chains.addNewStep(i, p, -std::numeric_limits<double>::infinity());
+    naccept[i] = 0;
   }
   chains.setSkipFirst();
 }
 
 double rosenbrockDensity::getLogLike(const paramSet& p) {
   double val1, val2;
-  val1 = (p[1]-p[0]*p[0]);
+  val1 = (p[1] -p[0] * p[0]);
   val2 = 1 - p[0];
-  return - (a1*val1*val1 + val2*val2)/a2;
+  return - (a1 * val1 * val1 + val2 * val2) / a2;
 }
 
 int main(int argc, char** argv) {
 
-  unsigned int nwalkers, nsamples, nburn;
+  unsigned int nwalkers, nsamples, min_burn, init_steps;
   std::string outfile;
   double a1, a2;
-  bool verbose;
+  bool verbose, fixed_burn;
 
   verbose = false;
-  nburn = 20;
+  min_burn = 20;
+  init_steps = 20;
+  fixed_burn = false;
 
   int c;
   int option_index = 0;
   static struct option long_options[] = {
     {"help",no_argument,0,'h'},
-    {"nburn", required_argument, 0, 'n'},
+    {"fixedburn", no_argument, 0, 'f'},
+    {"initsteps", required_argument, 0, 'i'},
+    {"minburn", required_argument, 0, 'm'},
     {"verbose",no_argument,0,'v'},
     {"Version",no_argument,0,'V'},
     {0,0,0,0}
   };
-  char optstring[] = "hvV";
+  char optstring[] = "hfi:m:vV";
 
   int rank, nproc;
   MPI_Init(&argc, &argv);
@@ -113,7 +124,17 @@ int main(int argc, char** argv) {
 	std::cerr << "OPTIONS" << std::endl;
 	std::cerr << "\t-h, --help" << std::endl;
 	std::cerr << "\t\tOutput this help." << std::endl;
-	std::cerr << "\t-n, --nburn NBURN" << std::endl;
+        std::cerr << "\t-f, --fixedburn" << std::endl;
+        std::cerr << "\t\tUsed a fixed burn in length before starting main"
+                  << " sample," << std::endl;
+        std::cerr << "\t\trather than using the autocorrelation."
+		  << std::endl;
+	std::cerr << "\t-i, --initsteps STEPS" << std::endl;
+	std::cerr << "\t\tTake this many initial steps per walker, then "
+		  << "recenter" << std::endl;
+	std::cerr << "\t\taround the best one before starting burn in"
+		  << " (def: 20)" << std::endl;
+	std::cerr << "\t-m, --minburn NSTEPS" << std::endl;
 	std::cerr << "\t\tNumber of burn-in steps to do per walker (def: 20)"
 		  << std::endl;
 	std::cerr << "\t-v, --verbose" << std::endl;
@@ -126,8 +147,14 @@ int main(int argc, char** argv) {
       MPI_Finalize();
       return 0;
       break;
-    case 'n':
-      nburn = atoi(optarg);
+    case 'f':
+      fixed_burn = true;
+      break;
+    case 'i':
+      init_steps = atoi(optarg);
+      break;
+    case 'm':
+      min_burn = atoi(optarg);
       break;
     case 'v' :
       verbose = true;
@@ -150,7 +177,7 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  if ( optind >= argc-4 ) {
+  if (optind >= argc - 4) {
     if (rank == 0) {
       std::cerr << "Required arguments missing" << std::endl;
     }
@@ -169,13 +196,13 @@ int main(int argc, char** argv) {
 
   //Hardwired cov matrix
   try {
-    rosenbrockDensity rd(a1,a2,nwalkers,2,nsamples);
+    rosenbrockDensity rd(a1, a2, nwalkers, nsamples, init_steps, min_burn,
+			 fixed_burn);
     if (verbose) rd.setVerbose();
     
     if (verbose && rank == 0)
       std::cout << "Entering main loop" << std::endl;
-    if (rank == 0) rd.initChains();
-    rd.doSteps(rd.getNSteps(), nburn);
+    rd.sample(); //Also does initialization
     
     if (rank == 0) {
       std::vector<float> accept;
