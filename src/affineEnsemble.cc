@@ -33,7 +33,8 @@ affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
   nwalkers(NWALKERS), nparams(NPARAMS), has_any_names(false), 
   scalefac(SCALEFAC), init_steps(INIT_STEPS), min_burn(MIN_BURN), 
   fixed_burn(FIXED_BURN), burn_multiple(BURN_MULTIPLE), pstep(NPARAMS), 
-  chains(NWALKERS,NPARAMS), verbose(false), ultraverbose(false) {
+  is_init(false), chains(NWALKERS,NPARAMS), verbose(false), 
+  ultraverbose(false) {
   
   has_name.resize(nparams);
   has_name.assign(nparams, false);
@@ -481,7 +482,7 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
 
   if (init_steps > 0) {
     if (verbose || ultraverbose) 
-      std::cout << "Doing " << init_steps << " initial steps for walker"
+      std::cout << "Doing " << init_steps << " initial steps per walker"
 		<< std::endl;
     chains.addChunk(init_steps);
     for (unsigned int i = 0; i < init_steps; ++i)

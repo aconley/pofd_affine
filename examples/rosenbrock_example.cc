@@ -54,7 +54,7 @@ void rosenbrockDensity::generateInitialPosition(const paramSet& p) {
   for (unsigned int i = 0; i < nwalk; ++i) {
     p2[0] = 2.0*rangen.doub() - 1.0 + p[0];
     p2[1] = rangen.doub() - 0.5 + p[1];
-    chains.addNewStep(i, p, -std::numeric_limits<double>::infinity());
+    chains.addNewStep(i, p2, -std::numeric_limits<double>::infinity());
     naccept[i] = 0;
   }
   chains.setSkipFirst();
