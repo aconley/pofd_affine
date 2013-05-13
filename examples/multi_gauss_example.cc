@@ -26,24 +26,27 @@ private:
   double* work1; //!< Working vector
   double* work2; //!< Working vector
 public:
-  multiGauss(unsigned int, unsigned int, unsigned int, 
-	     const std::string&);
+  multiGauss(const std::string&, unsigned int, unsigned int, unsigned int, 
+	     unsigned int, unsigned int, bool);
   virtual ~multiGauss();
 
   void initChains();
+  void generateInitialPosition(const paramSet&);
   double getLogLike(const paramSet&);
   void getStats(std::vector<float>&, std::vector<float>&) const;
 };
 
-multiGauss::multiGauss( unsigned int NWALKERS, unsigned int NPARAMS,
-			unsigned int NSAMPLES, const std::string& filename ) :
-  affineEnsemble(NWALKERS,NPARAMS,NSAMPLES) {
+multiGauss::multiGauss(const std::string& filename, unsigned int NWALKERS, 
+		       unsigned int NPARAMS, unsigned int NSAMPLES, 
+		       unsigned int INIT_STEPS, unsigned int MIN_BURN,
+		       bool FIXED_BURN=false) :
+  affineEnsemble(NWALKERS, 1, NSAMPLES, INIT_STEPS, MIN_BURN, FIXED_BURN) {
   if (NPARAMS > 0) {
-    invCovMatrix = new double[NPARAMS*NPARAMS];
+    invCovMatrix = new double[NPARAMS * NPARAMS];
     work1 = new double[NPARAMS];
     work2 = new double[NPARAMS];
   } else {
-    invCovMatrix=NULL;
+    invCovMatrix = NULL;
     work1 = NULL;
     work2 = NULL;
   }
@@ -66,25 +69,36 @@ multiGauss::~multiGauss() {
 }
 
 void multiGauss::initChains() {
-  //Just generate random positions from zero to one for
-  // initial vectors
-
+  // This doesn't do much of anything except call generateInitialPosition 
+  // the around the mean
+  is_init = true;
   if (rank != 0) return;
 
-  //For master
+  unsigned int npar = getNParams();
+  paramSet p(npar);
+  for (unsigned int i = 0; i < npar; ++i)
+    p[i] = 0.55; //Slightly off
+  generateInitialPosition(p);
+}
+
+void multiGauss::generateInitialPosition(const paramSet& p) {
+  if (rank != 0) return;
+
   chains.clear();
   chains.addChunk(1);
     
-  paramSet p( getNParams() );
-  double logLike;
-  unsigned int npar = getNParams();
+  unsigned int npar = p.getNParams();
+  if (npar != getNParams())
+    throw affineExcept("multiGauss", "generateInitialPosition",
+		       "Wrong number of params in p", 1);
+
+  paramSet p2(npar);
   unsigned int nwalk = getNWalkers();
   for (unsigned int i = 0; i < nwalk; ++i) {
     for (unsigned int j = 0; j < npar; ++j)
-      p[j] = rangen.doub();
-    logLike = getLogLike(p);
-    chains.addNewStep(i, p, logLike);
-    naccept[i] = 1;
+      p2[j] = rangen.doub() - 0.5 + p[j];
+    chains.addNewStep(i, p2, -std::numeric_limits<double>::infinity());
+    naccept[i] = 0;
   }
   chains.setSkipFirst();
 }
@@ -131,23 +145,27 @@ void multiGauss::getStats(std::vector<float>& mn,
 int main(int argc, char** argv) {
 
   const unsigned int ndim = 5;
-  unsigned int nwalkers, nsamples, nburn;
+  unsigned int nwalkers, nsamples, min_burn, init_steps;
   std::string invcovfile, outfile;
-  bool verbose;
+  bool verbose, fixed_burn;
 
   verbose = false;
-  nburn = 20;
+  min_burn = 20;
+  init_steps = 20;
+  fixed_burn = false;
 
   int c;
   int option_index = 0;
   static struct option long_options[] = {
     {"help",no_argument,0,'h'},
-    {"nburn", required_argument, 0, 'n'},
+    {"fixedburn", no_argument, 0, 'f'},
+    {"initsteps", required_argument, 0, 'i'},
+    {"minburn", required_argument, 0, 'm'},
     {"verbose",no_argument,0,'v'},
     {"Version",no_argument,0,'V'},
     {0,0,0,0}
   };
-  char optstring[] = "hn:vV";
+  char optstring[] = "hfi:m:vV";
 
   int rank, nproc;
   MPI_Init(&argc, &argv);
@@ -183,7 +201,17 @@ int main(int argc, char** argv) {
 	std::cerr << "OPTIONS" << std::endl;
 	std::cerr << "\t-h, --help" << std::endl;
 	std::cerr << "\t\tOutput this help." << std::endl;
-	std::cerr << "\t-n, --nburn NBURN" << std::endl;
+        std::cerr << "\t-f, --fixedburn" << std::endl;
+        std::cerr << "\t\tUsed a fixed burn in length before starting main"
+                  << " sample," << std::endl;
+        std::cerr << "\t\trather than using the autocorrelation."
+		  << std::endl;
+	std::cerr << "\t-i, --initsteps STEPS" << std::endl;
+	std::cerr << "\t\tTake this many initial steps per walker, then "
+		  << "recenter" << std::endl;
+	std::cerr << "\t\taround the best one before starting burn in"
+		  << " (def: 20)" << std::endl;
+	std::cerr << "\t-m, --minburn NSTEPS" << std::endl;
 	std::cerr << "\t\tNumber of burn-in steps to do per walker (def: 20)"
 		  << std::endl;
 	std::cerr << "\t-v, --verbose" << std::endl;
@@ -196,8 +224,14 @@ int main(int argc, char** argv) {
       MPI_Finalize();
       return 0;
       break;
-    case 'n':
-      nburn = atoi(optarg);
+    case 'f':
+      fixed_burn = true;
+      break;
+    case 'i':
+      init_steps = atoi(optarg);
+      break;
+    case 'm':
+      min_burn = atoi(optarg);
       break;
     case 'v' :
       verbose = true;
@@ -220,7 +254,7 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  if ( optind >= argc-2 ) {
+  if (optind >= argc - 2) {
     if (rank == 0) {
       std::cerr << "Required arguments missing" << std::endl;
     }
@@ -241,25 +275,24 @@ int main(int argc, char** argv) {
 
   //Hardwired cov matrix
   try {
-    multiGauss *mg = new multiGauss(nwalkers, ndim, nsamples,
-				    invcovfile);
-    if (verbose) mg->setVerbose();
+    multiGauss mg(invcovfile, nwalkers, ndim, nsamples, init_steps,
+		  min_burn, fixed_burn);
+    if (verbose) mg.setVerbose();
     
     if (verbose && rank == 0)
       std::cout << "Entering main loop" << std::endl;
-    mg->initChains();
-    mg->doSteps(mg->getNSteps(), nburn);
+    mg.sample(); //Also initializes
     
     if (rank == 0) {
       std::vector<float> mn, var;
-      mg->getStats(mn, var);
+      mg.getStats(mn, var);
       std::cout << "Results" << std::endl;
       for (unsigned int i = 0; i < mn.size(); ++i)
 	std::cout << "  Param " << i << " " << mn[i] << " +- "
 		  << sqrt(var[i]) << std::endl;
 
       std::vector<float> accept;
-      mg->getAcceptanceFrac(accept);
+      mg.getAcceptanceFrac(accept);
       double mnacc = accept[0];
       for (unsigned int i = 1; i < nwalkers; ++i)
 	mnacc += accept[i];
@@ -267,7 +300,7 @@ int main(int argc, char** argv) {
 		<< std::endl;
       
       std::vector<float> acor;
-      bool succ = mg->getAcor(acor);
+      bool succ = mg.getAcor(acor);
       if (succ) {
 	std::cout << "Autocorrelation length: " << acor[0];
 	for (unsigned int i = 1; i < acor.size(); ++i)
@@ -276,10 +309,8 @@ int main(int argc, char** argv) {
       } else std::cout << "Failed to compute autocorrelation" << std::endl;
   
       //Write
-      mg->writeToFile(outfile);
+      mg.writeToFile(outfile);
     }
-    delete mg;
-
   } catch ( const affineExcept& ex ) {
     std::cerr << "Error encountered" << std::endl;
     std::cerr << ex << std::endl;

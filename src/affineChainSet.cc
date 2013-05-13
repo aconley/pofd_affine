@@ -907,6 +907,10 @@ bool affineChainSet::getAcorVector(std::vector<float>& tau,
   return succ;
 }
 
+/*
+  \params[in] paridx Parameter index
+  \returns Mean of parameter
+ */
 float affineChainSet::getParamMean(unsigned int paridx) const 
   throw (affineExcept) {
   if (paridx >= nparams)
