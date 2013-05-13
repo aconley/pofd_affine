@@ -22,17 +22,18 @@ private :
   double *y;
   double *iyunc;
 public:
-  polyFit(const std::string&, unsigned int, unsigned int, unsigned int);
+  polyFit(const std::string&, unsigned int, unsigned int, 
+	  unsigned int, unsigned int, bool);
   virtual ~polyFit();
   void initChains();
   void readFile(const std::string&);
   double getLogLike(const paramSet&);
 };
 
-polyFit::polyFit(const std::string& datafile,
-		 unsigned int NWALKERS, unsigned int NPARAMS,
-		 unsigned int NSAMPLES ) :
-  affineEnsemble(NWALKERS, NPARAMS, NSAMPLES) {
+polyFit::polyFit(const std::string& datafile, unsigned int NWALKERS, 
+		 unsigned int NPARAMS, unsigned int NSAMPLES,
+		 unsigned int MIN_BURN, bool FIXED_BURN=false) :
+  affineEnsemble(NWALKERS, NPARAMS, NSAMPLES, 0, MIN_BURN, FIXED_BURN) {
   ndata = 0;
   x = NULL;
   y = NULL;
@@ -134,32 +135,35 @@ double polyFit::getLogLike(const paramSet& p) {
   return logLike;
 }
 
+/////////////////////////////////////
+
 int main(int argc, char** argv) {
 
-  unsigned int nwalkers, nsamples;
+  const unsigned int nterms = 4;
+  const double coeffs[nterms] = {0.5, 0.04, -0.15, 0.3}; // Correct model
+
+  unsigned int nwalkers, nsamples, min_burn;
   double scalefac;
-  std::string infile, outfile;
-  unsigned int order, burnsteps;
-  bool verbose, has_outfile;
+  bool verbose, fixed_burn;
 
   //Defaults
   verbose     = false;
-  has_outfile = false;
-  burnsteps   = 50;
+  fixed_burn  = false;
+  min_burn    = 50;
   scalefac    = 2;
   
   int c;
   int option_index = 0;
   static struct option long_options[] = {
     {"help",no_argument,0,'h'},
-    {"burnsteps",required_argument,0,'b'},
-    {"outfile",required_argument,0,'o'},
+    {"fixedburn", no_argument, 0, 'f'},
+    {"minburn",required_argument,0,'m'},
     {"scalefac",required_argument,0,'s'},
     {"verbose",no_argument,0,'v'},
     {"Version",no_argument,0,'V'},
     {0,0,0,0}
   };
-  char optstring[] = "hb:m:o:s:vV";
+  char optstring[] = "hfm:s:vV";
 
   int rank, nproc;
   MPI_Init(&argc, &argv);
@@ -172,29 +176,33 @@ int main(int argc, char** argv) {
     case 'h' :
       if (rank == 0) {
 	std::cerr << "NAME" << std::endl;
-	std::cerr << "\tpolyfit_example -- fits a polynomial to a user specified " 
+	std::cerr << "\tpolyfit_example -- fits a polynomial to example" 
 		  << std::endl;
 	std::cerr << "\t\tdata set." << std::endl;
 	std::cerr << std::endl;
 	std::cerr << "SYNOPSIS" << std::endl;
-	std::cerr << "\tpolyfit_example order infile nwalkers nsamples"
+	std::cerr << "\tpolyfit_example nwalkers nsamples"
 		  << std::endl;
 	std::cerr << "DESCRIPTION:" << std::endl;
 	std::cerr << "\tFits the polynomail using an affine-invariant " 
 		  << "MCMC code," << std::endl;
 	std::cerr << "\twith nwalkers walkers and generating (approximately)"
-		  << " nsamples samples.  order is the"
-		  << " polynomial order" << std::endl;
-	std::cerr << "\tto fit (so there are order+1 terms), and infile is"
-		  << "an input" << std::endl;
-	std::cerr << "\ttext file which gives the x, y, and y uncertanties."
+		  << " nsamples samples." << std::endl;
+	std::cerr << std::endl;
+	std::cerr << "\tThe input polynomial is: " << std::endl
+		  << "\t\t0.5 + 0.04 x - 0.15 x^2 + 0.3 x^3"
 		  << std::endl;
 	std::cerr << "OPTIONS" << std::endl;
 	std::cerr << "\t-h, --help" << std::endl;
 	std::cerr << "\t\tOutput this help." << std::endl;
-	std::cerr << "\t-b, --burnsteps STEPS\n" << std::endl;
-	std::cerr << "\t\tNumber of burn in steps to take and discard (def: 50)"
+	std::cerr << "\t-f, --fixedburn" << std::endl;
+        std::cerr << "\t\tUsed a fixed burn in length before starting main"
+                  << " sample," << std::endl;
+        std::cerr << "\t\trather than using the autocorrelation."
 		  << std::endl;
+	std::cerr << "\t-m, --minburn MINBURN" << std::endl;
+	std::cerr << "\t\tMinimum number of burn-in steps to do per "
+		  << "walker (def: 50)" << std::endl;
 	std::cerr << "\t-o, --outfile FILENAME\n" << std::endl;
 	std::cerr << "\t\tWrite the resulting chain to this file."
 		  << std::endl;
@@ -211,12 +219,11 @@ int main(int argc, char** argv) {
       MPI_Finalize();
       return 0;
       break;
-    case 'b' :
-      burnsteps = atoi(optarg);
+    case 'f':
+      fixed_burn = true;
       break;
-    case 'o' :
-      outfile = std::string(optarg);
-      has_outfile = true;
+    case 'm' :
+      min_burn = atoi(optarg);
       break;
     case 's' :
       scalefac = atof(optarg);
@@ -242,7 +249,7 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  if ( optind >= argc-3 ) {
+  if ( optind >= argc-1 ) {
     if (rank == 0) {
       std::cerr << "Required arguments missing" << std::endl;
     }
@@ -250,10 +257,8 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  order    = atoi(argv[optind]);
-  infile   = std::string( argv[optind + 1]);
-  nwalkers = atoi(argv[optind + 2]);
-  nsamples = atoi(argv[optind + 3]);
+  nwalkers = atoi(argv[optind]);
+  nsamples = atoi(argv[optind + 1]);
 
   if (nwalkers == 0) return 0;
   if (nsamples == 0) return 0;
@@ -264,7 +269,8 @@ int main(int argc, char** argv) {
   }
 
   try {
-    polyFit ply(infile,nwalkers,order+1,nsamples);
+    std::string infile="exampledata/polyexample.txt";
+    polyFit ply(infile, nwalkers, nterms, nsamples, min_burn, fixed_burn);
     ply.setScalefac(scalefac);
 
     ply.setParamName(0,"c[0]");
@@ -274,12 +280,24 @@ int main(int argc, char** argv) {
 
     if (verbose) ply.setVerbose();
     
+    // Do Fit
     if (verbose && rank == 0)
       std::cout << "Entering main loop" << std::endl;
-    if (rank == 0) ply.initChains();
-    ply.doSteps(ply.getNSteps(), burnsteps);
+    ply.sample();
     
     if (rank == 0) {
+      // Summarize results
+      float mn, var, low, up;
+      float conflevel = 0.683;
+      for (unsigned int i = 0; i < 4; ++i) {
+	ply.getParamStats(i, mn, var, low, up, conflevel);
+	std::cout << "Parameter: " << ply.getParamName(i) << " Mean: " 
+		  << mn << " Stdev: " << sqrt(var) << " true: " << coeffs[i] 
+		  << std::endl;
+	std::cout << "  lower limit: " << low << " upper limit: "
+		  << up << " (" << conflevel * 100.0 << "% limit)" << std::endl;
+      }
+
       std::vector<float> accept;
       ply.getAcceptanceFrac(accept);
       double mnacc = accept[0];
@@ -287,22 +305,6 @@ int main(int argc, char** argv) {
 	mnacc += accept[i];
       std::cout << "Mean acceptance: " << mnacc / static_cast<double>(nwalkers)
 		<< std::endl;
-
-      std::vector<float> acor;
-      bool succ = ply.getAcor(acor);
-      if (succ) {
-	std::cout << "Autocorrelation length:";
-	for (unsigned int i = 0; i < order+1; ++i)
-	  std::cout << " " << acor[i];
-	std::cout << std::endl;
-      } else std::cout << "Failed to compute autocorrelation" << std::endl;
-  
-      //And .. statistics
-      ply.printStatistics();
-
-      //And write
-      if (has_outfile)
-	ply.writeToFile(outfile);
     }
   } catch ( const affineExcept& ex ) {
     std::cerr << "Error encountered" << std::endl;

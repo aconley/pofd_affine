@@ -290,6 +290,30 @@ void affineEnsemble::getAcceptanceFrac(std::vector<float>& retval) const {
   }
 }
 
+float affineEnsemble::getParamMean(unsigned int p) const {
+  return chains.getParamMean(p);
+}
+
+/*!
+  \param[in]  paridx Index of parameter
+  \param[out] mean Mean value of parameter
+  \param[out] var  Variance of parameter
+  \param[out] lowlimit Lower limit of parameter. Returns Nan if non-computable
+  \param[out] uplimit  Upper limit of parameter. Returns Nan if non-computable
+  \param[in]  conflevel Confidence limit to use (def: 0.683, i.e. 1 sigma)
+
+  Requires temporary storage equal to the total number of steps
+*/
+void affineEnsemble::getParamStats(unsigned int paridx, float& mean,
+				   float& var, float& lowlimit,
+				   float& uplimit, float conflevel) const {
+  chains.getParamStats(paridx, mean, var, lowlimit, uplimit, conflevel);
+}
+
+/*!
+  \param[in]  conflevel Confidence limit to use (def: 0.683, i.e. 1 sigma)
+  \param[inout] os Stream to write to (def: std::cout)
+*/
 void affineEnsemble::printStatistics(float conflevel, 
 				     std::ostream& os) const {
   if (rank != 0) 
@@ -303,11 +327,16 @@ void affineEnsemble::printStatistics(float conflevel,
   for (unsigned int i = 0; i < nparams; ++i) {
     if (!has_name[i]) parname = "Unknown"; else
       parname = parnames[i];
-    chains.getParamStats(i, mn, var, low, up, conflevel);
-    os << "Parameter: " << parname << " Mean: " << mn << " Stdev: "
-       << sqrt(var) << std::endl;
-    os << "  lower limit: " << low << " upper limit: "
-       << up << " (" << conflevel * 100.0 << "% limit)" << std::endl;
+    if ((param_state[i] & mcmc_affine::FIXED) == 0) {
+      mn = chains.getParamMean(i);
+      os << "Parameter: " << parname << " Fixed at value: " << mn << std::endl;
+    } else {
+      chains.getParamStats(i, mn, var, low, up, conflevel);
+      os << "Parameter: " << parname << " Mean: " << mn << " Stdev: "
+	 << sqrt(var) << std::endl;
+      os << "  lower limit: " << low << " upper limit: "
+	 << up << " (" << conflevel * 100.0 << "% limit)" << std::endl;
+    }
   }
 
 }
@@ -319,15 +348,19 @@ void affineEnsemble::printStatistics(float conflevel,
     1) Initialize the chains by calling initChains
     2) Possibly do initsteps steps in each walker, and discard
     3) Then do min_burn steps in each walker
-    4) Compute the autocorrelation length
-    5) Do enough additional steps so that burn_multiple*acor steps have
+    4) If fixed_burn is not set:
+      4a) Compute the autocorrelation length, see if it is acceptable
+      4b) Do enough additional steps so that burn_multiple*acor steps have
        been done
-    6) Compute acor again and make sure we still satisfy that criterion;
-        if not do more steps, if so discard the previous steps
-    7) Then do nsteps additional steps
+      4c) Compute acor again and make sure we have done more than that 
+         many steps; if so, finish burn in.
+      4d) Otherwise do more steps and try again
+    5) Discard the previous steps, using the last ones as the first
+       of the new set
+    6) Then do nsteps additional steps
   Note that this generally should not be called more than once -- this
-  is a driver that tries to do all steps.  For more fine grained control,
-  use doSteps.
+  is a driver that tries to do a full fit.  For more fine grained/low level 
+  control, use doSteps.
 */
 void affineEnsemble::sample() {
   //This routine is where all of the parallel bits happen
@@ -384,9 +417,6 @@ void affineEnsemble::masterSample() {
 
   //Do burn in
   doBurnIn();
-  if (verbose || ultraverbose)
-    std::cout << "Burned in after: " << chains.getMinNIters() 
-	      << " steps" << std::endl;
 
   for (unsigned int i = 0; i < nwalkers; ++i)
     naccept[i] = 1; //Guess the last one was accepted...
@@ -426,6 +456,10 @@ float affineEnsemble::getMaxAcor() const {
 }
 
 void affineEnsemble::doBurnIn() throw(affineExcept) {
+  const unsigned int max_acor_iters = 20;
+  const unsigned int max_burn_iters = 30;
+
+
   if (init_steps > 0) {
     chains.addChunk(init_steps);
     for (unsigned int i = 0; i < init_steps; ++i)
@@ -460,28 +494,29 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
     bool acor_success = computeAcor();
   
     //If it failed, we need more steps.  Add 50% of min burn
-    // up to 50 times
-    const unsigned int max_burn_iter = 50;
+    // and try again.  Refues to do this more than max_acor_iters times.
     unsigned int nextra = 10;
     if (!acor_success) {
       nextra = static_cast<unsigned int>(min_burn * 0.5);
       if (nextra < 10) nextra = 10;
-      for (unsigned int i = 0; i < max_burn_iter; ++i) {
+      for (unsigned int i = 0; i < max_acor_iters; ++i) {
 	if (verbose || ultraverbose)
 	  std::cout << "Failed to compute acor after " << chains.getMinNIters()
 		    << " steps.  Adding " << nextra << " more" << std::endl;
-      chains.addChunk(nextra);
-      for (unsigned int i = 0; i < nextra; ++i)
-	doMasterStep();
-      acor_success = computeAcor();
-      if (acor_success) break;
+	chains.addChunk(nextra);
+	for (unsigned int i = 0; i < nextra; ++i)
+	  doMasterStep();
+	acor_success = computeAcor();
+	if (acor_success) break;
       }
+      // We were completely unable to get the autocorrelation length
       if (!acor_success)
 	throw affineExcept("affineEnsemble", "doBurnIn",
 			   "Can't compute acor; increase min_burn", 1);
     }
   
-    //Okay, we have an acor estimate of some sort
+    //Okay, we have an acor estimate of some sort, even though
+    // we probably aren't burned in yet.
     float max_acor = getMaxAcor();
     if (verbose || ultraverbose)
       std::cout << "After " << chains.getMinNIters() 
@@ -492,10 +527,15 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
     unsigned int nminsteps = 
       static_cast<unsigned int>(burn_multiple*max_acor + 0.999999999999999);
     bool burned_in = (nsteps > nminsteps);
-    while (! burned_in) {
+    unsigned int nburn_iters = 0;
+    while (!burned_in) {
+      if (nburn_iters > max_burn_iters)
+	throw affineExcept("affineEnsemble", "doBurnIn",
+			   "Failed to converge in burn in", 2);
+
       //Figure out how many more steps to do.  Do half of the number
       // estimated
-      unsigned int nmore = (nminsteps-nsteps)/2 + 1;
+      unsigned int nmore = (nminsteps - nsteps) / 2 + 1;
       if (verbose || ultraverbose) 
 	std::cout << "Doing " << nmore << " additional steps" << std::endl;
       chains.addChunk(nmore);
@@ -506,10 +546,10 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
       //Update acor, same as before
       acor_success = computeAcor();
       
-      //Again, add more steps if we must
+      //Again, add more steps if we must to get acor
       nextra = static_cast<unsigned int>(min_burn * 0.5);
       if (nextra < 10) nextra = 10;
-      for (unsigned int i = 0; i < max_burn_iter; ++i) {
+      for (unsigned int i = 0; i < max_acor_iters; ++i) {
 	if (verbose || ultraverbose)
 	  std::cout << "Failed to compute acor after " << chains.getMinNIters()
 		    << " steps.  Adding " << nextra << " more" << std::endl;
@@ -527,8 +567,13 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
       nminsteps = 
 	static_cast<unsigned int>(burn_multiple*max_acor + 0.999999999999999);
       burned_in = (nsteps > nminsteps);
+      nburn_iters += 1;
     }
   }
+
+  if (verbose || ultraverbose)
+    std::cout << "Burned in after: " << chains.getMinNIters() 
+	      << " steps" << std::endl;
 
   //Throw away burn in, keeping last step as first step of new one
   // We will not count that last step as part of our statistics

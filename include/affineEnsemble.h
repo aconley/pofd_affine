@@ -79,7 +79,7 @@ protected:
 public:
   /* \brief Constructor */
   affineEnsemble(unsigned int, unsigned int, unsigned int,
-		 unsigned int=50, unsigned int=50, bool=false, 
+		 unsigned int=0, unsigned int=50, bool=false, 
 		 float=5, float=2);
   ~affineEnsemble(); //!< Destructor
 
@@ -130,7 +130,10 @@ public:
   bool getAcor(std::vector<float>&) const; //!< Returns acor, or computes it if not set
   void getAcceptanceFrac(std::vector<float>&) const; //!< Returns acceptance fraction for each walker
 
-  void printStatistics(float=0.683, std::ostream& = std::cout) const; //!< Output statistics for run
+  float getParamMean(unsigned int) const;
+  void getParamStats(unsigned int, float&, float&, float&,
+		     float&, float=0.683) const;
+  virtual void printStatistics(float=0.683, std::ostream& = std::cout) const; //!< Output statistics for run
 
   //User must subclass these for their likelihood function
   virtual void initChains() = 0; //!< Initialize first step in chains

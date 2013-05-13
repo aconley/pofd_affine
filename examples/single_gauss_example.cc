@@ -22,7 +22,8 @@ private:
   double var; //!< Variance
   double gfac; //!< -1/(2*var)
 public:
-  singleGauss(unsigned int, unsigned int, double, double);
+  singleGauss(double, double, unsigned int, unsigned int,
+	      unsigned int, bool);
   virtual ~singleGauss();
 
   void initChains();
@@ -31,9 +32,10 @@ public:
  
 };
 
-singleGauss::singleGauss(unsigned int NWALKERS,
-			 unsigned int NSAMPLES, double MN, double VAR) :
-  affineEnsemble(NWALKERS,1,NSAMPLES) {
+singleGauss::singleGauss(double MN, double VAR,
+			 unsigned int NWALKERS, unsigned int NSAMPLES, 
+			 unsigned int MIN_BURN, bool FIXED_BURN=false) :
+  affineEnsemble(NWALKERS, 1, NSAMPLES, 0, MIN_BURN, FIXED_BURN) {
     mean = MN;
     var  = VAR;
     gfac = - 1.0/(2.0*var);
@@ -83,21 +85,23 @@ int main(int argc, char** argv) {
   unsigned int nwalkers, nsamples, nburn;
   double mean, sigma;
   std::string outfile;
-  bool verbose;
+  bool verbose, fixed_burn;
 
   nburn = 20;
   verbose = false;
+  fixed_burn = false;
 
   int c;
   int option_index = 0;
   static struct option long_options[] = {
     {"help",no_argument,0,'h'},
+    {"fixedburn", no_argument, 0, 'f'},
     {"nburn", required_argument, 0, 'n'},
     {"verbose",no_argument,0,'v'},
     {"Version",no_argument,0,'V'},
     {0,0,0,0}
   };
-  char optstring[] = "hn:vV";
+  char optstring[] = "hfn:vV";
 
   int rank, nproc;
   MPI_Init(&argc, &argv);
@@ -128,6 +132,11 @@ int main(int argc, char** argv) {
 	std::cerr << "OPTIONS" << std::endl;
 	std::cerr << "\t-h, --help" << std::endl;
 	std::cerr << "\t\tOutput this help." << std::endl;
+        std::cerr << "\t-f, --fixedburn" << std::endl;
+        std::cerr << "\t\tUsed a fixed burn in length before starting main"
+                  << " sample," << std::endl;
+        std::cerr << "\t\trather than using the autocorrelation."
+		  << std::endl;
 	std::cerr << "\t-n, --nburn NBURN" << std::endl;
 	std::cerr << "\t\tNumber of burn-in steps to do per walker (def: 20)"
 		  << std::endl;
@@ -140,6 +149,9 @@ int main(int argc, char** argv) {
       }
       MPI_Finalize();
       return 0;
+      break;
+    case 'f':
+      fixed_burn = true;
       break;
     case 'n':
       nburn = atoi(optarg);
@@ -185,16 +197,15 @@ int main(int argc, char** argv) {
 
   //Hardwired cov matrix
   try {
-    singleGauss *sg = new singleGauss(nwalkers,nsamples,mean,sigma*sigma);
+    singleGauss *sg = new singleGauss(mean, sigma*sigma,
+				      nwalkers, nsamples, nburn,
+				      fixed_burn);
     
     if (verbose) sg->setVerbose();
     
     if (verbose && rank == 0)
       std::cout << "Entering main loop" << std::endl;
-    sg->initChains();
-
-    //Do actual computation
-    sg->doSteps(sg->getNSteps(), nburn);
+    sg->sample();
 
     if (rank == 0) {
       float mn, var;
@@ -207,11 +218,6 @@ int main(int argc, char** argv) {
       for (unsigned int i = 0; i < nwalkers; ++i)
 	std::cout << " " << accept[i];
       std::cout << std::endl;
-      
-      //Try to get the autocorrelation length
-      std::vector<float> acor;
-      bool succ = sg->getAcor(acor);
-      if (succ) std::cout << "Autocorrelation length: " << acor[0] << std::endl;
       
       sg->writeToFile(outfile);
     }
