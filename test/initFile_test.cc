@@ -102,9 +102,9 @@ TEST(initFile1DTest, ReadCheck2) {
 
     //Lower limit
     bool chaslowlim = test2.knotHasLowerLimit(i);
-    EXPECT_EQ(chaslowlim, haslowlim[i]) <<
+    EXPECT_EQ(haslowlim[i], chaslowlim) <<
       "Knot has lower limit problem; expected " << haslowlim[i] <<
-      " got " << chaslowlim;
+      " got " << chaslowlim << " for index " << i;
 
     if (chaslowlim) {
       double kl = test2.getLowerLimit(i);
@@ -117,7 +117,7 @@ TEST(initFile1DTest, ReadCheck2) {
     bool chasuplim = test2.knotHasUpperLimit(i);
     EXPECT_EQ(chasuplim, hasuplim[i]) <<
       "Knot has upper limit problem; expected " << hasuplim[i] <<
-      " got " << chasuplim;
+      " got " << chasuplim << " for index " << i;
 
     if (chasuplim) {
       double ku = test2.getUpperLimit(i);

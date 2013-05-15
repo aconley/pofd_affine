@@ -432,8 +432,8 @@ void initFileKnots::readFile(const std::string& flname,
     }
     if (read_limits) { 
       if (words.size() > 3) {
-	if (has_sigma && ks.back() > 0) {
-	  // ignore limits if sigma is zero, since they are irrelevant
+	// ignore limits if sigma is zero, since they are irrelevant
+	if (has_sigma && ks.back() == 0) {
 	  hl.push_back(false);
 	  kl.push_back(std::numeric_limits<double>::quiet_NaN());
 	  hu.push_back(false);

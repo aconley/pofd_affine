@@ -2003,18 +2003,26 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
     }
     if (read_limits) { 
       if (words.size() > 3) {
-	has_lower_limits = true;
-	str.str(words[3]); str.clear(); str >> currval;
-	h4.push_back(true);
-	wvec4.push_back(currval);
-	if (words.size() > 4) {
-	  has_upper_limits = true;
-	  str.str(words[4]); str.clear(); str >> currval;
-	  h5.push_back(true);
-	  wvec5.push_back(currval);
-	} else {
+	//Ignore limits if sigma is zero -- what would be the point?
+	if (has_sigma && wvec3.back() == 0) {
+	  h4.push_back(false);
+	  wvec4.push_back(std::numeric_limits<double>::quiet_NaN());
 	  h5.push_back(false);
 	  wvec5.push_back(std::numeric_limits<double>::quiet_NaN());
+	} else {
+	  has_lower_limits = true;
+	  str.str(words[3]); str.clear(); str >> currval;
+	  h4.push_back(true);
+	  wvec4.push_back(currval);
+	  if (words.size() > 4) {
+	    has_upper_limits = true;
+	    str.str(words[4]); str.clear(); str >> currval;
+	    h5.push_back(true);
+	    wvec5.push_back(currval);
+	  } else {
+	    h5.push_back(false);
+	    wvec5.push_back(std::numeric_limits<double>::quiet_NaN());
+	  }
 	}
       } else {
 	h4.push_back(false);

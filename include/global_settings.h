@@ -51,11 +51,11 @@ namespace pofd_mcmc {
   const double n_sigma_shift2d = 4.0; //!< Shift amount
   const double n_sigma_pad2d = 6.0; //!< Noise padding size in sigma, 2D
   const double logfac = log2(10.0); //!< Conversion to base 2 from base 10
-  const double ilogfac = 1.0/logfac; //!< Inverse conversion factor
-  const double smallval=exp2(-100); //!< Log of small number (base 2)
+  const double ilogfac = 1.0 / logfac; //!< Inverse conversion factor
+  const double smallval = exp2(-100); //!< Log of small number (base 2)
   const double log2toe = log(2); //!< Multiply by this to go from log2 to ln
 
-  const double smalllogval=-100; //!< Log of small number
+  const double smalllogval = -100; //!< Log of small number
 
   /*! \brief Maximum transform size.  Make sure it's a power of 2*/
   const unsigned int nmax = 16777216;
@@ -63,10 +63,10 @@ namespace pofd_mcmc {
   //Powers of 2
   const int npow2 = 24; //!< Number of powers of 2 in pow2
   /*! \brief Powers of 2 */
-  const int pow2[npow2+1] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 
-			     2048, 4096, 8192, 16384, 32768, 65536, 131072, 
-			     262144, 524288, 1048576, 2097152, 4194304,
-			     8388608, 16777216}; 
+  const int pow2[npow2+1] = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 
+			      2048, 4096, 8192, 16384, 32768, 65536, 131072, 
+			      262144, 524288, 1048576, 2097152, 4194304,
+			      8388608, 16777216 }; 
 
 
   /*! \brief MPI message codes specific to P(D) routines */

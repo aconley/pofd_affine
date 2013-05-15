@@ -98,19 +98,17 @@ int main(int argc, char** argv) {
 	std::cerr << "\t-f, --fixedburn" << std::endl;
 	std::cerr << "\t\tUsed a fixed burn in length before starting main"
 		  << " sample," << std::endl;
-	std::cerr << "\t\trather than using the autocorrelation.  With this"
-		  << " set" << std::endl;
-	std::cerr << "\t\tmin_burn steps will be carried out, then the"
-		  << " main" << std::endl;
-	std::cerr << "\t\tmain sampling will start -- in other words,"
-		  << " initsteps is" << std::endl;
-	std::cerr << "\t\tset to zero." << std::endl;
+	std::cerr << "\t\trather than using the autocorrelation." << std::endl;
 	std::cerr << "\t-h, --help" << std::endl;
 	std::cerr << "\t\tOutput this help message and exit." << std::endl;
 	std::cerr << "\t-i, --initsteps INITIAL_STEPS" << std::endl;
 	std::cerr << "\t\tThis many steps per walker are taken and thrown away"
 		  << std::endl;
-	std::cerr << "\t\t first (def: 30)." << std::endl;
+	std::cerr << "\t\t first.  The highest likelihood point from this set"
+		  << " is then" << std::endl;
+	std::cerr << "\t\tused to re-seed the initial conditions before "
+		  << "burn-in" << std::endl;
+	std::cerr << "\t\tis started (def: 30)." << std::endl;
 	std::cerr << "\t-m, --minburn NSTEPS" << std::endl;
 	std::cerr << "\t\tThis many steps are taken per walker before the burn"
 		  << std::endl;
@@ -220,8 +218,6 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  if (fixed_burn) init_steps = 0;
-    
   try {
     if (!twod) {
       pofdMCMC engine(initfile, specfile, nwalkers, nsamples, init_steps,
