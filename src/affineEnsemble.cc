@@ -390,8 +390,19 @@ void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
       throw affineExcept("affineEnsemble", "doSteps",
 			 "Calling with invalid model setup", 1);
     int jnk;
-
+    
+    //Do initial steps
     if (initsteps > 0) {
+      if (verbose || ultraverbose) {
+	if (ultraverbose) 
+	  std::cout << "**********************************************"
+		    << std::endl;
+	std::cout << "Doing " << init_steps << " initial steps per walker"
+		  << std::endl;
+	if (ultraverbose) 
+	  std::cout << "**********************************************"
+		    << std::endl;
+      }
       chains.addChunk(initsteps);
       for (unsigned int i = 0; i < initsteps; ++i)
 	doMasterStep();
@@ -401,14 +412,24 @@ void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
       double llike;
       chains.getMaxLogLikeParam(llike, p);
       if (ultraverbose) {
+	std::cout << "**********************************************"
+		  << std::endl;
 	std::cout << " Best likelihood from initial steps: " << llike
 		  << std::endl;
 	std::cout << "  For: " << p << std::endl;
+	std::cout << " Generating new initial position from that" << std::endl;
       }
       generateInitialPosition(p);
     }
 
     // Follow with main step loop
+    if (verbose || ultraverbose) {
+      std::cout << "Doing " << nsteps << " primary steps per walker"
+		<< std::endl;
+      if (ultraverbose)
+	std::cout << "**********************************************"
+		  << std::endl;
+    }
     chains.addChunk(nsteps);
     for (unsigned int i = 0; i < nsteps; ++i)
       doMasterStep();
@@ -426,14 +447,49 @@ void affineEnsemble::masterSample() {
     throw affineExcept("affineEnsemble", "masterSample",
 		       "Calling with invalid model setup", 1);
   
+  //Do initial steps
+  if (init_steps > 0) {
+    if (verbose || ultraverbose) {
+      if (ultraverbose) 
+	std::cout << "**********************************************"
+		  << std::endl;
+      std::cout << "Doing " << init_steps << " initial steps per walker"
+		<< std::endl;
+      if (ultraverbose) 
+	std::cout << "**********************************************"
+		  << std::endl;
+    }
+    chains.addChunk(init_steps);
+    for (unsigned int i = 0; i < init_steps; ++i)
+      doMasterStep();
+
+    // Get best step, regenerate from that
+    paramSet p(nparams);
+    double llike;
+    chains.getMaxLogLikeParam(llike, p);
+    if (ultraverbose) {
+      std::cout << "**********************************************"
+		<< std::endl;
+      std::cout << " Best likelihood from initial steps: " << llike
+		<< std::endl;
+      std::cout << "  For: " << p << std::endl;
+      std::cout << " Generating new initial position from that" << std::endl;
+    }
+    generateInitialPosition(p);
+  }
+
   //Do burn in
   doBurnIn();
 
   //Then do extra steps
-  if (verbose || ultraverbose) 
+  if (verbose || ultraverbose) {
     std::cout << "Doing " << nsteps << " additional steps per"
 	      << " walker, for " << nsteps*nwalkers
 	      << " total steps" << std::endl;
+    if (ultraverbose) 
+      std::cout << "**********************************************"
+		<< std::endl;
+  }
   chains.addChunk(nsteps);
   for (unsigned int i = 0; i < nsteps; ++i)
     doMasterStep();  
@@ -480,24 +536,14 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "doBurnIn", "Don't call on slave", 1);
 
-  if (init_steps > 0) {
-    if (verbose || ultraverbose) 
-      std::cout << "Doing " << init_steps << " initial steps per walker"
+  if (verbose || ultraverbose) {
+    if (ultraverbose)
+      std::cout << "**********************************************"
 		<< std::endl;
-    chains.addChunk(init_steps);
-    for (unsigned int i = 0; i < init_steps; ++i)
-      doMasterStep();
-
-    // Get best step, regenerate from that
-    paramSet p(nparams);
-    double llike;
-    chains.getMaxLogLikeParam(llike, p);
-    if (ultraverbose) {
-      std::cout << " Best likelihood from initial steps: " << llike
+    std::cout << "Starting burn-in process" << std::endl;
+    if (ultraverbose)
+      std::cout << "**********************************************"
 		<< std::endl;
-      std::cout << "  For: " << p << std::endl;
-    }
-    generateInitialPosition(p);
   }
 
   //First do min_burn steps in each walker
@@ -507,16 +553,20 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
 
   if (fixed_burn) {
     if (verbose || ultraverbose) {
+      if (ultraverbose)
+	std::cout << "**********************************************"
+		  << std::endl;
       std::cout << "Did fixed burn in of " << min_burn << " steps per"
 		<< " walker." << std::endl;
       //Try to compute the acor and report it, but don't worry about
       // it if we can't
       bool acor_success = computeAcor();
-      if (acor_success) {
-	float max_acor = getMaxAcor();
+      if (acor_success) 
 	std::cout << " Maximum autocorrelation is: "
-		  << max_acor << std::endl;
-       }
+		  << getMaxAcor() << std::endl;
+      if (ultraverbose)
+	std::cout << "**********************************************"
+		  << std::endl;
     }
   } else {
     // Autocorrelation based burn-in test
@@ -531,9 +581,16 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
       nextra = static_cast<unsigned int>(min_burn * 0.25);
       if (nextra < 10) nextra = 10; // Always do at least 10 steps
       for (unsigned int i = 0; i < max_acor_iters; ++i) {
-	if (verbose || ultraverbose)
+	if (verbose || ultraverbose) {
+	  if (ultraverbose)
+	    std::cout << "**********************************************"
+		      << std::endl;
 	  std::cout << " Failed to compute acor after " << chains.getMinNIters()
 		    << " steps.  Adding " << nextra << " more" << std::endl;
+	  if (ultraverbose)
+	    std::cout << "**********************************************"
+		      << std::endl;
+	}
 	chains.addChunk(nextra);
 	for (unsigned int i = 0; i < nextra; ++i)
 	  doMasterStep();
@@ -549,10 +606,17 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
     //Okay, we have an acor estimate of some sort, even though
     // we probably aren't burned in yet.
     float max_acor = getMaxAcor();
-    if (verbose || ultraverbose)
-      std::cout << "After " << chains.getMinNIters() 
+    if (verbose || ultraverbose) {
+      if (ultraverbose)
+	std::cout << "**********************************************"
+		  << std::endl;
+      std::cout << " After " << chains.getMinNIters() 
 		<< " steps, maximum autocorrelation is: "
 		<< max_acor << std::endl;
+      if (ultraverbose)
+	std::cout << "**********************************************"
+		  << std::endl;
+    }
   
     unsigned int nsteps = chains.getMinNIters();
     unsigned int nminsteps = 
@@ -567,8 +631,15 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
       //Figure out how many more steps to do.  Do half of the number
       // estimated
       unsigned int nmore = (nminsteps - nsteps) / 2 + 1;
-      if (verbose || ultraverbose) 
+      if (verbose || ultraverbose) {
+	if (ultraverbose)
+	  std::cout << "**********************************************"
+		    << std::endl;
 	std::cout << " Doing " << nmore << " additional steps" << std::endl;
+	if (ultraverbose)
+	  std::cout << "**********************************************"
+		    << std::endl;
+      }
       chains.addChunk(nmore);
       for (unsigned int i = 0; i < nmore; ++i)
 	doMasterStep();
@@ -583,9 +654,16 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
       nextra = static_cast<unsigned int>(min_burn * 0.25);
       if (nextra < 10) nextra = 10;
       for (unsigned int i = 0; i < max_acor_iters; ++i) {
-	if (verbose || ultraverbose)
+	if (verbose || ultraverbose) {
+	  if (ultraverbose)
+	    std::cout << "**********************************************"
+		      << std::endl;
 	  std::cout << " Failed to compute acor after " << chains.getMinNIters()
 		    << " steps.  Adding " << nextra << " more" << std::endl;
+	  if (ultraverbose)
+	    std::cout << "**********************************************"
+		      << std::endl;
+	}
 	chains.addChunk(nextra);
 	for (unsigned int i = 0; i < nextra; ++i)
 	  doMasterStep();
@@ -606,9 +684,16 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
     }
   }
 
-  if (verbose || ultraverbose)
+  if (verbose || ultraverbose) {
+    if (ultraverbose)
+      std::cout << "**********************************************"
+		<< std::endl;
     std::cout << "Burned in after: " << chains.getMinNIters() 
 	      << " steps" << std::endl;
+    if (ultraverbose)
+      std::cout << "**********************************************"
+		<< std::endl;
+  }
 
   //Throw away burn in, keeping last step as first step of new one
   // We will not count that last step as part of our statistics
