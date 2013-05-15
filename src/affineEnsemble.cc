@@ -405,7 +405,8 @@ void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
       chains.addChunk(initsteps);
       for (unsigned int i = 0; i < initsteps; ++i) {
 	if (verbosity >= 2)
-	  std::cout << " Done " << i+1 << " of " << initsteps << " steps";
+	  std::cout << " Done " << i+1 << " of " << initsteps << " steps"
+		    << std::endl;
 	doMasterStep();
       }
 
@@ -435,7 +436,8 @@ void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
     chains.addChunk(nsteps);
     for (unsigned int i = 0; i < nsteps; ++i) {
       if (verbosity >= 2)
-	std::cout << " Done " << i+1 << " of " << nsteps << " steps";
+	std::cout << " Done " << i+1 << " of " << nsteps << " steps"
+		  << std::endl;
       doMasterStep();
     }
     
@@ -467,7 +469,8 @@ void affineEnsemble::masterSample() {
     chains.addChunk(init_steps);
     for (unsigned int i = 0; i < init_steps; ++i) {
       if (verbosity >= 2)
-	std::cout << " Done " << i+1 << " of " << init_steps << " steps";
+	std::cout << " Done " << i+1 << " of " << init_steps << " steps"
+		  << std::endl;
       doMasterStep();
     }
 
@@ -501,7 +504,8 @@ void affineEnsemble::masterSample() {
   chains.addChunk(nsteps);
   for (unsigned int i = 0; i < nsteps; ++i) {
     if (verbosity >= 2)
-      std::cout << " Done " << i+1 << " of " << nsteps << " steps";
+      std::cout << " Done " << i+1 << " of " << nsteps << " steps"
+		<< std::endl;
     doMasterStep();
   }
   
@@ -561,7 +565,8 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
   chains.addChunk(min_burn);
   for (unsigned int i = 0; i < min_burn; ++i) {
     if (verbosity >= 2)
-      std::cout << " Done " << i+1 << " of " << min_burn << " steps";
+      std::cout << " Done " << i+1 << " of " << min_burn << " steps"
+		<< std::endl;
     doMasterStep();
   }
 
@@ -608,7 +613,8 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
 	chains.addChunk(nextra);
 	for (unsigned int i = 0; i < nextra; ++i) {
 	  if (verbosity >= 2)
-	    std::cout << " Done " << i+1 << " of " << nextra << " steps";
+	    std::cout << " Done " << i+1 << " of " << nextra << " steps"
+		      << std::endl;
 	  doMasterStep();
 	}
 	acor_success = computeAcor();
@@ -660,7 +666,8 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
       chains.addChunk(nmore);
       for (unsigned int i = 0; i < nmore; ++i) {
 	if (verbosity >= 2)
-	  std::cout << " Done " << i+1 << " of " << nmore << " steps";
+	  std::cout << " Done " << i+1 << " of " << nmore << " steps"
+		    << std::endl;
 	doMasterStep();
       }
       nsteps += nmore;
@@ -687,7 +694,8 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
 	chains.addChunk(nextra);
 	for (unsigned int i = 0; i < nextra; ++i) {
 	  if (verbosity >= 2)
-	    std::cout << " Done " << i+1 << " of " << nextra << " steps";
+	    std::cout << " Done " << i+1 << " of " << nextra << " steps"
+		      << std::endl;
 	  doMasterStep();
 	}
 	acor_success = computeAcor();
