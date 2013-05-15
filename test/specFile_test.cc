@@ -83,10 +83,8 @@ TEST(specFile1DTest, ReadCheck) {
   EXPECT_EQ(spec_info.wisdom_file, std::string("a_wisdom_file.txt")) <<
     "Expected wisdom file name 'a_wisdom_file.txt', got " << 
     spec_info.wisdom_file;
-
-  EXPECT_TRUE(spec_info.verbose) << "Expected to be verbose";
-  EXPECT_FALSE(spec_info.ultraverbose) <<  "Expected not to be ultraverbose";
-
+  
+  EXPECT_EQ(1, spec_info.verbosity) << "Expected level 1 verbosity";
 }
 
 
@@ -187,8 +185,7 @@ TEST(specFile2DTest, ReadCheck) {
     "Expected wisdom file name 'a_wisdom_file.txt', got " << 
     spec_info.wisdom_file;
 
-  EXPECT_TRUE(spec_info.verbose) << "Expected to be verbose";
-  EXPECT_FALSE(spec_info.ultraverbose) << "Expected not to be ultraverbose";
+  EXPECT_EQ(1, spec_info.verbosity) << "Expected level 1 verbosity";
 }
 
 GTEST_API_ int main(int argc, char **argv) {

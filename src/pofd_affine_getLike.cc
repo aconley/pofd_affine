@@ -37,7 +37,7 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
 		      spec_info.nbins );
 
     //Read data
-    if (spec_info.verbose || spec_info.ultraverbose)
+    if (spec_info.verbosity >= 2)
       std::cout << "Reading in data files" << std::endl;
     likeSet.readDataFromFiles( spec_info.datafiles, spec_info.psffiles, 
 			       spec_info.sigmas, spec_info.like_norm,
@@ -51,9 +51,9 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
       likeSet.setCFIRBPrior( spec_info.cfirbprior_mean,
 			     spec_info.cfirbprior_stdev );
 
-    if (spec_info.ultraverbose) likeSet.setVerbose();
+    if (spec_info.verbosity >= 2) likeSet.setVerbose();
       
-    if ( spec_info.verbose || spec_info.ultraverbose) {
+    if (spec_info.verbosity >= 1) {
       printf("  FFTsize:       %u\n", spec_info.fftsize);
       printf("  Nknots:        %u\n", model_info.getNKnots());
       if (spec_info.beam_histogram)
@@ -136,9 +136,9 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
 			      spec_info.cfirbprior_stdev2 );
 
 
-    if (spec_info.ultraverbose) likeSet.setVerbose();
+    if (spec_info.verbosity >= 2) likeSet.setVerbose();
       
-    if (spec_info.verbose || spec_info.ultraverbose) {
+    if (spec_info.verbosity >= 1) {
       printf("  FFTsize:       %u\n",spec_info.fftsize);
       if (spec_info.beam_histogram)
 	printf("  Using histogramming to reduce beam size\n");  

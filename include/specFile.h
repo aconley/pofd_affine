@@ -54,9 +54,11 @@
    wisdom_file= filename
                   Uses filename as a FFTW wisdom file		  
    verbose=     bool
-                  Turns on verbose mode
+                  Turns on verbose mode (verbosity = 1)
    ultraverbose= bool
-                  Turns on ultraverbose mode
+                  Turns on ultraverbose mode (verbosity = 2)
+   verbosity=   value		  
+                  Sets verbosity to this level.
 
   Having multiple lines with dataset= is additive.
   Having multiple lines with any of the others results in only
@@ -87,8 +89,7 @@ struct specFile {
   double cfirbprior_stdev; //!< Stdev of prior
   bool has_wisdom_file; //!< Has FFTW wisdom file
   std::string wisdom_file; //!< Name of wisdom file
-  bool verbose; //!< Run in verbose mode
-  bool ultraverbose; //!< Run in ultraverbose mode
+  unsigned int verbosity; //!< Verbosity level
 
   specFile(); //!< Default constructor
   specFile(const std::string&); //!< Constructor with file read

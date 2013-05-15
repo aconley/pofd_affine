@@ -36,8 +36,7 @@ void specFile::init() {
   cfirbprior_stdev = 0.0;
   has_wisdom_file = false;
   wisdom_file.clear();
-  verbose = false;
-  ultraverbose = false;
+  verbosity = 0;
 }
 
 /*!
@@ -256,7 +255,7 @@ void specFile::readFile(const std::string& flname) {
 	throw affineExcept("specFile", "readFile", errstr.str(), 22);
       }
 
-      verbose = utility::string_true(words[1]);
+      if (utility::string_true(words[1])) verbosity = 1;
 
     } else if (words[0] == "ultraverbose") {
       if (words.size() < 2) {
@@ -265,7 +264,16 @@ void specFile::readFile(const std::string& flname) {
 	throw affineExcept("specFile", "readFile", errstr.str(), 23);
       }
 
-      ultraverbose = utility::string_true(words[1]);
+      if (utility::string_true(words[1])) verbosity = 2;
+    } else if (words[0] == "verbosity") {
+      if (words.size() < 2) {
+	errstr << "verbosity line doesn't have right number of entries: "
+	       << line;
+	throw affineExcept("specFile", "readFile", errstr.str(), 24);
+      }
+
+      str.str(words[1]); str.clear(); str >> ival;
+      verbosity = static_cast<unsigned int>(ival);
 
     } else {
       errstr << "Couldn't determine line type for: " << line;

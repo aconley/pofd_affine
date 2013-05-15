@@ -36,21 +36,21 @@ pofdMCMCDouble::pofdMCMCDouble(const std::string& INITFILE,
 
 bool pofdMCMCDouble::initChainsMaster() {
   if (rank != 0)
-    throw affineExcept("pofdMCMCDouble","initChainsMaster",
-		       "Should not be called except on master node",1);
+    throw affineExcept("pofdMCMCDouble", "initChainsMaster",
+		       "Should not be called except on master node", 1);
 
   //Model initialization file
-  ifile.readFile(initfile,true,true);
+  ifile.readFile(initfile, true, true);
   unsigned int ntot = ifile.getNTot();
   if (ntot == 0)
-    throw affineExcept("pofdMCMCDouble","initChainsMaster",
-		       "No model parameters read in",2);
+    throw affineExcept("pofdMCMCDouble", "initChainsMaster",
+		       "No model parameters read in", 2);
   
   //Data/fit initialization file
   spec_info.readFile(specfile);
   if (spec_info.datafiles1.size() == 0)
-      throw affineExcept("pofdMCMCDouble","initChainsMaster",
-			 "No data files read",3);
+      throw affineExcept("pofdMCMCDouble", "initChainsMaster",
+			 "No data files read", 3);
 
   //Number of parameters is number of knots (ntot) + 2 for the
   // sigma in each band -- although some may be fixed
@@ -113,7 +113,7 @@ bool pofdMCMCDouble::initChainsMaster() {
     likeSet.setSigmaPrior2(spec_info.sigprior_stdev2);
 
   //Read in data files
-  if (spec_info.verbose || spec_info.ultraverbose)
+  if (spec_info.verbosity >= 2)
       std::cout << "Reading in data files" << std::endl;
   likeSet.readDataFromFiles(spec_info.datafiles1, spec_info.datafiles2,
 			    spec_info.psffiles1, spec_info.psffiles2, 
@@ -122,13 +122,12 @@ bool pofdMCMCDouble::initChainsMaster() {
 			    spec_info.mean_sub, spec_info.beam_histogram);
 
   // Verbosity
-  if (spec_info.verbose) setVerbose();
-  if (spec_info.ultraverbose) setUltraVerbose();
+  setVerbosity(spec_info.verbosity);
 
   //Now, copy that information over to slaves
   int nproc;
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
-  if (ultraverbose)
+  if (verbosity >= 2)
     std::cout << "Initializing " << nproc - 1 << " slave nodes from master"
 	      << std::endl;
 
@@ -165,7 +164,7 @@ bool pofdMCMCDouble::initChainsMaster() {
       likeSet.sendSelf(MPI_COMM_WORLD, this_rank);
       
     } else if (this_tag == pofd_mcmc::PMCMCISREADY) {
-      if (ultraverbose)
+      if (verbosity >= 3)
 	std::cout << " Slave node " << this_rank << " initialized"
 		  << std::endl;
 
@@ -174,7 +173,7 @@ bool pofdMCMCDouble::initChainsMaster() {
     nnotinitialized = std::count(initialized.begin(), initialized.end(),
 				 false);
   }
-  if (ultraverbose)
+  if (verbosity >= 2)
     std::cout << "All slave nodes initialized" << std::endl;
 
 
@@ -183,7 +182,7 @@ bool pofdMCMCDouble::initChainsMaster() {
   likeSet.freeData();
 
   // Generate initial positions
-  if (ultraverbose)
+  if (verbosity >= 3)
     std::cout << "Setting up initial parameters" << std::endl;
   paramSet p(npar); //Generated parameter
   ifile.getParams(p); //Get central values from initialization file
@@ -192,7 +191,7 @@ bool pofdMCMCDouble::initChainsMaster() {
   is_init = true;
 
   //That's it!
-  if (ultraverbose)
+  if (verbosity >= 1)
     std::cout << "Initialization completed" << std::endl;
   return true;
 }

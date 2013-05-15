@@ -87,7 +87,7 @@ bool pofdMCMC::initChainsMaster() {
     likeSet.setSigmaPrior(spec_info.sigprior_stdev);
 
   // Read in data files
-  if (spec_info.verbose || spec_info.ultraverbose)
+  if (spec_info.verbosity >= 2)
       std::cout << "Reading in data files" << std::endl;
   likeSet.readDataFromFiles(spec_info.datafiles, spec_info.psffiles, 
 			    spec_info.sigmas, spec_info.like_norm,
@@ -95,13 +95,12 @@ bool pofdMCMC::initChainsMaster() {
 			    spec_info.beam_histogram);
 
   // Verbosity
-  if (spec_info.verbose) setVerbose();
-  if (spec_info.ultraverbose) setUltraVerbose();
+  setVerbosity(spec_info.verbosity);
 
   //Now, copy that information over to slaves
   int nproc;
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
-  if (ultraverbose)
+  if (verbosity >= 2)
     std::cout << "Initializing " << nproc - 1 << " slave nodes from master"
 	      << std::endl;
 
@@ -139,7 +138,7 @@ bool pofdMCMC::initChainsMaster() {
       likeSet.sendSelf(MPI_COMM_WORLD, this_rank);
       
     } else if (this_tag == pofd_mcmc::PMCMCISREADY) {
-      if (ultraverbose)
+      if (verbosity >= 3)
 	std::cout << " Slave node: " << this_rank << " initialized"
 		  << std::endl;
       initialized[this_rank] = true;
@@ -148,7 +147,7 @@ bool pofdMCMC::initChainsMaster() {
 				 false);
 
   }
-  if (ultraverbose)
+  if (verbosity >= 2)
     std::cout << "All slave nodes initialized" << std::endl;
 
   //We can free all the data storage, since master doesn't need
@@ -156,7 +155,7 @@ bool pofdMCMC::initChainsMaster() {
   likeSet.freeData();
   
   // Generate initial positions
-  if (ultraverbose)
+  if (verbosity >= 3)
     std::cout << "Setting up initial parameters" << std::endl;
   paramSet p(npar); //Generated parameter
   ifile.getParams(p); //Get central values from initialization file
@@ -165,7 +164,7 @@ bool pofdMCMC::initChainsMaster() {
   is_init = true;
   
   //That's it!
-  if (ultraverbose)
+  if (verbosity >= 1)
     std::cout << "Initialization completed" << std::endl;
   return true;
 }
