@@ -74,8 +74,8 @@ protected:
 
   int rank; //!< Which node is this; if 0 master, otherwise slave
 
-  bool verbose; //!< Ouput information messages as we run
-  bool ultraverbose; //!< Output even more information during run
+  // 0 is non-verbose, 1 is verbose, 2 is ultra-verbose, 3 is ultra-ultra
+  unsigned int verbosity; //!< Verbosity level
 
 public:
   /* \brief Constructor */
@@ -86,10 +86,10 @@ public:
 
   bool isValid() const; //!< Are params valid?
 
-  void setVerbose() { verbose = true; } //!< Set verbose mode
-  void unsetVerbose() { verbose = false; } //!< Turn off verbose mode
-  void setUltraVerbose() { ultraverbose = true; } //!< Set ultra-verbose mode
-  void unsetUltraVerbose() { ultraverbose = false; } //!< Turn off ultra-verbose mode
+  void unsetVerbose() { verbosity = 0; } //!< Turn off verbose mode
+  void setVerbose() { verbosity = 1; } //!< Set verbose mode
+  void setUltraVerbose() { verbosity = 2; } //!< Set ultra-verbose mode
+  void setVerbosity(unsigned int V) { verbosity = V; } //!< Set verbosity level
 
   unsigned int getNWalkers() const { return nwalkers; } //!< Get number of walkers
   void setNWalkers(unsigned int); //!< Set the number of walkers
@@ -142,12 +142,16 @@ public:
   virtual void generateInitialPosition(const paramSet&) = 0; //!< Generate initial position based on input parameter Set
   virtual double getLogLike(const paramSet&) = 0; //!< Computes log likelihood
 
-  void sample(); //!< Get samples
-  
+  void sample(); //!< Do burn in, get samples  
   void doSteps(unsigned int,unsigned int=0); //!< Do a fixed number of steps
+
+  virtual void writeToStream(std::ostream&) const; //!< Write summary of fit parameters
 
   void writeToFile(const std::string&) const; //!< Write results to file
 
 };
+
+/*! \brief Write to stream */
+std::ostream& operator<<(std::ostream& os, const affineEnsemble&);
 
 #endif

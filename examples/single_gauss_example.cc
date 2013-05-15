@@ -219,10 +219,13 @@ int main(int argc, char** argv) {
   try {
     singleGauss sg(mean, sigma, nwalkers, nsamples, 
 		   init_steps, min_burn, fixed_burn);
-    if (verbose) sg.setVerbose();
+    if (verbose) {
+      sg.setVerbose();
+      if (rank == 0)
+	std::cout << sg << std::endl;
+    }
     
-    if (verbose && rank == 0)
-      std::cout << "Entering main loop" << std::endl;
+    // Do main loop
     sg.sample(); //Also initializes
 
     if (rank == 0) {
