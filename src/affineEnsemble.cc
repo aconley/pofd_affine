@@ -33,8 +33,7 @@ affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
   nwalkers(NWALKERS), nparams(NPARAMS), has_any_names(false), 
   scalefac(SCALEFAC), init_steps(INIT_STEPS), min_burn(MIN_BURN), 
   fixed_burn(FIXED_BURN), burn_multiple(BURN_MULTIPLE), pstep(NPARAMS), 
-  is_init(false), chains(NWALKERS,NPARAMS), verbose(false), 
-  ultraverbose(false) {
+  is_init(false), chains(NWALKERS,NPARAMS), verbosity(0) {
   
   has_name.resize(nparams);
   has_name.assign(nparams, false);
@@ -393,25 +392,28 @@ void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
     
     //Do initial steps
     if (initsteps > 0) {
-      if (verbose || ultraverbose) {
-	if (ultraverbose) 
+      if (verbosity >= 1) {
+	if (verbosity >= 2) 
 	  std::cout << "**********************************************"
 		    << std::endl;
 	std::cout << "Doing " << init_steps << " initial steps per walker"
 		  << std::endl;
-	if (ultraverbose) 
+	if (verbosity >= 2) 
 	  std::cout << "**********************************************"
 		    << std::endl;
       }
       chains.addChunk(initsteps);
-      for (unsigned int i = 0; i < initsteps; ++i)
+      for (unsigned int i = 0; i < initsteps; ++i) {
+	if (verbosity >= 2)
+	  std::cout << " Done " << i+1 << " of " << initsteps << " steps";
 	doMasterStep();
+      }
 
       // Get best step, regenerate from that
       paramSet p(nparams);
       double llike;
       chains.getMaxLogLikeParam(llike, p);
-      if (ultraverbose) {
+      if (verbosity >= 2) {
 	std::cout << "**********************************************"
 		  << std::endl;
 	std::cout << " Best likelihood from initial steps: " << llike
@@ -423,16 +425,19 @@ void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
     }
 
     // Follow with main step loop
-    if (verbose || ultraverbose) {
+    if (verbosity >= 1) {
       std::cout << "Doing " << nsteps << " primary steps per walker"
 		<< std::endl;
-      if (ultraverbose)
+      if (verbosity >= 2)
 	std::cout << "**********************************************"
 		  << std::endl;
     }
     chains.addChunk(nsteps);
-    for (unsigned int i = 0; i < nsteps; ++i)
+    for (unsigned int i = 0; i < nsteps; ++i) {
+      if (verbosity >= 2)
+	std::cout << " Done " << i+1 << " of " << nsteps << " steps";
       doMasterStep();
+    }
     
     int nproc;
     MPI_Comm_size(MPI_COMM_WORLD, &nproc);
@@ -449,25 +454,28 @@ void affineEnsemble::masterSample() {
   
   //Do initial steps
   if (init_steps > 0) {
-    if (verbose || ultraverbose) {
-      if (ultraverbose) 
+    if (verbosity >= 1) {
+      if (verbosity >= 2) 
 	std::cout << "**********************************************"
 		  << std::endl;
       std::cout << "Doing " << init_steps << " initial steps per walker"
 		<< std::endl;
-      if (ultraverbose) 
+      if (verbosity >= 2) 
 	std::cout << "**********************************************"
 		  << std::endl;
     }
     chains.addChunk(init_steps);
-    for (unsigned int i = 0; i < init_steps; ++i)
+    for (unsigned int i = 0; i < init_steps; ++i) {
+      if (verbosity >= 2)
+	std::cout << " Done " << i+1 << " of " << init_steps << " steps";
       doMasterStep();
+    }
 
     // Get best step, regenerate from that
     paramSet p(nparams);
     double llike;
     chains.getMaxLogLikeParam(llike, p);
-    if (ultraverbose) {
+    if (verbosity >= 2) {
       std::cout << "**********************************************"
 		<< std::endl;
       std::cout << " Best likelihood from initial steps: " << llike
@@ -482,17 +490,20 @@ void affineEnsemble::masterSample() {
   doBurnIn();
 
   //Then do extra steps
-  if (verbose || ultraverbose) {
+  if (verbosity >= 1) {
     std::cout << "Doing " << nsteps << " additional steps per"
 	      << " walker, for " << nsteps*nwalkers
 	      << " total steps" << std::endl;
-    if (ultraverbose) 
+    if (verbosity >= 2) 
       std::cout << "**********************************************"
 		<< std::endl;
   }
   chains.addChunk(nsteps);
-  for (unsigned int i = 0; i < nsteps; ++i)
-    doMasterStep();  
+  for (unsigned int i = 0; i < nsteps; ++i) {
+    if (verbosity >= 2)
+      std::cout << " Done " << i+1 << " of " << nsteps << " steps";
+    doMasterStep();
+  }
   
   //Tell slaves we are done
   int jnk, nproc;
@@ -536,24 +547,27 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "doBurnIn", "Don't call on slave", 1);
 
-  if (verbose || ultraverbose) {
-    if (ultraverbose)
+  if (verbosity >= 1) {
+    if (verbosity >= 2)
       std::cout << "**********************************************"
 		<< std::endl;
     std::cout << "Starting burn-in process" << std::endl;
-    if (ultraverbose)
+    if (verbosity >= 2)
       std::cout << "**********************************************"
 		<< std::endl;
   }
 
   //First do min_burn steps in each walker
   chains.addChunk(min_burn);
-  for (unsigned int i = 0; i < min_burn; ++i)
+  for (unsigned int i = 0; i < min_burn; ++i) {
+    if (verbosity >= 2)
+      std::cout << " Done " << i+1 << " of " << min_burn << " steps";
     doMasterStep();
+  }
 
   if (fixed_burn) {
-    if (verbose || ultraverbose) {
-      if (ultraverbose)
+    if (verbosity >= 1) {
+      if (verbosity >= 2)
 	std::cout << "**********************************************"
 		  << std::endl;
       std::cout << "Did fixed burn in of " << min_burn << " steps per"
@@ -564,7 +578,7 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
       if (acor_success) 
 	std::cout << " Maximum autocorrelation is: "
 		  << getMaxAcor() << std::endl;
-      if (ultraverbose)
+      if (verbosity >= 2)
 	std::cout << "**********************************************"
 		  << std::endl;
     }
@@ -581,19 +595,22 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
       nextra = static_cast<unsigned int>(min_burn * 0.25);
       if (nextra < 10) nextra = 10; // Always do at least 10 steps
       for (unsigned int i = 0; i < max_acor_iters; ++i) {
-	if (verbose || ultraverbose) {
-	  if (ultraverbose)
+	if (verbosity >= 1) {
+	  if (verbosity >= 2)
 	    std::cout << "**********************************************"
 		      << std::endl;
 	  std::cout << " Failed to compute acor after " << chains.getMinNIters()
 		    << " steps.  Adding " << nextra << " more" << std::endl;
-	  if (ultraverbose)
+	  if (verbosity >= 2)
 	    std::cout << "**********************************************"
 		      << std::endl;
 	}
 	chains.addChunk(nextra);
-	for (unsigned int i = 0; i < nextra; ++i)
+	for (unsigned int i = 0; i < nextra; ++i) {
+	  if (verbosity >= 2)
+	    std::cout << " Done " << i+1 << " of " << nextra << " steps";
 	  doMasterStep();
+	}
 	acor_success = computeAcor();
 	if (acor_success) break;
       }
@@ -606,14 +623,14 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
     //Okay, we have an acor estimate of some sort, even though
     // we probably aren't burned in yet.
     float max_acor = getMaxAcor();
-    if (verbose || ultraverbose) {
-      if (ultraverbose)
+    if (verbosity >= 1) {
+      if (verbosity >= 2)
 	std::cout << "**********************************************"
 		  << std::endl;
       std::cout << " After " << chains.getMinNIters() 
 		<< " steps, maximum autocorrelation is: "
 		<< max_acor << std::endl;
-      if (ultraverbose)
+      if (verbosity >= 2)
 	std::cout << "**********************************************"
 		  << std::endl;
     }
@@ -631,18 +648,21 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
       //Figure out how many more steps to do.  Do half of the number
       // estimated
       unsigned int nmore = (nminsteps - nsteps) / 2 + 1;
-      if (verbose || ultraverbose) {
-	if (ultraverbose)
+      if (verbosity >= 1) {
+	if (verbosity >= 2)
 	  std::cout << "**********************************************"
 		    << std::endl;
 	std::cout << " Doing " << nmore << " additional steps" << std::endl;
-	if (ultraverbose)
+	if (verbosity >= 2)
 	  std::cout << "**********************************************"
 		    << std::endl;
       }
       chains.addChunk(nmore);
-      for (unsigned int i = 0; i < nmore; ++i)
+      for (unsigned int i = 0; i < nmore; ++i) {
+	if (verbosity >= 2)
+	  std::cout << " Done " << i+1 << " of " << nmore << " steps";
 	doMasterStep();
+      }
       nsteps += nmore;
       
       //Update acor, same as before
@@ -654,19 +674,22 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
       nextra = static_cast<unsigned int>(min_burn * 0.25);
       if (nextra < 10) nextra = 10;
       for (unsigned int i = 0; i < max_acor_iters; ++i) {
-	if (verbose || ultraverbose) {
-	  if (ultraverbose)
+	if (verbosity >= 1) {
+	  if (verbosity >= 2)
 	    std::cout << "**********************************************"
 		      << std::endl;
 	  std::cout << " Failed to compute acor after " << chains.getMinNIters()
 		    << " steps.  Adding " << nextra << " more" << std::endl;
-	  if (ultraverbose)
+	  if (verbosity >= 2)
 	    std::cout << "**********************************************"
 		      << std::endl;
 	}
 	chains.addChunk(nextra);
-	for (unsigned int i = 0; i < nextra; ++i)
+	for (unsigned int i = 0; i < nextra; ++i) {
+	  if (verbosity >= 2)
+	    std::cout << " Done " << i+1 << " of " << nextra << " steps";
 	  doMasterStep();
+	}
 	acor_success = computeAcor();
 	if (acor_success) break;
 	nsteps += nextra;
@@ -684,13 +707,13 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
     }
   }
 
-  if (verbose || ultraverbose) {
-    if (ultraverbose)
+  if (verbosity >= 1) {
+    if (verbosity >= 2)
       std::cout << "**********************************************"
 		<< std::endl;
     std::cout << "Burned in after: " << chains.getMinNIters() 
 	      << " steps" << std::endl;
-    if (ultraverbose)
+    if (verbosity >= 2)
       std::cout << "**********************************************"
 		<< std::endl;
   }
@@ -731,8 +754,8 @@ void affineEnsemble::doMasterStep() throw (affineExcept) {
   //Do the first half
   minidx = nwalkers/2; //Generate from second half
   maxidx = nwalkers;
-  if (ultraverbose)
-    std::cout << "Generating new steps for 0:" << nwalkers/2
+  if (verbosity >= 3)
+    std::cout << "  Generating new steps for 0:" << nwalkers/2
 	      << " from " << minidx << ":" << maxidx << std::endl;
   for (unsigned int i = 0; i < nwalkers / 2; ++i) {
     pr.first  = i;
@@ -741,23 +764,23 @@ void affineEnsemble::doMasterStep() throw (affineExcept) {
   }
 
   //Now run that
-  if (ultraverbose)
-    std::cout << "Evaluating likelihoods" << std::endl;
+  if (verbosity >= 3)
+    std::cout << "  Evaluating likelihoods" << std::endl;
   emptyMasterQueue();
 
   //Then the second
   minidx = 0;
   maxidx = nwalkers/2;
-  if (ultraverbose)
-    std::cout << "Generating new steps for " << nwalkers/2 << ":" << nwalkers
+  if (verbosity >= 3)
+    std::cout << "  Generating new steps for " << nwalkers/2 << ":" << nwalkers
 	      << " from " << minidx << ":" << maxidx << std::endl;
   for (unsigned int i = nwalkers/2; i < nwalkers; ++i) {
     pr.first  = i;
     pr.second = rangen.selectFromRange(minidx, maxidx);
     stepqueue.push(pr);
   }
-  if (ultraverbose)
-    std::cout << "Evaluating likelihoods" << std::endl;
+  if (verbosity >= 3)
+    std::cout << "  Evaluating likelihoods" << std::endl;
   emptyMasterQueue();
 
 }
@@ -789,8 +812,8 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
 	//Generate actual value into pstep
 	generateNewStep(pr.first, pr.second, pstep);
 	
-	if (ultraverbose)
-	  std::cout << "Evaluating new step for walker: " << pr.first
+	if (verbosity >= 3)
+	  std::cout << "  Evaluating new step for walker: " << pr.first
 		    << " using slave: " << this_rank << std::endl;
 	MPI_Send(&jnk, 1, MPI_INT, this_rank, mcmc_affine::SENDINGPOINT,
 		 MPI_COMM_WORLD);
@@ -842,19 +865,19 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
       // min(1, z^(n-1) P(new) / P(old)
       prob = exp((nparams - nfixed - 1) * log(pstep.z) + pstep.newLogLike - 
 		 pstep.oldLogLike);
-      if (ultraverbose) {
-	std::cout << "Got new step for " << pstep.update_idx 
+      if (verbosity >= 3) {
+	std::cout << "  Got new step for " << pstep.update_idx 
 		  << " from slave " << this_rank << std::endl;
-	std::cout << pstep << std::endl;
-	std::cout << "Delta likelihood: "
+	std::cout << "   " << pstep << std::endl;
+	std::cout << "   Delta likelihood: "
 		  << pstep.newLogLike - pstep.oldLogLike << std::endl;
       }
 
       if (prob >= 1) {
 	//Will always be accepted; this is the min(1, part
 	// This saves us a call to rangen.doub
-	if (ultraverbose)
-	  std::cout << " Accepting new step" << std::endl;
+	if (verbosity >= 3)
+	  std::cout << "  Accepting new step" << std::endl;
 	chains.addNewStep(pstep.update_idx, pstep.newStep,
 			  pstep.newLogLike);
 	naccept[pstep.update_idx] += 1;
@@ -862,16 +885,16 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
 	rval = rangen.doub();
 	if (rval < prob) {
 	  //Accept!
-	  if (ultraverbose)
-	    std::cout << " Accepting new step (prob: "
+	  if (verbosity >= 3)
+	    std::cout << "  Accepting new step (prob: "
 		      << prob << " rval: " << rval <<")" << std::endl;
 	  chains.addNewStep(pstep.update_idx, pstep.newStep,
 			    pstep.newLogLike);
 	  naccept[pstep.update_idx] += 1;
 	} else {
 	  //reject, keep old step
-	  if (ultraverbose)
-	    std::cout << " Rejecting new step (prob: "
+	  if (verbosity >= 3)
+	    std::cout << "  Rejecting new step (prob: "
 		      << prob << " rval: " << rval <<")" << std::endl;
 	  chains.addNewStep(pstep.update_idx, pstep.oldStep,
 			    pstep.oldLogLike);
@@ -946,13 +969,48 @@ void affineEnsemble::slaveSample() {
   }
 }
 
-/*!
-  Doesn't output the first chunk (which should just have the initial step
-  in it).
- */
+void affineEnsemble::writeToStream(std::ostream& os) const {
+  if (rank != 0) return;
+
+  os << "Number of walkers: " << nwalkers << std::endl;
+  os << "Number of parameters: " << nparams;
+  if (verbosity >= 2 && nfixed > 0) 
+    os << std::endl << " Number of fixed parameters: " << nfixed;
+  if (verbosity >= 2 && nignore > 0) 
+    os << std::endl << " Number of ignored parameters: " << nignore;
+  if (verbosity >= 2 && has_any_names) {
+    os << std::endl << "Parameter names: ";
+    for (unsigned int i = 0; i < nparams; ++i)
+      if (has_name[i]) os << std::endl << " " << i << ": " 
+			  << parnames[i];
+  }
+  if (init_steps > 0)
+    os << std::endl << "Number of initial steps: " << init_steps;
+  if (min_burn > 0) {
+    if (fixed_burn) {
+      os << std::endl << "Will do fixed burn in of " << min_burn 
+	 << " steps per walker";
+    } else {
+      os << std::endl << "Will do autocorrelation based burn-in";
+      os << std::endl << " Minimum number of burn in steps: " << min_burn 
+	 << " per walker";
+      if (verbosity >= 2)
+	os << std::endl << " Burn multiple: " << burn_multiple;
+    }
+  }
+
+  if (nsteps > 0)
+    os << std::endl << "Number of main loop steps per walker: " << nsteps;
+}
+
 void affineEnsemble::writeToFile(const std::string& filename) const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "writeToFile",
 		       "Should only be called from master node", 1);  
   chains.writeToFile(filename);
+}
+
+std::ostream& operator<<(std::ostream& os, const affineEnsemble& a) {
+  a.writeToStream(os);
+  return os;
 }

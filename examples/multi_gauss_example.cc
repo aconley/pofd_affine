@@ -277,10 +277,12 @@ int main(int argc, char** argv) {
   try {
     multiGauss mg(invcovfile, nwalkers, ndim, nsamples, init_steps,
 		  min_burn, fixed_burn);
-    if (verbose) mg.setVerbose();
-    
-    if (verbose && rank == 0)
-      std::cout << "Entering main loop" << std::endl;
+    if (verbose) {
+      mg.setVerbose();
+      if (rank == 0)
+	std::cout << mg << std::endl;
+    }
+
     mg.sample(); //Also initializes
     
     if (rank == 0) {

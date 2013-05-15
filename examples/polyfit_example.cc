@@ -298,11 +298,13 @@ int main(int argc, char** argv) {
     ply.setParamName(2,"c[2]*x^2");
     ply.setParamName(3,"c[3]*x^3");
 
-    if (verbose) ply.setVerbose();
+    if (verbose) {
+      ply.setVerbose();
+      if (rank == 0)
+	std::cout << ply << std::endl;
+    }
     
     // Do Fit
-    if (verbose && rank == 0)
-      std::cout << "Entering main loop" << std::endl;
     ply.sample(); //Also initializes
     
     if (rank == 0) {
