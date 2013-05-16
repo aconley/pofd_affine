@@ -74,7 +74,7 @@ protected:
 
   int rank; //!< Which node is this; if 0 master, otherwise slave
 
-  // 0 is non-verbose, 1 is verbose, 2 is ultra-verbose, 3 is ultra-ultra
+  // 0 is non-verbose, 1 is verbose, 2 is ultra-verbose, 3 is ultra-ultra, etc.
   unsigned int verbosity; //!< Verbosity level
 
 public:
@@ -86,10 +86,11 @@ public:
 
   bool isValid() const; //!< Are params valid?
 
-  void unsetVerbose() { verbosity = 0; } //!< Turn off verbose mode
-  void setVerbose() { verbosity = 1; } //!< Set verbose mode
-  void setUltraVerbose() { verbosity = 2; } //!< Set ultra-verbose mode
-  void setVerbosity(unsigned int V) { verbosity = V; } //!< Set verbosity level
+  void setQuiet() { setVerbosity(0); } //!< Turn off verbose mode
+  void setVerbose() { setVerbosity(1); } //!< Set verbose mode
+  void setUltraVerbose() { setVerbosity(2); } //!< Set ultra-verbose mode
+  virtual void setVerbosity(unsigned int V) { verbosity = V; } //!< Set verbosity level
+  unsigned int getVerbosity() const { return verbosity; } //!< Get verbosity level
 
   unsigned int getNWalkers() const { return nwalkers; } //!< Get number of walkers
   void setNWalkers(unsigned int); //!< Set the number of walkers
