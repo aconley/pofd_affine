@@ -32,6 +32,16 @@ pofdMCMC::pofdMCMC(const std::string& INITFILE, const std::string& SPECFILE,
   // All of this is done in initChains
 }
 
+void pofdMCMC::setVerbosity(unsigned int V) {
+  if (V >= 4) likeSet.setVerbose(); else likeSet.unSetVerbose();
+  affineEnsemble::setVerbosity(V);
+}
+
+void pofdMCMC::initChains() {
+  if (rank == 0) initChainsMaster(); else initChainsSlave();
+  MPI_Barrier(MPI_COMM_WORLD);
+}
+
 bool pofdMCMC::initChainsMaster() {
   if (rank != 0)
     throw affineExcept("pofdMCMC", "initChainsMaster",
@@ -282,10 +292,6 @@ bool pofdMCMC::initChainsSlave() {
   return true;
 }
 
-void pofdMCMC::initChains() {
-  if (rank == 0) initChainsMaster(); else initChainsSlave();
-  MPI_Barrier(MPI_COMM_WORLD);
-}
 
 /*!
   \param[in] p Parameters to evaluate model for

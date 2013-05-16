@@ -29,6 +29,8 @@ public:
 	   float SCALEFAC=2.0); //!< Constructor
   ~pofdMCMC() {}; //!< Destructor
 
+  void setVerbosity(unsigned int);
+
   void initChains(); //!< Initializes data between MPI jobs
   void generateInitialPosition(const paramSet&); //!< Sets up initial position
   double getLogLike(const paramSet&); //!< Evaluates log likelihood

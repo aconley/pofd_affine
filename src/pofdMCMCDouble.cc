@@ -34,6 +34,16 @@ pofdMCMCDouble::pofdMCMCDouble(const std::string& INITFILE,
   // All of this is done in initChains
 }
 
+void pofdMCMCDouble::setVerbosity(unsigned int V) {
+  if (V >= 4) likeSet.setVerbose(); else likeSet.unSetVerbose();
+  affineEnsemble::setVerbosity(V);
+}
+
+void pofdMCMCDouble::initChains() {
+  if (rank == 0) initChainsMaster(); else initChainsSlave();
+  MPI_Barrier(MPI_COMM_WORLD);
+}
+
 bool pofdMCMCDouble::initChainsMaster() {
   if (rank != 0)
     throw affineExcept("pofdMCMCDouble", "initChainsMaster",
@@ -323,11 +333,6 @@ bool pofdMCMCDouble::initChainsSlave() {
   
   is_init = true;
   return true;
-}
-
-void pofdMCMCDouble::initChains() {
-  if (rank == 0) initChainsMaster(); else initChainsSlave();
-  MPI_Barrier(MPI_COMM_WORLD);
 }
 
 /*!
