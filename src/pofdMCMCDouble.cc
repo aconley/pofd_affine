@@ -61,20 +61,20 @@ bool pofdMCMCDouble::initChainsMaster() {
   std::stringstream parname;
   unsigned int nknots = ifile.getNKnots();
   for (unsigned int i = 0; i < nknots; ++i) {
-    parname.str("Knot");
-    parname << i;
+    parname.str("");
+    parname << "Knot" << i;
     setParamName(i, parname.str());
   }
   unsigned int nsigmas = ifile.getNSigmas();
   for (unsigned int i = 0; i < nsigmas; ++i) {
-    parname.str("SigmaKnot");
-    parname << i;
+    parname.str("");
+    parname << "SigmaKnot" << i;
     setParamName(i + nknots, parname.str());
   }
   unsigned int noffsets = ifile.getNOffsets();
   for (unsigned int i = 0; i < noffsets; ++i) {
-    parname.str("OffsetKnot");
-    parname << i;
+    parname.str("");
+    parname << "OffsetKnot" << i;
     setParamName(i + nknots + nsigmas, parname.str());
   }
   setParamName(ntot, "SigmaMult1");

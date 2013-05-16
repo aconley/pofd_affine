@@ -59,8 +59,8 @@ bool pofdMCMC::initChainsMaster() {
   //Set up parameter names
   std::stringstream parname;
   for (unsigned int i = 0; i < nknots; ++i) {
-    parname.str("Knot");
-    parname << i;
+    parname.str("");
+    parname << "Knot" << i;
     this->setParamName(i, parname.str());
   }
   this->setParamName(nknots, "SigmaMult");

@@ -223,7 +223,11 @@ int main(int argc, char** argv) {
       pofdMCMC engine(initfile, specfile, nwalkers, nsamples, init_steps,
 		      min_burn, fixed_burn, burn_multiple, scalefac);
       
+      // Initialize
+      engine.initChains();
       if (rank == 0) std::cout << engine << std::endl;
+
+      // Main loop
       engine.sample();
       
       if (rank == 0) {
@@ -237,7 +241,11 @@ int main(int argc, char** argv) {
       pofdMCMCDouble engine(initfile, specfile, nwalkers, nsamples, init_steps,
 			    min_burn, fixed_burn, burn_multiple, scalefac);
       
+      // Initialize
+      engine.initChains();
       if (rank == 0) std::cout << engine << std::endl;
+
+      // Main loop
       engine.sample();
       
       if (rank == 0) {
