@@ -179,6 +179,16 @@ bool pofdMCMC::initChainsMaster() {
   return true;
 }
 
+bool pofdMCMC::areParamsValid(const paramSet& p) const {
+  unsigned int nparams = getNParams();
+  if (!is_init)
+    throw affineExcept("pofdMCMC", "areParamsValid",
+		       "Can't check params without initialization", 1);
+  if (!ifile.isValid(p)) return false; //Doesn't check sigma multiplier
+  if (p[nparams-1] <= 0.0) return false;
+  return true;
+}
+
 void pofdMCMC::generateInitialPosition(const paramSet& p) {
   //Generate initial parameters for each walker
   if (rank != 0) return;

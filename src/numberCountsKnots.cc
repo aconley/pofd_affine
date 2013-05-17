@@ -883,7 +883,7 @@ double initFileKnots::getUpperLimit(unsigned int idx) const {
 
 
 bool initFileKnots::isValid(const paramSet& p) const {
-  if (! (has_lower_limits || has_upper_limits)) return true;
+  if (!(has_lower_limits || has_upper_limits)) return true;
   if (p.getNParams() < nknots)
     throw affineExcept("initFileKnots","isValid",
 		       "Not enough params in paramSet to test validity",1);

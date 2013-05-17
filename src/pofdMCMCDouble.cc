@@ -206,6 +206,19 @@ bool pofdMCMCDouble::initChainsMaster() {
   return true;
 }
 
+
+bool pofdMCMCDouble::areParamsValid(const paramSet& p) const {
+  unsigned int nparams = getNParams();
+  if (!is_init)
+    throw affineExcept("pofdMCMCDouble", "areParamsValid",
+		       "Can't check params without initialization", 1);
+  if (!ifile.isValid(p)) return false; //Doesn't check sigma multipliers
+  if (p[nparams-2] <= 0.0) return false;
+  if (p[nparams-1] <= 0.0) return false;
+  return true;
+}
+
+
 void pofdMCMCDouble::generateInitialPosition(const paramSet& p) {
   
   //Generate initial parameters for each walker

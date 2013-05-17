@@ -168,18 +168,11 @@ int main(int argc, char** argv) {
       break;
     }
 
-  if (nproc < 2) {
-    if (rank == 0) {
-      std::cerr << "Must run on multiple processes" << std::endl;
-    }
-    MPI_Finalize();
-    return 1;
-  }
-
   if (optind >= argc - 2) {
     std::cerr << "Some required arguments missing" << std::endl;
     std::cerr << " Use --help for description of inputs and options"
 	      << std::endl;
+    MPI_Finalize();
     return 1;
   }
   initfile = std::string(argv[optind]);
@@ -191,30 +184,42 @@ int main(int argc, char** argv) {
     if (rank == 0)
       std::cerr << "Invalid (non-positive) number of walkers: "
 		<< nwalkers << std::endl;
+    MPI_Finalize();
     return 1;
   }
   if (nsamples == 0) {
     if (rank == 0)
       std::cerr << "Invalid (non-positive) number of samples: "
 		<< nsamples << std::endl;
+    MPI_Finalize();
     return 1;
   }
   if (burn_multiple < 1.0) {
     if (rank == 0)
       std::cerr << "Burn multiple must be >= 1.0, you provided: "
 		<< burn_multiple << std::endl;
+    MPI_Finalize();
     return 1;
   }
   if (min_burn == 0) {
     if (rank == 0)
       std::cerr << "Invalid (non-positive) minburn: "
 		<< min_burn << std::endl;
+    MPI_Finalize();
     return 1;
   }
   if (scalefac <= 0.0) {
     if (rank == 0)
       std::cerr << "Invalid (non-positive) scalefac: "
 		<< scalefac << std::endl;
+    MPI_Finalize();
+    return 1;
+  }
+
+  if (nproc < 2) {
+    if (rank == 0) 
+      std::cerr << "Must run on multiple processes" << std::endl;
+    MPI_Finalize();
     return 1;
   }
 
@@ -234,8 +239,6 @@ int main(int argc, char** argv) {
 	std::cout << "Done with sampling; writing to: " << outfile << std::endl;
 	engine.writeToFile(outfile);
       }
-      MPI_Finalize();
-      
     } else {
       
       pofdMCMCDouble engine(initfile, specfile, nwalkers, nsamples, init_steps,
@@ -252,16 +255,18 @@ int main(int argc, char** argv) {
 	std::cout << "Done with sampling; writing to: " << outfile << std::endl;
 	engine.writeToFile(outfile);
       }
-      MPI_Finalize();
     }
   } catch (const affineExcept& ex) {
     std::cerr << "Error encountered: " << ex << std::endl;
+    MPI_Finalize();
     return 1;
   } catch (const std::bad_alloc& ba) {
     std::cerr << "Allocation error encountered: " << ba.what() 
 	      << std::endl;
+    MPI_Finalize();
     return 2;
   }
 
+  MPI_Finalize();
   return 0;
 }
