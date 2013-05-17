@@ -169,14 +169,6 @@ int main(int argc, char** argv) {
       break;
     }
 
-  if (nproc < 2) {
-    if (rank == 0) {
-      std::cerr << "Must run on multiple processes" << std::endl;
-    }
-    MPI::Finalize();
-    return 1;
-  }
-
   if (optind >= argc - 4) {
     if (rank == 0) {
       std::cerr << "Required arguments missing" << std::endl;
@@ -191,8 +183,17 @@ int main(int argc, char** argv) {
   nsamples = atoi( argv[optind+3] );
   outfile  = std::string( argv[optind+4] );
 
-  if (nwalkers == 0) return 0;
-  if (nsamples == 0) return 0;
+  if (nwalkers == 0 || nsamples == 0) {
+    MPI_Finalize();
+    return 0;
+  }
+
+  if (nproc < 2) {
+    if (rank == 0)
+      std::cerr << "Must run on multiple processes" << std::endl;
+    MPI::Finalize();
+    return 1;
+  }
 
   //Hardwired cov matrix
   try {

@@ -33,6 +33,7 @@ public:
   void initChains();
   void generateInitialPosition(const paramSet&);
   double getLogLike(const paramSet&);
+  bool areParamsValid(const paramSet& p) const;
   void getStats(std::vector<float>&, std::vector<float>&) const;
 };
 
@@ -40,7 +41,8 @@ multiGauss::multiGauss(const std::string& filename, unsigned int NWALKERS,
 		       unsigned int NPARAMS, unsigned int NSAMPLES, 
 		       unsigned int INIT_STEPS, unsigned int MIN_BURN,
 		       bool FIXED_BURN=false) :
-  affineEnsemble(NWALKERS, 1, NSAMPLES, INIT_STEPS, MIN_BURN, FIXED_BURN) {
+  affineEnsemble(NWALKERS, NPARAMS, NSAMPLES, INIT_STEPS, MIN_BURN, 
+		 FIXED_BURN) {
   if (NPARAMS > 0) {
     invCovMatrix = new double[NPARAMS * NPARAMS];
     work1 = new double[NPARAMS];
@@ -81,7 +83,20 @@ void multiGauss::initChains() {
   generateInitialPosition(p);
 }
 
+// This isn't really necessary for this simple distribution, but
+// as an example of how to use it, reject all points outside [-10, 10]
+bool multiGauss::areParamsValid(const paramSet& p) const {
+  unsigned int npar = getNParams();
+  for (unsigned int i = 0; i < npar; ++i)
+    if (fabs(p[i]) > 10) return false;
+  return true;
+}
+
+// Note we use areParamsValid to reject invalid starting positions
 void multiGauss::generateInitialPosition(const paramSet& p) {
+
+  const unsigned int maxiters = 20;
+
   if (rank != 0) return;
 
   chains.clear();
@@ -92,16 +107,32 @@ void multiGauss::generateInitialPosition(const paramSet& p) {
     throw affineExcept("multiGauss", "generateInitialPosition",
 		       "Wrong number of params in p", 1);
 
+  if (!areParamsValid(p))
+    throw affineExcept("multiGauss", "generateInitialPosition",
+		       "Initial position seed is invalid", 2);
+
   paramSet p2(npar);
   unsigned int nwalk = getNWalkers();
+  bool is_valid;
+  unsigned int iter;
   for (unsigned int i = 0; i < nwalk; ++i) {
-    for (unsigned int j = 0; j < npar; ++j)
-      p2[j] = rangen.doub() - 0.5 + p[j];
+    iter = 0;
+    is_valid = false;
+    while (!is_valid) {
+      if (iter > maxiters)
+	throw affineExcept("multiGauss", "generateInitialPosition",
+			   "Unable to generate initial position", 2);
+      for (unsigned int j = 0; j < npar; ++j)
+	p2[j] = rangen.doub() - 0.5 + p[j];
+      is_valid = areParamsValid(p2);
+      ++iter;
+    }
     chains.addNewStep(i, p2, -std::numeric_limits<double>::infinity());
     naccept[i] = 0;
   }
   chains.setSkipFirst();
 }
+
 
 double multiGauss::getLogLike(const paramSet& p) {
   unsigned int npar = getNParams();
@@ -246,14 +277,6 @@ int main(int argc, char** argv) {
       break;
     }
 
-  if (nproc < 2) {
-    if (rank == 0) {
-      std::cerr << "Must run on multiple processes" << std::endl;
-    }
-    MPI_Finalize();
-    return 1;
-  }
-
   if (optind >= argc - 2) {
     if (rank == 0) {
       std::cerr << "Required arguments missing" << std::endl;
@@ -265,10 +288,17 @@ int main(int argc, char** argv) {
   nwalkers = atoi(argv[optind]);
   nsamples = atoi(argv[optind+1]);
   outfile  = std::string(argv[optind+2]);
-
   if (nwalkers == 0 || nsamples == 0) {
     MPI_Finalize();
     return 0;
+  }
+
+  if (nproc < 2) {
+    if (rank == 0) {
+      std::cerr << "Must run on multiple processes" << std::endl;
+    }
+    MPI_Finalize();
+    return 1;
   }
 
   invcovfile = "exampledata/test_invcovmat.txt";

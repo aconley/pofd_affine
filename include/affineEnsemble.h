@@ -48,6 +48,7 @@ private:
   /*! \brief For keeping track of what to do next */
   affineQueue< std::pair<int, int> > stepqueue;
   mutable proposedStep pstep; //!< Convenience variable for new steps
+  mutable paramSet params_tmp; //!< Temporary internal step storage
 
   float getMaxAcor() const; //!< Return maximum autocorrelation length
 
@@ -60,10 +61,6 @@ private:
   void doMasterStep() throw (affineExcept); //!< Does a step for all walkers, master node
   void emptyMasterQueue() throw (affineExcept); //!< Runs all steps in stepqueue as master node
 
-  /*! \brief Generate a new proposed Step */
-  void generateNewStep(unsigned int, unsigned int, proposedStep&) const;
-
-
 protected:
   bool is_init; //!< Have the chains been initialized?
 
@@ -73,6 +70,7 @@ protected:
   mutable ran rangen; //!< Random number generator
 
   int rank; //!< Which node is this; if 0 master, otherwise slave
+
 
   // 0 is non-verbose, 1 is verbose, 2 is ultra-verbose, 3 is ultra-ultra, etc.
   unsigned int verbosity; //!< Verbosity level
@@ -125,7 +123,7 @@ public:
 
   /*! \brief Sets random number generator seed */
   void setSeed(unsigned long long int seed) const { rangen.setSeed(seed); }
-  double generateZ() const; //!< Generate a Z value
+  float generateZ() const; //!< Generate a Z value
 
   bool computeAcor() const; //!< Computes autocorrelation
 
@@ -142,6 +140,13 @@ public:
   virtual void initChains() = 0; //!< Set up information in each chain.  Must set is_init to true
   virtual void generateInitialPosition(const paramSet&) = 0; //!< Generate initial position based on input parameter Set
   virtual double getLogLike(const paramSet&) = 0; //!< Computes log likelihood
+
+  /*! \brief Tests whether a given parameter set is valid */
+  virtual bool areParamsValid(const paramSet&) const { return true; }
+
+  /*! \brief Generate a new step */
+  void generateNewStep(unsigned int, unsigned int, proposedStep& prstep) 
+    const throw (affineExcept);
 
   void sample(); //!< Do burn in, get samples  
   void doSteps(unsigned int,unsigned int=0); //!< Do a fixed number of steps

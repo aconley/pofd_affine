@@ -94,7 +94,7 @@ bool affineEnsemble::isValid() const {
 
 }
 
-double affineEnsemble::generateZ() const {
+float affineEnsemble::generateZ() const {
   //Don't check isValid or if master for speed
   //Generate a random number satisfying g \propto 1/sqrt(z)
   // for z \elem [1/a,a]
@@ -102,7 +102,7 @@ double affineEnsemble::generateZ() const {
   //  G^{-1}(x) = [(a-1)*x+1]^2/a
   //a is scalefac in the nomenclature of this class
   double val;
-  val = (scalefac - 1.0) * rangen.doub() + 1.0;
+  val = (scalefac - 1.0) * rangen.flt() + 1.0;
   return val * val / scalefac;
 }
 
@@ -734,15 +734,94 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
   chains.setSkipFirst();
 }
 
+/*!
+  \param[in] idx1  Walker that we are suggesting a new step for
+  \param[in] idx2  Walker that we are combining with idx1
+  \param[out] prstep Newly proposed step for idx1
+
+  This generates a new step, checking the parameter limits to make sure
+  they are obeyed, and obeying fixed parameters.
+ */
 void affineEnsemble::generateNewStep(unsigned int idx1, unsigned int idx2,
-				     proposedStep& prstep) const {
-  //Assume prstep is the right size, don't check for speed
-  prstep.z = generateZ();
-  //Get previous step for this walker
-  chains.generateNewStep(prstep.z, idx1, idx2, param_state, prstep.oldStep,
-			 prstep.oldLogLike, prstep.newStep);
+				     proposedStep& prstep) const 
+  throw (affineExcept) {
+
+  // Maximum number of times we will try to generate a new step
+  const unsigned int maxiters = 40;
+
+  bool is_valid;
+  unsigned int iter;
+  float val, omz;
+  double tmp;
+
+  // We need storage for three steps -- the old one, the one we are combining,
+  // and the proposed new one.  We can use the oldStep/newStep fields of
+  // prstep for the other two, but need internal storage for the middle
+  if (prstep.oldStep.getNParams() < nparams) prstep.oldStep.setNParams(nparams);
+  if (prstep.newStep.getNParams() < nparams) prstep.newStep.setNParams(nparams);
+  if (params_tmp.getNParams() < nparams) params_tmp.setNParams(nparams);
+
+  // Get steps to combine
+  chains.getLastStep(idx1, prstep.oldStep, prstep.oldLogLike);
+  chains.getLastStep(idx2, params_tmp, tmp);
   prstep.update_idx = idx1;
   prstep.newLogLike=std::numeric_limits<double>::quiet_NaN();
+
+  // Start trying to generate new step
+  prstep.z = generateZ();
+  omz = 1.0 - prstep.z;
+  for (unsigned int i = 0; i < nparams; ++i) 
+    if (param_state[i] & mcmc_affine::FIXED) {
+      //Fixed parameter, keep previous
+      prstep.newStep.setParamValue(i, prstep.oldStep[i]);
+    } else {
+      val = prstep.z * prstep.oldStep[i] + omz * params_tmp[i];
+      prstep.newStep.setParamValue(i, val);
+    }
+
+  is_valid = areParamsValid(prstep.newStep);
+  iter = 0;
+  while (!is_valid) {
+    if (iter > maxiters) {
+      // We were unable to generate a new step after maxiters iters.
+      // This shouldn't happen unless there's a bug, but check to see
+      // if the input steps weren't valid.
+      std::stringstream errstr;
+      if (!areParamsValid(prstep.oldStep)) {
+	errstr << "Unable to generate new step; input step from idx1 was"
+	       << " also not valid" << std::endl;
+	errstr << " " << prstep.oldStep;
+	throw affineExcept("affineEnsemble", "generateNewStep",
+			   errstr.str(), 1);
+      }
+      if (!areParamsValid(params_tmp)) {
+	errstr << "Unable to generate new step; input step from idx2 was"
+	       << " also not valid" << std::endl;
+	errstr << " " << params_tmp;
+	throw affineExcept("affineEnsemble", "generateNewStep",
+			   errstr.str(), 2);
+      }
+      errstr << "Unable to generate new step after " << maxiters << " tries";
+      throw affineExcept("affineEnsemble", "generateNewStep",
+			 errstr.str(), 3);
+    }
+
+    // Try a new one
+    prstep.z = generateZ();
+    omz = 1.0 - prstep.z;
+    for (unsigned int i = 0; i < nparams; ++i) 
+      if (param_state[i] & mcmc_affine::FIXED) {
+	//Fixed parameter, keep previous
+	prstep.newStep.setParamValue(i, prstep.oldStep[i]);
+      } else {
+	val = prstep.z * prstep.oldStep[i] + omz * params_tmp[i];
+	prstep.newStep.setParamValue(i, val);
+      }
+    is_valid = areParamsValid(prstep.newStep);
+
+    ++iter;
+  }
+
 }
 
 void affineEnsemble::doMasterStep() throw (affineExcept) {

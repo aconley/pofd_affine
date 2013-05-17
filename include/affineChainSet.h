@@ -45,7 +45,7 @@ struct affineStepChunk {
   /*! \brief Get specified step */
   bool getStep(unsigned int, unsigned int, paramSet&, double&) const;
 
-  /*! \brief get most resent step for given walker */
+  /*! \brief Get most resent step for given walker */
   bool getLastStep(unsigned int, paramSet&, double&) const;
   
   /*! \brief Get pointer to particular set of parameters */
@@ -121,11 +121,6 @@ class affineChainSet {
 
   void addChunk(unsigned int); //!< Adds a new chunk of specified size
   bool addNewStep(unsigned int, const paramSet&, double); //!< Adds a new step
-
-  /*! \brief Create a new step */
-  void generateNewStep(double, unsigned int, unsigned int,
-		       const std::vector<int>&, paramSet&, double&, paramSet&) 
-    const throw (affineExcept);
 
   /*! \brief Returns the most recent step for the specified walker */
   void getLastStep(unsigned int, paramSet&, double&) const

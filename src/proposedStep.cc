@@ -57,7 +57,7 @@ void proposedStep::sendSelf(MPI_Comm comm, int dest) const {
 	   mcmc_affine::PSTSENDOLIKE, comm);
   MPI_Send(const_cast<double*>(&newLogLike), 1, MPI_DOUBLE, dest, 
 	   mcmc_affine::PSTSENDNLIKE, comm);
-  MPI_Send(const_cast<double*>(&z), 1, MPI_DOUBLE, dest, 
+  MPI_Send(const_cast<float*>(&z), 1, MPI_FLOAT, dest, 
 	   mcmc_affine::PSTSENDZ, comm);
 }
 
@@ -71,7 +71,7 @@ void proposedStep::recieveCopy(MPI_Comm comm, int src) {
 	   comm, &Info);
   MPI_Recv(&newLogLike, 1, MPI_DOUBLE, src, mcmc_affine::PSTSENDNLIKE, 
 	   comm, &Info);
-  MPI_Recv(&z, 1, MPI_DOUBLE, src, mcmc_affine::PSTSENDZ, 
+  MPI_Recv(&z, 1, MPI_FLOAT, src, mcmc_affine::PSTSENDZ, 
 	   comm, &Info);
 }
 

@@ -484,47 +484,6 @@ TEST(affineChainSetTest, ClearPreserveLast) {
     }
 }
 
-//Generating new points from old ones
-TEST(affineChainSetTest, GenerateNewPoint) {
-  const unsigned int nwalkers = 2;
-  const unsigned int nparams  = 3;
-  affineChainSet chains(nwalkers, nparams);
-  paramSet p(nparams), p2(nparams);
-  double logLike, logLike2;
-
-  chains.addChunk(2);
-  logLike = 2000.0;
-  p[0] = 0.0; p[1] = 0.0; p[2] = 0.0;
-  ASSERT_TRUE(chains.addNewStep(0,p,logLike)) << "Failed to add point";
-  p[0] = 0.5; p[1] = 1.0; p[2] = 2.0;
-  ASSERT_TRUE(chains.addNewStep(0,p,logLike)) << "Failed to add second point";
-  p2[0] = 1.5; p2[1] = 2.0; p2[2] = -2.0;
-  ASSERT_TRUE(chains.addNewStep(1,p2,logLike)) << "Failed to add third point";
-  ASSERT_EQ(chains.getNIters(), 3U) <<
-    "chain should have 3 steps after insert";
-  
-  double zval = 1.3;
-  paramSet pold(nparams), pnew(nparams);
-  std::vector<int> pstate(nparams, 0);
-  //This puts the previous step in pold, the new in pnew; p should hold the old
-  chains.generateNewStep(zval, 0, 1, pstate, pold, logLike2, pnew);
-
-  EXPECT_FLOAT_EQ(logLike2, logLike) <<
-    "logLike of old step didn't match expectation";
-  for (unsigned int i = 0; i < nparams; ++i)
-    EXPECT_FLOAT_EQ(pold[i], p[i]) << "Didn't recover old step: " << 
-      std::endl << p[i] << std::endl << pold[i];
-  float expval = zval*0.5+(1-zval)*1.5; //Expected value, new step param 0
-  EXPECT_FLOAT_EQ(expval, pnew[0]) <<
-    "Param 0 of new step didn't match expectation";
-  expval = zval*1.0+(1-zval)*2.0; //Param 1
-  EXPECT_FLOAT_EQ(expval, pnew[1]) <<
-    "Param 1 of new step didn't match expectation";
-  expval = zval*2.0+(1-zval)*(-2.0);
-  EXPECT_FLOAT_EQ(expval, pnew[2]) <<
-    "Param 2 of new step didn't match expectation";
-}
-
 //Test Acor using test vector
 TEST(affineChainSetTest, Acor) {
   const unsigned int ntest = 8815;

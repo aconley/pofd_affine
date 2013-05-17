@@ -260,30 +260,32 @@ int main(int argc, char** argv) {
       break;
     }
 
-  if (nproc < 2) {
-    if (rank == 0) {
-      std::cerr << "Must run on multiple processes" << std::endl;
-    }
-    MPI_Finalize();
-    return 1;
-  }
-
   if ( optind >= argc-1 ) {
-    if (rank == 0) {
+    if (rank == 0)
       std::cerr << "Required arguments missing" << std::endl;
-    }
     MPI_Finalize();
     return 1;
   }
 
   nwalkers = atoi(argv[optind]);
   nsamples = atoi(argv[optind + 1]);
-
-  if (nwalkers == 0) return 0;
-  if (nsamples == 0) return 0;
+  if (nwalkers == 0 || nsamples == 0) {
+    MPI_Finalize();
+    return 0;
+  }
   if (scalefac <= 0) {
-    std::cerr << "Invalid (non-positive) scaling factor " << scalefac
-	      << std::endl;
+    if (rank == 0)
+      std::cerr << "Invalid (non-positive) scaling factor " << scalefac
+		<< std::endl;
+    MPI_Finalize();
+    return 1;
+  }
+
+  if (nproc < 2) {
+    if (rank == 0) {
+      std::cerr << "Must run on multiple processes" << std::endl;
+    }
+    MPI_Finalize();
     return 1;
   }
 

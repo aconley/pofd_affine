@@ -272,8 +272,8 @@ bool affineStepChunk::getLastStep(unsigned int walker_idx,
 
   unsigned int csteps = nsteps[walker_idx];
   if (csteps == 0) return false;
-  pars.setParamValues(nparams, getParamPointer(walker_idx,csteps-1));
-  lglike = getLogLike(walker_idx,csteps-1);
+  pars.setParamValues(nparams, getParamPointer(walker_idx, csteps-1));
+  lglike = getLogLike(walker_idx, csteps - 1);
   return true;
 }
 
@@ -427,96 +427,42 @@ void affineChainSet::addChunk(unsigned int sz) {
   steps.push_back(chnkptr);
 }
 
-/*!
-  Implements stretch step
-
-  \param[in] zval        Value of Z
-  \param[in] idx1        Index of walker we are updating
-  \param[in] idx2        Index of walker we are updating from
-  \param[in] param_state State of parameters (fixed, etc.)
-  \param[out] oldStep    Previous step from idx1
-  \param[out] oldLogLike Previous Log Likelihood of idx1 walker
-  \param[out] newStep    Proposed new step
-
-  Takes the most recent available step for the specified walkers
- */
-
-void affineChainSet::
-generateNewStep(double zval, unsigned int idx1, unsigned int idx2, 
-		const std::vector<int>& param_state,
-		paramSet& oldStep, double& oldLogLike, 
-		paramSet& newStep) const throw (affineExcept) {
-  unsigned int nsteps = steps.size();
-  if (nsteps == 0) 
-    throw affineExcept("affineChainSet","generateNewStep",
-		       "No steps taken to generate from",1);
-  if (idx1 >= nwalkers) 
-    throw affineExcept("affineChainSet","generateNewStep",
-		       "Invalid walker index for first walker",2);
-  if (idx2 >= nwalkers) 
-    throw affineExcept("affineChainSet","generateNewStep",
-		       "Invalid walker index for second walker",3);
-  if (param_state.size() < nparams)
-    throw affineExcept("affineChainSet","generateNewStep",
-		       "Param state vector too short",4);
-
-  if (oldStep.getNParams() != nparams) oldStep.setNParams(nparams);
-  if (newStep.getNParams() != nparams) newStep.setNParams(nparams);
-
-  //We have to figure out which Chunk to ask -- this is -not-
-  // necessarily the one on the end, which could have no
-  // steps in it!  And, to make things worse, we don't assume
-  // that idx1 and idx2 have to come from the same chunk
-  int chunknum1;
-  for (chunknum1 = static_cast<int>(nsteps)-1; chunknum1 >= 0; --chunknum1)
-    if (steps[chunknum1]->nsteps[idx1] > 0) break;
-  if (chunknum1 < 0)     
-    throw affineExcept("affineChainSet","generateNewStep",
-		       "No steps taken to generate from for walker 1",2);
-  int chunknum2;
-  for (chunknum2 = static_cast<int>(nsteps)-1; chunknum2 >= 0; --chunknum2)
-    if (steps[chunknum2]->nsteps[idx2] > 0) break;
-  if (chunknum2 < 0)     
-    throw affineExcept("affineChainSet","generateNewStep",
-		       "No steps taken to generate from for walker 2",4);
-
-  const affineStepChunk* const cptr1 = steps[chunknum1];
-  const affineStepChunk* const cptr2 = steps[chunknum2];
-  unsigned int csteps1 = cptr1->nsteps[idx1];
-
-  //Get pointers to the parameter sets we are playing with
-  //Old step (to update)
-  float *ptr1 = cptr1->getLastParamPointer(idx1);
-  //Step to combine with old step
-  float *ptr2 = cptr2->getLastParamPointer(idx2);
-
-  oldStep.setParamValues(nparams, ptr1);
-  oldLogLike = cptr1->getLogLike(idx1, csteps1 - 1);
-
-  //Compute stretch move
-  float fz, val, omz;
-  fz = static_cast<float>(zval);
-  omz = 1.0 - fz;
-  for (unsigned int i = 0; i < nparams; ++i) 
-    if (param_state[i] & mcmc_affine::FIXED) {
-      //Fixed parameter, keep previous
-      newStep.setParamValue(i, ptr1[i]);
-    } else {
-      val = fz * ptr1[i] + omz * ptr2[i];
-      newStep.setParamValue(i, val);
-    }
-}
-
 void affineChainSet::getLastStep(unsigned int walker_idx,
 				 paramSet& par, double& lglike) const 
   throw (affineExcept) {
-  if (steps.size() == 0) 
-    throw affineExcept("affineChainSet","getLastStep",
+
+  // The complication here is that the last step may not be in the current
+  // chunk, because it's possible we just added a new empty one.
+  int nchunks = static_cast<int>(steps.size());
+  if (nchunks == 0) 
+    throw affineExcept("affineChainSet", "getLastStep",
 		       "No steps taken",1);
-  bool succ = steps.back()->getLastStep(walker_idx,par,lglike);
+  if (walker_idx >= nwalkers)
+    throw affineExcept("affineChainSet", "getLastStep",
+		       "Walker index invalid", 2);
+
+  if (par.getNParams() != nparams)
+    par.setNParams(nparams);
+
+  bool succ;
+  unsigned int csteps;
+  const affineStepChunk* chunk_ptr;
+  succ = false;
+  for (int i = nchunks-1; i >= 0; --i) {
+    chunk_ptr = steps[i];
+    csteps = chunk_ptr->nsteps[walker_idx];
+    if (csteps == 0) continue; // Empty chunk, move on
+
+    // Found one with a step -- copy it over and end
+    par.setParamValues(nparams, 
+		       chunk_ptr->getParamPointer(walker_idx, csteps-1));
+    lglike = chunk_ptr->getLogLike(walker_idx, csteps-1);
+    succ = true;
+    break;
+  }
   if (!succ)
-    throw affineExcept("affineChainSet","getLastStep",
-		       "Error getting last step",2);
+    throw affineExcept("affineChainSet", "getLastStep",
+		       "Error getting last step",3);
 }
 
 void affineChainSet::getStep(unsigned int chunkidx, 
@@ -525,12 +471,12 @@ void affineChainSet::getStep(unsigned int chunkidx,
 			     paramSet& par, double& lglike) 
   const throw (affineExcept) {
   if (chunkidx >= steps.size()) 
-    throw affineExcept("affineChainSet","getStep",
-		       "Chunk idx invalid",1);
+    throw affineExcept("affineChainSet", "getStep",
+		       "Chunk idx invalid", 1);
   bool succ = steps[chunkidx]->getStep(walker_idx, iter_idx, par, lglike);
   if (!succ)
-    throw affineExcept("affineChainSet","getStep",
-		       "Error getting specified step",2);
+    throw affineExcept("affineChainSet", "getStep",
+		       "Error getting specified step", 2);
 }
 
 affineChainSet& affineChainSet::operator=(const affineChainSet& a) {
