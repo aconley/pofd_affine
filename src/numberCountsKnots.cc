@@ -891,7 +891,7 @@ bool initFileKnots::isValid(const paramSet& p) const {
   for (unsigned int i = 0; i < nknots; ++i) {
     val = p[i];
     if (has_lowlim[i] && (val < lowlim[i])) return false;
-    if (has_uplim[i] && (val < uplim[i])) return false;
+    if (has_uplim[i] && (val > uplim[i])) return false;
   }
   return true;
 }
