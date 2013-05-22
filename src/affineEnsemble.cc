@@ -890,21 +890,27 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
   while (ndone < nsteps) {
     //First, if there are available procs, send them a step if we can
     if (!procqueue.empty()) 
-      for (unsigned int i = 0; i < stepqueue.size(); ++i) {
-	if (procqueue.empty()) break; //No more available procs
-	this_rank = procqueue.pop();
-
-	//Figure out next thing to update
-	pr = stepqueue.pop();
-	//Generate actual value into pstep
-	generateNewStep(pr.first, pr.second, pstep);
-	
-	if (verbosity >= 3)
-	  std::cout << "  Evaluating new step for walker: " << pr.first
-		    << " using slave: " << this_rank << std::endl;
-	MPI_Send(&jnk, 1, MPI_INT, this_rank, mcmc_affine::SENDINGPOINT,
-		 MPI_COMM_WORLD);
-	pstep.sendSelf(MPI_COMM_WORLD, this_rank);
+      try {
+	for (unsigned int i = 0; i < stepqueue.size(); ++i) {
+	  if (procqueue.empty()) break; //No more available procs
+	  this_rank = procqueue.pop();
+	  
+	  //Figure out next thing to update
+	  pr = stepqueue.pop();
+	  //Generate actual value into pstep
+	  generateNewStep(pr.first, pr.second, pstep);
+	  
+	  if (verbosity >= 3)
+	    std::cout << "  Evaluating new step for walker: " << pr.first
+		      << " using slave: " << this_rank << std::endl;
+	  MPI_Send(&jnk, 1, MPI_INT, this_rank, mcmc_affine::SENDINGPOINT,
+		   MPI_COMM_WORLD);
+	  pstep.sendSelf(MPI_COMM_WORLD, this_rank);
+	}
+      } catch (const affineExcept& ex) {
+	for (int i = 1; i < nproc; ++i)
+	  MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
+	throw ex;
       }
 
     //No available procs, so wait for some sort of message
