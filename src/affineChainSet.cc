@@ -2,6 +2,7 @@
 #include<cmath>
 #include<fstream>
 #include<algorithm>
+#include<iomanip>
 
 #include "../include/affineChainSet.h"
 
@@ -327,14 +328,17 @@ void affineStepChunk::writeToStream(std::ostream& os) const {
   if (nparams == 0 || nwalkers == 0 || niters == 0) return;
   unsigned int curr_nsteps;
   float *ptr;
+  os << std::left << std::scientific << std::showpoint;
   for (unsigned int i = 0; i < nwalkers; ++i) {
     curr_nsteps = nsteps[i];
     for (unsigned int j = 0; j < curr_nsteps; ++j) {
       ptr = getParamPointer(i, j);
+      os << std::setw(13) << std::setprecision(6);
       os << ptr[0];
       for (unsigned int k = 1; k < nparams; ++k)
 	os << " " << ptr[k];
-      os << " " << logLike[i * niters + j] << " " << i << std::endl;
+      os << " " << std::setw(15) << std::setprecision(8)
+	 << logLike[i * niters + j] << " " << i << std::endl;
     }
   }
 }
