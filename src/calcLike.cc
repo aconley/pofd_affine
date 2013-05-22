@@ -272,10 +272,10 @@ calcLikeSingle::getLogLike(const numberCounts& model, double sigmult,
     pdfac.getPD(sigmult * sigma_base[i], pd, true, edgefix);
 
     // Get log like
-    curr_LogLike = pd.getLogLike(data[i]) - like_offset[i];
+    curr_LogLike = pd.getLogLike(data[i]);
 
-    // Apply beam norm factor and add in
-    LogLike += curr_LogLike / like_norm[i];
+    // Apply beam and re-ordering factor
+    LogLike += (curr_LogLike + like_offset[i]) / like_norm[i];
   }
   
   return LogLike;

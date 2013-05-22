@@ -164,7 +164,7 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
 
     //log(N!), a bit beyond the stirling approximation
     double ndd = static_cast<double>(nd);
-    like_offset[0] = ndd*log(ndd) - ndd + 0.5*log(2.0*M_PI*ndd) + 
+    like_offset[i] = ndd*log(ndd) - ndd + 0.5*log(2.0*M_PI*ndd) + 
       1.0/(12.0*ndd) - 1.0/(360.0*ndd*ndd*ndd) + 
       1/(1260.0*ndd*ndd*ndd*ndd*ndd) - 1.0/(1680.0*pow(ndd,7));
   }
@@ -342,10 +342,10 @@ calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
 		 pd, true, edgefix);
 
     // Get log like
-    curr_LogLike = pd.getLogLike(data[i]) - like_offset[i];
+    curr_LogLike = pd.getLogLike(data[i]);
 
-    // Apply beam norm and add to overall likelihood
-    LogLike += curr_LogLike / like_norm[i];
+    // Apply beam norm and re-ordering factor
+    LogLike += (curr_LogLike + like_offset[i]) / like_norm[i];
   }
   
   return LogLike;
