@@ -275,7 +275,7 @@ calcLikeSingle::getLogLike(const numberCounts& model, double sigmult,
     curr_LogLike = pd.getLogLike(data[i]);
 
     // Apply beam and re-ordering factor
-    LogLike += (curr_LogLike + like_offset[i]) / like_norm[i];
+    LogLike += curr_LogLike / like_norm[i];
   }
   
   return LogLike;

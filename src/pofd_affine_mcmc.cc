@@ -230,14 +230,28 @@ int main(int argc, char** argv) {
       
       // Initialize
       engine.initChains();
-      if (rank == 0) std::cout << engine << std::endl;
+      if (rank == 0 && (engine.getVerbosity() > 1))
+	std::cout << engine << std::endl;
 
       // Main loop
       engine.sample();
       
       if (rank == 0) {
-	std::cout << "Done with sampling; writing to: " << outfile << std::endl;
+	if (engine.getVerbosity() > 1)
+	  std::cout << "Done with sampling; writing to: " << outfile 
+		    << std::endl;
 	engine.writeToFile(outfile);
+
+	if (engine.getVerbosity() > 1) {
+	  std::vector<float> accept;
+	  engine.getAcceptanceFrac(accept);
+	  float mnval = accept[0];
+	  for (unsigned int i = 1; i < accept.size(); ++i)
+	    mnval += accept[i];
+	  std::cout << "Mean acceptance fraction: " 
+		    << mnval / (accept.size() - 1.0) << std::endl;
+	}
+	
       }
     } else {
       
@@ -246,14 +260,27 @@ int main(int argc, char** argv) {
       
       // Initialize
       engine.initChains();
-      if (rank == 0) std::cout << engine << std::endl;
+      if (rank == 0 && (engine.getVerbosity() > 1))
+	std::cout << engine << std::endl;
 
       // Main loop
       engine.sample();
       
       if (rank == 0) {
-	std::cout << "Done with sampling; writing to: " << outfile << std::endl;
+	if (engine.getVerbosity() > 1)
+	  std::cout << "Done with sampling; writing to: " << outfile 
+		    << std::endl;
 	engine.writeToFile(outfile);
+
+	if (engine.getVerbosity() > 1) {
+	  std::vector<float> accept;
+	  engine.getAcceptanceFrac(accept);
+	  float mnval = accept[0];
+	  for (unsigned int i = 1; i < accept.size(); ++i)
+	    mnval += accept[i];
+	  std::cout << "Mean acceptance fraction: " 
+		    << mnval / (accept.size() - 1.0) << std::endl;
+	}
       }
     }
   } catch (const affineExcept& ex) {
