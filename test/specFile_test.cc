@@ -68,8 +68,10 @@ TEST(specFile1DTest, ReadCheck) {
   
   ASSERT_TRUE(spec_info.has_sigprior) << "Expected to have sigma prior";
   EXPECT_NEAR(spec_info.sigprior_stdev, 0.15, 0.0001) <<
-    "Expected sigma prior stdev to be 0.15, but it is " << 
-    spec_info.sigprior_stdev;
+    "Unexpected sigma prior stdev value";
+
+  EXPECT_EQ(spec_info.exp_conf, 0.0) <<
+    "Expected zero expected confusion noise";
 
   ASSERT_TRUE(spec_info.has_cfirbprior) << "Expected to have CFIRB prior";
   EXPECT_NEAR(spec_info.cfirbprior_mean, 1.05, 0.0001) <<
@@ -171,6 +173,11 @@ TEST(specFile2DTest, ReadCheck) {
     "Expected sigma prior1 stdev to be 0.15";
   EXPECT_FALSE(spec_info.fit_sigma2) << "Expected fit_sigma2 to be off";
   EXPECT_FALSE(spec_info.has_sigprior2) << "Expected no band 2 sigma prior";
+
+  EXPECT_EQ(spec_info.exp_conf1, 0.0) <<
+    "Expected zero expected confusion noise, band 1";
+  EXPECT_EQ(spec_info.exp_conf2, 0.006) <<
+    "Expected non-zero expected confusion noise, band 2";
 
   EXPECT_FALSE(spec_info.has_cfirbprior1) << "Expected no band 1 cfirb prior";
   ASSERT_TRUE(spec_info.has_cfirbprior2) << 

@@ -40,6 +40,7 @@ class calcLikeSingle {
   //Noise information
   double* sigma_base; //!< Base value of sigma, len ndatasets
   double maxsigma_base; //!< Maximum value of sigma_base
+  double exp_conf; //!< Expected confusion noise, in Jy
 
   //Likelihood computation information
   double* like_norm; //!< Likelihood normalization factor for beam area
@@ -101,6 +102,8 @@ class calcLikeSingle {
   /*! \brief Get sigma base value */
   double getSigmaBase(unsigned int i) const { return sigma_base[i]; }
 
+  void setExpConf(double v) {exp_conf = v;} //!< Set expected confusion noise
+  double getExpConf() const { return exp_conf;} //!< Get expected confusion noise
 
   unsigned int getNDataSets() const { return ndatasets; } //!< Number of data sets
   unsigned int getNData(unsigned int i) const { return data[i].getN(); } //!< Number of data points in given data set
@@ -181,7 +184,8 @@ class calcLike {
 			 const std::vector<double>&,
 			 const std::vector<double>&,
 			 bool IGNOREMASK=false, bool MEANSUB=false,
-			 bool HISTOGRAM=false, double HISTOGRAMLOGSTEP=0.2);
+			 bool HISTOGRAM=false, double HISTOGRAMLOGSTEP=0.2,
+			 double EXPCONF=0.0);
   
   void setVerbose() { verbose=true; } //!< Turn on verbose mode
   void unSetVerbose() { verbose = false; } //!< Turn off verbose mode

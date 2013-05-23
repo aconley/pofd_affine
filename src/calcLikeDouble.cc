@@ -12,8 +12,8 @@ const double calcLikeDoubleSingle::flux_safety = 1.2;
 calcLikeDoubleSingle::calcLikeDoubleSingle(unsigned int NEDGE) :
   data_read(false), ndatasets(0), data(NULL), maxflux1(0.0), maxflux2(0.0),
   pdfac(NEDGE), sigma_base1(NULL), sigma_base2(NULL), maxsigma_base1(0.0),
-  maxsigma_base2(0.0), like_norm(NULL), like_offset(NULL), 
-  has_beam(false), verbose(false) {}
+  maxsigma_base2(0.0), exp_conf1(0.0), exp_conf2(0.0), 
+  like_norm(NULL), like_offset(NULL), has_beam(false), verbose(false) {}
 
 calcLikeDoubleSingle::~calcLikeDoubleSingle() {
   if (data != NULL) delete[] data;
@@ -37,6 +37,7 @@ void calcLikeDoubleSingle::free() {
   maxsigma_base1 = std::numeric_limits<double>::quiet_NaN();
   if (sigma_base2 != NULL) { delete[] sigma_base2; sigma_base2 = NULL; }
   maxsigma_base2 = std::numeric_limits<double>::quiet_NaN();
+  exp_conf1 = exp_conf2 = 0.0;
 
   if (like_norm != NULL) { delete[] like_norm; like_norm = NULL; }
   if (like_offset != NULL) { delete[] like_offset; like_offset = NULL; }
@@ -119,11 +120,8 @@ void calcLikeDoubleSingle::readDataFromFile(const std::string& datafile1,
   maxflux1 *= calcLikeDoubleSingle::flux_safety;
   maxflux2 *= calcLikeDoubleSingle::flux_safety;
 
-  //log(N!)
-  double ndd = static_cast<double>(nd);
-  like_offset[0] = ndd*log(ndd) - ndd + 0.5*log(2.0*M_PI*ndd) + 
-    1.0/(12.0*ndd) - 1.0/(360.0*ndd*ndd*ndd) + 
-    1/(1260.0*ndd*ndd*ndd*ndd*ndd) - 1.0/(1680.0*pow(ndd,7));
+  // Can't be computed yet
+  like_offset[0] = 0.0;
 
   data_read = true;
 }
@@ -162,11 +160,8 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
     }
     if (BINDATA) data[i].applyBinning(NBINS, NBINS);
 
-    //log(N!), a bit beyond the stirling approximation
-    double ndd = static_cast<double>(nd);
-    like_offset[i] = ndd*log(ndd) - ndd + 0.5*log(2.0*M_PI*ndd) + 
-      1.0/(12.0*ndd) - 1.0/(360.0*ndd*ndd*ndd) + 
-      1/(1260.0*ndd*ndd*ndd*ndd*ndd) - 1.0/(1680.0*pow(ndd,7));
+    // Can't be computed yet
+    like_offset[i] = 0.0;
   }
 
   //Determine maximum flux (with safety factor) for all this data
@@ -255,6 +250,19 @@ void calcLikeDoubleSingle::setSigmaBase1(const std::vector<double>& s) {
   maxsigma_base1 = sigma_base1[0];
   for (unsigned int i = 1; i < ndatasets; ++i)
     if (sigma_base1[i] > maxsigma_base1) maxsigma_base1 = sigma_base1[i];
+
+  if (data_read) {
+    double var1, var2, sigprod;
+    for (unsigned int i = 0; i < ndatasets; ++i) {
+      var1 = sigma_base1[i] * sigma_base1[i] + exp_conf1 * exp_conf1;
+      var2 = sigma_base2[i] * sigma_base2[i] + exp_conf2 * exp_conf2;
+      sigprod = sqrt(var1 * var2);
+      if (sigprod > 0) {
+	double ndd = static_cast<double>(data[i].getN());
+	like_offset[i] = -ndd * (log(mcmc_affine::two_pi * sigprod) + 1.0);
+      }
+    }
+  }
 }
 
 void calcLikeDoubleSingle::setSigmaBase2(const std::vector<double>& s) {
@@ -268,6 +276,19 @@ void calcLikeDoubleSingle::setSigmaBase2(const std::vector<double>& s) {
   maxsigma_base2 = sigma_base2[0];
   for (unsigned int i = 1; i < ndatasets; ++i)
     if (sigma_base2[i] > maxsigma_base2) maxsigma_base2 = sigma_base2[i];
+
+  if (data_read) {
+    double var1, var2, sigprod;
+    for (unsigned int i = 0; i < ndatasets; ++i) {
+      var1 = sigma_base1[i] * sigma_base1[i] + exp_conf1 * exp_conf1;
+      var2 = sigma_base2[i] * sigma_base2[i] + exp_conf2 * exp_conf2;
+      sigprod = sqrt(var1 * var2);
+      if (sigprod > 0) {
+	double ndd = static_cast<double>(data[i].getN());
+	like_offset[i] = -ndd * (log(mcmc_affine::two_pi * sigprod) + 1.0);
+      }
+    }
+  }
 }
 
 
@@ -280,6 +301,19 @@ void calcLikeDoubleSingle::setSigmaBase1(unsigned int n,const double* const s) {
     sigma_base1[i] = s[i];
   for (unsigned int i = 1; i < ndatasets; ++i)
     if (sigma_base1[i] > maxsigma_base1) maxsigma_base1 = sigma_base1[i];
+
+  if (data_read) {
+    double var1, var2, sigprod;
+    for (unsigned int i = 0; i < ndatasets; ++i) {
+      var1 = sigma_base1[i] * sigma_base1[i] + exp_conf1 * exp_conf1;
+      var2 = sigma_base2[i] * sigma_base2[i] + exp_conf2 * exp_conf2;
+      sigprod = sqrt(var1 * var2);
+      if (sigprod > 0) {
+	double ndd = static_cast<double>(data[i].getN());
+	like_offset[i] = -ndd * (log(mcmc_affine::two_pi * sigprod) + 1.0);
+      }
+    }
+  }
 }
 
 
@@ -293,6 +327,19 @@ void calcLikeDoubleSingle::setSigmaBase2(unsigned int n,const double* const s) {
     sigma_base2[i] = s[i];
   for (unsigned int i = 2; i < ndatasets; ++i)
     if (sigma_base2[i] > maxsigma_base2) maxsigma_base2 = sigma_base2[i];
+
+  if (data_read) {
+    double var1, var2, sigprod;
+    for (unsigned int i = 0; i < ndatasets; ++i) {
+      var1 = sigma_base1[i] * sigma_base1[i] + exp_conf1 * exp_conf1;
+      var2 = sigma_base2[i] * sigma_base2[i] + exp_conf2 * exp_conf2;
+      sigprod = sqrt(var1 * var2);
+      if (sigprod > 0) {
+	double ndd = static_cast<double>(data[i].getN());
+	like_offset[i] = -ndd * (log(mcmc_affine::two_pi * sigprod) + 1.0);
+      }
+    }
+  }
 }
 
 /*
@@ -344,8 +391,8 @@ calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
     // Get log like
     curr_LogLike = pd.getLogLike(data[i]);
 
-    // Apply beam norm and re-ordering factor
-    LogLike += curr_LogLike / like_norm[i];
+    // Apply beam norm and zero offset factor
+    LogLike += (curr_LogLike - like_offset[i]) / like_norm[i];
   }
   
   return LogLike;
@@ -375,6 +422,10 @@ void calcLikeDoubleSingle::sendSelf(MPI_Comm comm, int dest) const {
 	     pofd_mcmc::CLDSENDMAXSIGMABASE1, comm);
     MPI_Send(const_cast<double*>(&maxsigma_base2), 1, MPI_DOUBLE, dest,
 	     pofd_mcmc::CLDSENDMAXSIGMABASE2, comm);
+    MPI_Send(const_cast<double*>(&exp_conf1), 1, MPI_DOUBLE, dest,
+	     pofd_mcmc::CLDSENDEXPCONF1, comm);
+    MPI_Send(const_cast<double*>(&exp_conf2), 1, MPI_DOUBLE, dest,
+	     pofd_mcmc::CLDSENDEXPCONF2, comm);
     MPI_Send(like_offset, ndatasets, MPI_DOUBLE, dest,
 	     pofd_mcmc::CLDSENDLIKEOFFSET, comm);
     MPI_Send(like_norm, ndatasets, MPI_DOUBLE, dest,
@@ -419,6 +470,10 @@ void calcLikeDoubleSingle::recieveCopy(MPI_Comm comm, int src) {
 	     pofd_mcmc::CLDSENDMAXSIGMABASE1, comm, &Info);
     MPI_Recv(&maxsigma_base2, 1, MPI_DOUBLE, src,
 	     pofd_mcmc::CLDSENDMAXSIGMABASE2, comm, &Info);
+    MPI_Recv(&exp_conf1, 1, MPI_DOUBLE, src, pofd_mcmc::CLDSENDEXPCONF1,
+	     comm, &Info);
+    MPI_Recv(&exp_conf2, 1, MPI_DOUBLE, src, pofd_mcmc::CLDSENDEXPCONF2,
+	     comm, &Info);
     MPI_Recv(like_offset, newn, MPI_DOUBLE, src,
 	     pofd_mcmc::CLDSENDLIKEOFFSET, comm, &Info);
     MPI_Recv(like_norm, newn, MPI_DOUBLE, src, pofd_mcmc::CLDSENDLIKENORM,
@@ -495,7 +550,8 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
 		  const std::vector<double>& sigmas2,
 		  const std::vector<double>& like_norms,
 		  bool IGNOREMASK, bool MEANSUB,
-		  bool HISTOGRAM, double HISTOGRAMLOGSTEP) {
+		  bool HISTOGRAM, double HISTOGRAMLOGSTEP,
+		  double EXPCONF1, double EXPCONF2) {
 
   //Make sure they are all the same length
   unsigned int ndat = datafiles1.size();
@@ -571,6 +627,8 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
       beamsets[i].readBeam(grpmap_it->second.beamfile1, 
 			   grpmap_it->second.beamfile2, 
 			   HISTOGRAM, HISTOGRAMLOGSTEP);
+      beamsets[i].setExpConf1(EXPCONF1);
+      beamsets[i].setExpConf2(EXPCONF2);
       beamsets[i].setSigmaBase1(grpmap_it->second.sigmas1);
       beamsets[i].setSigmaBase2(grpmap_it->second.sigmas2);
       beamsets[i].setLikeNorm(grpmap_it->second.like_norms);

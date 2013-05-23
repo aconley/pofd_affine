@@ -45,6 +45,9 @@
                   This activates the Gaussian prior on the instrumental noise
 		  multiplier.  It has mean one and standard deviation stdev.
                   Setting this will automatically turn on sigma fitting.
+   exp_conf=    value
+                  Sets the expected confusion noise value in Jy; used to
+		  set the expected likelihood values.
    cfirbprior=  mean stdev
                   This activates a Gaussian prior on the integrated CFIRB 
 		  luminoisty. It has a mean of mean and a standard deviation 
@@ -84,6 +87,7 @@ struct specFile {
   bool fit_sigma; //!< Are we fitting for sigma
   bool has_sigprior; //!< Is the sigma prior on
   double sigprior_stdev; //!< Stdev of sigma prior
+  double exp_conf; //!< Expected confusion noise in Jy
   bool has_cfirbprior; //!< Is cfirb prior on
   double cfirbprior_mean; //!< Mean value of prior
   double cfirbprior_stdev; //!< Stdev of prior

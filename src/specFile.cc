@@ -31,6 +31,7 @@ void specFile::init() {
   fit_sigma = false;
   has_sigprior = false;
   sigprior_stdev = 0.0;
+  exp_conf = 0.0;
   has_cfirbprior = false;
   cfirbprior_mean = 0.0;
   cfirbprior_stdev = 0.0;
@@ -50,11 +51,11 @@ void specFile::readFile(const std::string& flname) {
   std::stringstream str, errstr;
   double lnorm;
 
-  std::ifstream ifs( flname.c_str() );
+  std::ifstream ifs(flname.c_str());
   if ( ! ifs ) {
     ifs.close();
     errstr << "Error reading spec file: " << flname;
-    throw affineExcept("specFile","readFile",errstr.str(),1);
+    throw affineExcept("specFile", "readFile", errstr.str(), 1);
   }
 
   //Do read
@@ -211,7 +212,21 @@ void specFile::readFile(const std::string& flname) {
       has_sigprior = true;
       fit_sigma = true;
       sigprior_stdev = dblval;
+    } else if (words[0] == "exp_conf") {
+      if (words.size() < 2) {
+	errstr << "exp_conf line doesn't have right number of entries: "
+	       << line;
+	throw affineExcept("specFile", "readFile", errstr.str(), 25);
+      }
 
+      str.str(words[1]); str.clear(); str >> dblval;
+      if (dblval <= 0.0) {
+	errstr << "Invalid (non positive) expected confusion noise " << dblval
+	       << " from line: " << line;
+	throw affineExcept("specFile", "readFile", errstr.str(), 26);
+      }
+
+      exp_conf = dblval;
     } else if (words[0] == "cfirbprior") {
 
       if (words.size() < 3) {
@@ -277,7 +292,7 @@ void specFile::readFile(const std::string& flname) {
 
     } else {
       errstr << "Couldn't determine line type for: " << line;
-      throw affineExcept("specFile","readFile",errstr.str(),24);
+      throw affineExcept("specFile","readFile",errstr.str(),27);
     }
   }
 

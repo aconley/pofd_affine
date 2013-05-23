@@ -129,7 +129,8 @@ bool pofdMCMCDouble::initChainsMaster() {
 			    spec_info.psffiles1, spec_info.psffiles2, 
 			    spec_info.sigmas1, spec_info.sigmas2,
 			    spec_info.like_norm, spec_info.ignore_mask, 
-			    spec_info.mean_sub, spec_info.beam_histogram);
+			    spec_info.mean_sub, spec_info.beam_histogram,
+			    spec_info.exp_conf1, spec_info.exp_conf2);
 
   // Verbosity
   setVerbosity(spec_info.verbosity);

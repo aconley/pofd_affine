@@ -8,7 +8,8 @@
 #include "../include/affineExcept.h"
 
 int main(int argc, char** argv) {
-  bool twod;
+
+  bool twod, write_as_hdf;
   std::string initfile, specfile, outfile;
   unsigned int nwalkers;
   unsigned int nsamples;
@@ -32,6 +33,7 @@ int main(int argc, char** argv) {
   fixed_burn = false;
   burn_multiple = 1.5;
   scalefac = 2.0;
+  write_as_hdf = false;
 
   MPI_Init(&argc, &argv);
 
@@ -44,6 +46,7 @@ int main(int argc, char** argv) {
     {"help", no_argument, 0, 'h'},
     {"double",no_argument,0,'d'},
     {"fixedburn", no_argument, 0, 'f'},
+    {"hdf", no_argument, 0, 'H'},
     {"initsteps",required_argument,0,'i'},
     {"minburn",required_argument,0,'m'},
     {"nsamples",required_argument,0,'n'},
@@ -52,7 +55,7 @@ int main(int argc, char** argv) {
     {"version",no_argument,0,'V'}, 
     {0,0,0,0}
   };
-  char optstring[] = "b:hdfi:m:n:N:s:V";
+  char optstring[] = "b:hdfHi:m:n:N:s:V";
   int c;
   int option_index = 0;
 
@@ -101,6 +104,9 @@ int main(int argc, char** argv) {
 	std::cerr << "\t\trather than using the autocorrelation." << std::endl;
 	std::cerr << "\t-h, --help" << std::endl;
 	std::cerr << "\t\tOutput this help message and exit." << std::endl;
+	std::cerr << "\t-H, --hdf" << std::endl;
+	std::cerr << "\t\tWrite as HDF5 file rather than text file."
+		  << std::endl;
 	std::cerr << "\t-i, --initsteps INITIAL_STEPS" << std::endl;
 	std::cerr << "\t\tThis many steps per walker are taken and thrown away"
 		  << std::endl;
@@ -143,6 +149,9 @@ int main(int argc, char** argv) {
       break;
     case 'f':
       fixed_burn = true;
+      break;
+    case 'H':
+      write_as_hdf = true;
       break;
     case 'i' :
       init_steps = atoi(optarg);
@@ -225,6 +234,7 @@ int main(int argc, char** argv) {
 
   try {
     if (!twod) {
+      // Single band case
       pofdMCMC engine(initfile, specfile, nwalkers, nsamples, init_steps,
 		      min_burn, fixed_burn, burn_multiple, scalefac);
       
@@ -237,11 +247,6 @@ int main(int argc, char** argv) {
       engine.sample();
       
       if (rank == 0) {
-	if (engine.getVerbosity() > 1)
-	  std::cout << "Done with sampling; writing to: " << outfile 
-		    << std::endl;
-	engine.writeToFile(outfile);
-
 	if (engine.getVerbosity() > 1) {
 	  std::vector<float> accept;
 	  engine.getAcceptanceFrac(accept);
@@ -251,10 +256,36 @@ int main(int argc, char** argv) {
 	  std::cout << "Mean acceptance fraction: " 
 		    << mnval / (accept.size() - 1.0) << std::endl;
 	}
-	
+
+	// Compute autocorrelation length
+	if (write_as_hdf || (engine.getVerbosity() > 1)) {
+	  std::vector<float> acor;
+	  bool succ = engine.getAcor(acor);
+	  if (engine.getVerbosity() > 1) {
+	    if (succ) {
+	      std::cout << "Autocorrelation length: " << acor[0];
+	      for (unsigned int i = 1; i < acor.size(); ++i)
+		std::cout << " " << acor[i];
+	      std::cout << std::endl;
+	    } else {
+	      std::cout << "Failed to compute autocorrelation" 
+			<< std::endl;
+	    }
+	  }
+	}
+
+	if (engine.getVerbosity() > 1)
+	  std::cout << "Done with sampling; writing to: " << outfile 
+		    << std::endl;
+	if (write_as_hdf)
+	  engine.writeToHDF5(outfile);
+	else
+	  engine.writeToFile(outfile);
       }
+
     } else {
-      
+      // Dual band case
+
       pofdMCMCDouble engine(initfile, specfile, nwalkers, nsamples, init_steps,
 			    min_burn, fixed_burn, burn_multiple, scalefac);
       
@@ -267,11 +298,6 @@ int main(int argc, char** argv) {
       engine.sample();
       
       if (rank == 0) {
-	if (engine.getVerbosity() > 1)
-	  std::cout << "Done with sampling; writing to: " << outfile 
-		    << std::endl;
-	engine.writeToFile(outfile);
-
 	if (engine.getVerbosity() > 1) {
 	  std::vector<float> accept;
 	  engine.getAcceptanceFrac(accept);
@@ -281,6 +307,30 @@ int main(int argc, char** argv) {
 	  std::cout << "Mean acceptance fraction: " 
 		    << mnval / (accept.size() - 1.0) << std::endl;
 	}
+
+	if (write_as_hdf || (engine.getVerbosity() > 1)) {
+	  std::vector<float> acor;
+	  bool succ = engine.getAcor(acor);
+	  if (engine.getVerbosity() > 1) {
+	    if (succ) {
+	      std::cout << "Autocorrelation length: " << acor[0];
+	      for (unsigned int i = 1; i < acor.size(); ++i)
+		std::cout << " " << acor[i];
+	      std::cout << std::endl;
+	    } else {
+	      std::cout << "Failed to compute autocorrelation" 
+			<< std::endl;
+	    }
+	  }
+	}
+
+	if (engine.getVerbosity() > 1)
+	  std::cout << "Done with sampling; writing to: " << outfile 
+		    << std::endl;
+	if (write_as_hdf)
+	  engine.writeToHDF5(outfile);
+	else
+	  engine.writeToFile(outfile);
       }
     }
   } catch (const affineExcept& ex) {

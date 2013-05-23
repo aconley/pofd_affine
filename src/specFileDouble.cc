@@ -40,6 +40,8 @@ void specFileDouble::init() {
   fit_sigma2 = false;
   has_sigprior2 = false;
   sigprior_stdev2 = 0.0;
+  exp_conf1 = 0.0;
+  exp_conf2 = 0.0;
   has_cfirbprior1 = false;
   cfirbprior_mean1 = 0.0;
   cfirbprior_stdev1 = 0.0;
@@ -174,7 +176,36 @@ void specFileDouble::readFile(const std::string& flname) {
       fit_sigma2 = true;
       has_sigprior2 = true;
       sigprior_stdev2 = dblval;
+    } else if (words[0] == "exp_conf1") {
+      if (words.size() < 2) {
+	errstr << "exp_conf1 line doesn't have right number of entries: "
+	       << line;
+	throw affineExcept("specFileDouble", "readFile", errstr.str(), 31);
+      }
 
+      str.str(words[1]); str.clear(); str >> dblval;
+      if (dblval <= 0.0) {
+	errstr << "Invalid (non positive) exp_conf1 " << dblval
+	       << " from line: " << line;
+	throw affineExcept("specFileDouble", "readFile", errstr.str(), 32);
+      }
+
+      exp_conf1 = dblval;
+    } else if (words[0] == "exp_conf2") {
+      if (words.size() < 2) {
+	errstr << "exp_conf2 line doesn't have right number of entries: "
+	       << line;
+	throw affineExcept("specFileDouble", "readFile", errstr.str(), 33);
+      }
+
+      str.str(words[1]); str.clear(); str >> dblval;
+      if (dblval <= 0.0) {
+	errstr << "Invalid (non positive) exp_conf2 " << dblval
+	       << " from line: " << line;
+	throw affineExcept("specFileDouble", "readFile", errstr.str(), 34);
+      }
+
+      exp_conf2 = dblval;
     } else if (words[0] == "cfirbprior1") {
 
       if (words.size() < 3) {
@@ -362,7 +393,7 @@ void specFileDouble::readFile(const std::string& flname) {
 
     } else {
       errstr << "Couldn't determine line type for: " << line;
-      throw affineExcept("specFileDouble", "readFile", errstr.str(), 30);
+      throw affineExcept("specFileDouble", "readFile", errstr.str(), 35);
     }
   }
 

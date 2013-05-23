@@ -102,7 +102,7 @@ bool pofdMCMC::initChainsMaster() {
   likeSet.readDataFromFiles(spec_info.datafiles, spec_info.psffiles, 
 			    spec_info.sigmas, spec_info.like_norm,
 			    spec_info.ignore_mask, spec_info.mean_sub, 
-			    spec_info.beam_histogram);
+			    spec_info.beam_histogram, spec_info.exp_conf);
 
   // Verbosity
   setVerbosity(spec_info.verbosity);

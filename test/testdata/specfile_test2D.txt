@@ -12,6 +12,7 @@ beam_histogram = yes
 fit_sigma1 = no
 fit_sigma2 = false
 sigmaprior1= 0.15 #This should turn on fit_sigma1 anyways
+exp_conf2= 0.006
 cfirbprior2 = 1.05 0.1
 wisdom_file = a_wisdom_file.txt
 verbose= true

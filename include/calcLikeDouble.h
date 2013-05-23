@@ -43,6 +43,8 @@ class calcLikeDoubleSingle { //Odd name...
   double* sigma_base2; //!< Base value of sigma, len ndatasets, band 2
   double maxsigma_base1; //!< Maximum value of sigma_base, band 1
   double maxsigma_base2; //!< Maximum value of sigma_base, band 2
+  double exp_conf1; //!< Expected confusion noise, band 1
+  double exp_conf2; //!< Expected confusion noise, band 2
 
   //Likelihood computation information
   double* like_norm; //!< Likelihood normalization factor for beam area
@@ -109,6 +111,11 @@ class calcLikeDoubleSingle { //Odd name...
   void setSigmaBase2(unsigned int, const double* const); //!< Set base sigma values, band 2
   /*! \brief Gets sigma base value for band 2 */
   double getSigmaBase2(unsigned int i) const { return sigma_base2[i]; }
+
+  void setExpConf1(double v) {exp_conf1 = v;} //!< Set expected confusion noise, band 1
+  double getExpConf1() const { return exp_conf1;} //!< Get expected confusion noise, band 1
+  void setExpConf2(double v) {exp_conf2 = v;} //!< Set expected confusion noise, band 1
+  double getExpConf2() const { return exp_conf2;} //!< Get expected confusion noise, band 1
 
 
   unsigned int getNDataSets() const { return ndatasets; } //!< Number of data sets
@@ -202,7 +209,8 @@ class calcLikeDouble {
 			 const std::vector<double>&,
 			 const std::vector<double>&,
 			 bool IGNOREMASK=false, bool MEANSUB=false,
-			 bool HISTOGRAM=false, double HISTOGRAMLOGSTEP=0.2);
+			 bool HISTOGRAM=false, double HISTOGRAMLOGSTEP=0.2,
+			 double EXPCONF1=0.0, double EXPCONF2=0.0);
   
   void setVerbose() { verbose=true; } //!< Turn on verbose mode
   void unSetVerbose() { verbose = false; } //!< Turn off verbose mode

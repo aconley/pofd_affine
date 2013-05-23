@@ -54,6 +54,11 @@
 		  deviation stdev.  Will automatically set fit_sigma1
    sigmaprior2=  stdev
                   Same as sigmaprior1, but in band 2
+   exp_conf1=    value
+                  Sets the expected confusion noise value in Jy in band 1; 
+		  used to set the expected likelihood values.
+   exp_conf2=    value
+                  Same as exp_conf1, but in the other band
    cfirbprior1=  mean stdev
                   This activates a Gaussian prior on the integrated CFIRB 
 		  luminoisty in band 1. It has a mean of mean and a standard 
@@ -101,6 +106,8 @@ struct specFileDouble {
   double sigprior_stdev1; //!< Stdev of sigma prior, band 1
   bool has_sigprior2; //!< Is the sigma prior on, band 2
   double sigprior_stdev2; //!< Stdev of sigma prior, band 2
+  double exp_conf1; //!< Expected confusion noise, band 1
+  double exp_conf2; //!< Expected confusion noise, band 2
   bool has_cfirbprior1; //!< Is cfirb prior on, band 1
   double cfirbprior_mean1; //!< Mean value of prior, band 1
   double cfirbprior_stdev1; //!< Stdev of prior, band 1
