@@ -517,7 +517,7 @@ void affineEnsemble::masterSample() {
 }
 
 float affineEnsemble::getMaxAcor() const {
-  if (! acor_set) 
+  if (!acor_set) 
     throw affineExcept("affineEnsemble", "getMaxAcor",
 		       "Called without acor available", 1);
   float maxval;
@@ -870,6 +870,8 @@ void affineEnsemble::doMasterStep() throw (affineExcept) {
     std::cout << "  Evaluating likelihoods" << std::endl;
   emptyMasterQueue();
 
+  // The fact that we took another step means that acor is now invalid
+  acor_set = false;
 }
 
 void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
@@ -1101,6 +1103,135 @@ void affineEnsemble::writeToFile(const std::string& filename) const {
     throw affineExcept("affineEnsemble", "writeToFile",
 		       "Should only be called from master node", 1);  
   chains.writeToFile(filename);
+}
+
+void affineEnsemble::writeToHDF5(const std::string& filename) const {
+  // In addition to writing the chains and likelihoods, writes some
+  // additional attributes at the root level
+  if (rank != 0) 
+    throw affineExcept("affineEnsemble", "writeToHDF5",
+		       "Should only be called from master node", 1);  
+  hid_t file_id;
+  herr_t status;
+  file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
+		      H5P_DEFAULT);
+
+  // Write some attributes
+  hsize_t adims;
+  hid_t mems_id, att_id;
+
+  // First, simple 1 element objects
+  adims = 1;
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  att_id = H5Acreate2(file_id, "scalefac", H5T_NATIVE_FLOAT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_FLOAT, &scalefac);
+  status = H5Aclose(att_id);
+  att_id = H5Acreate2(file_id, "nfixed", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nfixed);
+  status = H5Aclose(att_id);
+  att_id = H5Acreate2(file_id, "nignore", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nignore);
+  status = H5Aclose(att_id);
+  att_id = H5Acreate2(file_id, "init_steps", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, &init_steps);
+  status = H5Aclose(att_id);
+  att_id = H5Acreate2(file_id, "min_burn", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, &min_burn);
+  status = H5Aclose(att_id);
+  hbool_t btmp;
+  btmp = static_cast<hbool_t>(fixed_burn);
+  att_id = H5Acreate2(file_id, "fixed_burn", H5T_NATIVE_HBOOL,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_HBOOL, &btmp);
+  status = H5Aclose(att_id);
+  att_id = H5Acreate2(file_id, "burn_multiple", H5T_NATIVE_FLOAT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_FLOAT, &burn_multiple);
+  status = H5Aclose(att_id);
+  att_id = H5Acreate2(file_id, "nsteps", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nsteps);
+  status = H5Aclose(att_id);
+  status = H5Sclose(mems_id);
+
+  // Number of accepted steps
+  adims = nwalkers;
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  unsigned int *uatmp;
+  uatmp = new unsigned int[nwalkers];
+  for (unsigned int i = 0; i < nwalkers; ++i) uatmp[i] = naccept[i];
+  att_id = H5Acreate2(file_id, "naccept", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, uatmp);
+  delete[] uatmp;
+  status = H5Aclose(att_id);
+  status = H5Sclose(mems_id);
+
+  // Parameter state (fixed, ignored) information
+  adims = nparams;
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  hbool_t *batmp;
+  batmp = new hbool_t[nparams];
+  // Fixed first
+  for (unsigned int i = 0; i < nparams; ++i) 
+    batmp[i] = param_state[i] & mcmc_affine::FIXED;
+  att_id = H5Acreate2(file_id, "fixed", H5T_NATIVE_HBOOL,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
+  status = H5Aclose(att_id);
+  // Ignored params
+  for (unsigned int i = 0; i < nparams; ++i) 
+    batmp[i] = param_state[i] & mcmc_affine::ACIGNORE;
+  att_id = H5Acreate2(file_id, "acignore", H5T_NATIVE_HBOOL,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
+  delete[] batmp;
+  status = H5Aclose(att_id);
+  status = H5Sclose(mems_id);
+ 
+  // Names of parameters -- complicated
+  if (has_any_names) {
+    hid_t datatype = H5Tcopy(H5T_C_S1);
+    H5Tset_size(datatype, H5T_VARIABLE);
+    const char ** catmp;
+    catmp = new const char*[nparams];
+    for (unsigned int i = 0; i < nparams; ++i)
+      catmp[i] = parnames[i].c_str();
+    adims = nparams;
+    mems_id = H5Screate_simple(1, &adims, NULL);
+    att_id = H5Acreate1(file_id, "param_names", datatype,
+			mems_id, H5P_DEFAULT);
+    status = H5Awrite(att_id, datatype, catmp);
+    delete[] catmp;
+    status = H5Aclose(att_id);
+    status = H5Sclose(mems_id);
+  }
+
+  // Acor, if available
+  if (acor_set) {
+    adims = nparams;
+    mems_id = H5Screate_simple(1, &adims, NULL);
+    float *fatmp;
+    fatmp = new float[nparams];
+    for (unsigned int i = 0; i < nparams; ++i) fatmp[i] = acor[i];
+    att_id = H5Acreate2(file_id, "autocorrelation", H5T_NATIVE_FLOAT,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    status = H5Awrite(att_id, H5T_NATIVE_FLOAT, fatmp);
+    delete[] fatmp;
+    status = H5Aclose(att_id);
+    status = H5Sclose(mems_id);
+  }
+
+  // Write chains, likelihoods
+  chains.writeToHDF5(file_id);
+
+  // All done
+  status = H5Fclose(file_id);
 }
 
 std::ostream& operator<<(std::ostream& os, const affineEnsemble& a) {

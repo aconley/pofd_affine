@@ -178,25 +178,27 @@ int main(int argc, char** argv) {
   const unsigned int ndim = 5;
   unsigned int nwalkers, nsamples, min_burn, init_steps;
   std::string invcovfile, outfile;
-  bool verbose, fixed_burn;
+  bool verbose, fixed_burn, write_as_hdf;
 
   verbose = false;
   min_burn = 20;
   init_steps = 20;
   fixed_burn = false;
+  write_as_hdf = false;
 
   int c;
   int option_index = 0;
   static struct option long_options[] = {
     {"help",no_argument,0,'h'},
     {"fixedburn", no_argument, 0, 'f'},
+    {"hdf", no_argument, 0, 'H'},
     {"initsteps", required_argument, 0, 'i'},
     {"minburn", required_argument, 0, 'm'},
     {"verbose",no_argument,0,'v'},
     {"Version",no_argument,0,'V'},
     {0,0,0,0}
   };
-  char optstring[] = "hfi:m:vV";
+  char optstring[] = "hfHi:m:vV";
 
   int rank, nproc;
   MPI_Init(&argc, &argv);
@@ -237,6 +239,9 @@ int main(int argc, char** argv) {
                   << " sample," << std::endl;
         std::cerr << "\t\trather than using the autocorrelation."
 		  << std::endl;
+	std::cerr << "\t-H, --hdf" << std::endl;
+	std::cerr << "\t\tWrite as HDF5 file rather than text file."
+		  << std::endl;
 	std::cerr << "\t-i, --initsteps STEPS" << std::endl;
 	std::cerr << "\t\tTake this many initial steps per walker, then "
 		  << "recenter" << std::endl;
@@ -257,6 +262,9 @@ int main(int argc, char** argv) {
       break;
     case 'f':
       fixed_burn = true;
+      break;
+    case 'H':
+      write_as_hdf = true;
       break;
     case 'i':
       init_steps = atoi(optarg);
@@ -313,6 +321,12 @@ int main(int argc, char** argv) {
 	std::cout << mg << std::endl;
     }
 
+    mg.setParamName(0,"mn[0]");
+    mg.setParamName(1,"mn[1]");
+    mg.setParamName(2,"mn[2]");
+    mg.setParamName(3,"mn[3]");
+    mg.setParamName(4,"mn[4]");
+
     mg.sample(); //Also initializes
     
     if (rank == 0) {
@@ -341,7 +355,11 @@ int main(int argc, char** argv) {
       } else std::cout << "Failed to compute autocorrelation" << std::endl;
   
       //Write
-      mg.writeToFile(outfile);
+      if (write_as_hdf)
+	mg.writeToHDF5(outfile);
+      else
+	mg.writeToFile(outfile);
+
     }
   } catch ( const affineExcept& ex ) {
     std::cerr << "Error encountered" << std::endl;

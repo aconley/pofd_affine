@@ -3,6 +3,7 @@
 #include<fstream>
 #include<algorithm>
 #include<iomanip>
+#include<sstream>
 
 #include "../include/affineChainSet.h"
 
@@ -288,7 +289,7 @@ bool affineStepChunk::getStep(unsigned int walker_idx, unsigned int iter_idx,
 
   unsigned int csteps = nsteps[walker_idx];
   if (iter_idx >= csteps) return false;
-  pars.setParamValues(nparams, getParamPointer(walker_idx,iter_idx));
+  pars.setParamValues(nparams, getParamPointer(walker_idx, iter_idx));
   lglike = getLogLike(walker_idx, iter_idx);
   return true;
 }
@@ -1090,4 +1091,183 @@ void affineChainSet::writeToFile(const std::string& outfile) const
   for (unsigned int i = startidx; i < steps.size(); ++i)
     steps[i]->writeToStream(ofs);
   ofs.close();
+}
+
+/*!
+  \param[in] filename File to write to.  Will be overwritten if it exists.
+
+  Only works if all walkers have the same number of steps.
+*/
+void affineChainSet::writeToHDF5(const std::string& filename) const {
+  if (steps.size() == 0) return;
+
+  // Open
+  hid_t file_id;
+  herr_t status;
+  file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
+		      H5P_DEFAULT);
+  // Write
+  writeToHDF5(file_id);
+
+  // All done
+  status = H5Fclose(file_id);
+}
+
+
+/*!
+  \param[in] objid HDF5 group to write to
+
+  Only works if all walkers have the same number of steps.
+  objid can be either a file id or a group id.  If it's a file id,
+  everything is written to the root of that file.
+*/
+void affineChainSet::writeToHDF5(hid_t objid) const {
+  if (steps.size() == 0) return;
+
+  // Make sure all the walkers have the same number of iterations
+  unsigned int nit = getNIters(0);
+  unsigned int nc;
+  for (unsigned int i = 1; i < nwalkers; ++i) {
+    nc = getNIters(i);
+    if (nc != nit) {
+      std::stringstream errstr;
+      errstr << "Walker " << i << " has different number of steps ("
+	     << nc << ") than first walker (" << nit << ")";
+      throw affineExcept("affineChainSet", "writeToHDF5", 
+			 errstr.str(), 1);
+    }
+  }
+
+  // Two datasets to write -- the steps (nwalkers * nsteps * nparams)
+  //  and the likelihoods (nwalkers * nsteps).  
+  // Start with the chain steps, writing in chunks
+  //  of size nsteps * nparams, copying into a local variable
+  hsize_t dims_steps[3];
+  dims_steps[0] = static_cast<hsize_t>(nwalkers);
+  dims_steps[1] = static_cast<hsize_t>(nit);
+  dims_steps[2] = static_cast<hsize_t>(nparams);
+  hsize_t offset_steps[3] = {0, 0, 0};
+  hsize_t memsdim_steps[3]; // Working space for chunks we are writing
+  memsdim_steps[0] = 1;
+  memsdim_steps[1] = static_cast<hsize_t>(nit);
+  memsdim_steps[2] = static_cast<hsize_t>(nparams);
+  hsize_t count_steps[3] = {1, 1, 1}; // We write one of these blocks at a time
+
+  // Data space
+  hid_t dataspace_idsteps;
+  herr_t status;
+  dataspace_idsteps = H5Screate_simple(3, dims_steps, NULL);
+  
+  // Data set
+  hid_t dataset_idsteps;
+  dataset_idsteps = H5Dcreate2(objid, "chain", H5T_NATIVE_FLOAT, 
+			       dataspace_idsteps, H5P_DEFAULT, H5P_DEFAULT, 
+			       H5P_DEFAULT);
+  
+  // Write some attributes for that dataset
+  hsize_t adims;
+  adims = 1;
+  hid_t mems_id, att_id;
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  att_id = H5Acreate2(dataset_idsteps, "nwalkers", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nwalkers);
+  status = H5Aclose(att_id);
+  att_id = H5Acreate2(dataset_idsteps, "nsteps", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nit);
+  status = H5Aclose(att_id);
+  att_id = H5Acreate2(dataset_idsteps, "nparams", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nparams);
+  status = H5Aclose(att_id);
+  status = H5Sclose(mems_id);
+
+  // Write the data in chunks
+  unsigned int cntr, firststep, nstp;
+  float *fwrkarr, *sptr;
+  const affineStepChunk* chunk;
+  fwrkarr = new float[nit * nparams];
+  if (skipfirst) firststep = 1; else firststep = 0;
+  mems_id = H5Screate_simple(3, memsdim_steps, NULL);
+  for (unsigned int walkidx = 0; walkidx < nwalkers; ++walkidx) {
+    // Copy all steps for this walker into fwrkarr
+    cntr = 0;
+    for (unsigned int chunkidx = firststep; 
+	 chunkidx < steps.size(); ++chunkidx) {
+      chunk = steps[chunkidx];
+      nstp = chunk->nsteps[chunkidx];
+      for (unsigned int iteridx = 0; iteridx < nstp; ++iteridx) {
+	sptr = chunk->getParamPointer(walkidx, iteridx);
+	for (unsigned int pidx = 0; pidx < nparams; ++pidx)
+	  fwrkarr[cntr++] = sptr[pidx];
+      }
+    }
+
+    // Now write chunk
+    offset_steps[0] = static_cast<hsize_t>(walkidx);
+    status = H5Sselect_hyperslab(dataspace_idsteps, H5S_SELECT_SET, 
+				 offset_steps, NULL, count_steps, 
+				 memsdim_steps);
+    status = H5Dwrite(dataset_idsteps, H5T_NATIVE_FLOAT, mems_id,
+		      dataspace_idsteps, H5P_DEFAULT, fwrkarr);
+  }
+  delete[] fwrkarr;
+
+  // Close up step variables
+  status = H5Sclose(mems_id);
+  status = H5Dclose(dataset_idsteps);
+  status = H5Sclose(dataspace_idsteps);
+
+  // Now do the same thing for the likelihood, writing in nwalker
+  // chunks of size nsteps
+  hsize_t dims_like[2];
+  dims_like[0] = static_cast<hsize_t>(nwalkers);
+  dims_like[1] = static_cast<hsize_t>(nit);
+  hsize_t offset_like[2] = {0, 0};
+  hsize_t memsdim_like[2];
+  memsdim_like[0] = 1;
+  memsdim_like[1] = static_cast<hsize_t>(nit);
+  hsize_t count_like[2] = {1, 1};
+  hid_t dataspace_idlike, dataset_idlike;
+  dataspace_idlike = H5Screate_simple(2, dims_like, NULL);
+  dataset_idlike = H5Dcreate2(objid, "likelihood", H5T_NATIVE_DOUBLE, 
+			      dataspace_idlike, H5P_DEFAULT, H5P_DEFAULT, 
+			      H5P_DEFAULT);
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  att_id = H5Acreate2(dataset_idlike, "nwalkers", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nwalkers);
+  status = H5Aclose(att_id);
+  att_id = H5Acreate2(dataset_idlike, "nsteps", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nit);
+  status = H5Aclose(att_id);
+  status = H5Sclose(mems_id);
+  double *dwrkarr;
+  dwrkarr = new double[nit];
+  mems_id = H5Screate_simple(2, memsdim_like, NULL);
+  for (unsigned int walkidx = 0; walkidx < nwalkers; ++walkidx) {
+    cntr = 0;
+    for (unsigned int chunkidx = firststep; 
+	 chunkidx < steps.size(); ++chunkidx) {
+      chunk = steps[chunkidx];
+      nstp = chunk->nsteps[chunkidx];
+      for (unsigned int iteridx = 0; iteridx < nstp; ++iteridx)
+	dwrkarr[cntr++] = chunk->getLogLike(walkidx, iteridx);
+    }
+
+    // Now write chunk
+    offset_like[0] = static_cast<hsize_t>(walkidx);
+    status = H5Sselect_hyperslab(dataspace_idlike, H5S_SELECT_SET, 
+				 offset_like, NULL, count_like, 
+				 memsdim_like);
+    status = H5Dwrite(dataset_idlike, H5T_NATIVE_DOUBLE, mems_id,
+		      dataspace_idlike, H5P_DEFAULT, dwrkarr);
+  }
+  delete[] dwrkarr;
+  status = H5Sclose(mems_id);
+  status = H5Dclose(dataset_idlike);
+  status = H5Sclose(dataspace_idlike);
+
 }

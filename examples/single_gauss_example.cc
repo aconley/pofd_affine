@@ -95,25 +95,27 @@ int main(int argc, char** argv) {
   unsigned int nwalkers, nsamples, min_burn, init_steps;
   double mean, sigma;
   std::string outfile;
-  bool verbose, fixed_burn;
+  bool verbose, fixed_burn, write_as_hdf;
 
   min_burn = 20;
   init_steps = 20;
   verbose = false;
   fixed_burn = false;
+  write_as_hdf = false;
 
   int c;
   int option_index = 0;
   static struct option long_options[] = {
     {"help",no_argument,0,'h'},
     {"fixedburn", no_argument, 0, 'f'},
+    {"hdf", no_argument, 0, 'H'},
     {"initsteps", required_argument, 0, 'i'},
     {"minburn", required_argument, 0, 'm'},
     {"verbose",no_argument,0,'v'},
     {"Version",no_argument,0,'V'},
     {0,0,0,0}
   };
-  char optstring[] = "hfi:m:vV";
+  char optstring[] = "hfHi:m:vV";
 
   int rank, nproc;
   MPI_Init(&argc, &argv);
@@ -149,6 +151,9 @@ int main(int argc, char** argv) {
                   << " sample," << std::endl;
         std::cerr << "\t\trather than using the autocorrelation."
 		  << std::endl;
+	std::cerr << "\t-H, --hdf" << std::endl;
+	std::cerr << "\t\tWrite as HDF5 file rather than text file."
+		  << std::endl;
 	std::cerr << "\t-i, --initsteps STEPS" << std::endl;
 	std::cerr << "\t\tTake this many initial steps per walker, then "
 		  << "recenter" << std::endl;
@@ -169,6 +174,9 @@ int main(int argc, char** argv) {
       break;
     case 'f':
       fixed_burn = true;
+      break;
+    case 'H':
+      write_as_hdf = true;
       break;
     case 'i':
       init_steps = atoi(optarg);
@@ -238,7 +246,10 @@ int main(int argc, char** argv) {
 	std::cout << " " << accept[i];
       std::cout << std::endl;
       
-      sg.writeToFile(outfile);
+      if (write_as_hdf)
+	sg.writeToHDF5(outfile);
+      else
+	sg.writeToFile(outfile);
     }
 
   } catch ( const affineExcept& ex ) {

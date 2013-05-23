@@ -154,7 +154,7 @@ public:
   virtual void writeToStream(std::ostream&) const; //!< Write summary of fit parameters
 
   void writeToFile(const std::string&) const; //!< Write results to file
-
+  void writeToHDF5(const std::string&) const; //!< Write results to HDF5 file
 };
 
 /*! \brief Write to stream */
