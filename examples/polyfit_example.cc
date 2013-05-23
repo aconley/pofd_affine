@@ -295,10 +295,10 @@ int main(int argc, char** argv) {
 		min_burn, fixed_burn);
     ply.setScalefac(scalefac);
 
-    ply.setParamName(0,"c[0]");
-    ply.setParamName(1,"c[1]*x");
-    ply.setParamName(2,"c[2]*x^2");
-    ply.setParamName(3,"c[3]*x^3");
+    ply.setParamName(0, "c[0]");
+    ply.setParamName(1, "c[1]*x");
+    ply.setParamName(2, "c[2]*x^2");
+    ply.setParamName(3, "c[3]*x^3");
 
     if (verbose) {
       ply.setVerbose();
