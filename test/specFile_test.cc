@@ -73,6 +73,9 @@ TEST(specFile1DTest, ReadCheck) {
   EXPECT_EQ(spec_info.exp_conf, 0.0) <<
     "Expected zero expected confusion noise";
 
+  EXPECT_EQ(spec_info.hist_logstep, 0.2) <<
+    "Unexpected beam histogram log step";
+
   ASSERT_TRUE(spec_info.has_cfirbprior) << "Expected to have CFIRB prior";
   EXPECT_NEAR(spec_info.cfirbprior_mean, 1.05, 0.0001) <<
     "Expected cfirb prior mean to be 1.05, but it is " <<
@@ -178,6 +181,9 @@ TEST(specFile2DTest, ReadCheck) {
     "Expected zero expected confusion noise, band 1";
   EXPECT_EQ(spec_info.exp_conf2, 0.006) <<
     "Expected non-zero expected confusion noise, band 2";
+
+  EXPECT_EQ(spec_info.hist_logstep, 0.2) <<
+    "Unexpected beam histogram log step";
 
   EXPECT_FALSE(spec_info.has_cfirbprior1) << "Expected no band 1 cfirb prior";
   ASSERT_TRUE(spec_info.has_cfirbprior2) << 

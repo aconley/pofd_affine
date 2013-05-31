@@ -42,6 +42,8 @@
                   Set size of edge interpolation (def: 256).
    beam_histogram= bool
                   Activates beam histogramming.  On by default.
+   hist_logstep= value
+                  If beam histogramming, log bin size of histogram (def: 0.2)  
    edge_fix=    bool
                   Apply edge fix to P(D). On by default.
    fit_sigma1=  value
@@ -100,6 +102,7 @@ struct specFileDouble {
   unsigned int nedge; //!< Number of edge integration points
   bool edge_fix; //!< Apply edge fix to P(D)
   bool beam_histogram; //!< Do beam histogramming
+  double hist_logstep; //!< Size of Beam histogram log step
   bool fit_sigma1; //!< Do fit to sigma in band 1
   bool fit_sigma2; //!< Do fit to sigma in band 2
   bool has_sigprior1; //!< Is the sigma prior on, band 1

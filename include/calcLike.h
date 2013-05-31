@@ -102,7 +102,7 @@ class calcLikeSingle {
   /*! \brief Get sigma base value */
   double getSigmaBase(unsigned int i) const { return sigma_base[i]; }
 
-  void setExpConf(double v) {exp_conf = v;} //!< Set expected confusion noise
+  void setExpConf(double v) { exp_conf = v;} //!< Set expected confusion noise
   double getExpConf() const { return exp_conf;} //!< Get expected confusion noise
 
   unsigned int getNDataSets() const { return ndatasets; } //!< Number of data sets

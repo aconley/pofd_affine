@@ -112,9 +112,9 @@ class calcLikeDoubleSingle { //Odd name...
   /*! \brief Gets sigma base value for band 2 */
   double getSigmaBase2(unsigned int i) const { return sigma_base2[i]; }
 
-  void setExpConf1(double v) {exp_conf1 = v;} //!< Set expected confusion noise, band 1
+  void setExpConf1(double v) { exp_conf1 = v;} //!< Set expected confusion noise, band 1
   double getExpConf1() const { return exp_conf1;} //!< Get expected confusion noise, band 1
-  void setExpConf2(double v) {exp_conf2 = v;} //!< Set expected confusion noise, band 1
+  void setExpConf2(double v) { exp_conf2 = v;} //!< Set expected confusion noise, band 1
   double getExpConf2() const { return exp_conf2;} //!< Get expected confusion noise, band 1
 
 
