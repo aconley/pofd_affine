@@ -53,8 +53,7 @@ class beam {
 
   void free() { cleanup(); } //!< Free all memory
 
-  bool readFile(const std::string& filename,
-		bool histogram=false, 
+  void readFile(const std::string& filename, bool histogram=false, 
 		double histogramlogstep=0.2); //!< Read in file
 
   double getEffectiveArea() const; //!< Get effective area of beam in sq deg

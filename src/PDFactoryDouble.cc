@@ -632,8 +632,7 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
     }
   } else {
     //Just set edges to zero
-    for (unsigned int i = 0; i < n; ++i)
-      rvals[i] = 0.0;
+    memset(rvals, 0, n * sizeof(double));
     for (unsigned int i = 1; i < n; ++i)
       rvals[i*n] = 0.0;
   }
@@ -741,11 +740,8 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
 	throw affineExcept("PDFactoryDouble", "initPD",
 			   "maxidx1 is 0, which is a problem", 10);
       //Now pad!
-      for (unsigned int i = maxidx1; i < n; ++i) {
-	rptr = rvals + n*i;
-	for (unsigned int j = 0; j < n; ++j)
-	  rptr[j] = 0.0;
-      }
+      for (unsigned int i = maxidx1; i < n; ++i)
+	memset(rvals + n * i, 0, n * sizeof(double));
     }
   } else maxidx1 = n;
 
@@ -785,11 +781,8 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
 	for (unsigned int j = maxidx2; j < n; ++j)
 	  rptr[j] = 0.0;
       }
-      for (unsigned int i = maxidx2; i < n; ++i) {
-	rptr = rvals + n*i;
-	for (unsigned int j = 0; j < n; ++j)
-	  rptr[j] = 0.0;
-      }
+      for (unsigned int i = maxidx2; i < n; ++i) 
+	memset(rvals + n * i, 0, n * sizeof(double));
     }
   } else maxidx2 = n;
 

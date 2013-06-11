@@ -696,7 +696,8 @@ void initFileKnots::generateRandomKnotValues(paramSet& pnew,
   if (!(has_lower_limits || has_upper_limits)) {
     for (unsigned int i = 0; i < nknots; ++i)
       if (sigma[i] > 0)
-	pnew[i] = rangen.gauss() * sigma[i] + pcen[i];
+	pnew[i] = rangen.flt() * sigma[i] + (pcen[i] - 0.5*sigma[i]);
+	//pnew[i] = rangen.gauss() * sigma[i] + pcen[i];
       else
 	pnew[i] = pcen[i];
   } else {
@@ -744,7 +745,8 @@ void initFileKnots::generateRandomKnotValues(paramSet& pnew,
 		throw affineExcept("initFileKnots", "generateRandomKnotValues",
 				   errstr.str(), 8);
 	      }
-	      trialval = rangen.gauss() * sigma[i] + pcen[i];
+	      trialval = rangen.flt() * sigma[i] + (pcen[i] - 0.5*sigma[i]);
+	      //trialval = rangen.gauss() * sigma[i] + pcen[i];
 	      if ((trialval >= lowlim[i]) && (trialval <= uplim[i])) 
 		goodval = true;
 	      ++iters;
@@ -763,7 +765,8 @@ void initFileKnots::generateRandomKnotValues(paramSet& pnew,
 	      throw affineExcept("initFileKnots","generateRandomKnotValues",
 				 errstr.str(), 9);
 	    }
-	    trialval = rangen.gauss() * sigma[i] + pcen[i];
+	    trialval = rangen.flt() * sigma[i] + (pcen[i] - 0.5*sigma[i]);
+	    //trialval = rangen.gauss() * sigma[i] + pcen[i];
 	    if (trialval >= lowlim[i]) goodval = true;
 	    ++iters;
 	  }
@@ -780,14 +783,16 @@ void initFileKnots::generateRandomKnotValues(paramSet& pnew,
 	      throw affineExcept("initFileKnots","generateRandomKnotValues",
 				 errstr.str(), 10);
 	    }
-	    trialval = rangen.gauss() * sigma[i] + pcen[i];
+	    trialval = rangen.flt() * sigma[i] + (pcen[i] - 0.5*sigma[i]);
+	    //trialval = rangen.gauss() * sigma[i] + pcen[i];
 	    if (trialval <= uplim[i]) goodval = true;
 	    ++iters;
 	  }
 	  pnew[i] = trialval;
 	} else {
 	  //No limit, easy cakes
-	  pnew[i] = rangen.gauss() * sigma[i] + pcen[i];
+	  pnew[i] = rangen.flt() * sigma[i] + (pcen[i] - 0.5*sigma[i]);
+	  //pnew[i] = rangen.gauss() * sigma[i] + pcen[i];
 	}
       } else {
 	//Sigma is 0.  Check to make sure this is within the limits

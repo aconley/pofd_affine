@@ -368,8 +368,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
     if (maxitidx >= n) maxitidx=n-1;
 
     //Now interpolate, setting to zero outside the range
-    for (unsigned int i = 0; i < minitidx; ++i)
-      rvals[i] = 0.0;
+    if (minitidx > 0) memset(rvals, 0, minitidx * sizeof(double));
     double cflux, splval;
     for (unsigned int i = minitidx; i <= maxitidx; ++i) {
       cflux = static_cast<double>(i)*dflux; //Min is always 0 in R
@@ -388,7 +387,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
     double dinterpflux = (log2(maxinterpflux/mininterpflux))*ininterpm1;
     for (unsigned int i = 0; i < ninterp; ++i)
       RinterpFlux[i] = 
-        mininterpflux*exp2(static_cast<double>(i)*dinterpflux);
+        mininterpflux * exp2(static_cast<double>(i) * dinterpflux);
 
 #ifdef TIMING
     std::clock_t starttime = std::clock();
@@ -424,8 +423,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
 	rvals[i] += exp2(splval);
       }
     } else {
-      for (unsigned int i = 0; i < minitidx; ++i)
-	rvals[i] = 0.0;
+      if (minitidx > 0) memset(rvals, 0, minitidx * sizeof(double));
       double cflux, splval;
       for (unsigned int i = minitidx; i <= maxitidx; ++i) {
 	cflux = static_cast<double>(i)*dflux; //Min flux is always 0 in R
@@ -441,24 +439,24 @@ void PDFactory::initPD(unsigned int n, double sigma,
   // mn = \int x R dx.
   mn = rvals[1]; //Noting that RFlux[0] = 0
   for (unsigned int i = 2; i < n-1; ++i)
-    mn += rvals[i]*static_cast<double>(i);
-  mn += 0.5*rvals[n-1]*static_cast<double>(n-1);
-  mn *= dflux*dflux;  //Once for x, once for the bin size in the integral
+    mn += rvals[i] * static_cast<double>(i);
+  mn += 0.5 * rvals[n-1] * static_cast<double>(n-1);
+  mn *= dflux * dflux;  //Once for x, once for the bin size in the integral
 
   // var = \int x^2 R dx
   var_noi= rvals[1]; //Again, using the fact that RFlux[0] = 0
   double idbl;
   for (unsigned int i = 2; i < n-1; ++i) {
     idbl = static_cast<double>(i);
-    var_noi += rvals[i]*idbl*idbl;
+    var_noi += rvals[i] * idbl * idbl;
   }
   idbl = static_cast<double>(n-1);
-  var_noi += 0.5*rvals[n-1]*idbl*idbl;
-  var_noi *= dflux*dflux*dflux;
+  var_noi += 0.5 * rvals[n-1] * idbl * idbl;
+  var_noi *= dflux * dflux * dflux;
 
   //Now, compute the sigma for the maximum instrumental sigma
   // supported by this call to init
-  sg = sqrt( var_noi + sigma*sigma );
+  sg = sqrt( var_noi + sigma * sigma);
 
   //Multiply R by dflux factor to represent the actual
   // number of sources in each bin
@@ -469,8 +467,8 @@ void PDFactory::initPD(unsigned int n, double sigma,
   //Only do shift if the noise is larger than one actual step size
   // Otherwise we can't represent it well.
   bool dopad = (sigma > dflux);
-  doshift = ( dopad && ( mn < pofd_mcmc::n_sigma_shift*sg) );
-  if ( doshift ) shift = pofd_mcmc::n_sigma_shift*sg - mn; else
+  doshift = ( dopad && ( mn < pofd_mcmc::n_sigma_shift * sg) );
+  if ( doshift ) shift = pofd_mcmc::n_sigma_shift * sg - mn; else
     shift=0.0;
 
   if (verbose) {

@@ -3,6 +3,7 @@
 #include <limits>
 #include <iostream>
 #include <cmath>
+#include <sstream>
 
 #include<fitsio.h>
 
@@ -145,7 +146,7 @@ bool beam::revSort(const double& d1, const double& d2) const {
   \param[in] histogram Do beam histogramming?
   \param[in] histogramlogstep Log step if histogramming
 */
-bool beam::readFile(const std::string& filename,bool histogram, 
+void beam::readFile(const std::string& filename,bool histogram, 
 		    double histogramlogstep) {
 
   int status;
@@ -159,40 +160,44 @@ bool beam::readFile(const std::string& filename,bool histogram,
 
   fits_open_file(&fptr, filename.c_str(), READONLY, &status);
   if (fptr == NULL) {
-    std::cerr << "Error opening input file: " << filename << std::endl;
-    fits_close_file(fptr,&status);
-    return false;
+    fits_close_file(fptr, &status);
+    std::stringstream errstr;
+    errstr << "Error opening input file: " << filename << std::endl;
+    throw affineExcept("beam", "readFile", errstr.str(), 1);
   }
   if (status) {
-    std::cerr << "Error opening input file: " << filename << std::endl;
-    fits_report_error(stderr,status);
-    fits_close_file(fptr,&status);
-    return false;
+    fits_report_error(stderr, status);
+    fits_close_file(fptr, &status);
+    std::stringstream errstr;
+    errstr << "Error opening input file: " << filename << std::endl;
+    throw affineExcept("beam", "readFile", errstr.str(), 1);
   }
 
   fits_get_hdrspace(fptr,&nkeys,NULL,&status);
   if (status) {
-    std::cerr << "Error getting header space for: " << filename << std::endl;
-    fits_report_error(stderr,status);
-    fits_close_file(fptr,&status);
-    return false;
+    fits_report_error(stderr, status);
+    fits_close_file(fptr, &status);
+    std::stringstream errstr;
+    errstr << "Error getting header space for: " << filename;
+    throw affineExcept("beam", "readFile", errstr.str(), 2);
   }
 
   //Get the pixel scale
   fits_read_key(fptr, TDOUBLE, const_cast<char*>("PIXSIZE"),
-		&pixsize,card,&status);
+		&pixsize,card, &status);
   if (status) {
     //Try pixscale
     status=0;
     fits_read_key(fptr, TDOUBLE, const_cast<char*>("PIXSCALE"),
-		  &pixsize,card,&status);
+		  &pixsize, card, &status);
     if (status) {
       //Ok, give up
-      std::cerr << "Unable to find pixel scale information in "
-		<< filename << std::endl;
-      fits_report_error(stderr,status);
-      fits_close_file(fptr,&status);
-      return false;
+      fits_report_error(stderr, status);
+      fits_close_file(fptr, &status);
+      std::stringstream errstr;
+      errstr << "Unable to find pixel scale information in "
+	     << filename;
+      throw affineExcept("beam", "readFile", errstr.str(), 3);
     }
   }
 
@@ -202,9 +207,8 @@ bool beam::readFile(const std::string& filename,bool histogram,
   fits_get_img_dim(fptr, &naxis, &status);
   fits_get_img_size(fptr, 2, naxes, &status);
   if (status || naxis != 2) {
-    std::cerr << "ERROR: input BEAM is not 2D" << std::endl;
-    fits_close_file(fptr,&status);
-    return false;
+    fits_close_file(fptr, &status);
+    throw affineExcept("beam", "readFile", "Input BEAM is not 2D", 4);
   }
 
   unsigned int n = naxes[0] * naxes[1];
@@ -221,10 +225,9 @@ bool beam::readFile(const std::string& filename,bool histogram,
   //Clean up
   fits_close_file(fptr,&status);
   if (status) {
-    std::cerr << "Error closing BEAM file" << std::endl;
     fits_report_error(stderr,status);
     delete[] pixarr;
-    return false;
+    throw affineExcept("beam", "readFile", "Error closing beam file", 5);
   } 
 
   //Now, sort in to positive and negative
@@ -388,7 +391,6 @@ bool beam::readFile(const std::string& filename,bool histogram,
     for (unsigned int i = 0; i < nneg; ++i)
       neginvpixarr[i] = 1.0/negpixarr[i];
   }
-  return true;
 }
 
 double beam::getMinPos() const {

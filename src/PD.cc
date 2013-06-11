@@ -181,13 +181,13 @@ void PD::edgeFix(bool donorm) {
   double pdval, tval, preconst, stepfac, subfac;
   if (maxidx > 1) {
     pdval = pd_[maxidx];
-    tval = (maxfluxfix-mn)*istdev;
-    preconst = pdval*exp(0.5*tval*tval);
-    subfac = (minflux - mn)*istdev;
-    stepfac = dflux*istdev;
+    tval = (maxfluxfix - mn) * istdev;
+    preconst = pdval * exp(0.5 * tval * tval);
+    subfac = (minflux - mn) * istdev;
+    stepfac = dflux * istdev;
     for (int i = 0; i < maxidx; ++i) {
-      tval = subfac + i*stepfac;
-      pd_[i] = preconst*exp(-0.5*tval*tval);
+      tval = subfac + i * stepfac;
+      pd_[i] = preconst * exp(-0.5 * tval * tval);
     }
   }
 }
@@ -210,12 +210,12 @@ void PD::getMean(double& mean, bool donorm) const {
   if (logflat) {
     //i=0 has weight 0
     for (unsigned int i = 1; i < n-1; ++i)
-      mean += static_cast<double>(i)*exp2(pd_[i]);
-    mean += 0.5*static_cast<double>(n-1)*exp2(pd_[n-1]);
+      mean += static_cast<double>(i) * exp2(pd_[i]);
+    mean += 0.5 * static_cast<double>(n-1) * exp2(pd_[n-1]);
   } else {
     for (unsigned int i = 1; i < n-1; ++i)
-      mean += static_cast<double>(i)*pd_[i];
-    mean += 0.5*static_cast<double>(n-1)*pd_[n-1];
+      mean += static_cast<double>(i) * pd_[i];
+    mean += 0.5 * static_cast<double>(n-1) * pd_[n-1];
   }
   //Add on step sizes for each integral,
   // which is both area and step size in x,y
@@ -258,17 +258,18 @@ void PD::getMeanAndVar(double& mean, double& var,
   if (logflat) {
     //i=0 has weight 0
     for (unsigned int i = 1; i < n-1; ++i)
-      mean += static_cast<double>(i)*exp2(pd_[i]);
-    mean += 0.5*static_cast<double>(n-1)*exp2(pd_[n-1]); //0.5 since last trap
+      mean += static_cast<double>(i) * exp2(pd_[i]);
+    //0.5 factor since last step of trap
+    mean += 0.5 * static_cast<double>(n-1) * exp2(pd_[n-1]); 
   } else {
     for (unsigned int i = 1; i < n-1; ++i)
-      mean += static_cast<double>(i)*pd_[i];
-    mean += 0.5*static_cast<double>(n-1)*pd_[n-1]; //0.5 since last trap
+      mean += static_cast<double>(i) * pd_[i];
+    mean += 0.5 * static_cast<double>(n-1) * pd_[n-1]; //0.5 since last trap
   }
 
   //We need two factors of dflux -- one for xval=dflux*i and one for the
   // step in the integration
-  mean   *= dflux*dflux;
+  mean   *= dflux * dflux;
 
   //Apply normalization
   if (donorm) mean *= normfac;
@@ -306,9 +307,7 @@ PD& PD::operator=(const PD& other) {
   resize(other.n);
   minflux = other.minflux;
   dflux   = other.dflux;
-  if (n > 0)
-    for (unsigned int i = 0; i < n; ++i)
-      pd_[i] = other.pd_[i];
+  if (n > 0) memcpy(pd_, other.pd_, n * sizeof(double));
   logflat = other.logflat;
   return *this;
 }
@@ -319,9 +318,7 @@ void PD::fill(unsigned int N, double MINFLUX, double DFLUX,
   resize(N);
   minflux = MINFLUX;
   dflux = DFLUX;
-  if (n > 0)
-    for (unsigned int i = 0; i < n; ++i)
-      pd_[i] = PD[i];
+  if (n > 0) memcpy(pd_, PD, n * sizeof(double));
 }
 
 double PD::getPDVal(double x) const {
@@ -335,7 +332,7 @@ double PD::getPDVal(double x) const {
   if (x < minflux) return pd_[0];
   if (x > maxfluxlm) return pd_[n-1]; 
   double p0 = pd_[idx];
-  double dx = x - (minflux + static_cast<double>(idx)*dflux);
+  double dx = x - (minflux + static_cast<double>(idx) * dflux);
   return p0 + dx / dflux * (pd_[idx + 1] - p0);
 }
 
