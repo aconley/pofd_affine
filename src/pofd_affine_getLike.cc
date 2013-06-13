@@ -32,24 +32,25 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
       throw affineExcept("pofd_affine_getLike","getLikeSingle",
 			 "No info read in",2);
 
-    calcLike likeSet( spec_info.fftsize, spec_info.ninterp, 
-		      spec_info.edge_fix, spec_info.bin_data, 
-		      spec_info.nbins );
+    calcLike likeSet(spec_info.fftsize, spec_info.ninterp, 
+		     spec_info.edge_fix, spec_info.bin_data, 
+		     spec_info.nbins);
 
     //Read data
     if (spec_info.verbosity >= 2)
       std::cout << "Reading in data files" << std::endl;
-    likeSet.readDataFromFiles( spec_info.datafiles, spec_info.psffiles, 
-			       spec_info.sigmas, spec_info.like_norm,
-			       spec_info.ignore_mask, spec_info.mean_sub, 
-			       spec_info.beam_histogram );
+    likeSet.readDataFromFiles(spec_info.datafiles, spec_info.psffiles, 
+			      spec_info.sigmas, spec_info.like_norm,
+			      spec_info.ignore_mask, spec_info.mean_sub, 
+			      spec_info.beam_histogram, spec_info.hist_logstep, 
+			      spec_info.exp_conf);
     
     if (spec_info.has_wisdom_file) likeSet.addWisdom(spec_info.wisdom_file);
 
     //Set prior -- ignore sigmult prior, since we aren't really fitting
     if (spec_info.has_cfirbprior)
-      likeSet.setCFIRBPrior( spec_info.cfirbprior_mean,
-			     spec_info.cfirbprior_stdev );
+      likeSet.setCFIRBPrior(spec_info.cfirbprior_mean,
+			    spec_info.cfirbprior_stdev);
 
     if (spec_info.verbosity >= 2) likeSet.setVerbose();
       
@@ -71,7 +72,7 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
   
     //Set up model parameters
     likeSet.setKnotPositions(model_info);
-    paramSet pars(nknots+1);
+    paramSet pars(nknots + 1);
     model_info.getParams(pars);
     pars[nknots] = 1.0;
 
@@ -114,26 +115,28 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
 			 "No info read in",2);
 
 
-    calcLikeDouble likeSet( spec_info.fftsize, spec_info.nedge, 
-			    spec_info.edge_fix, spec_info.edge_set,
-			    spec_info.bin_data, spec_info.nbins );
+    calcLikeDouble likeSet(spec_info.fftsize, spec_info.nedge, 
+			   spec_info.edge_fix, spec_info.edge_set,
+			   spec_info.bin_data, spec_info.nbins);
 
     //Read data
-    likeSet.readDataFromFiles( spec_info.datafiles1, spec_info.datafiles2, 
-			       spec_info.psffiles1, spec_info.psffiles2,
-			       spec_info.sigmas1, spec_info.sigmas2, 
-			       spec_info.like_norm, spec_info.ignore_mask, 
-			       spec_info.mean_sub, spec_info.beam_histogram );
+    likeSet.readDataFromFiles(spec_info.datafiles1, spec_info.datafiles2, 
+			      spec_info.psffiles1, spec_info.psffiles2,
+			      spec_info.sigmas1, spec_info.sigmas2, 
+			      spec_info.like_norm, spec_info.ignore_mask, 
+			      spec_info.mean_sub, spec_info.beam_histogram,
+			      spec_info.hist_logstep, spec_info.exp_conf1, 
+			      spec_info.exp_conf2);
 
     if (spec_info.has_wisdom_file) likeSet.addWisdom(spec_info.wisdom_file);
 
     //Set prior -- ignore sigmult prior, since we aren't really fitting
     if (spec_info.has_cfirbprior1)
-      likeSet.setCFIRBPrior1( spec_info.cfirbprior_mean1,
-			      spec_info.cfirbprior_stdev1 );
+      likeSet.setCFIRBPrior1(spec_info.cfirbprior_mean1,
+			     spec_info.cfirbprior_stdev1);
     if (spec_info.has_cfirbprior2)
-      likeSet.setCFIRBPrior2( spec_info.cfirbprior_mean2,
-			      spec_info.cfirbprior_stdev2 );
+      likeSet.setCFIRBPrior2(spec_info.cfirbprior_mean2,
+			     spec_info.cfirbprior_stdev2);
 
 
     if (spec_info.verbosity >= 2) likeSet.setVerbose();
@@ -165,7 +168,7 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
 
     //Set up model
     likeSet.setPositions(model_info);
-    paramSet pars(ntot+2);
+    paramSet pars(ntot + 2);
     model_info.getParams(pars);
     pars[ntot] = 1.0;
     pars[ntot+1] = 1.0;
@@ -290,9 +293,8 @@ int main( int argc, char** argv ) {
 	      << std::endl;
     return 1;
   }
-  specfile = std::string( argv[optind] );
-  initfile = std::string( argv[optind+1] );
-
+  initfile = std::string(argv[optind]);
+  specfile = std::string(argv[optind+1]);
 
   if (! twod)
     return getLikeSingle(initfile, specfile);
