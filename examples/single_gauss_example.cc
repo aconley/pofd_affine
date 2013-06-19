@@ -28,7 +28,7 @@ public:
 
   void initChains();
   void generateInitialPosition(const paramSet&);
-  double getLogLike(const paramSet&);
+  double getLogLike(const paramSet&, bool&);
   void getStats(float&, float&) const;
  
 };
@@ -79,8 +79,9 @@ void singleGauss::generateInitialPosition(const paramSet& p) {
   chains.setSkipFirst();
 }
 
-double singleGauss::getLogLike(const paramSet& p) {
+double singleGauss::getLogLike(const paramSet& p, bool& rej) {
   double val = p[0] - mean;
+  if (std::isnan(val) || std::isinf(val)) rej = true; else rej=false;
   return gfac * val * val;
 }
 

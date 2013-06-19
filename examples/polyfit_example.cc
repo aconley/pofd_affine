@@ -28,7 +28,7 @@ public:
   void initChains();
   void generateInitialPosition(const paramSet&);
   void readFile(const std::string&);
-  double getLogLike(const paramSet&);
+  double getLogLike(const paramSet&, bool&);
 };
 
 polyFit::polyFit(const std::string& datafile, unsigned int NWALKERS, 
@@ -124,13 +124,19 @@ void polyFit::generateInitialPosition(const paramSet& p) {
   chains.setSkipFirst();
 }
 
-double polyFit::getLogLike(const paramSet& p) {
+double polyFit::getLogLike(const paramSet& p, bool& rej) {
 
   //Evaluate the polynomial at each data point
   //Order starts with smallest order first
-  unsigned int npar = getNParams();
-  double val, xval, delta, logLike;
 
+  unsigned int npar = getNParams();
+  if (npar > 0) rej=false;
+  else {
+    rej = true;
+    return 0;
+  }
+
+  double val, xval, delta, logLike;
   logLike = 0.0;
   for (unsigned int i = 0; i < ndata; ++i) {
     xval = x[i];

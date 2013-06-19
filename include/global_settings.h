@@ -17,7 +17,7 @@ namespace mcmc_affine {
   // we get a message we don't expect.
   /*! \brief MPI message numbers */
   enum affine_messages { ERROR=1, STOP=2, REQUESTPOINT=3, SENDINGPOINT=4,
-			 SENDINGRESULT=5,
+			 SENDINGRESULT=5, SENDINGPARREJ=6,
 			 PSSENDNPARS=100, PSSENDPVALS=101,
 			 PSTSENDIDX=110, PSTSENDOLIKE=111, 
 			 PSTSENDNLIKE=112, PSTSENDZ=113};

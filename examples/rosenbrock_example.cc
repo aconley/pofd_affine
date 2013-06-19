@@ -21,7 +21,7 @@ public:
 		    unsigned int, double, unsigned int, bool);
   void initChains();
   void generateInitialPosition(const paramSet&);
-  double getLogLike(const paramSet&);
+  double getLogLike(const paramSet&, bool&);
 };
 
 rosenbrockDensity::rosenbrockDensity(double A1, double A2, 
@@ -61,10 +61,13 @@ void rosenbrockDensity::generateInitialPosition(const paramSet& p) {
   chains.setSkipFirst();
 }
 
-double rosenbrockDensity::getLogLike(const paramSet& p) {
+double rosenbrockDensity::getLogLike(const paramSet& p, bool& rej) {
   double val1, val2;
   val1 = (p[1] -p[0] * p[0]);
   val2 = 1 - p[0];
+  if (std::isnan(val1) || std::isinf(val1) ||
+      std::isnan(val2) || std::isinf(val2)) rej = true; 
+  else rej=false;
   return - (a1 * val1 * val1 + val2 * val2) / a2;
 }
 
