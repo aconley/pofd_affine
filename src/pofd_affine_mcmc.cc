@@ -15,6 +15,8 @@ int main(int argc, char** argv) {
   unsigned int nsamples;
   // Number of steps totally ignored
   unsigned int init_steps; 
+  // Temperature during init_steps
+  double init_temp;
   // Minimum number of steps before burn check after init_Steps
   unsigned int min_burn;
   // Do fixed burn-in length
@@ -29,6 +31,7 @@ int main(int argc, char** argv) {
   nwalkers = 200;
   nsamples = 2000;
   init_steps = 30;
+  init_temp = 2.0;
   min_burn = 30;
   fixed_burn = false;
   burn_multiple = 1.5;
@@ -48,6 +51,7 @@ int main(int argc, char** argv) {
     {"fixedburn", no_argument, 0, 'f'},
     {"hdf", no_argument, 0, 'H'},
     {"initsteps",required_argument,0,'i'},
+    {"inittemp", required_argument, 0, 'I'},
     {"minburn",required_argument,0,'m'},
     {"nsamples",required_argument,0,'n'},
     {"nwalkers",required_argument,0,'N'},
@@ -55,12 +59,12 @@ int main(int argc, char** argv) {
     {"version",no_argument,0,'V'}, 
     {0,0,0,0}
   };
-  char optstring[] = "b:hdfHi:m:n:N:s:V";
+  char optstring[] = "b:hdfHi:I:m:n:N:s:V";
   int c;
   int option_index = 0;
 
-  while ( ( c = getopt_long(argc,argv,optstring,long_options,
-			    &option_index ) ) != -1 ) 
+  while ((c = getopt_long(argc, argv, optstring, long_options,
+			  &option_index)) != -1) 
     switch(c) {
     case 'h' :
       if (rank == 0) {
@@ -115,6 +119,9 @@ int main(int argc, char** argv) {
 	std::cerr << "\t\tused to re-seed the initial conditions before "
 		  << "burn-in" << std::endl;
 	std::cerr << "\t\tis started (def: 30)." << std::endl;
+	std::cerr << "\t-I, --inittemp VALUE" << std::endl;
+	std::cerr << "\t\tTemperature used during initial steps (def: 2.0)"
+		  << std::endl;
 	std::cerr << "\t-m, --minburn NSTEPS" << std::endl;
 	std::cerr << "\t\tThis many steps are taken per walker before the burn"
 		  << std::endl;
@@ -156,6 +163,9 @@ int main(int argc, char** argv) {
     case 'i' :
       init_steps = atoi(optarg);
       break;
+    case 'I':
+      init_temp = atof(optarg);
+      break;
     case 'm' :
       min_burn = atoi(optarg);
       break;
@@ -193,6 +203,13 @@ int main(int argc, char** argv) {
     if (rank == 0)
       std::cerr << "Invalid (non-positive) number of walkers: "
 		<< nwalkers << std::endl;
+    MPI_Finalize();
+    return 1;
+  }
+  if (init_steps > 0 && init_temp <= 0.0) {
+    if (rank == 0)
+      std::cerr << "Invalid (non-positive) initial temperature: "
+		<< init_temp << std::endl;
     MPI_Finalize();
     return 1;
   }
@@ -236,7 +253,8 @@ int main(int argc, char** argv) {
     if (!twod) {
       // Single band case
       pofdMCMC engine(initfile, specfile, nwalkers, nsamples, init_steps,
-		      min_burn, fixed_burn, burn_multiple, scalefac);
+		      init_temp, min_burn, fixed_burn, burn_multiple, 
+		      scalefac);
       
       // Initialize
       engine.initChains();
@@ -287,7 +305,8 @@ int main(int argc, char** argv) {
       // Dual band case
 
       pofdMCMCDouble engine(initfile, specfile, nwalkers, nsamples, init_steps,
-			    min_burn, fixed_burn, burn_multiple, scalefac);
+			    init_temp, min_burn, fixed_burn, burn_multiple, 
+			    scalefac);
       
       // Initialize
       engine.initChains();

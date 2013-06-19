@@ -12,6 +12,7 @@
                       realized to the closest larger multiple of nwalkers
   \param[in] INIT_STEPS Number of initialization steps, which are thrown away
                          even before starting burn-in process
+  \param[in] INIT_TEMP Temperature factor used during initial steps
   \param[in] MIN_BURN Minimum number of steps before burn-in
   \param[in] FIXED_BURN Do a fixed burn in of length MIN_BURN, not using
                          autocorrelation length to decide when burn in is 
@@ -22,9 +23,10 @@
  */
 pofdMCMC::pofdMCMC(const std::string& INITFILE, const std::string& SPECFILE,
 		   unsigned int NWALKERS, unsigned int NSAMPLES, 
-		   unsigned int INIT_STEPS, unsigned int MIN_BURN, 
-		   bool FIXED_BURN, float BURN_MULTIPLE, float SCALEFAC) :
-  affineEnsemble(NWALKERS, 1, NSAMPLES, INIT_STEPS, MIN_BURN,
+		   unsigned int INIT_STEPS, double INIT_TEMP,
+		   unsigned int MIN_BURN, bool FIXED_BURN, 
+		   float BURN_MULTIPLE, float SCALEFAC) :
+  affineEnsemble(NWALKERS, 1, NSAMPLES, INIT_STEPS, INIT_TEMP, MIN_BURN,
 		 FIXED_BURN, BURN_MULTIPLE, SCALEFAC),
   initfile(INITFILE), specfile(SPECFILE) {
   //Note that we set NPARAMS to a bogus value (1) above, then 
