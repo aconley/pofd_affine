@@ -284,8 +284,9 @@ calcLikeSingle::getLogLike(const numberCounts& model, double sigmult,
   // Initialize P(D)
   // We have to decide what maxflux to ask for.  This will
   // be the larger of the data maximum flux or the
-  // highest knot.
-  double modelmax = model.getMaxFlux();
+  // highest knot plus some padding.  This assumes that
+  // model.getMaxFlux doesn't change
+  double modelmax = model.getMaxFlux() + 2 * maxsigma_base;
   double maxRflux = maxflux > modelmax ? maxflux : modelmax;
   maxRflux *= calcLikeSingle::flux_safety;
   pdfac.initPD(fftsize, max_sigma, maxRflux, model, bm);

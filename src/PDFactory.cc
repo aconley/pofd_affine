@@ -326,6 +326,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
   // the sum of R.  At least, that's the theory.  Note that the
   // interpolated R is always computed out to its highest non-zero value
 
+  unsigned int max_fill_idx = 0; // Maximum index in R that is set
   if (has_pos) {
     double mininterpflux = modelmin * subedgemult;
     double maxinterpflux = modelmax * bm.getMaxPos();
@@ -378,6 +379,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
     }
     for (unsigned int i = maxitidx+1; i < n; ++i)
       rvals[i] = 0.0;
+    max_fill_idx = maxitidx;
   }
   if (has_neg) {
     //And now, we do basically the same thing for the negative beam
@@ -423,6 +425,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
 	splval = gsl_spline_eval(spline, cflux, acc);
 	rvals[i] += exp2(splval);
       }
+      if (maxitidx > max_fill_idx) max_fill_idx = maxitidx;
     } else {
       if (minitidx > 0) memset(rvals, 0, minitidx * sizeof(double));
       double cflux, splval;
@@ -433,6 +436,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
       }
       for (unsigned int i = maxitidx+1; i < n; ++i)
 	rvals[i] = 0.0;
+      max_fill_idx = maxitidx;
     }
   }
 
@@ -468,8 +472,10 @@ void PDFactory::initPD(unsigned int n, double sigma,
   //Only do shift if the noise is larger than one actual step size
   // Otherwise we can't represent it well.
   bool dopad = (sigma > dflux);
-  doshift = ( dopad && ( mn < pofd_mcmc::n_sigma_shift * sg) );
-  if ( doshift ) shift = pofd_mcmc::n_sigma_shift * sg - mn; else
+  doshift = (dopad &&  (mn < pofd_mcmc::n_sigma_shift * sg));
+  if (doshift) 
+    shift = pofd_mcmc::n_sigma_shift * sg - mn; 
+  else
     shift=0.0;
 
   if (verbose) {
@@ -477,16 +483,17 @@ void PDFactory::initPD(unsigned int n, double sigma,
     std::cout << " Initial stdev estimate: " << sg << std::endl;
     if (doshift)
       std::cout << " Additional shift applied: " << shift << std::endl;
-    else std::cout << " Not applying additional shift" << std::endl;
+    else 
+      std::cout << " Not applying additional shift" << std::endl;
   }
 
   //Make sure that maxflux is large enough that we don't get
   // bad aliasing wrap from the top around into the lower P(D) values.
   if (maxflux <= pofd_mcmc::n_sigma_pad * sg) {
     std::stringstream errstr;
-    errstr << "Top wrap problem, with maxflux: " << maxflux
+    errstr << "Top wrap problem, with maxflux: " << maxflux << std::endl
 	   << " instrument sigma value: " << sigma << std::endl
-	   << " intrinsic sigma estimate: " << sqrt(var_noi)
+	   << " intrinsic sigma estimate: " << sqrt(var_noi) << std::endl
 	   << " and current sigma estimate: " << sg << std::endl;
     errstr << "For model: " << model;
     throw affineExcept("PDFactory", "initPD", errstr.str(), 4);
@@ -496,7 +503,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
   // top, and later discard that stuff.
   // The idea is as follows:
   // the 'target mean' of the calculated P(D) will lie at mn+shift.
-  // We assume that anything within n_sigma_pad2d*sg
+  // We assume that anything within n_sigma_pad * sg
   // is 'contaminated'.  That means that, if n_sigma_pad*sg >
   // mn+shift, there will be some wrapping around the bottom of the P(D)
   // to contaminate the top by an amount n_sigma_pad*sg - (mn+shift).
@@ -533,8 +540,9 @@ void PDFactory::initPD(unsigned int n, double sigma,
 			   errstr.str(), 7);
       }
       // Apply the padding
-      for (unsigned int i = maxidx; i < n; ++i)
-	rvals[i] = 0.0;
+      if (maxidx <= max_fill_idx)
+	for (unsigned int i = maxidx; i < n; ++i)
+	  rvals[i] = 0.0;
     }
   } else maxidx = n;
 
