@@ -339,6 +339,8 @@ void calcLikeDoubleSingle::setSigmaBase2(unsigned int n,const double* const s) {
 
 /*
   \param[in] model   Model parameters must already be set
+  \param[out] pars_invalid Set to true if parameters are determined to 
+                            be invalid
   \param[in] sigmult1 Sigma multiplier in band 1
   \param[in] sigmult2 Sigma multiplier in band 2
   \param[in] fftsize Size of FFT to use
@@ -353,7 +355,8 @@ void calcLikeDoubleSingle::setSigmaBase2(unsigned int n,const double* const s) {
   the previous ones are the values of the number counts at the knots
 */
 double 
-calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model, 
+calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
+				 bool& pars_invalid,
 				 double sigmult1, double sigmult2,
 				 unsigned int fftsize, bool edgefix, 
 				 bool setedge) const {
@@ -372,8 +375,6 @@ calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
   if (max_sigma2 < 0.0) return calcLikeDoubleSingle::bad_like;
 
   //Initialize P(D)
-
-
   // We have to decide what maxflux to ask for.  This will
   // be the larger of the data maximum flux or the
   // maximum flux of the model
@@ -383,8 +384,10 @@ calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
   double maxRflux2 = maxflux2 > modelmax2 ? maxflux2 : modelmax2;
   maxRflux1 *= calcLikeDoubleSingle::flux_safety;
   maxRflux2 *= calcLikeDoubleSingle::flux_safety;
-  pdfac.initPD(fftsize, max_sigma1, max_sigma2, maxRflux1, maxRflux2,
-	       model, bm, setedge);
+  pars_invalid = ! pdfac.initPD(fftsize, max_sigma1, max_sigma2, maxRflux1, 
+				maxRflux2, model, bm, setedge);
+
+  if (pars_invalid) return 0.0; // No point in continuing
 
   //Compute likelihood of each bit of data
   double curr_LogLike, LogLike;
@@ -730,7 +733,7 @@ void calcLikeDouble::setPositions(const initFileDoubleLogNormal& ifile) {
   ifile.getModelPositions(model);
 }
 
-double calcLikeDouble::getLogLike(const paramSet& p) const {
+double calcLikeDouble::getLogLike(const paramSet& p, bool& pars_invalid) const {
   const double half_log_2pi = 0.918938517570495605469;
 
   if (nbeamsets == 0) return std::numeric_limits<double>::quiet_NaN();
@@ -746,11 +749,17 @@ double calcLikeDouble::getLogLike(const paramSet& p) const {
   double LogLike = 0.0;
 
   //Do the datasets likelihood
+  bool pinvalid;
   double sigmult1 = p[nmodelpars]; //Sigma multiplier is after knot values
-  double sigmult2 = p[nmodelpars+1]; 
-  for (unsigned int i = 0; i < nbeamsets; ++i)
-    LogLike += beamsets[i].getLogLike(model, sigmult1, sigmult2, fftsize,
-				      edgeFix, edgeInteg);
+  double sigmult2 = p[nmodelpars+1];
+  pars_invalid = false;
+  for (unsigned int i = 0; i < nbeamsets; ++i) {
+    LogLike += beamsets[i].getLogLike(model, pinvalid, sigmult1, sigmult2, 
+				      fftsize, edgeFix, edgeInteg);
+    pars_invalid &= pinvalid;
+  }
+
+  if (pars_invalid) return LogLike; //!< Not much point in doing the priors...
 
   //Add on cfirb prior and sigma prior if needed
   //Only do this once for all data sets so as not to multi-count the prior

@@ -197,7 +197,13 @@ int getPDSingle(int argc, char **argv) {
     //Get P(D)
     if (verbose) std::cout << "Getting P(D) with transform length: " 
 			   << nflux << std::endl;
-    pfactory.initPD(nflux, sigma_noise, maxflux, model, bm);
+    bool succ;
+    succ = pfactory.initPD(nflux, sigma_noise, maxflux, model, bm);
+    if (!succ) {
+      std::cerr << "Error initializing P(D) -- parameters not valid" 
+		<< std::endl;
+      return 1;
+    }    
     pfactory.getPD(sigma_noise, pd, getLog, fixEdge);
     
     //Write it
@@ -410,8 +416,14 @@ int getPDDouble(int argc, char** argv) {
     //Get P(D)
     if (verbose) std::cout << "Getting P(D) with transform length: " 
 			   << nflux << std::endl;
-    pfactory.initPD(nflux, sigma1, sigma2, maxflux1, maxflux2,
-		    model, bm, doedge);
+    bool succ;
+    succ = pfactory.initPD(nflux, sigma1, sigma2, maxflux1, maxflux2,
+			   model, bm, doedge);
+    if (!succ) {
+      std::cerr << "Error initializing P(D) -- parameters not valid" 
+		<< std::endl;
+      return 1;
+    }    
     pfactory.getPD(sigma1, sigma2, pd, getLog, fixEdge);
 
     //Write it

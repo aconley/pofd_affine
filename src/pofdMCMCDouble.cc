@@ -354,9 +354,9 @@ bool pofdMCMCDouble::initChainsSlave() {
 /*!
   \param[in] p Parameters to evaluate model for
  */
-double pofdMCMCDouble::getLogLike(const paramSet& p) {
+double pofdMCMCDouble::getLogLike(const paramSet& p, bool& pars_invalid) {
   if (!is_init)
     throw affineExcept("pofdMCMC", "getLogLike",
 		       "Called on unitialized object", 1);
-  return likeSet.getLogLike(p);
+  return likeSet.getLogLike(p, pars_invalid);
 }

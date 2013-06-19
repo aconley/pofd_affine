@@ -256,6 +256,8 @@ void calcLikeSingle::setSigmaBase(unsigned int n,const double* const s) {
 
 /*
   \param[in] model   Model parameters must already be set
+  \param[out] pars_invalid Set to true if parameters are determined to 
+                            be invalid
   \param[in] sigmul  Sigma multiplier
   \param[in] fftsize Size of FFT to use
   
@@ -267,8 +269,9 @@ void calcLikeSingle::setSigmaBase(unsigned int n,const double* const s) {
   the previous ones are the values of the number counts at the knots
 */
 double 
-calcLikeSingle::getLogLike(const numberCounts& model, double sigmult,
-			   unsigned int fftsize, bool edgefix) const {
+calcLikeSingle::getLogLike(const numberCounts& model, bool& pars_invalid,
+			   double sigmult, unsigned int fftsize, 
+			   bool edgefix) const {
 
   if (!data_read)
     throw affineExcept("calcLikeSingle", "getNegLogLike",
@@ -289,7 +292,9 @@ calcLikeSingle::getLogLike(const numberCounts& model, double sigmult,
   double modelmax = model.getMaxFlux() + 2 * maxsigma_base;
   double maxRflux = maxflux > modelmax ? maxflux : modelmax;
   maxRflux *= calcLikeSingle::flux_safety;
-  pdfac.initPD(fftsize, max_sigma, maxRflux, model, bm);
+  pars_invalid = ! pdfac.initPD(fftsize, max_sigma, maxRflux, model, bm);
+
+  if (pars_invalid) return 0.0; // No point in continuing
 
   //Compute likelihood of each bit of data
   double curr_LogLike, LogLike;
@@ -571,7 +576,7 @@ void calcLike::setCFIRBPrior(double mn, double sg) {
   cfirb_prior_sigma = sg;
 }
 
-double calcLike::getLogLike(const paramSet& p) const {
+double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
   const double half_log_2pi = 0.918938517570495605469;
 
   if (nbeamsets == 0) return std::numeric_limits<double>::quiet_NaN();
@@ -592,9 +597,16 @@ double calcLike::getLogLike(const paramSet& p) const {
   double LogLike = 0.0;
 
   //Do the datasets likelihood
+  pars_invalid = false;
   double sigmult = p[nknots]; //Sigma multiplier is after knot values
-  for (unsigned int i = 0; i < nbeamsets; ++i)
-    LogLike += beamsets[i].getLogLike(model, sigmult, fftsize, edgeFix);
+  bool pinvalid;
+  for (unsigned int i = 0; i < nbeamsets; ++i) {
+    LogLike += beamsets[i].getLogLike(model, pinvalid, sigmult, 
+				      fftsize, edgeFix);
+    pars_invalid &= pinvalid;
+  }
+
+  if (pars_invalid) return LogLike; //!< Not much point in doing the priors...
 
   //Add on cfirb prior and sigma prior if needed
   //Only do this once for all data sets so as not to multi-count the prior

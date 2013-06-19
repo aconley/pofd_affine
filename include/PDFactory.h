@@ -102,7 +102,7 @@ class PDFactory {
   bool addWisdom(const std::string& filename);
 
   /*! \brief Initializes P(D) by computing R and forward transforming it*/
-  void initPD(unsigned int, double, double, 
+  bool initPD(unsigned int, double, double, 
 	      const numberCounts&, const beam&);
 
   /*! \brief Gets P(D) of with specified noise level */

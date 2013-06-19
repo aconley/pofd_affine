@@ -45,10 +45,10 @@ private:
 
   /*! \brief For keeping track of available procs */
   affineQueue<int> procqueue;
-
   /*! \brief For keeping track of what to do next */
   affineQueue< std::pair<int, int> > stepqueue;
   mutable proposedStep pstep; //!< Convenience variable for new steps
+
   mutable paramSet params_tmp; //!< Temporary internal step storage
 
   float getMaxAcor() const; //!< Return maximum autocorrelation length
@@ -71,7 +71,6 @@ protected:
   mutable ran rangen; //!< Random number generator
 
   int rank; //!< Which node is this; if 0 master, otherwise slave
-
 
   // 0 is non-verbose, 1 is verbose, 2 is ultra-verbose, 3 is ultra-ultra, etc.
   unsigned int verbosity; //!< Verbosity level

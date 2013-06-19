@@ -122,7 +122,7 @@ class calcLikeDoubleSingle { //Odd name...
   unsigned int getNData(unsigned int i) const { return data[i].getN(); } //!< Number of data points in given data set
 
   /*! \brief Returns \f$\log L\f$ over all data sets.  Model must be set */
-  double getLogLike(const numberCountsDouble&, double sigmult1=1.0, 
+  double getLogLike(const numberCountsDouble&, bool&, double sigmult1=1.0, 
 		    double sigmult2=1.0, unsigned int fftsize=4096, 
 		    bool edgefix=true, bool edgeinteg=true) const;
 
@@ -281,7 +281,7 @@ class calcLikeDouble {
   unsigned int getNBeamSets() const { return nbeamsets; }
 
   /*! \brief Get Log-Likelihood of data for a set of parameters */
-  double getLogLike(const paramSet&) const;
+  double getLogLike(const paramSet&, bool&) const;
 
   /*! \brief MPI copy send operation */
   void sendSelf(MPI_Comm, int dest) const;

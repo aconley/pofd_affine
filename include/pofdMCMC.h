@@ -34,5 +34,5 @@ public:
   void initChains(); //!< Initializes data between MPI jobs
   bool areParamsValid(const paramSet&) const; //!< Test against limits
   void generateInitialPosition(const paramSet&); //!< Sets up initial position
-  double getLogLike(const paramSet&); //!< Evaluates log likelihood
+  double getLogLike(const paramSet&, bool&); //!< Evaluates log likelihood
 };

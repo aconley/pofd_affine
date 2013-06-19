@@ -121,7 +121,7 @@ class PDFactoryDouble {
   bool addWisdom(const std::string& filename);
 
   /*! \brief Initializes P(D) by computing R and forward transforming it*/
-  void initPD(unsigned int, double, double, double, double, 
+  bool initPD(unsigned int, double, double, double, double, 
 	      const numberCountsDouble&, const doublebeam&,
 	      bool setEdge=true);
 

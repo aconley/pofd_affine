@@ -77,7 +77,12 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
     pars[nknots] = 1.0;
 
     //And, get that likelihood
-    double LogLike = likeSet.getLogLike(pars);
+    bool pars_rejected;
+    double LogLike = likeSet.getLogLike(pars, pars_rejected);
+    if (pars_rejected) {
+      std::cout << "Parameters rejected in likelihood computation" << std::endl;
+      return 1;
+    }
 
     std::cout << "log Likelihoood is: "
 	      << std::setprecision(7) << LogLike << std::endl;
@@ -174,7 +179,12 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
     pars[ntot+1] = 1.0;
 
     //Get likelihood
-    double LogLike = likeSet.getLogLike(pars);
+    bool pars_rejected;
+    double LogLike = likeSet.getLogLike(pars, pars_rejected);
+    if (pars_rejected) {
+      std::cout << "Parameters rejected in likelihood computation" << std::endl;
+      return 1;
+    }
 
     std::cout << "log Likelihoood is: "
 	      << std::setprecision(7) << LogLike << std::endl;
@@ -190,7 +200,7 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
 
 /////////////////////////////////
 
-int main( int argc, char** argv ) {
+int main(int argc, char** argv) {
   bool twod;
   std::string initfile, specfile;
 

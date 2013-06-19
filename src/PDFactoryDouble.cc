@@ -398,11 +398,16 @@ void PDFactoryDouble::getRStats(unsigned int n, double& mn1, double& mn2,
   \param[in] bm       Beam
   \param[in] setEdge  Use integral of mean values at the edges
 
+  \returns True if the P(D) could be initialized, false if something
+           about the parameters prevented initialization.  Note that
+	   a genuine error results in throwing an exception, not setting this
+	   to false.
+
   Note that n is the transform size; the output array will generally
   be smaller because of padding.  Furthermore, because of mean shifting,
   the maximum flux often won't quite match the target values.
  */
-void PDFactoryDouble::initPD(unsigned int n, double sigma1,
+bool PDFactoryDouble::initPD(unsigned int n, double sigma1,
 			     double sigma2, double maxflux1, 
 			     double maxflux2, 
 			     const numberCountsDouble& model,
@@ -412,7 +417,6 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
   if (n == 0)
     throw affineExcept("PDFactoryDouble", "initPD",
 		       "Invalid (non-positive) n", 1);  
-
   if (sigma1 < 0.0)
     throw affineExcept("PDFactoryDouble", "initPD",
 		       "Invalid (negative) sigma1", 2);
@@ -426,6 +430,8 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
     throw affineExcept("PDFactoryDouble", "initPD",
 		       "Invalid (non-positive) maxflux2", 5);
   
+  initialized = false;
+
   //Make sure we have enough room
   bool did_resize = resize(n);
   if (!rvars_allocated) allocateRvars();
@@ -499,7 +505,6 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
     // and setting to the mean value inside that.
     //Use the trapezoidal rule in either log or linear flux
     // space
-
 
     //Edge bits
     //Minimum values in integral; maximum are dflux1, dflux2
@@ -677,27 +682,25 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
 
   //Make sure that maxflux is large enough that we don't get
   // bad aliasing wrap from the top around into the lower P(D) values.
+  //If this is a problem, this is interpreted as a model gone astray,
+  // not a true error.
   if (maxflux1 <= pofd_mcmc::n_sigma_pad * sg1) {
-    std::stringstream errstr;
-    errstr << "Top wrap problem, dimension 1; with sigma1 estimate: " 
-	   << sg1 << std::endl;
-    errstr << " sigma1: " << sigma1 << " sigma2: " << sigma2 << std::endl;
-    errstr << " maxflux1: " << maxflux1 << " maxflux2: " << maxflux2
-	   << std::endl;
-    errstr << "For model: " << model;
-    throw affineExcept("PDFactoryDouble", "initPD",
-		       errstr.str(), 6);
+    if (verbose)
+      std::cout << "Top wrap problem, dimension 1; with sigma1 estimate: " 
+		<< sg1 << std::endl
+		<< " sigma1: " << sigma1 << " sigma2: " << sigma2 << std::endl
+		<< " maxflux1: " << maxflux1 << " maxflux2: " << maxflux2
+		<< std::endl << "For model: " << model;
+    return false;
   }
   if (maxflux2 <= pofd_mcmc::n_sigma_pad * sg2) {
-    std::stringstream errstr;
-    errstr << "Top wrap problem, dimension 2; with sigma2 estimate: " 
-	   << sg2 << std::endl;
-    errstr << " sigma1: " << sigma1 << " sigma2: " << sigma2 << std::endl;
-    errstr << " maxflux1: " << maxflux1 << " maxflux2: " << maxflux2
-	   << std::endl;
-    errstr << "For model: " << model;
-    throw affineExcept("PDFactoryDouble", "initPD",
-		       errstr.str(), 7);
+    if (verbose)
+      std::cout << "Top wrap problem, dimension 2; with sigma2 estimate: " 
+		<< sg2 << std::endl
+		<< " sigma1: " << sigma1 << " sigma2: " << sigma2 << std::endl
+		<< " maxflux1: " << maxflux1 << " maxflux2: " << maxflux2
+		<< std::endl << "For model: " << model;
+    return false;
   }
 
   //The other side of the equation is that we want to zero-pad the
@@ -810,6 +813,8 @@ void PDFactoryDouble::initPD(unsigned int n, double sigma1,
   max_sigma1 = sigma1;
   max_sigma2 = sigma2;
   initialized = true;
+
+  return true;
 }
 
 /*!

@@ -244,14 +244,21 @@ bool PDFactory::addWisdom(const std::string& filename) {
   \param[in] model   number counts model to use for fill.  Params must be set
   \param[in] bm      Beam 
 
+  \returns True if the P(D) could be initialized, false if something
+           about the parameters prevented initialization.  Note that
+	   a genuine error results in throwing an exception, not setting this
+	   to false.
+
   Note that n is the transform size; the output array will generally
   be smaller because of padding.  Furthermore, because of mean shifting,
   the maximum flux will end up being -less- than maxflux in practice
   by about the mean flux + 10 sigma.
  */
-void PDFactory::initPD(unsigned int n, double sigma,
+bool PDFactory::initPD(unsigned int n, double sigma,
 		       double maxflux, const numberCounts& model,
-		       const beam& bm ) {
+		       const beam& bm) {
+
+  initialized = false;
 
   //Make sure we have enough room
   bool did_resize = resize(n);
@@ -489,14 +496,19 @@ void PDFactory::initPD(unsigned int n, double sigma,
 
   //Make sure that maxflux is large enough that we don't get
   // bad aliasing wrap from the top around into the lower P(D) values.
+  //If it is -not- large enough this is treated as an invalid set of
+  // parameters rather than an error.  This is slightly risky -- the user
+  // could cause this to screw up.  But, in practice, for users who
+  // know what they are doing what this pretty much always means is that
+  // the model has gone crazy
   if (maxflux <= pofd_mcmc::n_sigma_pad * sg) {
-    std::stringstream errstr;
-    errstr << "Top wrap problem, with maxflux: " << maxflux << std::endl
-	   << " instrument sigma value: " << sigma << std::endl
-	   << " intrinsic sigma estimate: " << sqrt(var_noi) << std::endl
-	   << " and current sigma estimate: " << sg << std::endl;
-    errstr << "For model: " << model;
-    throw affineExcept("PDFactory", "initPD", errstr.str(), 4);
+    if (verbose) 
+      std::cout << "Top wrap problem, with maxflux: " << maxflux << std::endl
+		<< " instrument sigma value: " << sigma << std::endl
+		<< " intrinsic sigma estimate: " << sqrt(var_noi) << std::endl
+		<< " and current sigma estimate: " << sg << std::endl
+		<< "For model: " << model;
+    return false;
   }
 
   //The other side of the equation is that we want to zero-pad the
@@ -560,6 +572,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
   max_sigma = sigma;
   initialized = true;
 
+  return true;
 }
 
 /*!

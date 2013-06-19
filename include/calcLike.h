@@ -109,8 +109,9 @@ class calcLikeSingle {
   unsigned int getNData(unsigned int i) const { return data[i].getN(); } //!< Number of data points in given data set
 
   /*! \brief Returns \f$\log L\f$ over all data sets.  Model must be set */
-  double getLogLike(const numberCounts&, double sigmult=1.0, 
-		    unsigned int fftsize=131072, bool edgefix=true) const;
+  double getLogLike(const numberCounts&, bool& pars_invalid, 
+		    double sigmult=1.0, unsigned int fftsize=131072, 
+		    bool edgefix=true) const;
 
   void writePDToStream(std::ostream& os) const; //!< Write out computed P(D)
   
@@ -230,7 +231,7 @@ class calcLike {
   unsigned int getNBeamSets() const { return nbeamsets; }
 
   /*! \brief Get Log Likelihood for set of parameters */
-  double getLogLike(const paramSet&) const;
+  double getLogLike(const paramSet&, bool&) const;
 
   /*! \brief MPI copy send operation */
   void sendSelf(MPI_Comm, int dest) const;
