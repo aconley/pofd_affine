@@ -274,6 +274,18 @@ bool affineEnsemble::getAcor(std::vector<float>& retval) const {
   return success;
 }
 
+bool affineEnsemble::hasOneStepBeenAccepted() const {
+  if (rank != 0) 
+    throw affineExcept("affineEnsemble", "hasOneStepBeenAccepted", 
+		       "Don't call on slave", 1);
+  if (!isValid())
+    throw affineExcept("affineEnsemble", "hasOneStepBeenAccepted",
+		       "Sampler not in valid state", 2);
+  for (unsigned int i = 0; i < nwalkers; ++i)
+    if (naccept[i] > 0) return true;
+  return false;
+}
+
 void affineEnsemble::getAcceptanceFrac(std::vector<float>& retval) const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "getAcceptanceFrac",
@@ -412,6 +424,14 @@ void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
 	doMasterStep(init_temp);
       }
 
+      // Make sure at least one step was accepted, or else something
+      // must have gone wrong, like all the parameters being rejected
+      // It is possible this could happen legitimately, by accident,
+      // but catching bugs in the acceptance is worth the (small) risk
+      if (!hasOneStepBeenAccepted())
+	throw affineExcept("affineEnsemble", "doSteps",
+			   "Failed to accept any initial steps", 2);
+
       // Get best step, regenerate from that
       paramSet p(nparams);
       double llike;
@@ -474,8 +494,16 @@ void affineEnsemble::masterSample() {
 	std::cout << " Done " << i+1 << " of " << init_steps << " steps"
 		  << std::endl;
       doMasterStep(init_temp);
-    }
+    }    
 
+    // Make sure at least one step was accepted, or else something
+    // must have gone wrong, like all the parameters being rejected
+    // It is possible this could happen legitimately, by accident,
+    // but catching bugs in the acceptance is worth the (small) risk
+    if (!hasOneStepBeenAccepted())
+      throw affineExcept("affineEnsemble", "masterSample",
+			 "Failed to accept any initial steps", 2);
+    
     // Get best step, regenerate from that
     paramSet p(nparams);
     double llike;
@@ -510,6 +538,11 @@ void affineEnsemble::masterSample() {
 		<< std::endl;
     doMasterStep();
   }
+
+  // This would be a definite problem
+  if (!hasOneStepBeenAccepted())
+    throw affineExcept("affineEnsemble", "masterSample",
+		       "Failed to accept any steps from main loop", 3);
   
   //Tell slaves we are done
   int jnk, nproc;
@@ -571,6 +604,11 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
 		<< std::endl;
     doMasterStep();
   }
+
+  // This would be a problem
+  if (!hasOneStepBeenAccepted())
+    throw affineExcept("affineEnsemble", "doBurnIn",
+		       "Failed to accept any steps from initial burn in", 2);
 
   if (fixed_burn) {
     if (verbosity >= 1) {
@@ -737,6 +775,24 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
 }
 
 /*!
+  \param[in] p Parameters to compute log likelihood for
+  \returns The log likelihood, or nan if the parameters were rejected
+
+  This is a convenience function -- generally the other version should
+  be used as it can differentiate between a failed computation (which
+  may return nan), and a parameter set that was simply rejected.
+*/
+double affineEnsemble::getLogLike(const paramSet& p) {
+  bool parrej;
+  double loglike = getLogLike(p, parrej);
+  if (parrej)
+    return std::numeric_limits<double>::quiet_NaN();
+  else
+    return loglike;
+}
+
+
+/*!
   \param[in] idx1  Walker that we are suggesting a new step for
   \param[in] idx2  Walker that we are combining with idx1
   \param[out] prstep Newly proposed step for idx1
@@ -893,7 +949,8 @@ void affineEnsemble::emptyMasterQueue(double temp) throw (affineExcept) {
   std::pair<unsigned int, unsigned int> pr;
   double prob; // Probability of accepting a step
   double rval; // Random comparison value
-  
+  bool parrej; // Was a parameter set rejected in the likelihood call?
+
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
   nsteps = stepqueue.size();
   ndone = 0;
@@ -953,59 +1010,77 @@ void affineEnsemble::emptyMasterQueue(double temp) throw (affineExcept) {
       //Slave finished a computation, is sending us the result
       //Note we wait for a REQUESTPOINT to actually add it to the
       // list of available procs, which makes initialization easier
+
+      // First, find out if the parameter set was rejected
+      MPI_Recv(&parrej, 1, MPI::BOOL, this_rank, mcmc_affine::SENDINGPARREJ,
+	       MPI_COMM_WORLD, &Info);
+      // And get the actual step
       pstep.recieveCopy(MPI_COMM_WORLD, this_rank);
       
-      //Make sure it's okay
-      if (std::isinf(pstep.newLogLike) ||
-	  std::isnan(pstep.newLogLike)) {
-	//That's not good -- exit
-	for (int i = 1; i < nproc; ++i)
-	  MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
-	throw affineExcept("affineEnsemble", "emptyMasterQueue",
-			   "Invalid likelihood", 2);
-      }
-
-      //Decide whether to accept the step or reject it, add to
-      // chunk.  Note that the acceptance rule has a dependence
-      // on z, the strech step, so isn't just the same as for MH MCMC.
-      // In particular, we don't always accept a step with better logLike!
-      //The probability of acceptance is
-      // min(1, z^(n-1) P(new) / P(old)
-      prob = exp((nparams - nfixed - 1) * log(pstep.z) + 
-		 inv_temp * (pstep.newLogLike - pstep.oldLogLike));
-      if (verbosity >= 3) {
-	std::cout << "  Got new step for " << pstep.update_idx 
-		  << " from slave " << this_rank << std::endl;
-	std::cout << "   " << pstep << std::endl;
-	std::cout << "   Delta likelihood: "
-		  << pstep.newLogLike - pstep.oldLogLike << std::endl;
-      }
-
-      if (prob >= 1) {
-	//Will always be accepted; this is the min(1, part
-	// This saves us a call to rangen.doub
+      if (parrej) {
+	// Parameters were invalid in some way, so automatically reject
+	// the step.  
 	if (verbosity >= 3)
-	  std::cout << "  Accepting new step" << std::endl;
-	chains.addNewStep(pstep.update_idx, pstep.newStep,
-			  pstep.newLogLike);
-	naccept[pstep.update_idx] += 1;
+	    std::cout << "  Rejecting new step as likelihood rejected params"
+		      << std::endl;
+	chains.addNewStep(pstep.update_idx, pstep.oldStep,
+			  pstep.oldLogLike);
       } else {
-	rval = rangen.doub();
-	if (rval < prob) {
-	  //Accept!
+	// It liked the params, so we have to figure out if we want to
+	// keep the results
+	// First, make sure the values are valid
+	if (std::isinf(pstep.newLogLike) ||
+	    std::isnan(pstep.newLogLike)) {
+	  //That's not good -- exit
+	  for (int i = 1; i < nproc; ++i)
+	    MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
+	  throw affineExcept("affineEnsemble", "emptyMasterQueue",
+			     "Invalid likelihood", 2);
+	}
+
+	//Decide whether to accept the step or reject it, add to
+	// chunk.  Note that the acceptance rule has a dependence
+	// on z, the strech step, so isn't just the same as for MH MCMC.
+	// In particular, we don't always accept a step with better logLike!
+	//The probability of acceptance is
+	// min(1, z^(n-1) P(new) / P(old)
+	//We also allow this to happen at a different temperature.
+	prob = exp((nparams - nfixed - 1) * log(pstep.z) + 
+		   inv_temp * (pstep.newLogLike - pstep.oldLogLike));
+	if (verbosity >= 3) {
+	  std::cout << "  Got new step for " << pstep.update_idx 
+		    << " from slave " << this_rank << std::endl;
+	  std::cout << "   " << pstep << std::endl;
+	  std::cout << "   Delta likelihood: "
+		    << pstep.newLogLike - pstep.oldLogLike << std::endl;
+	}
+
+	if (prob >= 1) {
+	  //Will always be accepted; this is the min(1, part
+	  // This saves us a call to rangen.doub
 	  if (verbosity >= 3)
-	    std::cout << "  Accepting new step (prob: "
-		      << prob << " rval: " << rval <<")" << std::endl;
+	    std::cout << "  Accepting new step" << std::endl;
 	  chains.addNewStep(pstep.update_idx, pstep.newStep,
 			    pstep.newLogLike);
 	  naccept[pstep.update_idx] += 1;
 	} else {
-	  //reject, keep old step
-	  if (verbosity >= 3)
-	    std::cout << "  Rejecting new step (prob: "
-		      << prob << " rval: " << rval <<")" << std::endl;
-	  chains.addNewStep(pstep.update_idx, pstep.oldStep,
-			    pstep.oldLogLike);
+	  rval = rangen.doub();
+	  if (rval < prob) {
+	    //Accept!
+	    if (verbosity >= 3)
+	      std::cout << "  Accepting new step (prob: "
+			<< prob << " rval: " << rval <<")" << std::endl;
+	    chains.addNewStep(pstep.update_idx, pstep.newStep,
+			      pstep.newLogLike);
+	    naccept[pstep.update_idx] += 1;
+	  } else {
+	    //reject, keep old step
+	    if (verbosity >= 3)
+	      std::cout << "  Rejecting new step (prob: "
+			<< prob << " rval: " << rval <<")" << std::endl;
+	    chains.addNewStep(pstep.update_idx, pstep.oldStep,
+			      pstep.oldLogLike);
+	  }
 	}
       }
       ndone += 1;
@@ -1033,6 +1108,7 @@ void affineEnsemble::slaveSample() {
   
   int jnk;
   MPI_Status Info;
+  bool parrej; // Parameter set rejected
 
   try {
     while (true) { //Runs until we get a STOP message
@@ -1049,11 +1125,13 @@ void affineEnsemble::slaveSample() {
 	pstep.recieveCopy(MPI_COMM_WORLD, 0);
 	
 	//Compute likelihood
-	pstep.newLogLike = getLogLike(pstep.newStep);
+	pstep.newLogLike = getLogLike(pstep.newStep, parrej);
 
 	//Send it back
 	MPI_Send(&jnk, 1, MPI_INT, 0, mcmc_affine::SENDINGRESULT,
 		 MPI_COMM_WORLD);
+	MPI_Send(const_cast<bool*>(&parrej), 1, MPI::BOOL, 0, 
+		 mcmc_affine::SENDINGPARREJ, MPI_COMM_WORLD);
 	pstep.sendSelf(MPI_COMM_WORLD, 0);
       } else {
 	std::cerr << "Unexpected message from master: "

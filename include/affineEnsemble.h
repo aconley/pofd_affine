@@ -129,6 +129,7 @@ public:
   bool computeAcor() const; //!< Computes autocorrelation
 
   bool getAcor(std::vector<float>&) const; //!< Returns acor, or computes it if not set
+  bool hasOneStepBeenAccepted() const; //!< Has at least one step been accepted
   void getAcceptanceFrac(std::vector<float>&) const; //!< Returns acceptance fraction for each walker
 
   float getParamMean(unsigned int) const;
@@ -140,7 +141,11 @@ public:
   // Note that initChains should set up some sort of initial position as well
   virtual void initChains() = 0; //!< Set up information in each chain.  Must set is_init to true
   virtual void generateInitialPosition(const paramSet&) = 0; //!< Generate initial position based on input parameter Set
-  virtual double getLogLike(const paramSet&) = 0; //!< Computes log likelihood
+
+  /*\brief Computes the log likelihood.  
+    Uses the second argument to signal if the parameters were rejected */
+  virtual double getLogLike(const paramSet&, bool& params_rejected) = 0;
+  double getLogLike(const paramSet&); //!< Computes log likelihood
 
   /*! \brief Tests whether a given parameter set is valid */
   virtual bool areParamsValid(const paramSet&) const { return true; }

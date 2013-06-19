@@ -32,7 +32,7 @@ public:
 
   void initChains();
   void generateInitialPosition(const paramSet&);
-  double getLogLike(const paramSet&);
+  double getLogLike(const paramSet&, bool& params_rejected);
   bool areParamsValid(const paramSet& p) const;
   void getStats(std::vector<float>&, std::vector<float>&) const;
 };
@@ -134,8 +134,12 @@ void multiGauss::generateInitialPosition(const paramSet& p) {
 }
 
 
-double multiGauss::getLogLike(const paramSet& p) {
+double multiGauss::getLogLike(const paramSet& p, bool& params_rejected) {
   unsigned int npar = getNParams();
+  if (npar == 0) {
+    params_rejected = true;
+    return 0;
+  } else params_rejected = false;
 
   //Mean subtracted vector; mean is 0.5 in all dim
   for (unsigned int i = 0; i < npar; ++i)
