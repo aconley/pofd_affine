@@ -23,7 +23,7 @@ private :
   double *iyvar;
 public:
   polyFit(const std::string&, unsigned int, unsigned int, 
-	  unsigned int, unsigned int, unsigned int, bool);
+	  unsigned int, unsigned int, double, unsigned int, bool);
   virtual ~polyFit();
   void initChains();
   void generateInitialPosition(const paramSet&);
@@ -33,9 +33,9 @@ public:
 
 polyFit::polyFit(const std::string& datafile, unsigned int NWALKERS, 
 		 unsigned int NPARAMS, unsigned int NSAMPLES,
-		 unsigned INIT_STEPS, unsigned int MIN_BURN, 
-		 bool FIXED_BURN=false) :
-  affineEnsemble(NWALKERS, NPARAMS, NSAMPLES, INIT_STEPS, 
+		 unsigned INIT_STEPS=0, double INIT_TEMP=2.0,
+		 unsigned int MIN_BURN=50, bool FIXED_BURN=false) :
+  affineEnsemble(NWALKERS, NPARAMS, NSAMPLES, INIT_STEPS, INIT_TEMP,
 		 MIN_BURN, FIXED_BURN) {
   ndata = 0;
   x = NULL;
@@ -152,13 +152,14 @@ int main(int argc, char** argv) {
   const double coeffs[nterms] = {0.5, 0.04, -0.15, 0.3}; // Correct model
 
   unsigned int nwalkers, nsamples, min_burn, init_steps;
-  double scalefac;
+  double scalefac, init_temp;
   bool verbose, fixed_burn;
 
   //Defaults
   verbose     = false;
   fixed_burn  = false;
   init_steps  = 30;
+  init_temp   = 2.0;
   min_burn    = 50;
   scalefac    = 2;
   
@@ -168,21 +169,22 @@ int main(int argc, char** argv) {
     {"help",no_argument,0,'h'},
     {"fixedburn", no_argument, 0, 'f'},
     {"initsteps", required_argument, 0, 'i'},
+    {"inittemp", required_argument, 0, 'I'},
     {"minburn",required_argument,0,'m'},
     {"scalefac",required_argument,0,'s'},
     {"verbose",no_argument,0,'v'},
     {"Version",no_argument,0,'V'},
     {0,0,0,0}
   };
-  char optstring[] = "hfi:m:s:vV";
+  char optstring[] = "hfi:I:m:s:vV";
 
   int rank, nproc;
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  while ( ( c = getopt_long(argc,argv,optstring,long_options,
-                            &option_index ) ) != -1 ) 
+  while ((c = getopt_long(argc, argv, optstring, long_options,
+			  &option_index)) != -1) 
     switch(c) {
     case 'h' :
       if (rank == 0) {
@@ -216,6 +218,9 @@ int main(int argc, char** argv) {
 		  << "recenter" << std::endl;
 	std::cerr << "\t\taround the best one before starting burn in"
 		  << " (def: 30)" << std::endl;
+	std::cerr << "\t-I, --inittemp VALUE" << std::endl;
+	std::cerr << "\t\tTemperature used during initial steps (def: 2.0)"
+		  << std::endl;
 	std::cerr << "\t-m, --minburn MINBURN" << std::endl;
 	std::cerr << "\t\tMinimum number of burn-in steps to do per "
 		  << "walker (def: 50)" << std::endl;
@@ -241,6 +246,9 @@ int main(int argc, char** argv) {
     case 'i':
       init_steps = atoi(optarg);
       break;
+    case 'I':
+      init_temp = atof(optarg);
+      break;
     case 'm' :
       min_burn = atoi(optarg);
       break;
@@ -260,7 +268,7 @@ int main(int argc, char** argv) {
       break;
     }
 
-  if ( optind >= argc-1 ) {
+  if (optind >= argc - 1) {
     if (rank == 0)
       std::cerr << "Required arguments missing" << std::endl;
     MPI_Finalize();
@@ -292,7 +300,7 @@ int main(int argc, char** argv) {
   try {
     std::string infile="exampledata/polyexample.txt";
     polyFit ply(infile, nwalkers, nterms, nsamples, init_steps,
-		min_burn, fixed_burn);
+		init_temp, min_burn, fixed_burn);
     ply.setScalefac(scalefac);
 
     ply.setParamName(0, "c[0]");

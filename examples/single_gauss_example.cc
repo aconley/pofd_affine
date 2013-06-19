@@ -23,7 +23,7 @@ private:
   double gfac; //!< -1/(2*var)
 public:
   singleGauss(double, double, unsigned int, unsigned int, unsigned int,
-	      unsigned int, bool);
+	      double, unsigned int, bool);
   virtual ~singleGauss();
 
   void initChains();
@@ -35,12 +35,13 @@ public:
 
 singleGauss::singleGauss(double MN, double SIGMA,
 			 unsigned int NWALKERS, unsigned int NSAMPLES, 
-			 unsigned int INIT_STEPS, unsigned int MIN_BURN, 
-			 bool FIXED_BURN=false) :
-  affineEnsemble(NWALKERS, 1, NSAMPLES, INIT_STEPS, MIN_BURN, FIXED_BURN) {
+			 unsigned int INIT_STEPS=0, double INIT_TEMP=2.0,
+			 unsigned int MIN_BURN=50, bool FIXED_BURN=false) :
+  affineEnsemble(NWALKERS, 1, NSAMPLES, INIT_STEPS, INIT_TEMP, MIN_BURN, 
+		 FIXED_BURN) {
     mean = MN;
     var  = SIGMA * SIGMA;
-    gfac = - 1.0/(2.0*var);
+    gfac = - 0.5 / var;
 }
 
 singleGauss::~singleGauss() {}
@@ -93,12 +94,13 @@ void singleGauss::getStats(float& mn, float& var) const {
 int main(int argc, char** argv) {
 
   unsigned int nwalkers, nsamples, min_burn, init_steps;
-  double mean, sigma;
+  double mean, sigma, init_temp;
   std::string outfile;
   bool verbose, fixed_burn, write_as_hdf;
 
   min_burn = 20;
   init_steps = 20;
+  init_temp = 2.0;
   verbose = false;
   fixed_burn = false;
   write_as_hdf = false;
@@ -110,20 +112,21 @@ int main(int argc, char** argv) {
     {"fixedburn", no_argument, 0, 'f'},
     {"hdf", no_argument, 0, 'H'},
     {"initsteps", required_argument, 0, 'i'},
+    {"inittemp", required_argument, 0, 'I'},
     {"minburn", required_argument, 0, 'm'},
     {"verbose",no_argument,0,'v'},
     {"Version",no_argument,0,'V'},
     {0,0,0,0}
   };
-  char optstring[] = "hfHi:m:vV";
+  char optstring[] = "hfHi:I:m:vV";
 
   int rank, nproc;
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  while ( ( c = getopt_long(argc,argv,optstring,long_options,
-                            &option_index ) ) != -1 ) 
+  while ((c = getopt_long(argc, argv, optstring, long_options,
+			  &option_index)) != -1) 
     switch(c) {
     case 'h' :
       if (rank == 0) {
@@ -159,6 +162,9 @@ int main(int argc, char** argv) {
 		  << "recenter" << std::endl;
 	std::cerr << "\t\taround the best one before starting burn in"
 		  << " (def: 20)" << std::endl;
+	std::cerr << "\t-I, --inittemp VALUE" << std::endl;
+	std::cerr << "\t\tTemperature used during initial steps (def: 2.0)"
+		  << std::endl;
 	std::cerr << "\t-m, --minburn NSTEPS" << std::endl;
 	std::cerr << "\t\tNumber of burn-in steps to do per walker (def: 20)"
 		  << std::endl;
@@ -180,6 +186,9 @@ int main(int argc, char** argv) {
       break;
     case 'i':
       init_steps = atoi(optarg);
+      break;
+    case 'I':
+      init_temp = atof(optarg);
       break;
     case 'm':
       min_burn = atoi(optarg);
@@ -224,7 +233,7 @@ int main(int argc, char** argv) {
   //Hardwired cov matrix
   try {
     singleGauss sg(mean, sigma, nwalkers, nsamples, 
-		   init_steps, min_burn, fixed_burn);
+		   init_steps, init_temp, min_burn, fixed_burn);
     if (verbose) {
       sg.setVerbose();
       if (rank == 0)

@@ -27,7 +27,7 @@ private:
   double* work2; //!< Working vector
 public:
   multiGauss(const std::string&, unsigned int, unsigned int, unsigned int, 
-	     unsigned int, unsigned int, bool);
+	     unsigned int, double, unsigned int, bool);
   virtual ~multiGauss();
 
   void initChains();
@@ -39,9 +39,9 @@ public:
 
 multiGauss::multiGauss(const std::string& filename, unsigned int NWALKERS, 
 		       unsigned int NPARAMS, unsigned int NSAMPLES, 
-		       unsigned int INIT_STEPS, unsigned int MIN_BURN,
-		       bool FIXED_BURN=false) :
-  affineEnsemble(NWALKERS, NPARAMS, NSAMPLES, INIT_STEPS, MIN_BURN, 
+		       unsigned int INIT_STEPS=0, double INIT_TEMP=2.0,
+		       unsigned int MIN_BURN=50, bool FIXED_BURN=false) :
+  affineEnsemble(NWALKERS, NPARAMS, NSAMPLES, INIT_STEPS, INIT_TEMP, MIN_BURN, 
 		 FIXED_BURN) {
   if (NPARAMS > 0) {
     invCovMatrix = new double[NPARAMS * NPARAMS];
@@ -179,10 +179,12 @@ int main(int argc, char** argv) {
   unsigned int nwalkers, nsamples, min_burn, init_steps;
   std::string invcovfile, outfile;
   bool verbose, fixed_burn, write_as_hdf;
+  double init_temp;
 
   verbose = false;
   min_burn = 20;
   init_steps = 20;
+  init_temp = 2.0;
   fixed_burn = false;
   write_as_hdf = false;
 
@@ -192,21 +194,22 @@ int main(int argc, char** argv) {
     {"help",no_argument,0,'h'},
     {"fixedburn", no_argument, 0, 'f'},
     {"hdf", no_argument, 0, 'H'},
+    {"inittemp", required_argument, 0, 'I'},
     {"initsteps", required_argument, 0, 'i'},
     {"minburn", required_argument, 0, 'm'},
     {"verbose",no_argument,0,'v'},
     {"Version",no_argument,0,'V'},
     {0,0,0,0}
   };
-  char optstring[] = "hfHi:m:vV";
+  char optstring[] = "hfHi:I:m:vV";
 
   int rank, nproc;
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  while ( ( c = getopt_long(argc,argv,optstring,long_options,
-                            &option_index ) ) != -1 ) 
+  while ((c = getopt_long(argc, argv, optstring, long_options,
+			  &option_index)) != -1) 
     switch(c) {
     case 'h' :
       if (rank == 0) {
@@ -247,6 +250,9 @@ int main(int argc, char** argv) {
 		  << "recenter" << std::endl;
 	std::cerr << "\t\taround the best one before starting burn in"
 		  << " (def: 20)" << std::endl;
+	std::cerr << "\t-I, --inittemp VALUE" << std::endl;
+	std::cerr << "\t\tTemperature used during initial steps (def: 2.0)"
+		  << std::endl;
 	std::cerr << "\t-m, --minburn NSTEPS" << std::endl;
 	std::cerr << "\t\tNumber of burn-in steps to do per walker (def: 20)"
 		  << std::endl;
@@ -268,6 +274,9 @@ int main(int argc, char** argv) {
       break;
     case 'i':
       init_steps = atoi(optarg);
+      break;
+    case 'I':
+      init_temp = atof(optarg);
       break;
     case 'm':
       min_burn = atoi(optarg);
@@ -314,7 +323,7 @@ int main(int argc, char** argv) {
   //Hardwired cov matrix
   try {
     multiGauss mg(invcovfile, nwalkers, ndim, nsamples, init_steps,
-		  min_burn, fixed_burn);
+		  init_temp, min_burn, fixed_burn);
     if (verbose) {
       mg.setVerbose();
       if (rank == 0)
