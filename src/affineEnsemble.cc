@@ -18,22 +18,24 @@
                       realized to the closest larger multiple of nwalkers
   \param[in] INIT_STEPS Number of initialization steps, which are thrown away
                          even before starting burn-in process
+  \param[in] INIT_TEMP Temperature factor used during initial steps
   \param[in] MIN_BURN Minimum number of steps before burn-in
   \param[in] FIXED_BURN Do a fixed burn in of length MIN_BURN, not using
                          autocorrelation length to decide when burn in is 
                          finished.  If this is set, INIT_STEPS is ignored.
   \param[in] BURN_MULTIPLE This fraction of autocorrelation steps to add
                             before checking burn-in again
-  \param[in] SCALEFAC Scale factor of Z distribution			    
+  \param[in] SCALEFAC Scale factor of Z distribution
  */
 affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
 			       unsigned int NSAMPLES, unsigned int INIT_STEPS,
-			       unsigned int MIN_BURN, bool FIXED_BURN,
-			       float BURN_MULTIPLE, float SCALEFAC) :
+			       double INIT_TEMP, unsigned int MIN_BURN, 
+			       bool FIXED_BURN, float BURN_MULTIPLE, 
+			       float SCALEFAC) :
   nwalkers(NWALKERS), nparams(NPARAMS), has_any_names(false), 
-  scalefac(SCALEFAC), init_steps(INIT_STEPS), min_burn(MIN_BURN), 
-  fixed_burn(FIXED_BURN), burn_multiple(BURN_MULTIPLE), pstep(NPARAMS), 
-  is_init(false), chains(NWALKERS,NPARAMS), verbosity(0) {
+  scalefac(SCALEFAC), init_steps(INIT_STEPS), init_temp(INIT_TEMP),
+  min_burn(MIN_BURN), fixed_burn(FIXED_BURN), burn_multiple(BURN_MULTIPLE), 
+  pstep(NPARAMS), is_init(false), chains(NWALKERS,NPARAMS), verbosity(0) {
   
   has_name.resize(nparams);
   has_name.assign(nparams, false);
@@ -407,7 +409,7 @@ void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
 	if (verbosity >= 2)
 	  std::cout << " Done " << i+1 << " of " << initsteps << " steps"
 		    << std::endl;
-	doMasterStep();
+	doMasterStep(init_temp);
       }
 
       // Get best step, regenerate from that
@@ -471,7 +473,7 @@ void affineEnsemble::masterSample() {
       if (verbosity >= 2)
 	std::cout << " Done " << i+1 << " of " << init_steps << " steps"
 		  << std::endl;
-      doMasterStep();
+      doMasterStep(init_temp);
     }
 
     // Get best step, regenerate from that
@@ -824,7 +826,10 @@ void affineEnsemble::generateNewStep(unsigned int idx1, unsigned int idx2,
 
 }
 
-void affineEnsemble::doMasterStep() throw (affineExcept) {
+/*
+  \param[in] temp Temperature to use for step acceptance
+*/
+void affineEnsemble::doMasterStep(double temp) throw (affineExcept) {
   //We use a pushdown stack to keep track of which things to do
   //To make this parallel, we must split the number of walkers in
   // half, and update each half from the opposite one
@@ -835,6 +840,9 @@ void affineEnsemble::doMasterStep() throw (affineExcept) {
   if (!stepqueue.empty())
     throw affineExcept("affineEnsemble", "doMasterStep",
 		       "step queue should be empty at start", 2);
+  if (temp <= 0)
+    throw affineExcept("affineEnsemble", "doMasterStep",
+		       "Invalid temperature", 3);
 
   unsigned int minidx, maxidx;
   std::pair<unsigned int, unsigned int> pr;
@@ -853,7 +861,7 @@ void affineEnsemble::doMasterStep() throw (affineExcept) {
   //Now run that
   if (verbosity >= 3)
     std::cout << "  Evaluating likelihoods" << std::endl;
-  emptyMasterQueue();
+  emptyMasterQueue(temp);
 
   //Then the second
   minidx = 0;
@@ -868,13 +876,16 @@ void affineEnsemble::doMasterStep() throw (affineExcept) {
   }
   if (verbosity >= 3)
     std::cout << "  Evaluating likelihoods" << std::endl;
-  emptyMasterQueue();
+  emptyMasterQueue(temp);
 
   // The fact that we took another step means that acor is now invalid
   acor_set = false;
 }
 
-void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
+/*
+  \param[in] temp Temperature to use for step acceptance
+*/
+void affineEnsemble::emptyMasterQueue(double temp) throw (affineExcept) {
   //Step loop
   MPI_Status Info;
   int jnk, this_rank, this_tag, nproc, ismsg;
@@ -886,6 +897,8 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
   nsteps = stepqueue.size();
   ndone = 0;
+
+  double inv_temp = 1.0 / temp;
 
   if (nsteps == 0) return; //Nothing to do...
 
@@ -958,8 +971,8 @@ void affineEnsemble::emptyMasterQueue() throw (affineExcept) {
       // In particular, we don't always accept a step with better logLike!
       //The probability of acceptance is
       // min(1, z^(n-1) P(new) / P(old)
-      prob = exp((nparams - nfixed - 1) * log(pstep.z) + pstep.newLogLike - 
-		 pstep.oldLogLike);
+      prob = exp((nparams - nfixed - 1) * log(pstep.z) + 
+		 inv_temp * (pstep.newLogLike - pstep.oldLogLike));
       if (verbosity >= 3) {
 	std::cout << "  Got new step for " << pstep.update_idx 
 		  << " from slave " << this_rank << std::endl;
@@ -1079,8 +1092,11 @@ void affineEnsemble::writeToStream(std::ostream& os) const {
       if (has_name[i]) os << std::endl << " " << i << ": " 
 			  << parnames[i];
   }
-  if (init_steps > 0)
+  if (init_steps > 0) {
     os << std::endl << "Number of initial steps: " << init_steps;
+    if (init_temp != 1)
+      os << std::endl << "Initial step temperature: " << init_steps;
+  }
   if (min_burn > 0) {
     if (fixed_burn) {
       os << std::endl << "Will do fixed burn in of " << min_burn 

@@ -34,6 +34,7 @@ private:
   std::vector<int> param_state; //!< Set to param_statue enum values
 
   unsigned int init_steps; //!< Number of initial steps to do before starting burn-in check
+  double init_temp; //!< Temperature used during initial steps
   unsigned int min_burn; //!< Minimum number of burn steps to do
   bool fixed_burn; //!< Do fixed burn in rather than using autocorrelation
   float burn_multiple; //!< Multiple of autocorrelation steps to do for burn
@@ -58,8 +59,8 @@ private:
 
   //sampling sub-routines
   void doBurnIn() throw (affineExcept); //!< Master node burn in routine
-  void doMasterStep() throw (affineExcept); //!< Does a step for all walkers, master node
-  void emptyMasterQueue() throw (affineExcept); //!< Runs all steps in stepqueue as master node
+  void doMasterStep(double=1.0) throw (affineExcept); //!< Does a step for all walkers, master node
+  void emptyMasterQueue(double=1.0) throw (affineExcept); //!< Runs all steps in stepqueue as master node
 
 protected:
   bool is_init; //!< Have the chains been initialized?
@@ -78,8 +79,8 @@ protected:
 public:
   /* \brief Constructor */
   affineEnsemble(unsigned int, unsigned int, unsigned int,
-		 unsigned int=0, unsigned int=50, bool=false, 
-		 float=5, float=2);
+		 unsigned int=0, double=2.0, unsigned int=50, 
+		 bool=false, float=5, float=2);
   ~affineEnsemble(); //!< Destructor
 
   bool isValid() const; //!< Are params valid?
@@ -149,7 +150,7 @@ public:
     const throw (affineExcept);
 
   void sample(); //!< Do burn in, get samples  
-  void doSteps(unsigned int,unsigned int=0); //!< Do a fixed number of steps
+  void doSteps(unsigned int, unsigned int=0); //!< Do a fixed number of steps
 
   virtual void writeToStream(std::ostream&) const; //!< Write summary of fit parameters
 

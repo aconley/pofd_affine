@@ -18,7 +18,7 @@ private :
   double a1, a2;
 public:
   rosenbrockDensity(double, double, unsigned int, unsigned int,
-		    unsigned int, unsigned int, bool);
+		    unsigned int, double, unsigned int, bool);
   void initChains();
   void generateInitialPosition(const paramSet&);
   double getLogLike(const paramSet&);
@@ -27,11 +27,12 @@ public:
 rosenbrockDensity::rosenbrockDensity(double A1, double A2, 
 				     unsigned int NWALKERS, 
 				     unsigned int NSAMPLES,
-				     unsigned int INIT_STEPS,
-				     unsigned int MIN_BURN,
+				     unsigned int INIT_STEPS=0,
+				     double INIT_TEMP=2.0,
+				     unsigned int MIN_BURN=50,
 				     bool FIXED_BURN=false) :
-  affineEnsemble(NWALKERS, 2, NSAMPLES, INIT_STEPS, MIN_BURN, FIXED_BURN), 
-  a1(A1), a2(A2) { }
+  affineEnsemble(NWALKERS, 2, NSAMPLES, INIT_STEPS, INIT_TEMP,
+		 MIN_BURN, FIXED_BURN), a1(A1), a2(A2) { }
   
 void rosenbrockDensity::initChains() {
   is_init = true;
@@ -71,12 +72,13 @@ int main(int argc, char** argv) {
 
   unsigned int nwalkers, nsamples, min_burn, init_steps;
   std::string outfile;
-  double a1, a2;
+  double a1, a2, init_temp;
   bool verbose, fixed_burn, write_as_hdf;
 
   verbose = false;
   min_burn = 20;
   init_steps = 20;
+  init_temp = 2.0;
   fixed_burn = false;
   write_as_hdf = false;
 
@@ -87,12 +89,13 @@ int main(int argc, char** argv) {
     {"fixedburn", no_argument, 0, 'f'},
     {"hdf", no_argument, 0, 'H'},
     {"initsteps", required_argument, 0, 'i'},
+    {"inittemp", required_argument, 0, 'I'},
     {"minburn", required_argument, 0, 'm'},
     {"verbose",no_argument,0,'v'},
     {"Version",no_argument,0,'V'},
     {0,0,0,0}
   };
-  char optstring[] = "hfHi:m:vV";
+  char optstring[] = "hfHi:I:m:vV";
 
   int rank, nproc;
   MPI_Init(&argc, &argv);
@@ -139,6 +142,9 @@ int main(int argc, char** argv) {
 		  << "recenter" << std::endl;
 	std::cerr << "\t\taround the best one before starting burn in"
 		  << " (def: 20)" << std::endl;
+	std::cerr << "\t-I, --inittemp VALUE" << std::endl;
+	std::cerr << "\t\tTemperature used during initial steps (def: 2.0)"
+		  << std::endl;
 	std::cerr << "\t-m, --minburn NSTEPS" << std::endl;
 	std::cerr << "\t\tNumber of burn-in steps to do per walker (def: 20)"
 		  << std::endl;
@@ -160,6 +166,9 @@ int main(int argc, char** argv) {
       break;
     case 'i':
       init_steps = atoi(optarg);
+      break;
+    case 'I':
+      init_temp = atof(optarg);
       break;
     case 'm':
       min_burn = atoi(optarg);
@@ -205,8 +214,8 @@ int main(int argc, char** argv) {
 
   //Hardwired cov matrix
   try {
-    rosenbrockDensity rd(a1, a2, nwalkers, nsamples, init_steps, min_burn,
-			 fixed_burn);
+    rosenbrockDensity rd(a1, a2, nwalkers, nsamples, init_steps, init_temp,
+			 min_burn, fixed_burn);
     if (verbose) {
       rd.setVerbose();
       if (rank == 0)
