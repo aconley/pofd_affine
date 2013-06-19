@@ -368,11 +368,11 @@ void PDFactory::initPD(unsigned int n, double sigma,
     if (maxitidx >= n) maxitidx=n-1;
 
     //Now interpolate, setting to zero outside the range
-    if (minitidx > 0) memset(rvals, 0, minitidx * sizeof(double));
+    //if (minitidx > 0) memset(rvals, 0, minitidx * sizeof(double));
     double cflux, splval;
     for (unsigned int i = minitidx; i <= maxitidx; ++i) {
       cflux = static_cast<double>(i)*dflux; //Min is always 0 in R
-      splval = gsl_spline_eval( spline, cflux, acc );
+      splval = gsl_spline_eval(spline, cflux, acc);
       rvals[i] = exp2(splval);
     }
     for (unsigned int i = maxitidx+1; i < n; ++i)
@@ -419,7 +419,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
       double cflux, splval;
       for (unsigned int i = minitidx; i <= maxitidx; ++i) {
 	cflux = static_cast<double>(i)*dflux; //Min is always 0 in R
-	splval = gsl_spline_eval( spline, cflux, acc );
+	splval = gsl_spline_eval(spline, cflux, acc);
 	rvals[i] += exp2(splval);
       }
     } else {
@@ -427,7 +427,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
       double cflux, splval;
       for (unsigned int i = minitidx; i <= maxitidx; ++i) {
 	cflux = static_cast<double>(i)*dflux; //Min flux is always 0 in R
-	splval = gsl_spline_eval( spline, cflux, acc );
+	splval = gsl_spline_eval(spline, cflux, acc);
 	rvals[i] = exp2(splval);
       }
       for (unsigned int i = maxitidx+1; i < n; ++i)

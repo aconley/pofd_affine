@@ -1853,9 +1853,9 @@ static double evalPowfNDoubleLogNormal(double s1, void* params) {
 
 initFileDoubleLogNormal::initFileDoubleLogNormal() : 
   nknots(0), nsigmas(0), noffsets(0), sigmaidx(0), offsetidx(0),
-  has_sigma(false), has_lower_limits(false), has_upper_limits(false) {
+  has_range(false), has_lower_limits(false), has_upper_limits(false) {
 
-  knotpos = knotval = sigma = lowlim = uplim = NULL;
+  knotpos = knotval = range = lowlim = uplim = NULL;
   has_lowlim = has_uplim = NULL;
 
   //Set random number generator seed from time
@@ -1867,18 +1867,18 @@ initFileDoubleLogNormal::initFileDoubleLogNormal() :
 
 /*!
   \param[in] flname File to read from
-  \param[in] read_sigma      Read in (and require) knot sigmas
-  \param[in] read_limits     Try to read limits; this will turn on require_sigma
+  \param[in] read_range      Read in (and require) knot ranges
+  \param[in] read_limits     Try to read limits; this will turn on require_range
 
   See initFileDoubleLogNormal::readFile for details of the file format
 */
 initFileDoubleLogNormal::initFileDoubleLogNormal(const std::string& flname, 
-						 bool read_sigma, 
+						 bool read_range, 
 						 bool read_limits) : 
   nknots(0), nsigmas(0), noffsets(0), sigmaidx(0), offsetidx(0),
-  has_sigma(false), has_lower_limits(false), has_upper_limits(false) {
+  has_range(false), has_lower_limits(false), has_upper_limits(false) {
 
-  knotpos = knotval = sigma = lowlim = uplim = NULL;
+  knotpos = knotval = range = lowlim = uplim = NULL;
   has_lowlim = has_uplim = NULL;
 
   //Set random number generator seed from time
@@ -1887,14 +1887,14 @@ initFileDoubleLogNormal::initFileDoubleLogNormal(const std::string& flname,
   seed += static_cast<unsigned long long int>(clock());
   rangen.setSeed(seed);
 
-  readFile(flname, read_sigma, read_limits);
+  readFile(flname, read_range, read_limits);
 
 }
 
 initFileDoubleLogNormal::~initFileDoubleLogNormal() {
   if (knotpos != NULL) delete[] knotpos;
   if (knotval != NULL) delete[] knotval;
-  if (sigma != NULL) delete[] sigma;
+  if (range != NULL) delete[] range;
   if (has_lowlim != NULL) delete[] has_lowlim;
   if (lowlim != NULL) delete[] lowlim;
   if (has_uplim != NULL) delete[] has_uplim;
@@ -1903,24 +1903,26 @@ initFileDoubleLogNormal::~initFileDoubleLogNormal() {
 
 /*!
   \param[in] flname File to read from
-  \param[in] read_sigma      Read in (and require) knot sigmas
-  \param[in] read_limits     Try to read limits; this will turn on require_sigma
+  \param[in] read_range      Read in (and require) knot ranges
+  \param[in] read_limits     Try to read limits; this will turn on require_range
 
   The file format is: 
   first, a line giving the n1 ns no
   where n1 is the number of knots in the band 1 model, ns is the number
   of knots in the color sigma model, and no is the number of knots in the
   color offset model.  This is followed by n1+ns+no lines of the form
-  knotpos   knotval   [sigma [ lowlim [ uplim ]]
+  knotpos   knotval   [range [ lowlim [ uplim ]]
   So knotpos, knotval are always required
-  sigma is optionally required if read_sigma is set
+  range is optionally required if read_range is set.  If used to generate
+   points, they are generated within range/2 on either side uniformly
+   around knotval.
   lowlim and uplim may be present, and are looked for if read_limits is set.
-    sigma must also be present, and the first element found is lowlim.
+    range must also be present, and the first element found is lowlim.
     If another is also found, it is interpreted as uplim
  */
 void initFileDoubleLogNormal::readFile(const std::string& flname, 
-				       bool read_sigma, bool read_limits) {
-  if (read_limits) read_sigma = true;
+				       bool read_range, bool read_limits) {
+  if (read_limits) read_range = true;
 
   //Clear old data
   nknots = 0; 
@@ -1930,18 +1932,18 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
   offsetidx = 0;
   if (knotpos != NULL) delete[] knotpos;
   if (knotval != NULL) delete[] knotval;
-  if (sigma != NULL) delete[] sigma;
+  if (range != NULL) delete[] range;
   if (has_lowlim != NULL) delete[] has_lowlim;
   if (lowlim != NULL) delete[] lowlim;
   if (has_uplim != NULL) delete[] has_uplim;
   if (uplim != NULL) delete[] uplim;
-  knotpos = knotval = sigma = lowlim = uplim = NULL;
+  knotpos = knotval = range = lowlim = uplim = NULL;
   has_lowlim = has_uplim = NULL;
-  has_sigma = has_lower_limits = has_upper_limits = false;
+  has_range = has_lower_limits = has_upper_limits = false;
 
   //Figure out how many elements we require
   unsigned int nreq = 2; //Pos, value
-  if (read_sigma) nreq += 1; //Sigma -- read limits not required ever
+  if (read_range) nreq += 1; //Range -- read limits not required ever
 
   unsigned int nk, ns, no; //Number of knots, sigmas, offsets
   std::vector<double> wvec1, wvec2, wvec3, wvec4, wvec5;
@@ -1996,15 +1998,15 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
     wvec2.push_back(currval); 
 
     //Now, all the options
-    if (read_sigma) {
-      has_sigma = true;
+    if (read_range) {
+      has_range = true;
       str.str(words[2]); str.clear(); str >> currval;
       wvec3.push_back(currval);
     }
     if (read_limits) { 
       if (words.size() > 3) {
-	//Ignore limits if sigma is zero -- what would be the point?
-	if (has_sigma && wvec3.back() == 0) {
+	//Ignore limits if range is zero -- what would be the point?
+	if (has_range && wvec3.back() == 0) {
 	  h4.push_back(false);
 	  wvec4.push_back(std::numeric_limits<double>::quiet_NaN());
 	  h5.push_back(false);
@@ -2048,9 +2050,9 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
   for (unsigned int i = 0; i < ntot; ++i) knotpos[i] = wvec1[i];
   knotval = new double[ntot];
   for (unsigned int i = 0; i < ntot; ++i) knotval[i] = wvec2[i];
-  if (has_sigma) {
-    sigma = new double[ntot];
-    for (unsigned int i = 0; i < ntot; ++i) sigma[i] = wvec3[i];
+  if (has_range) {
+    range = new double[ntot];
+    for (unsigned int i = 0; i < ntot; ++i) range[i] = wvec3[i];
   }
   if (has_lower_limits) {
     has_lowlim = new bool[ntot];
@@ -2077,25 +2079,25 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
 	throw affineExcept("initFileDoubleLogNormal", "readFiles", 
 			   errstr.str(), 6);
       }
-      if ((sigma[i] > 0.) && (uplim[i] == lowlim[i])) {
+      if ((range[i] > 0.) && (uplim[i] == lowlim[i])) {
 	std::stringstream errstr;
 	errstr << "Lower/Upper limits meet at index: " << i 
-	       << " but sigma is not zero" << std::endl;
+	       << " but range is not zero" << std::endl;
 	errstr << " Lower limit: " << lowlim[i] << " Upper limit: " << uplim[i]
-	       << " sigma: " << sigma[i];
+	       << " range: " << range[i];
 	throw affineExcept("initFileDoubleLogNormal", "readFiles", 
 			   errstr.str(), 7);
       }
     }
 
-  //Make sure that if sigmas is 0 then the mean value falls within
+  //Make sure that if ranges is 0 then the mean value falls within
   // the range of any limits
-  if (has_sigma && (has_lower_limits || has_upper_limits)) {
+  if (has_range && (has_lower_limits || has_upper_limits)) {
     for (unsigned int i = 0; i < ntot; ++i)
-      if (sigma[i] > 0) {
+      if (range[i] == 0) {
 	if (has_lower_limits && has_lowlim[i] && (knotval[i] < lowlim[i])) {
 	  std::stringstream errstr;
-	  errstr << "At knot " << i << " sigma is zero but mean value "
+	  errstr << "At knot " << i << " range is zero but mean value "
 		 << knotval[i] << std::endl << " lies below lower limit "
 		 << lowlim[i];
 	  throw affineExcept("initFileDoubleLogNormal", "readFiles", 
@@ -2103,7 +2105,7 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
 	}
 	if (has_upper_limits && has_uplim[i] && (knotval[i] > uplim[i])) {
 	  std::stringstream errstr;
-	  errstr << "At knot " << i << " sigma is zero but mean value "
+	  errstr << "At knot " << i << " range is zero but mean value "
 		 << knotval[i] << std::endl << " lies above upper limit "
 		 << uplim[i];
 	  throw affineExcept("initFileDoubleLogNormal", "readFiles", 
@@ -2232,7 +2234,7 @@ void initFileDoubleLogNormal::getOffsetPos(std::vector<double>& kp) const {
 void initFileDoubleLogNormal::getOffsetVals(std::vector<double>& kv) const {
   if (noffsets == 0)
     throw affineExcept("initFileDoubleLogNormal","getOffsetVals",
-		       "No sigma information read in",1);
+		       "No offset information read in",1);
   kv.resize(noffsets);
   for (unsigned int i = 0; i < noffsets; ++i)
     kv[i] = knotval[i+offsetidx];
@@ -2296,7 +2298,7 @@ generateRandomKnotValues(paramSet& pnew, const paramSet& pcen) const {
 
   //Deal with simple case -- everything fixed
   //So just return pcen -- but check it first
-  if (!has_sigma) {
+  if (!has_range) {
     if (has_lower_limits)
       for (unsigned int i = 0; i < ntot; ++i)
 	if (has_lowlim[i] && (pcen[i] < lowlim[i])) {
@@ -2320,47 +2322,47 @@ generateRandomKnotValues(paramSet& pnew, const paramSet& pcen) const {
     return;
   }
 
-  //Now we have at least some sigmas
+  //Now we have at least some ranges
   //The simple case is if there are no limits.  If there are, we will
   // have to do trials.
   if (!(has_lower_limits || has_upper_limits)) {
     for (unsigned int i = 0; i < ntot; ++i)
-      pnew[i] = rangen.gauss() * sigma[i] + pcen[i];
+      pnew[i] = rangen.flt() * range[i] + (pcen[i] - 0.5 * range[i]);
   } else {
     //Both sigmas and limits
     bool goodval;
     double trialval;
     unsigned int iters;
     for (unsigned int i = 0; i < ntot; ++i) {
-      if (sigma[i] > 0) {
+      if (range[i] > 0) {
 	//Some sanity checks
-	if (has_lowlim[i] && (lowlim[i] > pcen[i] + sigma[i] * 4.0)) {
+	if (has_lowlim[i] && (lowlim[i] > pcen[i] + range[i])) {
 	  std::stringstream errstr;
-	  errstr << "Lower limit is too far above central value; will take too"
-		 << " long to " << std::endl << "generate value for param idx: "
+	  errstr << "Lower limit is too far above central value; will not be "
+		 << "able to" << std::endl << "generate value for param idx: "
 		 << i << " with lowlim: " << lowlim[i] << " central: " 
-		 << pcen[i];
-	  throw affineExcept("initFileDoubleLogNormal",
+		 << pcen[i] << " range: " << range[i];
+	  throw affineExcept("initFileDoubleLogNormal", 
 			     "generateRandomKnotValues",
 			     errstr.str(), 6);
 	}
-	if (has_uplim[i] && (uplim[i] < pcen[i] - sigma[i] * 4.0)) {
+	if (has_uplim[i] && (uplim[i] < pcen[i] - range[i])) {
 	  std::stringstream errstr;
-	  errstr << "Upper limit is too far below central value; will take too"
-		 << " long to " << std::endl << "generate value for param idx: "
+	  errstr << "Upper limit is too far below central value; will not be"
+		 << " able to " << std::endl << "generate value for param idx: "
 		 << i << " with uplim: " << uplim[i] << " central: " 
-		 << pcen[i];
+		 << pcen[i] << " range: " << range[i];
 	  throw affineExcept("initFileDoubleLogNormal",
 			     "generateRandomKnotValues",
 			     errstr.str(), 7);
 	}
 
 	if (has_lowlim[i] && has_uplim[i]) {
-	  //If range between them is much smaller than
-	  // sigma, just chose uniformly to save time
+	  //If space between them is smaller than range, use
+	  // those limits to generate rather than accept/reject
 	  double rng = uplim[i] - lowlim[i];
-	  if (rng < 1e-4*sigma[i]) {
-	    pnew[i] = lowlim[i] + rng*rangen.doub();
+	  if (rng < range[i]) {
+	    pnew[i] = lowlim[i] + rng * rangen.flt();
 	  } else {
 	    //Trial
 	    goodval = false;
@@ -2374,7 +2376,7 @@ generateRandomKnotValues(paramSet& pnew, const paramSet& pcen) const {
 				   "generateRandomKnotValues",
 				   errstr.str(), 8);
 	      }
-	      trialval = rangen.gauss() * sigma[i] + pcen[i];
+	      trialval = rangen.flt() * range[i] + (pcen[i] - 0.5 * range[i]);
 	      if ((trialval >= lowlim[i]) && (trialval <= uplim[i])) 
 		goodval = true;
 	      ++iters;
@@ -2394,7 +2396,7 @@ generateRandomKnotValues(paramSet& pnew, const paramSet& pcen) const {
 				 "generateRandomKnotValues",
 				 errstr.str(), 9);
 	    }
-	    trialval = rangen.gauss() * sigma[i] + pcen[i];
+	    trialval = rangen.flt() * range[i] + (pcen[i] - 0.5 * range[i]);
 	    if (trialval >= lowlim[i]) goodval = true;
 	    ++iters;
 	  }
@@ -2412,21 +2414,22 @@ generateRandomKnotValues(paramSet& pnew, const paramSet& pcen) const {
 				 "generateRandomKnotValues",
 				 errstr.str(), 10);
 	    }
-	    trialval = rangen.gauss() * sigma[i] + pcen[i];
+	    trialval = rangen.flt() * range[i] + (pcen[i] - 0.5 * range[i]);
 	    if (trialval <= uplim[i]) goodval = true;
 	    ++iters;
 	  }
 	  pnew[i] = trialval;
 	} else {
 	  //No limit, easy cakes
-	  pnew[i] = rangen.gauss() * sigma[i] + pcen[i];
+	  trialval = rangen.flt() * range[i] + (pcen[i] - 0.5 * range[i]);
 	}
       } else {
-	//Sigma is 0.  Check to make sure this is within the limits
+	//Range is 0.  Check to make sure this is within the limits
 	if (has_lowlim[i] && (pcen[i] < lowlim[i])) {
 	  std::stringstream errstr;
 	  errstr << "For parameter " << i << " user provided central value "
-		 << pcen[i] << " is below lower limit " << lowlim[i];
+		 << pcen[i] << " is below lower limit " << lowlim[i]
+		 << " and range is 0.";
 	  throw affineExcept("initFileDoubleLogNormal", 
 			     "generateRandomKnotValues",
 			     errstr.str(), 4);
@@ -2434,7 +2437,8 @@ generateRandomKnotValues(paramSet& pnew, const paramSet& pcen) const {
 	if (has_uplim[i] && (pcen[i] > uplim[i])) {
 	  std::stringstream errstr;
 	  errstr << "For parameter " << i << " user provided central value "
-		 << pcen[i] << " is above upper limit " << uplim[i];
+		 << pcen[i] << " is above upper limit " << uplim[i]
+		 << " and range is 0.";
 	  throw affineExcept("initFileDoubleLogNormal", 
 			     "generateRandomKnotValues",
 			     errstr.str(), 5);
@@ -2453,12 +2457,12 @@ generateRandomKnotValues(paramSet& pnew, const paramSet& pcen) const {
   Note that idx ranges over all the parameters -- including
   the color model.  The valid range is thus [0,nknots + nsigmas + noffsets).
 */
-double initFileDoubleLogNormal::getKnotSigma(unsigned int idx) const {
+double initFileDoubleLogNormal::getKnotRange(unsigned int idx) const {
   if (idx >= nknots+nsigmas+noffsets)
     throw affineExcept("initFileDoubleLogNormal",
 		       "getKnotSigma","Invalid knot index",1);
-  if (!has_sigma) return std::numeric_limits<double>::quiet_NaN();
-  return sigma[idx];
+  if (!has_range) return std::numeric_limits<double>::quiet_NaN();
+  return range[idx];
 }
 
 /*!
@@ -2474,8 +2478,8 @@ bool initFileDoubleLogNormal::isKnotFixed(unsigned int idx) const {
   if (idx >= nknots+nsigmas+noffsets)
     throw affineExcept("initFileDoubleLogNormal","isKnotFixed",
 		       "Invalid knot index",1);
-  if (!has_sigma) return false;
-  if (sigma[idx] == 0) return true;
+  if (!has_range) return false;
+  if (range[idx] == 0) return true;
   return false;
 }
 
@@ -2563,10 +2567,10 @@ void initFileDoubleLogNormal::sendSelf(MPI_Comm comm, int dest) const {
 	     pofd_mcmc::IFDLNSENDKNOTPOS, comm);
     MPI_Send(knotval, ntot, MPI_DOUBLE, dest, 
 	     pofd_mcmc::IFDLNSENDKNOTVAL, comm);
-    MPI_Send(const_cast<bool*>(&has_sigma), 1, MPI::BOOL, dest, 
-	     pofd_mcmc::IFDLNHASSIGMA, comm);
-    if (has_sigma)
-      MPI_Send(sigma, ntot, MPI_DOUBLE, dest, pofd_mcmc::IFDLNSENDSIGMA, comm);
+    MPI_Send(const_cast<bool*>(&has_range), 1, MPI::BOOL, dest, 
+	     pofd_mcmc::IFDLNHASRANGE, comm);
+    if (has_range)
+      MPI_Send(range, ntot, MPI_DOUBLE, dest, pofd_mcmc::IFDLNSENDRANGE, comm);
     MPI_Send(const_cast<bool*>(&has_lower_limits), 1, MPI::BOOL, dest,
 	     pofd_mcmc::IFDLNHASLOWERLIMITS, comm);
     if (has_lower_limits) {
@@ -2589,12 +2593,12 @@ void initFileDoubleLogNormal::recieveCopy(MPI_Comm comm, int src) {
   //Delete everything for simplicity
   if (knotpos != NULL) delete[] knotpos;
   if (knotval != NULL) delete[] knotval;
-  if (sigma != NULL) delete[] sigma;
+  if (range != NULL) delete[] range;
   if (has_lowlim != NULL) delete[] has_lowlim;
   if (lowlim != NULL) delete[] lowlim;
   if (has_uplim != NULL) delete[] has_uplim;
   if (uplim != NULL) delete[] uplim;
-  knotpos = knotval = sigma = lowlim = uplim = NULL;
+  knotpos = knotval = range = lowlim = uplim = NULL;
   has_lowlim = has_uplim = NULL;
 
   MPI_Status Info;
@@ -2614,11 +2618,11 @@ void initFileDoubleLogNormal::recieveCopy(MPI_Comm comm, int src) {
     knotval = new double[ntot];
     MPI_Recv(knotval, ntot, MPI_DOUBLE, src, pofd_mcmc::IFDLNSENDKNOTVAL,
 	     comm, &Info);
-    MPI_Recv(&has_sigma, 1, MPI::BOOL, src, pofd_mcmc::IFDLNHASSIGMA,
+    MPI_Recv(&has_range, 1, MPI::BOOL, src, pofd_mcmc::IFDLNHASRANGE,
 	     comm, &Info);
-    if (has_sigma) {
-      sigma = new double[ntot];
-      MPI_Recv(sigma, ntot, MPI_DOUBLE, src, pofd_mcmc::IFDLNSENDSIGMA,
+    if (has_range) {
+      range = new double[ntot];
+      MPI_Recv(range, ntot, MPI_DOUBLE, src, pofd_mcmc::IFDLNSENDRANGE,
 	       comm, &Info);
     }
     MPI_Recv(&has_lower_limits, 1, MPI::BOOL, src,

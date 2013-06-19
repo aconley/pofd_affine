@@ -33,7 +33,7 @@
                   Ignore mask information in input files
    fftsize=     nfft
                   Sets fft transform length (def: 131072)
-   nitnerp=     value
+   ninterp=     value
                   Number of R interpolation points (def: 1024)
    edge_fix=    bool
                   Apply edge fix to P(D).  On by default.		  

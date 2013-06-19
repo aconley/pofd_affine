@@ -63,7 +63,7 @@ TEST(initFile1DTest, ReadCheck2) {
   const double knotpos[] = { 0.002, 0.005, 0.045, 0.100, 0.45, 1.0 };
   const double knotval[] = { 7.0, 6.3, 4.0, 2.6, 0.6, -0.4 };
   const bool knotfixed[] = { false, false, false, false, false, true };
-  const double knotsigma[] = { 0.02, 0.03, 0.02, 0.01, 0.05, 0.0 };
+  const double knotrange[] = { 0.02, 0.03, 0.02, 0.01, 0.05, 0.0 };
   const bool haslowlim[] = { true, false, true, false, true, false };
   const double lowlim[] = { 3.0, 0, 1.0, 0, -2.0, 0 };
   const bool hasuplim[] = { true, false, false, false, true, false };
@@ -73,57 +73,48 @@ TEST(initFile1DTest, ReadCheck2) {
     
   //First make sure it has the right number of entries
   unsigned int nknots = test2.getNKnots();
-  ASSERT_EQ(nknots, 6U) << "test file had wrong number of knots;"
-			<< " expected " << 6 << " got " << nknots;
+  ASSERT_EQ(nknots, 6U) << "test file had wrong number of knots";
 
   //Knot position test
   for (unsigned int i = 0; i < nknots; ++i) {
     double kp = test2.getKnotPos(i);
     EXPECT_FLOAT_EQ(kp, knotpos[i]) <<
-      "Knot position problem in test file; expected " << 
-      knotpos[i] << " got " << kp << " on knot " << i;
+      "Knot position problem in test file on knot " << i;
 
     //Knot value test
     double kv = test2.getKnotValue(i);
     EXPECT_FLOAT_EQ(kv, knotval[i]) <<
-      "Knot value problem in test file; expected " <<
-      knotval[i] << " got " << kv << " on knot " << i;
+      "Knot value problem in test file on knot " << i;
 
     //Knot fixed
     EXPECT_EQ(test2.isKnotFixed(i), knotfixed[i]) <<
-      "Knot fixed problem; expected " << knotfixed[i] <<
-      " got " << test2.isKnotFixed(i) << " on knot " << i;
+      "Knot fixed problem on knot " << i;
 
-    //Knot sigma
-    double ks = test2.getKnotSigma(i);
-    EXPECT_FLOAT_EQ(ks, knotsigma[i]) <<
-      "Knot sigma problem in test file; expected " <<
-      knotsigma[i] << " got " << ks  << " on knot " << i;
+    //Knot range
+    double kr = test2.getKnotRange(i);
+    EXPECT_FLOAT_EQ(kr, knotrange[i]) <<
+      "Knot range problem in test file on knot " << i;
 
     //Lower limit
     bool chaslowlim = test2.knotHasLowerLimit(i);
     EXPECT_EQ(haslowlim[i], chaslowlim) <<
-      "Knot has lower limit problem; expected " << haslowlim[i] <<
-      " got " << chaslowlim << " for index " << i;
+      "Knot has lower limit problem for index " << i;
 
     if (chaslowlim) {
       double kl = test2.getLowerLimit(i);
       EXPECT_FLOAT_EQ(kl, lowlim[i]) <<
-	"Knot lower limit problem in test file; expected " <<
-	lowlim[i] << " got " << kl << " on knot " << i;
+	"Knot lower limit problem in test file on knot " << i;
     }
 
     //Upper limit
     bool chasuplim = test2.knotHasUpperLimit(i);
     EXPECT_EQ(chasuplim, hasuplim[i]) <<
-      "Knot has upper limit problem; expected " << hasuplim[i] <<
-      " got " << chasuplim << " for index " << i;
+      "Knot has upper limit problem for index " << i;
 
     if (chasuplim) {
       double ku = test2.getUpperLimit(i);
       EXPECT_FLOAT_EQ(ku, uplim[i]) <<
-	"Knot upper limit problem in test file; expected " <<
-	uplim[i] << " got " << ku << " on knot " << i;
+	"Knot upper limit problem in test file on knot " << i;
     }
   }
 
@@ -156,7 +147,7 @@ TEST(initFile2DTest, ReadCheck) {
   const double knotpos[] = { 0.002, 0.005, 0.045, 0.100, 0.45, 1.0 };
   const double knotval[] = { 7.0, 6.3, 4.0, 2.6, 0.6, -0.4 };
   const bool knotfixed[] = { false, false, false, false, false, true };
-  const double knotsigma[] = { 0.02, 0.03, 0.02, 0.01, 0.05, 0.0 };
+  const double knotrange[] = { 0.02, 0.03, 0.02, 0.01, 0.05, 0.0 };
   const bool haslowlim[] = { true, false, true, false, true, false };
   const double lowlim[] = { 3.0, 0, 1.0, 0, -2.0, 0 };
   const bool hasuplim[] = { true, false, false, false, true, false };
@@ -176,9 +167,9 @@ TEST(initFile2DTest, ReadCheck) {
     EXPECT_EQ(test1.isKnotFixed(i), knotfixed[i]) << 
       "Knot fixed problem on knot " << i;
 
-    //Knot sigma
-    EXPECT_FLOAT_EQ(test1.getKnotSigma(i), knotsigma[i]) <<
-      "Knot sigma problem in test file on knot " << i;
+    //Knot range
+    EXPECT_FLOAT_EQ(test1.getKnotRange(i), knotrange[i]) <<
+      "Knot range problem in test file on knot " << i;
     
     //Lower limit
     EXPECT_EQ(test1.knotHasLowerLimit(i), haslowlim[i]) <<
@@ -203,7 +194,7 @@ TEST(initFile2DTest, ReadCheck) {
   const double sigmapos[] = { 0.004, 0.03, 0.10 };
   const double sigmaval[] = { 0.3, 0.35, 0.45 };
   const bool sigmafixed[] = { false, false, true };
-  const double sigmasigma[] = { 0.03, 0.03, 0.0 };
+  const double sigmarange[] = { 0.03, 0.03, 0.0 };
   const bool haslowlimsigma[] = { false, true, false };
   const double lowlimsigma[] = { 0.0, 0.1, 0.0 };
   const bool hasuplimsigma[] = { false, true, false };
@@ -213,45 +204,33 @@ TEST(initFile2DTest, ReadCheck) {
   for (unsigned int i = 0; i < nsigmas; ++i) {
     //Knot position test
     EXPECT_FLOAT_EQ(kp[i], sigmapos[i]) << 
-      "Sigma knot position problem in test file; expected " <<
-      sigmapos[i] << " got " << kp[i] << " on knot " << i;
+      "Sigma knot position problem in test file on knot " << i;
     
     //Knot value test
     EXPECT_FLOAT_EQ(kv[i], sigmaval[i]) << 
-      "Sigma knot value problem in test file; expected " <<
-      sigmaval[i] << " got " << kv[i] << " on knot " << i;
+      "Sigma knot value problem in test file on knot " << i;
     
-    //Sigma of sigma knots
+    //Fixed sigma knots
     EXPECT_EQ(test1.isKnotFixed(i+nknots), sigmafixed[i]) <<
-      "Sigma knot fixed problem; expected " << sigmafixed[i] <<
-      " got " << test1.isKnotFixed(i+nknots) << std::endl <<
-      " on sigma knot " << i;
+      "Sigma knot fixed problem on sigma knot " << i;
     
-    EXPECT_FLOAT_EQ(test1.getKnotSigma(i+nknots), sigmasigma[i]) <<
-      "Sigma knot sigma problem in test file; expected " << 
-      sigmasigma[i] << " got " << test1.getKnotSigma(i+nknots) << 
-      std::endl << " on sigma knot " << i;
+    //Range of sigma knots
+    EXPECT_FLOAT_EQ(test1.getKnotRange(i+nknots), sigmarange[i]) <<
+      "Sigma knot range problem in test file on sigma knot " << i;
     
     //Lower limit
     EXPECT_EQ(test1.knotHasLowerLimit(i+nknots), haslowlimsigma[i]) <<
-      "Sigma knot has lower limit problem; expected " << haslowlimsigma[i] <<
-      " got " << test1.knotHasLowerLimit(i+nknots) << std::endl << 
-      " on sigma knot " << i;
+      "Sigma knot has lower limit problem on sigma knot " << i;
     if (haslowlimsigma[i]) 
       EXPECT_FLOAT_EQ(test1.getLowerLimit(i+nknots), lowlimsigma[i]) <<
-	"Sigma knot lower limit problem in test file; expected " <<
-	lowlimsigma[i] << " got " << test1.getLowerLimit(i+nknots) << 
-	" on sigma knot " << i;
+	"Sigma knot lower limit problem in test file on sigma knot " << i;
     
     //Upper limit
     EXPECT_EQ(test1.knotHasUpperLimit(i+nknots), hasuplimsigma[i]) <<
-      "Sigma Knot has upper limit problem; expected " << hasuplimsigma[i] <<
-      " got " << test1.knotHasUpperLimit(i+nknots) << " on sigma knot " << i;
+      "Sigma Knot has upper limit problem on sigma knot " << i;
     if (hasuplimsigma[i]) 
       EXPECT_FLOAT_EQ(test1.getUpperLimit(i+nknots), uplimsigma[i]) <<
-	"Sigma knot upper limit problem in test file; expected " << 
-	uplimsigma[i] << " got " << test1.getUpperLimit(i+nknots) << 
-	" on sigma knot " << i;
+	"Sigma knot upper limit problem in test file on sigma knot " << i;
   }
 }
 

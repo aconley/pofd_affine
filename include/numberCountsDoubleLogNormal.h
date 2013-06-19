@@ -255,8 +255,8 @@ class initFileDoubleLogNormal {
   double* knotval; //!< Initial value center for knot value (all)
 
   //These are optional
-  bool has_sigma; //!< Has initial value sigma
-  double* sigma; //!< Sigma value for initial positions
+  bool has_range; //!< Has initial value range
+  double* range; //!< Range for initial positions
   bool has_lower_limits; //!< Has some lower limit information
   bool* has_lowlim; //!< Knots have lower limit
   double* lowlim; //!< Value of lower limit
@@ -298,7 +298,7 @@ class initFileDoubleLogNormal {
   void generateRandomKnotValues(paramSet& pnew) const; //!< Seed knot values
   void generateRandomKnotValues(paramSet& pnew, const paramSet& pcen) const; //!< Seed knot values
 
-  double getKnotSigma(unsigned int) const; //!< Get knot sigma
+  double getKnotRange(unsigned int) const; //!< Get knot range
   bool isKnotFixed(unsigned int) const; //!< Is a knot fixed?
 
   bool knotHasLowerLimit(unsigned int) const; //!< Does knot have a lower limit

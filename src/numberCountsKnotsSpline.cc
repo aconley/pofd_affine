@@ -334,8 +334,8 @@ double numberCountsKnotsSpline::getRPos(double fluxdensity,
 
   Note you need to zero your input array first if you just want R+
  */
-void numberCountsKnotsSpline::getRPos(unsigned int n,const double* const flux,
-				      const beam& bm,double* R) const {
+void numberCountsKnotsSpline::getRPos(unsigned int n, const double* const flux,
+				      const beam& bm, double* R) const {
   if (n == 0) return;
   if ((!isValid()) || (!bm.hasPos())) {
     for (unsigned int i = 0; i < n; ++i)
@@ -359,6 +359,10 @@ void numberCountsKnotsSpline::getRPos(unsigned int n,const double* const flux,
     const double* warr = bm.getPosWeights();
     for (unsigned int j = 0; j < n; ++j) {
       fluxdensity = flux[j];
+      if (fluxdensity <= 0.0) {
+	R[j] = 0.0;
+	continue;
+      }
       workval = 0.0;
       for (unsigned int i = 0; i < npsf; ++i) {
 	ieta = ipixarr[i];
@@ -373,6 +377,10 @@ void numberCountsKnotsSpline::getRPos(unsigned int n,const double* const flux,
     //Unbinned beam
     for (unsigned int j = 0; j < n; ++j) {
       fluxdensity = flux[j];
+      if (fluxdensity <= 0.0) {
+	R[j] = 0.0;
+	continue;
+      }
       workval = 0.0;
       for (unsigned int i = 0; i < npsf; ++i) {
 	ieta = ipixarr[i];
@@ -456,11 +464,16 @@ void numberCountsKnotsSpline::getRNeg(unsigned int n,const double* const flux,
 
   unsigned int npsf = bm.getNNeg();
   double currarg, ieta, workval, fluxdensity;
+  double df = flux[1] - flux[0];
   const double *ipixarr = bm.getNegInvPixArr();
   if (bm.hasNegWeights()) {
     const double* warr = bm.getPosWeights();
     for (unsigned int j = 0; j < n; ++j) {
-      fluxdensity = flux[j];
+      fluxdensity = flux[j] - df;
+      if (fluxdensity <= 0.0) {
+	R[j] = 0.0;
+	continue;
+      }
       workval = 0.0;
       for (unsigned int i = 0; i < npsf; ++i) {
 	ieta = ipixarr[i];
@@ -474,6 +487,10 @@ void numberCountsKnotsSpline::getRNeg(unsigned int n,const double* const flux,
   } else {
     for (unsigned int j = 0; j < n; ++j) {
       fluxdensity = flux[j];
+      if (fluxdensity <= 0.0) {
+	R[j] = 0.0;
+	continue;
+      }
       workval = 0.0;
       for (unsigned int i = 0; i < npsf; ++i) {
 	ieta = ipixarr[i];

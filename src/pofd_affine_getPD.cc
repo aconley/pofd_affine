@@ -20,8 +20,10 @@ static struct option long_options[] = {
   {"version",no_argument,0,'V'}, //Below here not parsed in main routine
   {"fits", no_argument, 0, 'f'},
   {"histogram", no_argument, 0, 'H'},
+  {"log", no_argument, 0, 'l'},
   {"maxflux",required_argument,0,'2'},
-  {"nflux",required_argument,0,'n'},
+  {"nofixedge", no_argument, 0, 'F'},
+  {"nflux", required_argument, 0, 'n'},
   {"ninterp",required_argument,0,'N'},
   {"sigmanoise",required_argument,0,'s'},
   {"verbose",no_argument,0,'v'},
@@ -33,13 +35,13 @@ static struct option long_options[] = {
   {"sigma2",required_argument,0,'7'},
   {0,0,0,0}
 };
-char optstring[] = "hdVfH2:n:N:s:vw:3:4:5:6:7:";
+char optstring[] = "hdVfFHl2:n:N:s:vw:3:4:5:6:7:";
 
 int getPDSingle(int argc, char **argv) {
 
   double sigma_noise; //Noise
   unsigned int nflux, ninterp;
-  bool has_wisdom, has_user_maxflux;
+  bool has_wisdom, has_user_maxflux, fixEdge, getLog;
   bool histogram, verbose, write_to_fits;
   double maxflux;
   std::string wisdom_file;
@@ -58,15 +60,20 @@ int getPDSingle(int argc, char **argv) {
   verbose             = false;
   histogram           = false;
   write_to_fits       = false;
+  fixEdge             = true;
+  getLog              = false;
 
   int c;
   int option_index = 0;
   optind = 1; //Reset parse
-  while ( ( c = getopt_long(argc,argv,optstring,long_options,
-			    &option_index ) ) != -1 ) 
+  while ((c = getopt_long(argc,argv,optstring,long_options,
+			  &option_index)) != -1) 
     switch(c) {
     case 'f' :
       write_to_fits = true;
+      break;
+    case 'F':
+      fixEdge = false;
       break;
     case 'H' :
       histogram = true;
@@ -74,6 +81,9 @@ int getPDSingle(int argc, char **argv) {
     case '2' :
       maxflux = atof(optarg);
       has_user_maxflux = true;
+      break;
+    case 'l':
+      getLog = true;
       break;
     case 'n' :
       nflux = static_cast< unsigned int >( atoi(optarg) );
@@ -93,15 +103,15 @@ int getPDSingle(int argc, char **argv) {
       break;
     }
 
-  if (optind >= argc-2 ) {
+  if (optind >= argc-2) {
     std::cerr << "Some required arguments missing" << std::endl;
     std::cerr << " Use --help for description of inputs and options"
 	      << std::endl;
     return 1;
   }
-  initfile   = std::string( argv[optind] );
-  psffile    = std::string( argv[optind+1] );
-  outputfile = std::string( argv[optind+2] );
+  initfile   = std::string(argv[optind]);
+  psffile    = std::string(argv[optind+1]);
+  outputfile = std::string(argv[optind+2]);
 
   //Input tests
   if (nflux == 0) {
@@ -178,13 +188,17 @@ int getPDSingle(int argc, char **argv) {
 	pr = model_info.getKnot(i);
 	printf("   %11.5e  %11.5e\n",pr.first,pr.second);
       }
+      if (getLog)
+	printf("  Getting Log_2 P(D)\n");
+      if (fixEdge)
+	printf("  Applying edge fix.\n");
     }
 
     //Get P(D)
     if (verbose) std::cout << "Getting P(D) with transform length: " 
 			   << nflux << std::endl;
-    pfactory.initPD(nflux,sigma_noise,maxflux,model,bm);
-    pfactory.getPD( sigma_noise, pd, false, true );
+    pfactory.initPD(nflux, sigma_noise, maxflux, model, bm);
+    pfactory.getPD(sigma_noise, pd, getLog, fixEdge);
     
     //Write it
     if (verbose) std::cout << "Writing P(D) to file " << outputfile 
@@ -219,7 +233,7 @@ int getPDDouble(int argc, char** argv) {
   double sigma1, sigma2; //Noise
   unsigned int nflux, nedge;
   bool has_wisdom, has_user_maxflux1, has_user_maxflux2;
-  bool histogram, verbose, write_to_fits, doedge;
+  bool histogram, verbose, write_to_fits, fixEdge, getLog, doedge;
   double maxflux1, maxflux2;
   std::string wisdom_file;
   
@@ -240,6 +254,8 @@ int getPDDouble(int argc, char** argv) {
   histogram           = false;
   write_to_fits       = false;
   nedge               = 256;
+  fixEdge             = true;
+  getLog              = false;
   doedge              = true;
 
   int c;
@@ -251,8 +267,14 @@ int getPDDouble(int argc, char** argv) {
     case 'f' :
       write_to_fits = true;
       break;
+    case 'F':
+      fixEdge = false;
+      break;
     case 'H' :
       histogram = true;
+      break;
+    case 'l':
+      getLog = true;
       break;
     case '3' :
       maxflux1 = atof(optarg);
@@ -280,16 +302,16 @@ int getPDDouble(int argc, char** argv) {
       break;
     }
 
-  if (optind >= argc-3 ) {
+  if (optind >= argc-3) {
     std::cerr << "Some required arguments missing" << std::endl;
     std::cerr << " Use --help for description of inputs and options"
 	      << std::endl;
     return 1;
   }
-  initfile   = std::string( argv[optind] );
-  psffile1   = std::string( argv[optind+1] );
-  psffile2   = std::string( argv[optind+2] );
-  outputfile = std::string( argv[optind+3] );
+  initfile   = std::string(argv[optind]);
+  psffile1   = std::string(argv[optind+1]);
+  psffile2   = std::string(argv[optind+2]);
+  outputfile = std::string(argv[optind+3]);
 
   //Input tests
   if (nflux == 0) {
@@ -323,7 +345,7 @@ int getPDDouble(int argc, char** argv) {
     model.setParams(pars);
 
     PDFactoryDouble pfactory(nedge);
-    doublebeam bm( psffile1, psffile2, histogram );
+    doublebeam bm(psffile1, psffile2, histogram);
 
     PDDouble pd;
 
@@ -379,6 +401,10 @@ int getPDDouble(int argc, char** argv) {
 	pr = model_info.getOffset(i);
 	printf("   %11.5e  %11.5e\n",pr.first,pr.second);
       }
+      if (getLog)
+	printf("  Getting Log_2 P(D)\n");
+      if (fixEdge)
+	printf("  Applying edge fix.\n");
     }
 
     //Get P(D)
@@ -386,7 +412,7 @@ int getPDDouble(int argc, char** argv) {
 			   << nflux << std::endl;
     pfactory.initPD(nflux, sigma1, sigma2, maxflux1, maxflux2,
 		    model, bm, doedge);
-    pfactory.getPD(sigma1, sigma2, pd, false, true);
+    pfactory.getPD(sigma1, sigma2, pd, getLog, fixEdge);
 
     //Write it
     if (verbose) std::cout << "Writing P(D) to file " << outputfile 
@@ -505,8 +531,12 @@ int main( int argc, char** argv ) {
       std::cerr << "\t\tUse the 2D model." << std::endl;
       std::cerr << "\t-f, --fits" << std::endl;
       std::cerr << "\t\tWrite the output as a FITS file." << std::endl;
+      std::cerr << "\t-F, --nofixedge" << std::endl;
+      std::cerr << "\t\tDon't apply edge fix up." << std::endl;
       std::cerr << "\t-H, --histogram" << std::endl;
       std::cerr << "\t\tUse beam histogramming." << std::endl;
+      std::cerr << "\t-l, --log" << std::endl;
+      std::cerr << "\t\tReturn log2 P(D) rather than P(D)." << std::endl;
       std::cerr << "\t-n, --nflux value" << std::endl;
       std::cerr << "\t\tThe number of requested fluxes, also the FFT length." 
 		<< std::endl;
