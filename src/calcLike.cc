@@ -7,7 +7,7 @@
 #include "../include/affineExcept.h"
 
 const double calcLikeSingle::bad_like = 1e25;
-const double calcLikeSingle::flux_safety = 1.2;
+const double calcLikeSingle::flux_safety = 1.1;
 
 calcLikeSingle::calcLikeSingle(unsigned int NINTERP) :
   data_read(false), ndatasets(0), data(NULL), maxflux(0.0), 
@@ -102,7 +102,6 @@ void calcLikeSingle::readDataFromFile(const std::string& datafile,
   if (std::isnan(maxflux) || std::isinf(maxflux))
     throw affineExcept("calcLikeSingle", "readDataFromFile",
 		       "Problem with maxflux", 2);
-  maxflux *= calcLikeSingle::flux_safety;
 
   // We can't set the likelihood offset unless sigma base is set.
   like_offset[0] = 0.0;
@@ -155,8 +154,6 @@ readDataFromFiles(const std::vector<std::string>& datafiles,
 			 "Problem with maxflux", 5);
     if (cmaxflux > maxflux) maxflux=cmaxflux;
   }
-
-  maxflux *= calcLikeSingle::flux_safety;
 
   data_read = true;
 }
@@ -284,8 +281,14 @@ calcLikeSingle::getLogLike(const numberCounts& model, double sigmult,
   double max_sigma = maxsigma_base * sigmult;
   if (max_sigma < 0.0) return calcLikeSingle::bad_like;
 
-  //Initialize P(D)
-  pdfac.initPD(fftsize, max_sigma, maxflux, model, bm);
+  // Initialize P(D)
+  // We have to decide what maxflux to ask for.  This will
+  // be the larger of the data maximum flux or the
+  // highest knot.
+  double modelmax = model.getMaxFlux();
+  double maxRflux = maxflux > modelmax ? maxflux : modelmax;
+  maxRflux *= calcLikeSingle::flux_safety;
+  pdfac.initPD(fftsize, max_sigma, maxRflux, model, bm);
 
   //Compute likelihood of each bit of data
   double curr_LogLike, LogLike;

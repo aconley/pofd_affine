@@ -7,7 +7,7 @@
 #include "../include/affineExcept.h"
 
 const double calcLikeDoubleSingle::bad_like = 1e25;
-const double calcLikeDoubleSingle::flux_safety = 1.2;
+const double calcLikeDoubleSingle::flux_safety = 1.1;
 
 calcLikeDoubleSingle::calcLikeDoubleSingle(unsigned int NEDGE) :
   data_read(false), ndatasets(0), data(NULL), maxflux1(0.0), maxflux2(0.0),
@@ -117,8 +117,6 @@ void calcLikeDoubleSingle::readDataFromFile(const std::string& datafile1,
   if (std::isnan(maxflux2) || std::isinf(maxflux2))
     throw affineExcept("calcLikeDoubleSingle", "readDataFromFile",
 		       "Problem with maxflux, band 2", 3);
-  maxflux1 *= calcLikeDoubleSingle::flux_safety;
-  maxflux2 *= calcLikeDoubleSingle::flux_safety;
 
   // Can't be computed yet
   like_offset[0] = 0.0;
@@ -185,9 +183,6 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
     if (pr.first > maxflux1) maxflux1 = pr.first;
     if (pr.second > maxflux2) maxflux2 = pr.second;
   }
-
-  maxflux1 *= calcLikeDoubleSingle::flux_safety;
-  maxflux2 *= calcLikeDoubleSingle::flux_safety;
 
   data_read = true;
 }
@@ -377,7 +372,18 @@ calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
   if (max_sigma2 < 0.0) return calcLikeDoubleSingle::bad_like;
 
   //Initialize P(D)
-  pdfac.initPD(fftsize, max_sigma1, max_sigma2, maxflux1, maxflux2, 
+
+
+  // We have to decide what maxflux to ask for.  This will
+  // be the larger of the data maximum flux or the
+  // maximum flux of the model
+  double modelmax1 = model.getMaxFlux(0);
+  double maxRflux1 = maxflux1 > modelmax1 ? maxflux1 : modelmax1;
+  double modelmax2 = model.getMaxFlux(1);
+  double maxRflux2 = maxflux2 > modelmax2 ? maxflux2 : modelmax2;
+  maxRflux1 *= calcLikeDoubleSingle::flux_safety;
+  maxRflux2 *= calcLikeDoubleSingle::flux_safety;
+  pdfac.initPD(fftsize, max_sigma1, max_sigma2, maxRflux1, maxRflux2,
 	       model, bm, setedge);
 
   //Compute likelihood of each bit of data

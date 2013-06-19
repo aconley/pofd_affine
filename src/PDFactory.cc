@@ -323,7 +323,8 @@ void PDFactory::initPD(unsigned int n, double sigma,
   // for ninterp positions, then fill that into rvals.
   // We do pos and neg seperately because the interpolation works
   // better on each component, rather than interpolating on
-  // the sum of R.  At least, that's the theory.
+  // the sum of R.  At least, that's the theory.  Note that the
+  // interpolated R is always computed out to its highest non-zero value
 
   if (has_pos) {
     double mininterpflux = modelmin * subedgemult;
@@ -362,13 +363,13 @@ void PDFactory::initPD(unsigned int n, double sigma,
     //Now interpolate out; note r still needs to be multiplied by dflux
     // for use later.  We figure out which bins are covered by the
     // interpolation for efficiency
-    int st = static_cast<int>( mininterpflux/dflux + 0.9999999999999999 );
+    int st = static_cast<int>(mininterpflux / dflux + 0.9999999999999999);
     unsigned int minitidx = (st < 0) ? 0 : static_cast<unsigned int>(st);
     unsigned int maxitidx = static_cast<unsigned int>(maxinterpflux/dflux);
     if (maxitidx >= n) maxitidx=n-1;
 
     //Now interpolate, setting to zero outside the range
-    //if (minitidx > 0) memset(rvals, 0, minitidx * sizeof(double));
+    if (minitidx > 0) memset(rvals, 0, minitidx * sizeof(double));
     double cflux, splval;
     for (unsigned int i = minitidx; i <= maxitidx; ++i) {
       cflux = static_cast<double>(i)*dflux; //Min is always 0 in R
@@ -437,7 +438,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
 
   //Now that we have R, use it to compute the mean and variance
   // mn = \int x R dx.
-  mn = rvals[1]; //Noting that RFlux[0] = 0
+  mn = rvals[1]; //Noting that RFlux[0] = 0 always
   for (unsigned int i = 2; i < n-1; ++i)
     mn += rvals[i] * static_cast<double>(i);
   mn += 0.5 * rvals[n-1] * static_cast<double>(n-1);
@@ -456,7 +457,7 @@ void PDFactory::initPD(unsigned int n, double sigma,
 
   //Now, compute the sigma for the maximum instrumental sigma
   // supported by this call to init
-  sg = sqrt( var_noi + sigma * sigma);
+  sg = sqrt(var_noi + sigma * sigma);
 
   //Multiply R by dflux factor to represent the actual
   // number of sources in each bin
@@ -484,7 +485,8 @@ void PDFactory::initPD(unsigned int n, double sigma,
   if (maxflux <= pofd_mcmc::n_sigma_pad * sg) {
     std::stringstream errstr;
     errstr << "Top wrap problem, with maxflux: " << maxflux
-	   << " sigma value: " << sigma 
+	   << " instrument sigma value: " << sigma << std::endl
+	   << " intrinsic sigma estimate: " << sqrt(var_noi)
 	   << " and current sigma estimate: " << sg << std::endl;
     errstr << "For model: " << model;
     throw affineExcept("PDFactory", "initPD", errstr.str(), 4);
