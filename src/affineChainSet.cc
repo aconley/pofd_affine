@@ -279,6 +279,27 @@ bool affineStepChunk::getLastStep(unsigned int walker_idx,
   return true;
 }
 
+
+/*!
+  \returns true if it was able to do the replacement, false otherwise
+
+  This should be used with care!
+ */
+bool affineStepChunk::replaceLastStep(unsigned int walker_idx,
+				      const paramSet& pars, double lglike) {
+  if (walker_idx >= nwalkers) return false;
+  if (pars.getNParams() > nparams) return false;
+
+  unsigned int csteps = nsteps[walker_idx];
+  if (csteps == 0) return false;
+  float *ptr;
+  ptr = getParamPointer(walker_idx, csteps-1);
+  for (unsigned int i = 0; i < nparams; ++i)
+    ptr[i] = pars[i];
+  logLike[walker_idx * niters + csteps - 1] = lglike;
+  return true;
+}
+
 /*!
   \returns true if it got the step, false otherwise
  */
@@ -468,6 +489,37 @@ void affineChainSet::getLastStep(unsigned int walker_idx,
   if (!succ)
     throw affineExcept("affineChainSet", "getLastStep",
 		       "Error getting last step",3);
+}
+
+/*!
+  This should be used with extreme care.
+*/
+void affineChainSet::replaceLastStep(unsigned int walker_idx,
+				     const paramSet& pars, double lglike) {
+  int nchunks = static_cast<int>(steps.size());
+  if (nchunks == 0) 
+    throw affineExcept("affineChainSet", "replaceLastStep",
+		       "No steps taken",1);
+  if (walker_idx >= nwalkers)
+    throw affineExcept("affineChainSet", "replaceLastStep",
+		       "Walker index invalid", 2);
+
+  bool succ;
+  unsigned int csteps;
+  affineStepChunk* chunk_ptr;
+  succ = false;
+  for (int i = nchunks-1; i >= 0; --i) {
+    chunk_ptr = steps[i];
+    csteps = chunk_ptr->nsteps[walker_idx];
+    if (csteps == 0) continue; // Empty chunk, move on
+    
+    // Found one with a step -- replace
+    succ = chunk_ptr->replaceLastStep(walker_idx, pars, lglike);
+    break;
+  }
+  if (!succ)
+    throw affineExcept("affineChainSet", "replaceLastStep",
+		       "Error replacing last step", 3);
 }
 
 void affineChainSet::getStep(unsigned int chunkidx, 
