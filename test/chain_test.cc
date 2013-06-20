@@ -133,6 +133,42 @@ TEST(affineChainSetTest, InsertRecoverClear) {
 
 }
 
+// Ability to insert and then replace data
+TEST(affineChainSetTest, Replace) {
+  const unsigned int nwalkers = 2;
+  const unsigned int nparams  = 3;
+  const unsigned int niter    = 20;
+
+  affineChainSet chains(nwalkers, nparams);
+
+  // We should crash out if the basic stuff doesn't work -- not much
+  // point in doing more complicated tests
+  chains.addChunk(niter);
+  ASSERT_EQ(1U, chains.getNChunks()) << "NChunks should be one after addChunk";
+  
+  //Add first step
+  paramSet p(nparams);
+  p[0] = 1.0; p[1] = 2.0; p[2] = 4.0;
+  double logLike = 4.0;
+  ASSERT_TRUE(chains.addNewStep(0, p, logLike)) << "Adding step failed";
+  ASSERT_EQ(1U, chains.getNIters()) << "NIters should be one after first add";
+  ASSERT_TRUE(chains.addNewStep(0, p, logLike)) << "Adding second step failed";
+  ASSERT_EQ(2U, chains.getNIters()) << "NIters should be two after second add";
+
+  //Replacement test
+  p[0] = 1.5; p[1] = 3.0; p[2] = 5.0;
+  logLike = 3.0;
+  chains.replaceLastStep(0, p, logLike);
+  paramSet p2(nparams);
+  double logLike2;
+  chains.getLastStep(0, p2, logLike2);
+  EXPECT_FLOAT_EQ(logLike, logLike2) <<
+    "Recovered step after replacement like doesn't match input";
+  for (unsigned int i = 0; i < nparams; ++i)
+    EXPECT_FLOAT_EQ(p[i], p2[i]) << "Recovered step params after"
+				 << " replacement don't match input";
+}
+
 // Randomly adding a bunch of data
 TEST(affineChainSetTest, RandomInsert) {
   const unsigned int nwalkers = 2;

@@ -61,6 +61,7 @@ private:
   void doBurnIn() throw (affineExcept); //!< Master node burn in routine
   void doMasterStep(double=1.0) throw (affineExcept); //!< Does a step for all walkers, master node
   void emptyMasterQueue(double=1.0) throw (affineExcept); //!< Runs all steps in stepqueue as master node
+  void calcLastLikelihood(); //!< Compute the likelihoods of the last step
 
 protected:
   bool is_init; //!< Have the chains been initialized?
@@ -139,7 +140,12 @@ public:
   //User must subclass these for their use.
   // Note that initChains should set up some sort of initial position as well
   virtual void initChains() = 0; //!< Set up information in each chain.  Must set is_init to true
-  virtual void generateInitialPosition(const paramSet&) = 0; //!< Generate initial position based on input parameter Set
+  /*! \brief Generate initial position based on input parameter set
+
+    The likelihoods of this initial step will be computed elsewhere.
+    The initial parameters must be considered valid by the likelihood function.
+  */
+  virtual void generateInitialPosition(const paramSet&) = 0; //!< 
 
   /*\brief Computes the log likelihood.  
     Uses the second argument to signal if the parameters were rejected */

@@ -20,7 +20,7 @@ public:
 
   void initChains();
   void generateInitialPosition(const paramSet&);
-  double getLogLike(const paramSet&);
+  double getLogLike(const paramSet&, bool&);
 };
 
 testEnsemble::testEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
@@ -58,7 +58,8 @@ void testEnsemble::generateInitialPosition(const paramSet& p) {
   }
 }
 
-double testEnsemble::getLogLike(const paramSet& p) {
+double testEnsemble::getLogLike(const paramSet& p, bool& b) {
+  b = false;
   return 1.0;
 }
 

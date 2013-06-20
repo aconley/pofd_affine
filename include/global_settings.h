@@ -18,7 +18,7 @@ arXiv1202.3665F.
   \brief Global convenience variables
 */
 namespace mcmc_affine {
-  const char version[] = "0.2.3"; //!< Version number
+  const char version[] = "0.2.4"; //!< Version number
 
   const double pi = 3.141592653589793238462643383279502884197; //!< \f$\pi\f$
   const double two_pi = 2.0*pi; //!< \f$2 \pi \f$

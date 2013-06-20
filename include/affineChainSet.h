@@ -50,6 +50,9 @@ struct affineStepChunk {
   /*! \brief Get most resent step for given walker */
   bool getLastStep(unsigned int, paramSet&, double&) const;
   
+  /*! \brief Replace last step */
+  bool replaceLastStep(unsigned int, const paramSet&, double);
+
   /*! \brief Get pointer to particular set of parameters */
   float* getParamPointer(unsigned int, unsigned int); 
   /*! \brief Get pointer to particular set of parameters */
@@ -127,6 +130,9 @@ class affineChainSet {
   /*! \brief Returns the most recent step for the specified walker */
   void getLastStep(unsigned int, paramSet&, double&) const
     throw (affineExcept);
+
+  /*! \brief Replace last step */
+  void replaceLastStep(unsigned int, const paramSet&, double);
 
   /*! \brief Get a specified step */
   void getStep(unsigned int, unsigned int, unsigned int, paramSet&,

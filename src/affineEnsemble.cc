@@ -383,6 +383,7 @@ void affineEnsemble::sample() {
   //  slave ones just compute likelihoods, the master node suggests new
   //  steps and decides whether to accept them or not
   if (!is_init) initChains();
+  MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0) masterSample(); else slaveSample();
 }
 
@@ -398,12 +399,18 @@ void affineEnsemble::sample() {
  */
 void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
   if (!is_init) initChains();
+
   if (rank == 0) {
     if (!isValid())
       throw affineExcept("affineEnsemble", "doSteps",
 			 "Calling with invalid model setup", 1);
     int jnk;
-    
+
+    // Make sure our previous likelihood is valid
+    if (verbosity >= 2)
+      std::cout << "Computing likelihoods of initializing steps" << std::endl;
+    calcLastLikelihood();
+
     //Do initial steps
     if (initsteps > 0) {
       if (verbosity >= 1) {
@@ -472,10 +479,18 @@ void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
 }
 
 void affineEnsemble::masterSample() {
+
+  if (rank != 0) 
+    throw affineExcept("affineEnsemble", "masterSample", 
+		       "Don't call on slave", 1);
+
   if (!isValid())
     throw affineExcept("affineEnsemble", "masterSample",
-		       "Calling with invalid model setup", 1);
+		       "Calling with invalid model setup", 2);
   
+  //Make sure we have valid likelihoods
+  calcLastLikelihood();
+
   //Do initial steps
   if (init_steps > 0) {
     if (verbosity >= 1) {
@@ -502,7 +517,7 @@ void affineEnsemble::masterSample() {
     // but catching bugs in the acceptance is worth the (small) risk
     if (!hasOneStepBeenAccepted())
       throw affineExcept("affineEnsemble", "masterSample",
-			 "Failed to accept any initial steps", 2);
+			 "Failed to accept any initial steps", 3);
     
     // Get best step, regenerate from that
     paramSet p(nparams);
@@ -517,6 +532,9 @@ void affineEnsemble::masterSample() {
       std::cout << " Generating new initial position from that" << std::endl;
     }
     generateInitialPosition(p);
+    
+    // Get the likelihoods
+    calcLastLikelihood();
   }
 
   //Do burn in
@@ -542,7 +560,7 @@ void affineEnsemble::masterSample() {
   // This would be a definite problem
   if (!hasOneStepBeenAccepted())
     throw affineExcept("affineEnsemble", "masterSample",
-		       "Failed to accept any steps from main loop", 3);
+		       "Failed to accept any steps from main loop", 4);
   
   //Tell slaves we are done
   int jnk, nproc;
@@ -775,6 +793,124 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
 }
 
 /*!
+  Redoes the likelihood compuatation for the most recent step.
+  The idea behind this is that sometimes -- like when initializing
+  the chains -- you need to compute the likelihood of a step, but it's
+  computationally difficult.  This provides a mechanism for doing that 
+  which is called by the internal sampling routines to make sure
+  they are working from valid likelihoods.
+
+  This can not be called from slave nodes.
+
+  The slave nodes should be in the middle of slaveSample for this
+  to work.
+*/
+void affineEnsemble::calcLastLikelihood() {
+
+  if (rank != 0)
+    throw affineExcept("affineEnsemble", "calcLastLikelihood",
+		       "Should only be called from master node", 1);
+
+  MPI_Status Info;
+  bool parrej;
+  int jnk, this_rank, this_tag, ismsg;
+  
+  // Set up variable for passing stuff around
+  if (pstep.oldStep.getNParams() < nparams) 
+    pstep.oldStep.setNParams(nparams);
+  if (pstep.newStep.getNParams() < nparams) 
+    pstep.newStep.setNParams(nparams);
+  
+  // Set up a queue of things that need updating
+  affineQueue<unsigned int> needCalc(nwalkers);
+  for (unsigned int i = 0; i < nwalkers; ++i)
+    needCalc.push(i);
+  
+  int nproc;
+  MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+  
+  unsigned int ndone = 0;
+  unsigned int this_update;
+  // This is pretty much a slightly modified version of what happens
+  // in emptyMasterQueue
+  while (ndone < nwalkers) {
+    // If there are available procs, send them a step to do
+    if (!procqueue.empty())
+      try {
+	for (unsigned int i = 0; i < needCalc.size(); ++i) {
+	  if (procqueue.empty()) break; // No more procs available
+	  this_rank = procqueue.pop();
+	  this_update = needCalc.pop();
+	  chains.getLastStep(this_update, pstep.newStep, pstep.newLogLike);
+	  pstep.update_idx = this_update;
+	  MPI_Send(&jnk, 1, MPI_INT, this_rank, mcmc_affine::SENDINGPOINT,
+		   MPI_COMM_WORLD);
+	  pstep.sendSelf(MPI_COMM_WORLD, this_rank);
+	}
+      } catch (const affineExcept& ex) {
+	for (int i = 1; i < nproc; ++i)
+	  MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
+	throw ex;
+      }
+    
+    //No available procs, so wait for some sort of message
+    // We use Iprobe to see if a message is available, and if not
+    // sleep for 1/100th of a second and try again
+    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
+    while (ismsg == 0) {
+      usleep(mcmc_affine::usleeplen); //Sleep for 1/100th of a second
+      MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
+    }
+    
+    //There is a message, grab it and figure out what to do
+    MPI_Recv(&jnk, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, 
+	     MPI_COMM_WORLD, &Info);
+    this_tag = Info.MPI_TAG;
+    this_rank = Info.MPI_SOURCE;
+    
+    if (this_tag == mcmc_affine::ERROR) {
+      //Slave had a problem, so send stop message to all slaves
+      for (int i = 1; i < nproc; ++i)
+	MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
+      throw affineExcept("affineEnsemble", "calcLastLikelihood",
+			 "Problem encountered in slave", 1);
+    } else if (this_tag == mcmc_affine::SENDINGRESULT) {
+      //Slave finished a computation, is sending us the result
+      // First, find out if the parameter set was rejected
+      MPI_Recv(&parrej, 1, MPI::BOOL, this_rank, mcmc_affine::SENDINGPARREJ,
+	       MPI_COMM_WORLD, &Info);
+      // And get the actual step
+      pstep.recieveCopy(MPI_COMM_WORLD, this_rank);
+      
+      if (parrej) {
+	// If step was rejected, treat this as an error and crash
+	for (int i = 1; i < nproc; ++i)
+	  MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
+	std::stringstream errstr;
+	errstr << "Unable to compute likelihood of requested step: "
+	       << std::endl << " Walker: " << pstep.update_idx << std::endl
+	       << pstep.newStep;
+	throw affineExcept("affineEnsemble", "calcLastLikelihood",
+			   errstr.str(), 2);
+      }
+      
+      // Update likelihood
+      chains.replaceLastStep(pstep.update_idx, pstep.newStep, 
+			     pstep.newLogLike);
+      
+      ndone += 1;
+    } else if (this_tag == mcmc_affine::REQUESTPOINT) {
+      procqueue.push(this_rank);
+    } else {
+      std::stringstream sstream;
+      sstream << "Master got unexpected message from " << this_rank
+	      << " with code: " << this_tag;
+    }
+  }
+
+}
+
+/*!
   \param[in] p Parameters to compute log likelihood for
   \returns The log likelihood, or nan if the parameters were rejected
 
@@ -823,7 +959,7 @@ void affineEnsemble::generateNewStep(unsigned int idx1, unsigned int idx2,
   chains.getLastStep(idx1, prstep.oldStep, prstep.oldLogLike);
   chains.getLastStep(idx2, params_tmp, tmp);
   prstep.update_idx = idx1;
-  prstep.newLogLike=std::numeric_limits<double>::quiet_NaN();
+  prstep.newLogLike = std::numeric_limits<double>::quiet_NaN();
 
   // Start trying to generate new step
   prstep.z = generateZ();
