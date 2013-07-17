@@ -321,11 +321,6 @@ initFileKnots::initFileKnots() : nknots(0), has_range(false),
   knotpos = knotval = range = lowlim = uplim = NULL;
   has_lowlim = has_uplim = NULL;
 
-  //Set random number generator seed from time
-  unsigned long long int seed;
-  seed = static_cast<unsigned long long int>(time(NULL));
-  seed += static_cast<unsigned long long int>(clock());
-  rangen.setSeed(seed);
 }
 
 /*
@@ -342,12 +337,6 @@ initFileKnots::initFileKnots(const std::string& flname,
   
   knotpos = knotval = range = lowlim = uplim = NULL;
   has_lowlim = has_uplim = NULL;
-
-  //Set random number generator seed from time
-  unsigned long long int seed;
-  seed = static_cast<unsigned long long int>(time(NULL));
-  seed += static_cast<unsigned long long int>(clock());
-  rangen.setSeed(seed);
 
   readFile(flname, read_range, read_limits);
 }
@@ -629,18 +618,21 @@ void initFileKnots::getParams(paramSet& p) const {
 }
 
 /*
+  \param[in] rangen Random number generator
   \param[out] pnew New parameter set generated
 
   This only fills the first nknots parameters.  It uses the central
   values from the initFile
 */
-void initFileKnots::generateRandomKnotValues(paramSet& pnew) const {
+void initFileKnots::generateRandomKnotValues(ran& rangen, 
+					     paramSet& pnew) const {
   paramSet pcen(pnew.getNParams());
   getParams(pcen); //Load central values into pcen
-  generateRandomKnotValues(pnew, pcen); //Get new values
+  generateRandomKnotValues(rangen, pnew, pcen); //Get new values
 }
 
 /*
+  \param[in] rangen Random number generator
   \param[out] pnew New parameter set generated
   \param[in] pcen  Central parameter values
 
@@ -648,7 +640,7 @@ void initFileKnots::generateRandomKnotValues(paramSet& pnew) const {
   allows the caller to use different central values than the ones
   from the initial file, but keep the ranges, limits, etc.
  */
-void initFileKnots::generateRandomKnotValues(paramSet& pnew, 
+void initFileKnots::generateRandomKnotValues(ran& rangen, paramSet& pnew, 
 					     const paramSet& pcen) const {
   const unsigned int maxiters = 1000; //Maximum number of generation attempts
 

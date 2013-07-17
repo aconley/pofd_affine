@@ -39,6 +39,8 @@ void specFile::init() {
   has_wisdom_file = false;
   wisdom_file.clear();
   verbosity = 0;
+  seed = 0LL;
+  has_user_seed = false;
 }
 
 /*!
@@ -310,13 +312,30 @@ void specFile::readFile(const std::string& flname) {
       }
 
       str.str(words[1]); str.clear(); str >> ival;
-      if (ival <= 0.0) {
+      if (ival <= 0) {
 	errstr << "Invalid (non positive) verbosity " << ival
 	       << " from line: " << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 3);
       }
 
       verbosity = static_cast<unsigned int>(ival);
+
+    } else if (words[0] == "seed") {
+      if (words.size() < 2) {
+	errstr << "seed line doesn't have right number of entries: "
+	       << line;
+	throw affineExcept("specFile", "readFile", errstr.str(), 2);
+      }
+
+      str.str(words[1]); str.clear(); str >> ival;
+      if (ival <= 0) {
+	errstr << "Invalid (non positive) seed " << ival
+	       << " from line: " << line;
+	throw affineExcept("specFile", "readFile", errstr.str(), 3);
+      }
+
+      seed = static_cast<unsigned long long int>(ival);
+      has_user_seed = true;
 
     } else {
       errstr << "Couldn't determine line type for: " << line;

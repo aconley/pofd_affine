@@ -264,8 +264,6 @@ class initFileDoubleLogNormal {
   bool* has_uplim; //!< Knots have upper limit
   double* uplim; //!< Value of upper limit
 
-  mutable ran rangen; //!< Random number generator
-
  public:
   initFileDoubleLogNormal(); //!< Basic constructor
   /*! \brief Constructor with file read */
@@ -283,9 +281,6 @@ class initFileDoubleLogNormal {
 
   void readFile(const std::string&, bool=false, bool=false); //!< Read file
 
-  /*! \brief Set seed of random number generator */
-  void setSeed(unsigned long long int seed) const { rangen.setSeed(seed); }
-
   void getKnotPos(std::vector<double>&) const; //!< Gets the knot positions for band 1
   void getKnotVals(std::vector<double>&) const; //!< Gets the knot values for band 1
   void getSigmaPos(std::vector<double>&) const; //!< Gets the knot positions for color model sigma
@@ -295,8 +290,8 @@ class initFileDoubleLogNormal {
 
   void getModelPositions(numberCountsDoubleLogNormal&) const; //!< Sets knot locations in model for all model components
   void getParams(paramSet& p) const; //!< Sets param values to central values
-  void generateRandomKnotValues(paramSet& pnew) const; //!< Seed knot values
-  void generateRandomKnotValues(paramSet& pnew, const paramSet& pcen) const; //!< Seed knot values
+  void generateRandomKnotValues(ran&, paramSet& pnew) const; //!< Seed knot values
+  void generateRandomKnotValues(ran&, paramSet& pnew, const paramSet& pcen) const; //!< Seed knot values
 
   double getKnotRange(unsigned int) const; //!< Get knot range
   bool isKnotFixed(unsigned int) const; //!< Is a knot fixed?

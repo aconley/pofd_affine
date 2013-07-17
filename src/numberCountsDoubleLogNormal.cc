@@ -1857,12 +1857,6 @@ initFileDoubleLogNormal::initFileDoubleLogNormal() :
 
   knotpos = knotval = range = lowlim = uplim = NULL;
   has_lowlim = has_uplim = NULL;
-
-  //Set random number generator seed from time
-  unsigned long long int seed;
-  seed = static_cast<unsigned long long int>(time(NULL));
-  seed += static_cast<unsigned long long int>(clock());
-  rangen.setSeed(seed);
 }
 
 /*!
@@ -1881,14 +1875,7 @@ initFileDoubleLogNormal::initFileDoubleLogNormal(const std::string& flname,
   knotpos = knotval = range = lowlim = uplim = NULL;
   has_lowlim = has_uplim = NULL;
 
-  //Set random number generator seed from time
-  unsigned long long int seed;
-  seed = static_cast<unsigned long long int>(time(NULL));
-  seed += static_cast<unsigned long long int>(clock());
-  rangen.setSeed(seed);
-
   readFile(flname, read_range, read_limits);
-
 }
 
 initFileDoubleLogNormal::~initFileDoubleLogNormal() {
@@ -2257,18 +2244,21 @@ void initFileDoubleLogNormal::getParams(paramSet& p) const {
 }
 
 /*
+  \param[in] rangen Random number generator
   \param[out] p Filled on output with the mean knot values.
 
   This only fills the first nknots+nsigmas+noffsets parameters.  It uses
   the central values from the initialization file
  */
-void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& pnew) const {
+void initFileDoubleLogNormal::generateRandomKnotValues(ran& rangen, 
+						       paramSet& pnew) const {
   paramSet pcen(pnew.getNParams());
   getParams(pcen); //Load central values into pcen
-  generateRandomKnotValues(pnew, pcen); //Get new values
+  generateRandomKnotValues(rangen, pnew, pcen); //Get new values
 }
 
 /*
+  \param[in] rangen Random number generator
   \param[out] pnew New parameter set generated
   \param[in] pcen  Central parameter values
 
@@ -2277,7 +2267,8 @@ void initFileDoubleLogNormal::generateRandomKnotValues(paramSet& pnew) const {
   from the initial file, but keep the sigmas, limits, etc.
 */
 void initFileDoubleLogNormal::
-generateRandomKnotValues(paramSet& pnew, const paramSet& pcen) const {
+generateRandomKnotValues(ran& rangen, paramSet& pnew, 
+			 const paramSet& pcen) const {
   const unsigned int maxiters = 1000; //Maximum number of generation attempts
 
   unsigned int ntot = nknots + noffsets + nsigmas;

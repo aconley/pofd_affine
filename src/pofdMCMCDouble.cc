@@ -137,6 +137,10 @@ bool pofdMCMCDouble::initChainsMaster() {
   // Verbosity
   setVerbosity(spec_info.verbosity);
 
+  // Seed
+  if (spec_info.has_user_seed)
+    setSeed(spec_info.seed);
+
   //Now, copy that information over to slaves
   int nproc;
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
@@ -267,7 +271,7 @@ void pofdMCMCDouble::generateInitialPosition(const paramSet& p) {
     //Fill in knot values.  Note that fixed parameters (sigma==0)
     // all get the same values for all walkers, which means all linear
     // combinations get the same value, so the parameter stays fixed
-    ifile.generateRandomKnotValues(pnew, p);
+    ifile.generateRandomKnotValues(rangen, pnew, p);
 
     //Sigma multiplier value, one copy for each band
     if (spec_info.fit_sigma1) {

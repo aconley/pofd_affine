@@ -77,7 +77,8 @@
                   Turns on ultraverbose mode (verbosity = 2)
    verbosity=    value		  
                   Sets verbosity to this level.
-  
+   seed=         value
+                  Sets random number generator seed
   Having multiple lines with dataset= is additive.
   Having multiple lines of the others results in only
   the values from the final such line being used.
@@ -120,6 +121,8 @@ struct specFileDouble {
   bool has_wisdom_file; //!< Has FFTW wisdom file
   std::string wisdom_file; //!< Name of wisdom file
   unsigned int verbosity; //!< Verbosity level
+  bool has_user_seed; //!< User set seed
+  unsigned long long int seed; //!< RNG seed
 
   specFileDouble(); //!< Default constructor
   specFileDouble(const std::string&); //!< Constructor with file read

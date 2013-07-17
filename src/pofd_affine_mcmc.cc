@@ -91,7 +91,6 @@ int main(int argc, char** argv) {
 		  << " noise" << std::endl;
 	std::cerr << "\tis marginalized over, or whether the beam is "
 		  << "histogrammed.  The " << std::endl;
-		  << std::endl;
 	std::cerr << "\toutput is written to outfile." << std::endl;
 	std::cerr << std::endl;
 	std::cerr << "OPTIONS" << std::endl;
