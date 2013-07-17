@@ -90,8 +90,9 @@ int main(int argc, char** argv) {
 	std::cerr << "\tto the fitting, such as priors, whether the instrument"
 		  << " noise" << std::endl;
 	std::cerr << "\tis marginalized over, or whether the beam is "
-		  << "histogrammed.  The output is written to outfile." 
+		  << "histogrammed.  The " << std::endl;
 		  << std::endl;
+	std::cerr << "\toutput is written to outfile." << std::endl;
 	std::cerr << std::endl;
 	std::cerr << "OPTIONS" << std::endl;
 	std::cerr << "\t-b, --burnmult BURN_MULTIPLE" << std::endl;
