@@ -1,5 +1,6 @@
 //PDDouble.cc
 #include<limits>
+#include<sstream>
 
 #include<fitsio.h>
 #include<fftw3.h>
@@ -203,18 +204,28 @@ void PDDouble::edgeFix(bool donorm) {
   if (std::isnan(mn1) || std::isinf(mn1) ||
       std::isnan(var1) || std::isinf(var1) ||
       std::isnan(mn2) || std::isinf(mn2) ||
-      std::isnan(var2) || std::isinf(var2))
-    throw affineExcept("PDDouble","edgeFix",
-		       "Problem with means/vars",2);
+      std::isnan(var2) || std::isinf(var2)) {
+    std::stringstream errstr;
+    errstr << "Problem with means/vars: " << std::endl;
+    if (std::isnan(mn1)) errstr << std::endl << "Mean 1 is NaN";
+    if (std::isinf(mn1)) errstr << std::endl<< "Mean 1 is Inf";
+    if (std::isnan(mn2)) errstr << std::endl << "Mean 2 is NaN";
+    if (std::isinf(mn2)) errstr << std::endl << "Mean 2 is Inf";
+    if (std::isnan(var1)) errstr << std::endl << "Var 1 is NaN";
+    if (std::isinf(var1)) errstr << std::endl << "Var 1 is Inf";
+    if (std::isnan(var2)) errstr << std::endl << "Var 2 is NaN";
+    if (std::isinf(var2)) errstr << std::endl << "Var 2 is Inf";
+    throw affineExcept("PDDouble","edgeFix", errstr.str(), 2);
+  }
   
-  double istdev1 = 1.0/sqrt(var1);
-  double istdev2 = 1.0/sqrt(var2);
+  double istdev1 = 1.0 / sqrt(var1);
+  double istdev2 = 1.0 / sqrt(var2);
 
   //Figure out what indexes these represent in x and y
   double maxfluxfix1, maxfluxfix2;
   int maxidx1, maxidx2;
-  maxfluxfix1 = mn1 - PDDouble::lowsigval*sqrt(var1);
-  maxfluxfix2 = mn2 - PDDouble::lowsigval*sqrt(var2);
+  maxfluxfix1 = mn1 - PDDouble::lowsigval * sqrt(var1);
+  maxfluxfix2 = mn2 - PDDouble::lowsigval * sqrt(var2);
   maxidx1 = static_cast<int>((maxfluxfix1 - minflux1) / dflux1);
   maxidx2 = static_cast<int>((maxfluxfix2 - minflux2) / dflux2);
   maxfluxfix1 = minflux1 + maxidx1 * dflux1;
@@ -225,29 +236,29 @@ void PDDouble::edgeFix(bool donorm) {
   if (maxidx1 > 1) {
     int minidx2 = (maxidx2 > 0) ? maxidx2 : 0;
     for (unsigned int j =  minidx2; j < n2; ++j) {
-      pdval = pd_[maxidx1*n2+j];
-      tval = (maxfluxfix1-mn1)*istdev1;
-      preconst = pdval*exp(0.5*tval*tval);
-      subfac = (minflux1 - mn1)*istdev1;
-      stepfac = dflux1*istdev1;
+      pdval = pd_[maxidx1 * n2 + j];
+      tval = (maxfluxfix1 - mn1) * istdev1;
+      preconst = pdval * exp(0.5 * tval * tval);
+      subfac = (minflux1 - mn1) * istdev1;
+      stepfac = dflux1 * istdev1;
       for (int i = 0; i < maxidx1; ++i) {
-	tval = subfac + i*stepfac;
-	pd_[i*n2+j] = preconst*exp(-0.5*tval*tval);
+	tval = subfac + i * stepfac;
+	pd_[i * n2 + j] = preconst * exp(-0.5 * tval * tval);
       }
     }
   }
   if (maxidx2 > 1) {
     int minidx1 = (maxidx1 > 0) ? maxidx1 : 0;
     for (unsigned int i =  minidx1; i < n1; ++i) {
-      rowptr = pd_ + i*n2;
+      rowptr = pd_ + i * n2;
       pdval = rowptr[maxidx2];
-      tval = (maxfluxfix2-mn2)*istdev2;
-      preconst = pdval*exp(0.5*tval*tval);
-      subfac = (minflux2 - mn2)*istdev2;
-      stepfac = dflux2*istdev2;
+      tval = (maxfluxfix2 - mn2) * istdev2;
+      preconst = pdval * exp(0.5 * tval * tval);
+      subfac = (minflux2 - mn2) * istdev2;
+      stepfac = dflux2 * istdev2;
       for (int j = 0; j < maxidx2; ++j) {
-	tval = subfac + j*stepfac;
-	rowptr[j] = preconst*exp(-0.5*tval*tval);
+	tval = subfac + j * stepfac;
+	rowptr[j] = preconst * exp(-0.5 * tval * tval);
       }
     }
   }
@@ -259,24 +270,25 @@ void PDDouble::edgeFix(bool donorm) {
     for (int i = 0; i < maxidx1; ++i) {
       rowptr = pd_ + i*n2;
       pdval = rowptr[maxidx2];
-      tval = (maxfluxfix2-mn2)*istdev2;
-      preconst = pdval*exp(0.5*tval*tval);
-      subfac = (minflux2 - mn2)*istdev2;
-      stepfac = dflux2*istdev2;
+      tval = (maxfluxfix2 - mn2) * istdev2;
+      preconst = pdval * exp(0.5 * tval * tval);
+      subfac = (minflux2 - mn2) * istdev2;
+      stepfac = dflux2 * istdev2;
       for (int j = 0; j < maxidx2; ++j) {
-	tval = subfac + j*stepfac;
-	rowptr[j] = preconst*exp(-0.5*tval*tval);
+	tval = subfac + j * stepfac;
+	rowptr[j] = preconst * exp(-0.5 * tval * tval);
       }
     }
     for (int j =  0; j < maxidx2; ++j) {
-      pdval = pd_[maxidx1*n2+j];
-      tval = (maxfluxfix1-mn1)*istdev1;
-      preconst = pdval*exp(0.5*tval*tval);
-      subfac = (minflux1 - mn1)*istdev1;
-      stepfac = dflux1*istdev1;
+      pdval = pd_[maxidx1 * n2 + j];
+      tval = (maxfluxfix1 - mn1) * istdev1;
+      preconst = pdval * exp(0.5 * tval * tval);
+      subfac = (minflux1 - mn1) * istdev1;
+      stepfac = dflux1 * istdev1;
       for (int i = 0; i < maxidx1; ++i) {
-	tval = subfac + i*stepfac;
-	pd_[i*n2+j] = sqrt(pd_[i*n2+j]*preconst*exp(-0.5*tval*tval));
+	tval = subfac + i * stepfac;
+	pd_[i*n2+j] = sqrt(pd_[i * n2 + j] * preconst * 
+			   exp(-0.5 * tval * tval));
       }
     }
   }
@@ -306,71 +318,71 @@ void PDDouble::getMeans(double& mean1, double& mean2,
     // here (modulo the minflux, which we add later anyways)
     // so there is no mean1 contribution
     for (unsigned int j = 1; j < n2-1; ++j)
-      mean2 += j*pd_[j]; 
-    mean2 += 0.5*(n2-1)*pd_[n2-1]; //(y=0 at pd_[0])
+      mean2 += j * pd_[j]; 
+    mean2 += 0.5 * (n2 - 1) * pd_[n2 - 1]; //(y=0 at pd_[0])
     mean2 *= 0.5; //End bit of trap in x, so 1/2 factor
 
     //Now main body of trap
-    for (unsigned int i = 1; i < n1-1; ++i) {
-      rowptr = pd_ + n2*i;
-      xsum = 0.5*rowptr[0]; //xsum will be the row sum, mult by x later
-      //mean2 += 0.5*0*rowptr[0] obviously not needed
-      for (unsigned int j = 1; j < n2-1; ++j) {
+    for (unsigned int i = 1; i < n1 - 1; ++i) {
+      rowptr = pd_ + n2 * i;
+      xsum = 0.5 * rowptr[0]; //xsum will be the row sum, mult by x later
+      //mean2 += 0.5 * 0 * rowptr[0] obviously not needed
+      for (unsigned int j = 1; j < n2 - 1; ++j) {
 	pval = rowptr[j];
 	xsum += pval;
 	mean2 += static_cast<double>(j) * pval;
       }      
-      xsum += 0.5*rowptr[n2-1];
+      xsum += 0.5 * rowptr[n2 - 1];
       mean1 += xsum * static_cast<double>(i); //Multiply in x value
-      mean2 += 0.5*(n2-1)*rowptr[n2-1];
+      mean2 += 0.5 * (n2 - 1) * rowptr[n2 - 1];
     }
 
     //Endpiece, all multiplied by 1/2 since last x bit
-    rowptr = pd_ + (n1-1)*n2;
-    xsum = 0.5*rowptr[0];
-    for (unsigned int j = 1; j < n2-1; ++j) {
+    rowptr = pd_ + (n1 - 1) * n2;
+    xsum = 0.5 * rowptr[0];
+    for (unsigned int j = 1; j < n2 - 1; ++j) {
       pval = rowptr[j];
       xsum += pval;
-      mean2 += 0.5*static_cast<double>(j) * pval;
+      mean2 += 0.5 * static_cast<double>(j) * pval;
     }
-    xsum += 0.5*rowptr[n2-1];
-    mean1 += 0.5*xsum*(n1-1);
-    mean2 += 0.25*(n2-1)*rowptr[n2-1];
+    xsum += 0.5 * rowptr[n2 - 1];
+    mean1 += 0.5 * xsum * (n1 - 1);
+    mean2 += 0.25 * (n2 - 1) * rowptr[n2 - 1];
   } else {
-    for (unsigned int j = 1; j < n2-1; ++j)
-      mean2 += j*exp2(pd_[j]);
-    mean2 += 0.5*(n2-1)*exp2(pd_[n2-1]);
+    for (unsigned int j = 1; j < n2 - 1; ++j)
+      mean2 += j * exp2(pd_[j]);
+    mean2 += 0.5 * (n2-1) * exp2(pd_[n2 - 1]);
     mean2 *= 0.5; 
-    for (unsigned int i = 1; i < n1-1; ++i) {
-      rowptr = pd_ + n2*i;
-      xsum = 0.5*exp2(rowptr[0]); 
-      for (unsigned int j = 1; j < n2-1; ++j) {
+    for (unsigned int i = 1; i < n1 - 1; ++i) {
+      rowptr = pd_ + n2 * i;
+      xsum = 0.5 * exp2(rowptr[0]); 
+      for (unsigned int j = 1; j < n2 - 1; ++j) {
 	pval = exp2(rowptr[j]);
 	xsum += pval;
 	mean2 += static_cast<double>(j) * pval;
       }      
       pval = exp2(rowptr[n2-1]);
-      xsum += 0.5*pval;
+      xsum += 0.5 * pval;
       mean1 += xsum * static_cast<double>(i);
-      mean2 += 0.5*(n2-1)*pval;
+      mean2 += 0.5 * (n2-1) * pval;
     }
-    rowptr = pd_ + (n1-1)*n2;
-    xsum = 0.5*exp2(rowptr[0]);
+    rowptr = pd_ + (n1 - 1) * n2;
+    xsum = 0.5 * exp2(rowptr[0]);
     for (unsigned int j = 1; j < n2-1; ++j) {
       pval = exp2(rowptr[j]);
       xsum += pval;
-      mean2 += 0.5*static_cast<double>(j) * pval;
+      mean2 += 0.5 * static_cast<double>(j) * pval;
     }
     pval = exp2(rowptr[n2-1]);
-    xsum += 0.5*pval;
-    mean1 += 0.5*xsum*(n1-1);
-    mean2 += 0.25*(n2-1)*pval;
+    xsum += 0.5 * pval;
+    mean1 += 0.5 * xsum * (n1 - 1);
+    mean2 += 0.25 * (n2 - 1) * pval;
   }
 
   //Add on step sizes for each integral,
   // which is both area and step size in x,y
-  mean1 *= dflux1*dflux1*dflux2;
-  mean2 *= dflux1*dflux2*dflux2;
+  mean1 *= dflux1 * dflux1 * dflux2;
+  mean2 *= dflux1 * dflux2 * dflux2;
 
   if (donorm) {
     double inorm = 1.0 / getIntegral();
@@ -400,7 +412,7 @@ void PDDouble::getMeansAndVars(double& mean1, double& mean2,
   }
 
   double normfac = 1.0;
-  if (donorm) normfac = 1.0/getIntegral();
+  if (donorm) normfac = 1.0 / getIntegral();
 
   //First compute means
   //Why not just call getMeans?  To avoid calling getIntegral
@@ -409,64 +421,64 @@ void PDDouble::getMeansAndVars(double& mean1, double& mean2,
   double xsum, pval, *rowptr;
   mean1 = mean2 = 0.0;
   if (!logflat) {
-    for (unsigned int j = 1; j < n2-1; ++j)
+    for (unsigned int j = 1; j < n2 - 1; ++j)
       mean2 += j*pd_[j]; 
-    mean2 += 0.5*(n2-1)*pd_[n2-1]; 
+    mean2 += 0.5 * (n2 - 1) * pd_[n2 - 1]; 
     mean2 *= 0.5; 
-    for (unsigned int i = 1; i < n1-1; ++i) {
-      rowptr = pd_ + n2*i;
-      xsum = 0.5*rowptr[0];
-      for (unsigned int j = 1; j < n2-1; ++j) {
+    for (unsigned int i = 1; i < n1 - 1; ++i) {
+      rowptr = pd_ + n2 * i;
+      xsum = 0.5 * rowptr[0];
+      for (unsigned int j = 1; j < n2 - 1; ++j) {
 	pval = rowptr[j];
 	xsum += pval;
 	mean2 += static_cast<double>(j) * pval;
       }      
-      xsum += 0.5*rowptr[n2-1];
+      xsum += 0.5 * rowptr[n2 - 1];
       mean1 += xsum * static_cast<double>(i); 
-      mean2 += 0.5*(n2-1)*rowptr[n2-1];
+      mean2 += 0.5 * (n2 - 1) * rowptr[n2 - 1];
     }
-    rowptr = pd_ + (n1-1)*n2;
-    xsum = 0.5*rowptr[0];
+    rowptr = pd_ + (n1 - 1) * n2;
+    xsum = 0.5 * rowptr[0];
     for (unsigned int j = 1; j < n2-1; ++j) {
       pval = rowptr[j];
       xsum += pval;
-      mean2 += 0.5*static_cast<double>(j) * pval;
+      mean2 += 0.5 * static_cast<double>(j) * pval;
     }
-    xsum += 0.5*rowptr[n2-1];
-    mean1 += 0.5*xsum*(n1-1);
-    mean2 += 0.25*(n2-1)*rowptr[n2-1];
+    xsum += 0.5 * rowptr[n2 - 1];
+    mean1 += 0.5 * xsum * (n1 - 1);
+    mean2 += 0.25 * (n2 - 1)*rowptr[n2 - 1];
   } else {
-    for (unsigned int j = 1; j < n2-1; ++j)
-      mean2 += j*exp2(pd_[j]);
-    mean2 += 0.5*(n2-1)*exp2(pd_[n2-1]);
+    for (unsigned int j = 1; j < n2 - 1; ++j)
+      mean2 += j * exp2(pd_[j]);
+    mean2 += 0.5 * (n2 - 1) * exp2(pd_[n2 - 1]);
     mean2 *= 0.5; 
-    for (unsigned int i = 1; i < n1-1; ++i) {
-      rowptr = pd_ + n2*i;
-      xsum = 0.5*exp2(rowptr[0]); 
-      for (unsigned int j = 1; j < n2-1; ++j) {
+    for (unsigned int i = 1; i < n1 - 1; ++i) {
+      rowptr = pd_ + n2 * i;
+      xsum = 0.5 * exp2(rowptr[0]); 
+      for (unsigned int j = 1; j < n2 - 1; ++j) {
 	pval = exp2(rowptr[j]);
 	xsum += pval;
 	mean2 += static_cast<double>(j) * pval;
       }      
-      pval = exp2(rowptr[n2-1]);
-      xsum += 0.5*pval;
+      pval = exp2(rowptr[n2 - 1]);
+      xsum += 0.5 * pval;
       mean1 += xsum * static_cast<double>(i);
-      mean2 += 0.5*(n2-1)*pval;
+      mean2 += 0.5 * (n2 - 1) * pval;
     }
-    rowptr = pd_ + (n1-1)*n2;
-    xsum = 0.5*exp2(rowptr[0]);
-    for (unsigned int j = 1; j < n2-1; ++j) {
+    rowptr = pd_ + (n1 - 1) * n2;
+    xsum = 0.5 * exp2(rowptr[0]);
+    for (unsigned int j = 1; j < n2 - 1; ++j) {
       pval = exp2(rowptr[j]);
       xsum += pval;
-      mean2 += 0.5*static_cast<double>(j) * pval;
+      mean2 += 0.5 * static_cast<double>(j) * pval;
     }
-    pval = exp2(rowptr[n2-1]);
-    xsum += 0.5*pval;
-    mean1 += 0.5*xsum*(n1-1);
-    mean2 += 0.25*(n2-1)*pval;
+    pval = exp2(rowptr[n2 - 1]);
+    xsum += 0.5 * pval;
+    mean1 += 0.5 * xsum * (n1 - 1);
+    mean2 += 0.25 * (n2 - 1) * pval;
   }
-  mean1 *= dflux1*dflux2;
-  mean2 *= dflux1*dflux2;
+  mean1 *= dflux1 * dflux2;
+  mean2 *= dflux1 * dflux2;
 
   if (donorm) {
     mean1 *= normfac;
@@ -480,114 +492,114 @@ void PDDouble::getMeansAndVars(double& mean1, double& mean2,
   if (!logflat) {
     //i=0 bit, 1/2 factor for end
     pval = pd_[0];
-    xsum = 0.5*pval;
-    var2 = -0.5*mean2*mean2*pval; // deltay = -mean2
-    for (unsigned int j = 1; j < n2-1; ++j) {
+    xsum = 0.5 * pval;
+    var2 = -0.5 * mean2 * mean2 * pval; // deltay = -mean2
+    for (unsigned int j = 1; j < n2 - 1; ++j) {
       pval = pd_[j];
       xsum += pval;
       deltay = j - mean2;
-      var2 += pval*deltay*deltay;
+      var2 += pval * deltay * deltay;
     }
-    pval = pd_[n2-1];
-    xsum += 0.5*pval;
+    pval = pd_[n2 - 1];
+    xsum += 0.5 * pval;
     //1/2 factor for end bit, x-<mean> was -mean1 here
     var1 = 0.5 * mean1 * mean1 * xsum; 
-    deltay = (n2-1) - mean2;
-    var2 += 0.5*deltay*deltay*pval;
+    deltay = (n2 - 1) - mean2;
+    var2 += 0.5 * deltay * deltay * pval;
     var2 *= 0.5; //1/2 factor for end
     
     //Now core bit
-    for (unsigned int i = 1; i < n1-1; ++i) {
-      rowptr = pd_ + i*n2;
+    for (unsigned int i = 1; i < n1 - 1; ++i) {
+      rowptr = pd_ + i * n2;
       pval = rowptr[0];
       deltax = i - mean1;
-      xsum = 0.5*pval;
-      var2 += 0.5*mean2*mean2*pval; // deltay = -mean2
-      for (unsigned int j = 1; j < n2-1; ++j) {
+      xsum = 0.5 * pval;
+      var2 += 0.5 * mean2 * mean2 * pval; // deltay = -mean2
+      for (unsigned int j = 1; j < n2 - 1; ++j) {
 	pval = rowptr[j];
 	xsum += pval;
 	deltay = j - mean2;
-	var2 += deltay*deltay*pval;
+	var2 += deltay * deltay * pval;
       }
-      pval = rowptr[n2-1];
-      xsum += 0.5*pval;
-      var1 += xsum*deltax*deltax;
-      deltay = n2-1-mean2;
-      var2 += 0.5*deltay*deltay*pval;
+      pval = rowptr[n2 - 1];
+      xsum += 0.5 * pval;
+      var1 += xsum * deltax * deltax;
+      deltay = n2 - 1 - mean2;
+      var2 += 0.5 * deltay * deltay * pval;
     }
 
     //And now the top end in x
-    rowptr = pd_ + (n1-1)*n2;
+    rowptr = pd_ + (n1 - 1) * n2;
     pval = rowptr[0];
-    deltax = n1-1-mean1;
-    xsum = 0.5*pval;
-    var2 += 0.25*mean2*mean2*pval;
-    for (unsigned int j = 1; j < n2-1; ++j) {
+    deltax = n1 - 1 - mean1;
+    xsum = 0.5 * pval;
+    var2 += 0.25 * mean2 * mean2 * pval;
+    for (unsigned int j = 1; j < n2 - 1; ++j) {
       pval = rowptr[j];
       xsum += pval;
       deltay = j - mean2;
-      var2 += 0.5*deltay*deltay*pval;
+      var2 += 0.5 * deltay * deltay * pval;
     }
-    pval = rowptr[n2-1];
-    xsum += 0.5*pval;
-    var1 += 0.5*xsum*deltax*deltax; //1/2 for end
-    deltay = n2-1-mean2;
-    var2 += 0.25*deltay*deltay*pval;  //1/4 is 1/2*1/2 for double end
+    pval = rowptr[n2 - 1];
+    xsum += 0.5 * pval;
+    var1 += 0.5 * xsum * deltax * deltax; //1/2 for end
+    deltay = n2 - 1 - mean2;
+    var2 += 0.25 * deltay * deltay * pval;  //1/4 is 1/2*1/2 for double end
   } else {
     pval = exp2(pd_[0]);
-    xsum = 0.5*pval;
-    var2 = -0.5*mean2*mean2*pval; // deltay = -mean2
-    for (unsigned int j = 1; j < n2-1; ++j) {
+    xsum = 0.5 * pval;
+    var2 = -0.5 * mean2 * mean2 * pval; // deltay = -mean2
+    for (unsigned int j = 1; j < n2 - 1; ++j) {
       pval = exp2(pd_[j]);
       xsum += pval;
       deltay = j - mean2;
-      var2 += pval*deltay*deltay;
+      var2 += pval * deltay * deltay;
     }
-    pval = exp2(pd_[n2-1]);
-    xsum += 0.5*pval;
+    pval = exp2(pd_[n2 - 1]);
+    xsum += 0.5 * pval;
     var1 = 0.5 * mean1 * mean1 * xsum; 
-    deltay = (n2-1) - mean2;
-    var2 += 0.5*deltay*deltay*pval;
+    deltay = (n2 - 1) - mean2;
+    var2 += 0.5 * deltay * deltay * pval;
     var2 *= 0.5;
     for (unsigned int i = 1; i < n1-1; ++i) {
-      rowptr = pd_ + i*n2;
+      rowptr = pd_ + i * n2;
       pval = exp2(rowptr[0]);
       deltax = i - mean1;
-      xsum = 0.5*pval;
-      var2 += 0.5*mean2*mean2*pval; // deltay = -mean2
-      for (unsigned int j = 1; j < n2-1; ++j) {
+      xsum = 0.5 * pval;
+      var2 += 0.5 * mean2 * mean2 * pval; // deltay = -mean2
+      for (unsigned int j = 1; j < n2 - 1; ++j) {
 	pval = exp2(rowptr[j]);
 	xsum += pval;
 	deltay = j - mean2;
-	var2 += deltay*deltay*pval;
+	var2 += deltay * deltay * pval;
       }
-      pval = exp2(rowptr[n2-1]);
-      xsum += 0.5*pval;
-      var1 += xsum*deltax*deltax;
-      deltay = n2-1-mean2;
-      var2 += 0.5*deltay*deltay*pval;
+      pval = exp2(rowptr[n2 - 1]);
+      xsum += 0.5 * pval;
+      var1 += xsum * deltax * deltax;
+      deltay = n2 - 1 - mean2;
+      var2 += 0.5 * deltay * deltay * pval;
     }
-    rowptr = pd_ + (n1-1)*n2;
+    rowptr = pd_ + (n1 - 1) * n2;
     pval = exp2(rowptr[0]);
-    deltax = n1-1-mean1;
-    xsum = 0.5*pval;
-    var2 += 0.25*mean2*mean2*pval;
-    for (unsigned int j = 1; j < n2-1; ++j) {
+    deltax = n1 - 1 - mean1;
+    xsum = 0.5 * pval;
+    var2 += 0.25 * mean2 * mean2 * pval;
+    for (unsigned int j = 1; j < n2 - 1; ++j) {
       pval = exp2(rowptr[j]);
       xsum += pval;
       deltay = j - mean2;
-      var2 += 0.5*deltay*deltay*pval;
+      var2 += 0.5 * deltay * deltay * pval;
     }
-    pval = exp2(rowptr[n2-1]);
-    xsum += 0.5*pval;
-    var1 += 0.5*xsum*deltax*deltax; //1/2 for end
-    deltay = n2-1-mean2;
-    var2 += 0.25*deltay*deltay*pval;  //1/4 is 1/2*1/2 for double end
+    pval = exp2(rowptr[n2 - 1]);
+    xsum += 0.5 * pval;
+    var1 += 0.5 * xsum * deltax * deltax; //1/2 for end
+    deltay = n2 - 1 - mean2;
+    var2 += 0.25 * deltay * deltay * pval;  //1/4 is 1/2*1/2 for double end
   }
 
   //Integral dx dy
-  var1 *= dflux1*dflux2;
-  var2 *= dflux1*dflux2;
+  var1 *= dflux1 * dflux2;
+  var2 *= dflux1 * dflux2;
 
   if (donorm) {
     var1 *= normfac;
@@ -597,8 +609,8 @@ void PDDouble::getMeansAndVars(double& mean1, double& mean2,
   //Put in step size in x/y bit
   mean1 *= dflux1;
   mean2 *= dflux2;
-  var1  *= dflux1*dflux1;
-  var2  *= dflux2*dflux2;
+  var1  *= dflux1 * dflux1;
+  var2  *= dflux2 * dflux2;
 
   mean1 += minflux1;
   mean2 += minflux2;

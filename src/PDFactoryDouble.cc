@@ -434,7 +434,7 @@ bool PDFactoryDouble::initPD(unsigned int n, double sigma1,
 
   //Make sure we have enough room
   bool did_resize = resize(n);
-  if (!rvars_allocated) allocateRvars();
+  if (!rvars_allocated) allocateRvars(); //Necessary to do the plans
 
   //Make the plans, or keep the old ones if possible
   //Note that the forward transform dumps into rtrans

@@ -1,5 +1,6 @@
 //PD.cc
 #include<limits>
+#include<sstream>
 
 #include<fitsio.h>
 #include<fftw3.h>
@@ -166,9 +167,15 @@ void PD::edgeFix(bool donorm) {
   double mn, var;
   getMeanAndVar(mn, var, donorm);
   if (std::isnan(mn) || std::isinf(mn) ||
-      std::isnan(var) || std::isinf(var))
-    throw affineExcept("PD", "edgeFix", "Problem with means/vars", 2);
-  
+      std::isnan(var) || std::isinf(var)) {
+    std::stringstream errstr;
+    errstr << "Problem with mean/var of P(D): " << std::endl;
+    if (std::isnan(mn)) errstr << std::endl << "Mean is NaN";
+    if (std::isinf(mn)) errstr << std::endl<< "Mean is Inf";
+    if (std::isnan(var)) errstr << std::endl << "Var is NaN";
+    if (std::isinf(var)) errstr << std::endl << "Var is Inf";
+    throw affineExcept("PD", "edgeFix", errstr.str(), 2);
+  }
   double istdev = 1.0/sqrt(var);
 
   //Figure out what indexes these represent in x and y

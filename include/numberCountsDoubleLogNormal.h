@@ -44,8 +44,8 @@
     \f[
        Var[ S_2/S_1 ] = \exp \left( 2 \mu \left( S_1 \right) +
            \sigma^2\left(S_1\right) \right) 
-          \left[ \exp \left( \sigma^2\left(S_1\right) \right) - 1 \right]
-    \f].
+          \left[ \exp \left( \sigma^2\left(S_1\right) \right) - 1 \right] .
+    \f]
     Note that the number counts require that \f$S_2/S_1 > 0\f$.
     We also explicitly require that \f$S_1 > 0\f$.  Both are justified
     on physical grounds.

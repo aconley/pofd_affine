@@ -266,7 +266,7 @@ bool PDFactory::initPD(unsigned int n, double sigma,
   //Allocate memory if needed; this is a way of not allocating
   // these until we run into something that needs them
   if (!rvars_allocated) allocateRvars();
-  if (!interpvars_allocated) allocateInterp();
+  if (!interpvars_allocated) allocateInterp();  //Need to alloc before planning
 
   //Make the plans, or keep the old ones if possible
   // Note we have to do this before we fill R, as plan construction
