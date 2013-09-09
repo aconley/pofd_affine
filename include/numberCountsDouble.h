@@ -10,10 +10,11 @@
 #include "../include/paramSet.h"
 
 /*!
-  \brief Galaxy counts model abstract base class
-  \ingroup Models
+  \brief Galaxy counts model abstract base class, 2D case
 
   It is up to each subclass to interpret paramSet
+
+  \ingroup Models
 */
 //The use of const in getR really means don't change the model parameters,
 // not any internal state data.

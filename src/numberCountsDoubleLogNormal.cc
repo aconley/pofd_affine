@@ -8,9 +8,9 @@
 
 //Function to pass to GSL integrator
 /*! \brief Evaluates flux1^power1 * exp(const1*mu + const2*sigma^2) dN/dS1 */
-static double evalPowfNDoubleLogNormal(double,void*); 
+static double evalPowfNDoubleLogNormal(double, void*); 
 
-const unsigned int numberCountsDoubleLogNormal::nvarr = 17;
+const unsigned int numberCountsDoubleLogNormal::nvarr = 17; //!< Number of elements in varr
 
 numberCountsDoubleLogNormal::numberCountsDoubleLogNormal() : 
   nknots(0), knots(NULL), logknots(NULL), logknotvals(NULL), splinelog(NULL), 
@@ -398,6 +398,9 @@ operator=(const numberCountsDoubleLogNormal& other) {
 
 /*!
   \param[in] n Number of knots to set
+
+  If number of knots doesn't change, contents are preserved.
+  Otherwise all values are destroyed (but not sigma or offset)
 */
 void numberCountsDoubleLogNormal::setNKnots(unsigned int n) {
   if (nknots == n) return;
@@ -425,6 +428,9 @@ void numberCountsDoubleLogNormal::setNKnots(unsigned int n) {
 
 /*!
   \param[in] n Number of sigmas
+
+  If number of sigmas doesn't change, contents are preserved.
+  Otherwise all values are destroyed (but not knots or offset)
 */
 void numberCountsDoubleLogNormal::setNSigmas(unsigned int n) {
   if (nsigmaknots == n) return;
@@ -452,6 +458,9 @@ void numberCountsDoubleLogNormal::setNSigmas(unsigned int n) {
 
 /*!
   \param[in] n Number of offsets
+
+  If number of sigmas doesn't change, contents are preserved.
+  Otherwise all values are destroyed (but not knots or sigmas)
 */
 void numberCountsDoubleLogNormal::setNOffsets(unsigned int n) {
   if (noffsetknots == n) return;
@@ -871,7 +880,8 @@ setPositions(const std::vector<double>& K, const std::vector<double>& S,
 /*! 
   \param[in] sz New size of R work arrays
 
-  Allocates R work arrays.  Only upsizes 
+  Allocates R work arrays.  Only upsizes -- that is, the arrays are already
+  sized and you ask for a smaller size, nothing is done.
 */
 void numberCountsDoubleLogNormal::setRWorkSize(unsigned int sz) const {
   if (sz <= nRWork) return;
@@ -894,14 +904,15 @@ void numberCountsDoubleLogNormal::setRWorkSize(unsigned int sz) const {
 //////////////////////////////////////////////////////////////////////////
 //The stuff below here is specific to this particular model, the stuff above
 // may be useful for an abstract base class of band1 spline plus color models.
-// Currently this isn't implemented because we only really have this one model
+// Currently this isn't implemented because we only really have this one model,
+// so adding the subclass infrastructure would just slow down the code.
 
 /*!
   \param[out] F Parameters to get from model
   
   Will set the first nknot + nsigma + noffset parameters, ignoring any others.
   If the knot values aren't loaded, sets them to NaN.
- */
+*/
 void numberCountsDoubleLogNormal::getParams(paramSet& F) const {
   unsigned int nneeded = nknots + nsigmaknots + noffsetknots;
   if (F.getNParams() < nneeded)
@@ -924,7 +935,7 @@ void numberCountsDoubleLogNormal::getParams(paramSet& F) const {
   \param[in] F Parameters to set in model
 
   This will ignore any parameters beyond those it needs.
- */
+*/
 void numberCountsDoubleLogNormal::setParams(const paramSet& F) {
   unsigned int nneeded = nknots + nsigmaknots + noffsetknots;
   if (nneeded > F.getNParams())
@@ -966,7 +977,8 @@ void numberCountsDoubleLogNormal::setParams(const paramSet& F) {
 
 /*!
   This is an expensive check, so we use this by storing
-  the results whenever the knots are set.
+  the results whenever the knots are set rather than every
+  time we call the model.
 */
 void numberCountsDoubleLogNormal::checkKnotsValid() const {
   knots_valid = false;
@@ -985,7 +997,8 @@ void numberCountsDoubleLogNormal::checkKnotsValid() const {
 
 /*!
   This is an expensive check, so we use this by storing
-  the results whenever the sigmas are set.
+  the results whenever the sigmas are set rather than every
+  time we call the model.
 */
 void numberCountsDoubleLogNormal::checkSigmasValid() const {
   sigmas_valid = false;
@@ -1006,7 +1019,8 @@ void numberCountsDoubleLogNormal::checkSigmasValid() const {
   \returns True if a valid set of offset knots has been loaded
   
   This is an expensive check, so we use this by storing
-  the results whenever the offsets are set.
+  the results whenever the offsets are set rather than every time
+  we do anything.
 */
 void numberCountsDoubleLogNormal::checkOffsetsValid() const {
   offsets_valid = false;
@@ -1105,7 +1119,7 @@ getNumberCountsInner(double f1, double f2) const {
 
   //Counts in band 2, Log Normal in f2/f1, multiply them onto n_1
   double if1 = 1.0 / f1;
-  double isigma = 1.0/getSigmaInner(f1);
+  double isigma = 1.0 / getSigmaInner(f1);
   double tfac = (log(f2 * if1) - getOffsetInner(f1)) * isigma;
   cnts *= normfac * isigma * exp(-0.5 * tfac * tfac) / f2; //yes, it's 1/f2 here
   return cnts;
@@ -1184,7 +1198,8 @@ double numberCountsDoubleLogNormal::getMaxFlux(unsigned int band) const {
 
   Note that to compute the average flux of each object, you have to 
   divide by the total number (i.e., with \f$\alpha = \beta = 0\f$).
-  If you want the mean flux per area, however, you don't divide.
+  If you want the mean flux to some power per area, however, you 
+  don't divide.
 
   \param[in] alpha   Power of flux in band 1
   \param[in] beta    Power of flux in band 2
@@ -1192,7 +1207,7 @@ double numberCountsDoubleLogNormal::getMaxFlux(unsigned int band) const {
 
   The function evaluation is done in evalPowfNDoubleLogNormal, 
   which is the thing that is passed to the GSL integration routines.
- */
+*/
 double numberCountsDoubleLogNormal::splineInt(double alpha, double beta) const {
   if (nknots < 2) return std::numeric_limits<double>::quiet_NaN();
   if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
@@ -1290,7 +1305,7 @@ getFluxSqPerArea(unsigned int band) const {
   \param[in] p1 Power of band 1 flux density
   \param[in] p2 Power of band 2 flux density
   \returns The flux density (band1)^p1 * flux density (band2)^p2 per area
- */
+*/
 double numberCountsDoubleLogNormal::
 getFluxPowerPerArea(double p1, double p2) const {
   return splineInt(p1, p2);
@@ -1527,7 +1542,7 @@ double numberCountsDoubleLogNormal::getR(double f1, double f2,
 
   This does zero out vals, but it is up to the caller to allocate memory
   for it.
- */ 
+*/ 
 void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 				       unsigned int n2, const double* const f2, 
 				       const doublebeam& bm, double* vals,
@@ -1597,7 +1612,10 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
     vals[i] *= prefac;
 }
 
-
+/*!
+  \param[inout] comm MPI communicator
+  \param[in] dest Destination to send messages to
+*/
 void numberCountsDoubleLogNormal::sendSelf(MPI_Comm comm, int dest) const {
 
   //Knots
@@ -1646,6 +1664,10 @@ void numberCountsDoubleLogNormal::sendSelf(MPI_Comm comm, int dest) const {
 
 }
 
+/*!
+  \param[inout] comm MPI communicator
+  \param[in] src Where messages will come from
+*/
 void numberCountsDoubleLogNormal::recieveCopy(MPI_Comm comm, int src) {
   unsigned int n;
   bool loaded;
@@ -1723,6 +1745,10 @@ void numberCountsDoubleLogNormal::recieveCopy(MPI_Comm comm, int src) {
 
 }
 
+/*!
+  \param[inout] os Stream to write to.
+  \returns True
+ */
 bool numberCountsDoubleLogNormal::writeToStream(std::ostream& os) const {
   os << "Model parameters: " << std::endl;
   if (knotvals_loaded) {
@@ -1753,8 +1779,11 @@ bool numberCountsDoubleLogNormal::writeToStream(std::ostream& os) const {
 
 
 /*!
+  \param[in] s1 Flux in band 1
+  \param[in] params Model information jammed into something the GSL
+     can work with.
   Internal function for use in model integrations.
- */
+*/
 static double evalPowfNDoubleLogNormal(double s1, void* params) {
   //Model is: ( f^power * exp( const1*mu + const2*sigma^2 ) ) * n1(f)
   // where f is the flux in the first band and n1 is the number
@@ -1906,7 +1935,7 @@ initFileDoubleLogNormal::~initFileDoubleLogNormal() {
   lowlim and uplim may be present, and are looked for if read_limits is set.
     range must also be present, and the first element found is lowlim.
     If another is also found, it is interpreted as uplim
- */
+*/
 void initFileDoubleLogNormal::readFile(const std::string& flname, 
 				       bool read_range, bool read_limits) {
   if (read_limits) read_range = true;
@@ -2023,7 +2052,7 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
   }
   initfs.close();
 
-  unsigned int ntot = nk+ns+no;
+  unsigned int ntot = nk + ns + no;
   if (wvec1.size() != ntot) {
     std::stringstream errstr;
     errstr << "Expected " << ntot << " values, got: " 
@@ -2054,55 +2083,77 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
     for (unsigned int i = 0; i < ntot; ++i) uplim[i] = wvec5[i];
   }
 
-  //Make sure lower/upper limits don't cross
-  if (has_lower_limits && has_upper_limits)
-    for (unsigned int i = 0; i < ntot; ++i) {
-      if (!(has_uplim[i] && has_lowlim[i])) continue;
-      if (uplim[i] < lowlim[i]) {
-	std::stringstream errstr;
-	errstr << "Lower/Upper limits cross at index: " << i << std::endl;
-	errstr << " Lower limit: " << lowlim[i] 
-	       << " Upper limit: " << uplim[i];
-	throw affineExcept("initFileDoubleLogNormal", "readFiles", 
-			   errstr.str(), 6);
-      }
-      if ((range[i] > 0.) && (uplim[i] == lowlim[i])) {
-	std::stringstream errstr;
-	errstr << "Lower/Upper limits meet at index: " << i 
-	       << " but range is not zero" << std::endl;
-	errstr << " Lower limit: " << lowlim[i] << " Upper limit: " << uplim[i]
-	       << " range: " << range[i];
-	throw affineExcept("initFileDoubleLogNormal", "readFiles", 
-			   errstr.str(), 7);
-      }
-    }
+  // Check limits and ranges
+  checkLimitsDontCross();
+  checkRange();
+}
 
-  //Make sure that if ranges is 0 then the mean value falls within
-  // the range of any limits
-  if (has_range && (has_lower_limits || has_upper_limits)) {
-    for (unsigned int i = 0; i < ntot; ++i)
-      if (range[i] == 0) {
-	if (has_lower_limits && has_lowlim[i] && (knotval[i] < lowlim[i])) {
-	  std::stringstream errstr;
-	  errstr << "At knot " << i << " range is zero but mean value "
-		 << knotval[i] << std::endl << " lies below lower limit "
-		 << lowlim[i];
-	  throw affineExcept("initFileDoubleLogNormal", "readFiles", 
-			     errstr.str(), 8);
-	}
-	if (has_upper_limits && has_uplim[i] && (knotval[i] > uplim[i])) {
-	  std::stringstream errstr;
-	  errstr << "At knot " << i << " range is zero but mean value "
-		 << knotval[i] << std::endl << " lies above upper limit "
-		 << uplim[i];
-	  throw affineExcept("initFileDoubleLogNormal", "readFiles", 
-			     errstr.str(), 9);
-	}
-      }
+void initFileDoubleLogNormal::checkLimitsDontCross() const {
+  //Make sure lower/upper limits don't cross
+  if (!(has_lower_limits && has_upper_limits)) return;
+
+  unsigned int ntot = nknots + nsigmas + noffsets;
+  if (ntot == 0) return;
+
+  for (unsigned int i = 0; i < ntot; ++i) {
+    if (!(has_uplim[i] && has_lowlim[i])) continue;
+    if (uplim[i] < lowlim[i]) {
+      std::stringstream errstr;
+      errstr << "Lower/Upper limits cross at index: " << i << std::endl;
+      errstr << " Lower limit: " << lowlim[i] 
+	     << " Upper limit: " << uplim[i];
+      throw affineExcept("initFileDoubleLogNormal", "checkLimitsDontCross", 
+			 errstr.str(), 1);
+    }
+    if ((range[i] > 0.) && (uplim[i] == lowlim[i])) {
+      std::stringstream errstr;
+      errstr << "Lower/Upper limits meet at index: " << i 
+	     << " but range is not zero" << std::endl;
+      errstr << " Lower limit: " << lowlim[i] << " Upper limit: " << uplim[i]
+	     << " range: " << range[i];
+      throw affineExcept("initFileDoubleLogNormal", "checkLimitsDontCross", 
+			 errstr.str(), 7);
+    }
   }
 }
 
-std::pair<double,double> 
+void initFileDoubleLogNormal::checkRange() const {
+  //Make sure that if ranges is 0 then the mean value falls within
+  // the range of any limits
+  
+  // Quick returns
+  if (!has_range) return;
+  if (!(has_lower_limits || has_upper_limits)) return;
+
+  unsigned int ntot = nknots + nsigmas + noffsets;
+  if (ntot == 0) return;
+
+  for (unsigned int i = 0; i < ntot; ++i)
+    if (range[i] == 0) {
+      if (has_lower_limits && has_lowlim[i] && (knotval[i] < lowlim[i])) {
+	std::stringstream errstr;
+	errstr << "At knot " << i << " range is zero but mean value "
+	       << knotval[i] << std::endl << " lies below lower limit "
+	       << lowlim[i];
+	throw affineExcept("initFileDoubleLogNormal", "checkRange", 
+			   errstr.str(), 1);
+      }
+      if (has_upper_limits && has_uplim[i] && (knotval[i] > uplim[i])) {
+	std::stringstream errstr;
+	errstr << "At knot " << i << " range is zero but mean value "
+	       << knotval[i] << std::endl << " lies above upper limit "
+	       << uplim[i];
+	throw affineExcept("initFileDoubleLogNormal", "checkRange", 
+			   errstr.str(), 2);
+      }
+    }
+}
+
+/*!
+  \param[in] idx Knot index
+  \returns Tuple of knot position, value
+*/
+std::pair<double, double> 
 initFileDoubleLogNormal::getKnot(unsigned int idx) const {
   if (nknots == 0)
     throw affineExcept("initFileDoubleLogNormal","getKnot",
@@ -2113,7 +2164,11 @@ initFileDoubleLogNormal::getKnot(unsigned int idx) const {
   return std::make_pair(knotpos[idx],knotval[idx]);
 }
 
-std::pair<double,double> 
+/*!
+  \param[in] idx Sigma index
+  \returns Tuple of sigma knot position, value
+*/
+std::pair<double, double> 
 initFileDoubleLogNormal::getSigma(unsigned int idx) const {
   if (nsigmas == 0)
     throw affineExcept("initFileDoubleLogNormal","getSigma",
@@ -2124,7 +2179,11 @@ initFileDoubleLogNormal::getSigma(unsigned int idx) const {
   return std::make_pair(knotpos[idx+sigmaidx],knotval[idx+sigmaidx]);
 }
 
-std::pair<double,double> 
+/*!
+  \param[in] idx Offset index
+  \returns Tuple of offset knot position, value
+*/
+std::pair<double, double> 
 initFileDoubleLogNormal::getOffset(unsigned int idx) const {
   if (noffsets == 0)
     throw affineExcept("initFileDoubleLogNormal","getOffset",
@@ -2156,7 +2215,7 @@ initFileDoubleLogNormal::getModelPositions(numberCountsDoubleLogNormal& model)
 
 /*
   \param[out] kp Set to knot positions on output for band 1 number counts
- */
+*/
 void initFileDoubleLogNormal::getKnotPos(std::vector<double>& kp) const {
   if (nknots == 0)
     throw affineExcept("initFileDoubleLogNormal","getKnotPos",
@@ -2169,7 +2228,7 @@ void initFileDoubleLogNormal::getKnotPos(std::vector<double>& kp) const {
 
 /*
   \param[out] kp Set to knot positions on output for band 1 number counts
- */
+*/
 void initFileDoubleLogNormal::getKnotVals(std::vector<double>& kv) const {
   if (nknots == 0)
     throw affineExcept("initFileDoubleLogNormal","getKnotVals",
@@ -2181,7 +2240,7 @@ void initFileDoubleLogNormal::getKnotVals(std::vector<double>& kv) const {
 
 /*
   \param[out] kp Set to knot positions on output for color model sigma
- */
+*/
 void initFileDoubleLogNormal::getSigmaPos(std::vector<double>& kp) const {
   if (nsigmas == 0)
     throw affineExcept("initFileDoubleLogNormal","getSigmaPos",
@@ -2193,7 +2252,7 @@ void initFileDoubleLogNormal::getSigmaPos(std::vector<double>& kp) const {
 
 /*
   \param[out] kp Set to knot values on output for color model sigma
- */
+*/
 void initFileDoubleLogNormal::getSigmaVals(std::vector<double>& kv) const {
   if (nsigmas == 0)
     throw affineExcept("initFileDoubleLogNormal","getSigmaVals",
@@ -2205,7 +2264,7 @@ void initFileDoubleLogNormal::getSigmaVals(std::vector<double>& kv) const {
 
 /*
   \param[out] kp Set to knot positions on output for color model offset
- */
+*/
 void initFileDoubleLogNormal::getOffsetPos(std::vector<double>& kp) const {
   if (noffsets == 0)
     throw affineExcept("initFileDoubleLogNormal","getOffsetPos",
@@ -2217,7 +2276,7 @@ void initFileDoubleLogNormal::getOffsetPos(std::vector<double>& kp) const {
 
 /*
   \param[out] kp Set to knot values on output for color model offset
- */
+*/
 void initFileDoubleLogNormal::getOffsetVals(std::vector<double>& kv) const {
   if (noffsets == 0)
     throw affineExcept("initFileDoubleLogNormal","getOffsetVals",
@@ -2231,7 +2290,7 @@ void initFileDoubleLogNormal::getOffsetVals(std::vector<double>& kv) const {
   \param[out] p Filled on output with the mean knot values.
 
   This only fills the first nknots + nsigmas + noffsets parameters
- */
+*/
 void initFileDoubleLogNormal::getParams(paramSet& p) const {
   if (nknots == 0)
     throw affineExcept("initFileDoubleLogNormal","getParams",
@@ -2249,7 +2308,7 @@ void initFileDoubleLogNormal::getParams(paramSet& p) const {
 
   This only fills the first nknots+nsigmas+noffsets parameters.  It uses
   the central values from the initialization file
- */
+*/
 void initFileDoubleLogNormal::generateRandomKnotValues(ran& rangen, 
 						       paramSet& pnew) const {
   paramSet pcen(pnew.getNParams());
@@ -2464,7 +2523,6 @@ double initFileDoubleLogNormal::getKnotRange(unsigned int idx) const {
   Note that idx ranges over all the parameters -- including
   the color model. The valid range is thus [0,nknots + nsigmas + noffsets).
 */
-
 bool initFileDoubleLogNormal::isKnotFixed(unsigned int idx) const {
   if (idx >= nknots+nsigmas+noffsets)
     throw affineExcept("initFileDoubleLogNormal","isKnotFixed",
@@ -2476,8 +2534,8 @@ bool initFileDoubleLogNormal::isKnotFixed(unsigned int idx) const {
 
 /*
   \param[in] idx Knot index
-  \returns Whether knot has a lower limit
- */
+  \returns True if knot has lower limit, otherwise false
+*/
 bool initFileDoubleLogNormal::knotHasLowerLimit(unsigned int idx) const {
   if (!has_lower_limits) return false;
   if (idx >= nknots+nsigmas+noffsets)
@@ -2501,8 +2559,8 @@ double initFileDoubleLogNormal::getLowerLimit(unsigned int idx) const {
 
 /*
   \param[in] idx Knot index
-  \returns Whether knot has a upper limit
- */
+  \returns True if knot has upper limit, otherwise false
+*/
 bool initFileDoubleLogNormal::knotHasUpperLimit(unsigned int idx) const {
   if (!has_upper_limits) return false;
   if (idx >= nknots+nsigmas+noffsets)
@@ -2515,7 +2573,7 @@ bool initFileDoubleLogNormal::knotHasUpperLimit(unsigned int idx) const {
 /*
   \param[in] idx Knot index
   \returns Upper limit on knot, or NaN if none
- */
+*/
 double initFileDoubleLogNormal::getUpperLimit(unsigned int idx) const {
   if (!has_upper_limits) return std::numeric_limits<double>::quiet_NaN();
   if (idx >= nknots+nsigmas+noffsets)
@@ -2525,7 +2583,10 @@ double initFileDoubleLogNormal::getUpperLimit(unsigned int idx) const {
   return uplim[idx];
 }
 
-
+/*!
+  \param[in] p Parameters to test
+  \returns True if p is valid (within limits)
+*/
 bool initFileDoubleLogNormal::isValid(const paramSet& p) const {
   if (! (has_lower_limits || has_upper_limits)) return true;
   unsigned int ntot = nknots + nsigmas + noffsets;
@@ -2544,7 +2605,7 @@ bool initFileDoubleLogNormal::isValid(const paramSet& p) const {
 /*!
   \param[in] comm MPI communication handle
   \param[in] dest Destination for send operation
- */
+*/
 void initFileDoubleLogNormal::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<unsigned int*>(&nknots), 1, MPI_UNSIGNED, dest,
 	   pofd_mcmc::IFDLNSENDNKNOTS, comm);
@@ -2580,6 +2641,10 @@ void initFileDoubleLogNormal::sendSelf(MPI_Comm comm, int dest) const {
   }
 }
 
+/*!
+  \param[inout] comm MPI communicator
+  \param[in] src Where messages will come from
+*/
 void initFileDoubleLogNormal::recieveCopy(MPI_Comm comm, int src) {
   //Delete everything for simplicity
   if (knotpos != NULL) delete[] knotpos;

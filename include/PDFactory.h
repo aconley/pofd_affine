@@ -17,7 +17,7 @@
 
 /*!
   \brief Class for computing P(D) values from a set of parameters,
-  one band version
+  1D case
 
   Always call initPD before using getPD for a given model.
   Uses and interpolative approach -- fills R into an interpolation array,

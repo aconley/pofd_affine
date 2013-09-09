@@ -19,6 +19,11 @@ numberCountsKnots::numberCountsKnots() {
   knotvals_loaded = false;
 }
 
+/*!
+  \param[in] NKNOTS Number of knots
+
+  Knot positions are set to NaN.
+*/
 numberCountsKnots::numberCountsKnots(unsigned int NKNOTS) :
   nknots(NKNOTS) {
   if (nknots > 0) {
@@ -33,6 +38,9 @@ numberCountsKnots::numberCountsKnots(unsigned int NKNOTS) :
   knotvals_loaded = false;
 }  
 
+/*!
+  \param[in] S Knot positions
+*/
 numberCountsKnots::numberCountsKnots(const std::vector<float>& S) {
   nknots = 0;
   knots = NULL;
@@ -41,6 +49,9 @@ numberCountsKnots::numberCountsKnots(const std::vector<float>& S) {
   knotvals_loaded = false;
 }
 
+/*!
+  \param[in] S Knot positions
+*/
 numberCountsKnots::numberCountsKnots(const std::vector<double>& S) {
   nknots = 0;
   knots = NULL;
@@ -49,6 +60,10 @@ numberCountsKnots::numberCountsKnots(const std::vector<double>& S) {
   knotvals_loaded = false;
 }
 
+/*!
+  \param[in] n Number of knots
+  \param[in] S Knot positions
+*/
 numberCountsKnots::numberCountsKnots(unsigned int n, const float* const S) {
   nknots = 0;
   knots = NULL;
@@ -57,6 +72,10 @@ numberCountsKnots::numberCountsKnots(unsigned int n, const float* const S) {
   knotvals_loaded = false;
 }
 
+/*!
+  \param[in] n Number of knots
+  \param[in] S Knot positions
+*/
 numberCountsKnots::numberCountsKnots(unsigned int n, const double* const S) {
   nknots = 0;
   knots = NULL;
@@ -65,6 +84,9 @@ numberCountsKnots::numberCountsKnots(unsigned int n, const double* const S) {
   knotvals_loaded = false;
 }
 
+/*!
+  \param[in] other Other instance to copy
+*/
 numberCountsKnots::numberCountsKnots(const numberCountsKnots& other) {
   if (this == &other) return; //Self-copy
   nknots = 0;
@@ -85,6 +107,12 @@ numberCountsKnots::~numberCountsKnots() {
   if (logknotvals != NULL) delete[] logknotvals;
 }
 
+/*!
+  \param[in] n Number of knots.
+
+  If number of knots does not change, then previous contents are
+  preserved.  Otherwise, they are cleared.
+ */
 void numberCountsKnots::setNKnots(unsigned int n) {
   if (nknots == n) return;
   if (knots != NULL) delete[] knots;
@@ -264,6 +292,10 @@ double numberCountsKnots::getMaxFlux() const {
   return knots[nknots-1];
 }
 
+/*!
+  \param[inout] comm MPI communicator
+  \param[in] dest Destination to send messages to
+*/
 void numberCountsKnots::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<unsigned int*>(&nknots), 1, MPI_UNSIGNED, dest,
 	   pofd_mcmc::NCKSENDNKNOTS, comm);
@@ -277,6 +309,10 @@ void numberCountsKnots::sendSelf(MPI_Comm comm, int dest) const {
   }
 }
 
+/*!
+  \param[inout] comm MPI communicator
+  \param[in] src Where messages will come from
+*/
 void numberCountsKnots::recieveCopy(MPI_Comm comm, int src) {
   unsigned int n;
   MPI_Status Info;
@@ -293,6 +329,9 @@ void numberCountsKnots::recieveCopy(MPI_Comm comm, int src) {
   }
 }
 
+/*!
+  \param[inout] os Stream to write to
+*/
 bool numberCountsKnots::writeToStream(std::ostream& os) const {
   os << "Model parameters: " << std::endl;
   if (knotvals_loaded) {
@@ -483,50 +522,68 @@ void initFileKnots::readFile(const std::string& flname,
     for (unsigned int i = 0; i < nknots; ++i) uplim[i] = ku[i];
   }
 
-  //Make sure lower/upper limits don't cross
-  if (has_lower_limits && has_upper_limits)
-    for (unsigned int i = 0; i < nknots; ++i) {
-      if (!(has_uplim[i] && has_lowlim[i])) continue;
-      if (uplim[i] < lowlim[i]) {
-	std::stringstream errstr;
-	errstr << "Lower/Upper limits cross at index: " << i << std::endl;
-	errstr << " Lower limit: " << lowlim[i] 
-	       << " Upper limit: " << uplim[i];
-	throw affineExcept("initFileKnots", "readFiles", errstr.str(), 3);
-      }
-      if ((range[i] > 0.) && (uplim[i] == lowlim[i])) {
-	std::stringstream errstr;
-	errstr << "Lower/Upper limits meet at index: " << i 
-	       << " but range is not zero" << std::endl;
-	errstr << " Lower limit: " << lowlim[i] << " Upper limit: " << uplim[i]
-	       << " range: " << range[i];
-	throw affineExcept("initFileKnots", "readFiles", errstr.str(), 4);
-      }
-    }
+  //Make sure limits and range are valid
+  checkLimitsDontCross();
+  checkRange();
 
-  //Make sure that if range is 0 then the mean value falls within
-  // the range of any limits
-  if (has_range && (has_lower_limits || has_upper_limits)) {
-    for (unsigned int i = 0; i < nknots; ++i)
-      if (range[i] == 0) {
-	if (has_lower_limits && has_lowlim[i] && (knotval[i] < lowlim[i])) {
-	  std::stringstream errstr;
-	  errstr << "At knot " << i << " range is zero but mean value "
-		 << knotval[i] << std::endl << " lies below lower limit "
-		 << lowlim[i];
-	  throw affineExcept("initFileKnots", "readFiles", errstr.str(), 5);
-	}
-	if (has_upper_limits && has_uplim[i] && (knotval[i] > uplim[i])) {
-	  std::stringstream errstr;
-	  errstr << "At knot " << i << " range is zero but mean value "
-		 << knotval[i] << std::endl << " lies above upper limit "
-		 << uplim[i];
-	  throw affineExcept("initFileKnots", "readFiles", errstr.str(), 6);
-	}
-      }
+}
+
+void initFileKnots::checkLimitsDontCross() const {
+  if (nknots == 0) return;
+  if (!(has_lower_limits && has_upper_limits)) return; //Nothing to check
+  for (unsigned int i = 0; i < nknots; ++i) {
+    if (!(has_uplim[i] && has_lowlim[i])) continue;
+    if (uplim[i] < lowlim[i]) {
+      std::stringstream errstr;
+      errstr << "Lower/Upper limits cross at index: " << i << std::endl;
+      errstr << " Lower limit: " << lowlim[i] 
+	     << " Upper limit: " << uplim[i];
+      throw affineExcept("initFileKnots", "checkLimitsDontCross", 
+			 errstr.str(), 1);
+    }
+    if ((range[i] > 0.) && (uplim[i] == lowlim[i])) {
+      std::stringstream errstr;
+      errstr << "Lower/Upper limits meet at index: " << i 
+	     << " but range is not zero" << std::endl;
+      errstr << " Lower limit: " << lowlim[i] << " Upper limit: " << uplim[i]
+	     << " range: " << range[i];
+      throw affineExcept("initFileKnots", "CheckLimitsDontCross", 
+			 errstr.str(), 2);
+    }
   }
 }
 
+void initFileKnots::checkRange() const {
+  //Make sure that if range is 0 then the mean value falls within
+  // the range of any limits
+
+  // Quick returns
+  if (!has_range) return; //Nothing to check
+  if (!(has_lower_limits || has_upper_limits)) return;
+
+  for (unsigned int i = 0; i < nknots; ++i)
+    if (range[i] == 0) {
+      if (has_lower_limits && has_lowlim[i] && (knotval[i] < lowlim[i])) {
+	std::stringstream errstr;
+	errstr << "At knot " << i << " range is zero but mean value "
+	       << knotval[i] << std::endl << " lies below lower limit "
+	       << lowlim[i];
+	throw affineExcept("initFileKnots", "checkRange", errstr.str(), 1);
+      }
+      if (has_upper_limits && has_uplim[i] && (knotval[i] > uplim[i])) {
+	std::stringstream errstr;
+	errstr << "At knot " << i << " range is zero but mean value "
+	       << knotval[i] << std::endl << " lies above upper limit "
+	       << uplim[i];
+	throw affineExcept("initFileKnots", "readFiles", errstr.str(), 2);
+      }
+    }
+}
+
+/*!
+  \param[in] idx Knot index
+  \returns A pair of the knot position and central value
+*/
 std::pair<double,double> initFileKnots::getKnot(unsigned int idx) const {
   if (nknots == 0)
     throw affineExcept("initFileKnots","getKnot",
@@ -604,8 +661,11 @@ double initFileKnots::getKnotValue(unsigned int idx) const {
 
 
 /*
+  \param[out] p Parameter set to fill.  Must be pre-allocated
+       to have at least nknots elements.
+
   This only fills the first nknots parameters
- */
+*/
 void initFileKnots::getParams(paramSet& p) const {
   if (nknots == 0)
     throw affineExcept("initFileKnots","getParams",
@@ -619,7 +679,8 @@ void initFileKnots::getParams(paramSet& p) const {
 
 /*
   \param[in] rangen Random number generator
-  \param[out] pnew New parameter set generated
+  \param[out] pnew New parameter set generated.  Must be pre-allocated
+       to have at least nknots elements.
 
   This only fills the first nknots parameters.  It uses the central
   values from the initFile
@@ -633,7 +694,8 @@ void initFileKnots::generateRandomKnotValues(ran& rangen,
 
 /*
   \param[in] rangen Random number generator
-  \param[out] pnew New parameter set generated
+  \param[out] pnew New parameter set generated.  Must be pre-allocated
+     to have at least nknots elements
   \param[in] pcen  Central parameter values
 
   This only fills the first nknots parameters.  This version
@@ -807,6 +869,11 @@ void initFileKnots::generateRandomKnotValues(ran& rangen, paramSet& pnew,
   }
 }
 
+/*!
+  \param[in] idx Index of knot
+
+  \returns Range for that knot
+*/
 double initFileKnots::getKnotRange(unsigned int idx) const {
   if (idx >= nknots)
     throw affineExcept("initFileKnots", "getKnotRange", 
@@ -817,7 +884,7 @@ double initFileKnots::getKnotRange(unsigned int idx) const {
 
 /*
   \param[in] idx Knot index
-  \returns Whether knot is fixed
+  \returns True if knot is fixed, otherwise false
  */
 bool initFileKnots::isKnotFixed(unsigned int idx) const {
   if (idx >= nknots)
@@ -830,8 +897,8 @@ bool initFileKnots::isKnotFixed(unsigned int idx) const {
 
 /*
   \param[in] idx Knot index
-  \returns Whether knot has a lower limit
- */
+  \returns True if knot has lower limit, otherwise false
+*/
 bool initFileKnots::knotHasLowerLimit(unsigned int idx) const {
   if (!has_lower_limits) return false;
   if (idx >= nknots)
@@ -843,7 +910,7 @@ bool initFileKnots::knotHasLowerLimit(unsigned int idx) const {
 /*
   \param[in] idx Knot index
   \returns Lower limit on knot, or NaN if none
- */
+*/
 double initFileKnots::getLowerLimit(unsigned int idx) const {
   if (!has_lower_limits) return std::numeric_limits<double>::quiet_NaN();
   if (idx >= nknots)
@@ -855,8 +922,8 @@ double initFileKnots::getLowerLimit(unsigned int idx) const {
 
 /*
   \param[in] idx Knot index
-  \returns Whether knot has a upper limit
- */
+  \returns True if knot has upper limit, otherwise false
+*/
 bool initFileKnots::knotHasUpperLimit(unsigned int idx) const {
   if (!has_upper_limits) return false;
   if (idx >= nknots)
@@ -869,7 +936,7 @@ bool initFileKnots::knotHasUpperLimit(unsigned int idx) const {
 /*
   \param[in] idx Knot index
   \returns Upper limit on knot, or NaN if none
- */
+*/
 double initFileKnots::getUpperLimit(unsigned int idx) const {
   if (!has_upper_limits) return std::numeric_limits<double>::quiet_NaN();
   if (idx >= nknots)
@@ -880,6 +947,10 @@ double initFileKnots::getUpperLimit(unsigned int idx) const {
 }
 
 
+/*!
+  \param[in] p Parameter set to check validity of
+  \returns True if p is valid (within limits), otherwise false
+*/
 bool initFileKnots::isValid(const paramSet& p) const {
   if (!(has_lower_limits || has_upper_limits)) return true;
   if (p.getNParams() < nknots)
@@ -894,6 +965,10 @@ bool initFileKnots::isValid(const paramSet& p) const {
   return true;
 }
 
+/*!
+  \param[inout] comm MPI communicator
+  \param[in] dest Destination to send messages to
+*/
 void initFileKnots::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<unsigned int*>(&nknots), 1, MPI_UNSIGNED, dest, 
 	   pofd_mcmc::IFKSENDNKNOTS, comm);
@@ -924,6 +999,10 @@ void initFileKnots::sendSelf(MPI_Comm comm, int dest) const {
   }
 }
 
+/*!
+  \param[inout] comm MPI communicator
+  \param[in] src Where messages will come from
+*/
 void initFileKnots::recieveCopy(MPI_Comm comm, int src) {
   //Delete everything for simplicity
   if (knotpos != NULL) delete[] knotpos;
@@ -939,40 +1018,41 @@ void initFileKnots::recieveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
 
   MPI_Recv(&nknots, 1, MPI_UNSIGNED, src, 
-	   pofd_mcmc::IFKSENDNKNOTS, comm, &Info);
+           pofd_mcmc::IFKSENDNKNOTS, comm, &Info);
   if (nknots > 0) {
     knotpos = new double[nknots];
     MPI_Recv(knotpos, nknots, MPI_DOUBLE, src, 
-	     pofd_mcmc::IFKSENDKNOTPOS, comm, &Info);
+             pofd_mcmc::IFKSENDKNOTPOS, comm, &Info);
     knotval = new double[nknots];
     MPI_Recv(knotval, nknots, MPI_DOUBLE, src, 
-	     pofd_mcmc::IFKSENDKNOTVAL, comm, &Info);
+             pofd_mcmc::IFKSENDKNOTVAL, comm, &Info);
     MPI_Recv(&has_range, 1, MPI::BOOL, src, pofd_mcmc::IFKHASRANGE,
-	     comm, &Info);
+             comm, &Info);
     if (has_range) {
       range = new double[nknots];
       MPI_Recv(range, nknots, MPI_DOUBLE, src,pofd_mcmc::IFKSENDRANGE,
-	       comm, &Info);
+               comm, &Info);
     }
     MPI_Recv(&has_lower_limits, 1, MPI::BOOL, src, 
-	     pofd_mcmc::IFKHASLOWERLIMITS, comm, &Info);
+             pofd_mcmc::IFKHASLOWERLIMITS, comm, &Info);
     if (has_lower_limits) {
       has_lowlim = new bool[nknots];
       MPI_Recv(has_lowlim, nknots, MPI::BOOL, src, 
-	       pofd_mcmc::IFKSENDHASLOWLIM, comm, &Info);
+               pofd_mcmc::IFKSENDHASLOWLIM, comm, &Info);
       lowlim = new double[nknots];
       MPI_Recv(lowlim, nknots, MPI_DOUBLE, src, 
-	       pofd_mcmc::IFKSENDLOWLIM, comm, &Info);
+               pofd_mcmc::IFKSENDLOWLIM, comm, &Info);
     }
     MPI_Recv(&has_upper_limits, 1, MPI::BOOL, src, 
-	     pofd_mcmc::IFKHASUPPERLIMITS, comm, &Info);
+             pofd_mcmc::IFKHASUPPERLIMITS, comm, &Info);
     if (has_upper_limits) {
       has_uplim = new bool[nknots];
       MPI_Recv(has_uplim, nknots, MPI::BOOL, src, 
-	       pofd_mcmc::IFKSENDHASUPLIM, comm, &Info);
+               pofd_mcmc::IFKSENDHASUPLIM, comm, &Info);
       uplim = new double[nknots];
       MPI_Recv(uplim, nknots, MPI_DOUBLE, src, pofd_mcmc::IFKSENDUPLIM,
-	       comm, &Info);
+               comm, &Info);
     }
   }
 }
+

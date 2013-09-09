@@ -14,9 +14,9 @@
 #include "../include/utility.h"
 
 /*!
-  \brief Represents PSF parameters for beam with positive
-          and negative components.  Note that zero beam values
-	  are not stored
+  \brief Represents PSF parameters for beam.
+
+  Note that zero beam values are not stored
 
   \ingroup Beams
 */

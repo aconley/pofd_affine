@@ -10,12 +10,13 @@
 #include "../include/numberCountsKnots.h"
 
 /*!
-  \brief Spline number counts model
-  \ingroup Models
+  \brief Spline number counts model, 1D case
  
   The user inputs knot values in \f$\log_{10}\f$, but they are
   stored internally as base 2 logarithms.  The parameters are
   the knots
+
+  \ingroup Models
  */
 class numberCountsKnotsSpline : public numberCountsKnots {
  private :

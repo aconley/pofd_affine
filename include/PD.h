@@ -9,7 +9,7 @@
 #include "../include/fitsData.h"
 
 /*!
-  \brief Class to hold P(D).  Supports interpolation.
+  \brief Class to hold P(D), 1D case.  Supports interpolation.
 
   Only monotonic flux value grids are allowed.
 

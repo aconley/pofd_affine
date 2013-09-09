@@ -11,8 +11,7 @@
 #include "../include/paramSet.h"
 
 /*!
-  \brief Number counts with knots abstract base class
-  \ingroup Models
+  \brief Number counts with knots abstract base class, 1D case
  
   The first nknots parameters in paramSet are the log knot
   values, anything after that are special (sigma, mean offset,
@@ -20,6 +19,8 @@
 
   The user inputs knot values in \f$\log_{10}\f$, but they are
   stored internally as base 2 logarithms.
+
+  \ingroup Models
  */
 class numberCountsKnots : public numberCounts {
  protected:
@@ -78,7 +79,9 @@ class numberCountsKnots : public numberCounts {
 std::ostream& operator<<(std::ostream& os, const numberCountsKnots& b);
 
 /*!
-  \brief A class to read in model specifications from init files
+  \brief A class to read in model specifications from init files, 1D case
+
+  \ingroup Models
  */
 class initFileKnots {
  private:
@@ -99,6 +102,9 @@ class initFileKnots {
   bool has_upper_limits; //!< Has some upper limit information
   bool* has_uplim; //!< Knots have upper limit
   double* uplim; //!< Value of upper limit
+
+  void checkLimitsDontCross() const; //!< Make sure limits are valid, throw if not
+  void checkRange() const; //!< Make sure any range is valid, throw if not
 
  public:
   initFileKnots(); //!< Basic constructor

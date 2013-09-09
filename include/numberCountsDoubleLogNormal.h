@@ -12,45 +12,47 @@
 #include "../include/ran.h"
 
 /*!
-  \brief Spline number counts model for 2D, where counts
-    are modeled as a spline at one frequency plus a Log-Normal colour
-    model.  
+  \brief Spline number counts model for 2D case.
 
-    The full expression is
-    \f[
-       \frac{dN}{dS_1\, dS_2} = \frac{n_1\left(S_1 \right)}{S_1} 
-            \mathrm{L} \left( \frac{S_2}{S_1}; \mu\left(S_1\right),
-            \sigma\left(S_1\right) \right)
-    \f] 
-    where \f$n_1\f$ is just the spline as in the one-dimensional case.
-    The division by \f$S_1\f$ may seem odd, but assures that the
-    distribution marginalized over \f$S_2\f$ is just \f$ n_1 \f$.
-    \f$\sigma\f$ and \f$\mu\f$ are also strored as splines. \f$L\f$
-    is just the Log-Normal form:
-    \f[
-      \mathrm{L}\left( x ; \mu, \sigma \right) =
-       \frac{1}{\sqrt{2 \pi} \sigma} \frac{1}{x}
-       \exp\left[ \frac{ - \left(\log x - \mu\right)^2 }{ \sigma^2 } \right] .
-    \f]
-    Note that \f$\sigma\f$ and \f$\mu\f$ are not the mean and square root
-    of the variance of the actual distribution, but rather the mean
-    and square root of the variance of the log quantities.  These
-    are related by
-    \f[
-       \left< S_2/S_1 \right> = \exp \left[ \mu\left(S_1\right) +
-             \frac{1}{2}\sigma^2\left(S_1\right) \right]
-    \f]
-    and
-    \f[
-       Var[ S_2/S_1 ] = \exp \left( 2 \mu \left( S_1 \right) +
-           \sigma^2\left(S_1\right) \right) 
-          \left[ \exp \left( \sigma^2\left(S_1\right) \right) - 1 \right] .
-    \f]
-    Note that the number counts require that \f$S_2/S_1 > 0\f$.
-    We also explicitly require that \f$S_1 > 0\f$.  Both are justified
-    on physical grounds.
+  The counts are modeled as a spline at one frequency times a Log-Normal 
+  colour (flux ratio) model.  
+
+  The full expression is
+  \f[
+    \frac{dN}{dS_1\, dS_2} = \frac{n_1\left(S_1 \right)}{S_1} 
+    \mathrm{L} \left( \frac{S_2}{S_1}; \mu\left(S_1\right),
+    \sigma\left(S_1\right) \right)
+  \f] 
+  where \f$n_1\f$ is just the spline as in the one-dimensional case
+  as implemented in numberCountsKnotsSpline.
+  The division by \f$S_1\f$ may seem odd, but assures that the
+  distribution marginalized over \f$S_2\f$ is just \f$ n_1 \f$.
+  \f$L\f$ is just the Log-Normal distribution:
+  \f[
+    \mathrm{L}\left( x ; \mu, \sigma \right) =
+    \frac{1}{\sqrt{2 \pi} \sigma} \frac{1}{x}
+    \exp\left[ \frac{ - \left(\log x - \mu\right)^2 }{ \sigma^2 } \right] .
+  \f]
+  \f$\sigma\f$ and \f$\mu\f$ are stored as splines as functions of
+  \f$S_1\f$.  Note that \f$\sigma\f$ and \f$\mu\f$ (the actual parameters 
+  of the model)
+  are not the mean and square root of the variance of \f$S_2 / S_1\f$,
+  but rather the mean and square root of the variance of the 
+  (natural) log quantities.  These are related by
+  \f[
+    \left< S_2/S_1 \right> = \exp \left[ \mu\left(S_1\right) +
+       \frac{1}{2}\sigma^2\left(S_1\right) \right]
+  \f]
+  and
+  \f[
+    Var[ S_2/S_1 ] = \exp \left( 2 \mu \left( S_1 \right) +
+       \sigma^2\left(S_1\right) \right) 
+       \left[ \exp \left( \sigma^2\left(S_1\right) \right) - 1 \right] .
+  \f]
+  Note that the number counts require that \f$S_2/S_1 > 0\f$.
+  We also explicitly require that \f$S_1 > 0\f$.  Both are justified
+  on physical grounds.
     
-
   \ingroup Models
 */
 class numberCountsDoubleLogNormal : public numberCountsDouble {
@@ -238,7 +240,9 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
 //////////////////////////////
 
 /*!
-  \brief A class to read in model specifications from init files
+  \brief A class to read in model specifications from init files, 2D case
+
+  \ingroup Models
  */
 class initFileDoubleLogNormal {
  private:
@@ -251,8 +255,8 @@ class initFileDoubleLogNormal {
   unsigned int noffsets; //!< Number of knots in color offset
   unsigned int sigmaidx; //!< Index of first sigma value
   unsigned int offsetidx; //!< Index of first offset value
-  double* knotpos; //!< Positions of knots (all)
-  double* knotval; //!< Initial value center for knot value (all)
+  double* knotpos; //!< Positions of knots (all, including sigma and offsets)
+  double* knotval; //!< Initial value center for knot value (all, inc. sigmas and offsets)
 
   //These are optional
   bool has_range; //!< Has initial value range
@@ -263,6 +267,9 @@ class initFileDoubleLogNormal {
   bool has_upper_limits; //!< Has some upper limit information
   bool* has_uplim; //!< Knots have upper limit
   double* uplim; //!< Value of upper limit
+
+  void checkLimitsDontCross() const; //!< Make sure limits make sense, throw if not
+  void checkRange() const; //!< Make sure param ranges make sense, throw if not
 
  public:
   initFileDoubleLogNormal(); //!< Basic constructor

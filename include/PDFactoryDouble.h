@@ -16,7 +16,7 @@
 
 /*!
   \brief Class for computing P(D) values from a set of parameters,
-  two band version
+  2D case.
 
   Only square FFTs are supported.
   

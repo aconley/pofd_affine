@@ -16,13 +16,15 @@
 #include "../include/global_settings.h"
 
 /*!
-  \brief Class for computing likelihood of given 2D model for multiple
-  datasets that share the same beam.  Doesn't include priors.
+  \brief Class for computing likelihood of given model for multiple
+  datasets that share the same beam, 2D case.  
 
-  \ingroup Likelihoods
+  Doesn't include priors.
 
   Datasets are grouped by their beam because some of the compuation
-  can be shared that way
+  can be shared that way.
+
+  \ingroup Likelihoods
 */
 
 class calcLikeDoubleSingle { //Odd name...
@@ -153,8 +155,9 @@ struct doublebeam_group {
 ////////////////////////////////////////////////////
 
 /*!
-  \brief Class for computing likelihood of given model. Allows
-  for multiple beams and includes priors.
+  \brief Class for computing likelihood of given model, 2D case. 
+
+  Allows for multiple beams and includes priors.
 
   \ingroup Likelihoods
 */

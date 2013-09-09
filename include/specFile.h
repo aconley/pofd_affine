@@ -7,7 +7,7 @@
 #include<vector>
 
 /*!
-  \brief Structure to read in spec files for fits
+  \brief Structure to read in spec files for fits, 1D case
 
   Lines in the spec file control the likelihood calculations and fits.
   The format is: identifier= values

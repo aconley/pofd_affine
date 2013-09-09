@@ -14,10 +14,10 @@
 #include "../include/utility.h"
 
 /*!
-  \brief Represents PSF parameters for 2 beams with positive
-          and negative components.  Note that zero beam values
-	  are not stored.  The two beams must have the same
-	  pixel size and extent, and are assumed co-aligned.
+  \brief Represents PSF parameters for 2 beams.  
+
+  Note that zero beam values are not stored.  The two beams must have the same
+  pixel size and extent, and are assumed co-aligned.
 
   \ingroup Beams
 */

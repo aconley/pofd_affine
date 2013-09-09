@@ -17,12 +17,14 @@
 
 /*!
   \brief Class for computing likelihood of given model for multiple
-  datasets that share the same beam.  Doesn't include priors.
+  datasets that share the same beam, 1D case.  
 
-  \ingroup Likelihoods
+  Doesn't include priors.
 
   Datasets are grouped by their beam because some of the compuation
-  can be shared that way
+  can be shared that way.
+
+  \ingroup Likelihoods  
 */
 
 class calcLikeSingle {
@@ -139,8 +141,9 @@ struct beam_group {
 ////////////////////////////////////////////////////
 
 /*!
-  \brief Class for computing likelihood of given model. Allows
-  for multiple beams and includes priors.
+  \brief Class for computing likelihood of given model, 1D case. 
+
+  Allows for multiple beams and includes priors.
 
   \ingroup Likelihoods
 */

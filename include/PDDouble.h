@@ -9,7 +9,7 @@
 #include "../include/fitsDataDouble.h"
 
 /*!
-  \brief Class to hold P(D) in 2 dimensions.  Supports interpolation.
+  \brief Class to hold P(D1, D2) in 2 dimensions.  Supports interpolation.
 
   The interpolation is simple bilinear.  Only monotonic
   flux value grids are allowed.

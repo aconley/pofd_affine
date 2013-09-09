@@ -9,8 +9,8 @@
 
 This is the source documentation for pofd_affine, a package which
 implements one and two-dimensional P(D) fitting using the affine
-invariant MCMC method described in Foreman-Mackey et al. 2012,
-arXiv1202.3665F.
+invariant MCMC method described in Foreman-Mackey et al. 2013,
+PASP 125, 925 (arXiv1202.3665F).
 
 */
 
@@ -18,7 +18,7 @@ arXiv1202.3665F.
   \brief Global convenience variables
 */
 namespace mcmc_affine {
-  const char version[] = "0.2.4"; //!< Version number
+  const char version[] = "0.2.4"; //!< Version number of MCMC code
 
   const double pi = 3.141592653589793238462643383279502884197; //!< \f$\pi\f$
   const double two_pi = 2.0*pi; //!< \f$2 \pi \f$
@@ -45,7 +45,7 @@ namespace mcmc_affine {
   \brief P(D) convenience variables
 */
 namespace pofd_mcmc {
-  const char version[] = "0.2.3"; //!<Version number of P(D) library
+  const char version[] = "0.2.4"; //!<Version number of P(D) library
   const double n_sigma_shift = 6.0; //!< Shift amount
   const double n_sigma_pad = 8.0; //!< Noise padding size in sigma
   const double n_sigma_shift2d = 4.0; //!< Shift amount
@@ -71,6 +71,8 @@ namespace pofd_mcmc {
 
   /*! \brief MPI message codes specific to P(D) routines */
   // All 1000 or more to avoid overlap with affine_messages
+  // Why do this?  Purely for debugging purposes, so if there is a problem
+  // I can trace back which messages are flying around.
   enum pofd_messages { BEAMSENDPIXSIZE=1000, BEAMSENDNPOS=1001,
 		       BEAMSENDHASPOSWEIGHTS=1002, BEAMSENDPOSPIXARR=1003,
 		       BEAMSENDINVPOSPIXARR=1004, BEAMSENDPOSWEIGHTS=1005,
