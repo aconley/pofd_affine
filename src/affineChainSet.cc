@@ -524,8 +524,8 @@ void affineChainSet::addChunk(unsigned int sz) {
 
 /*!
   \param[in] walker_idx Which walker look for last step of
-  \param[in] p          Parameters of last step
-  \param[in] lgLike     Log Likelihood of last step
+  \param[in] par        Parameters of last step
+  \param[in] lglike     Log Likelihood of last step
 
   Throws an exception if no steps taken
 */
@@ -569,8 +569,8 @@ void affineChainSet::getLastStep(unsigned int walker_idx,
 
 /*!
   \param[in] walker_idx Which walker to replace last step of
-  \param[in] p          Parameters to replace values with
-  \param[in] lgLike     Log Likelihood of replacement step
+  \param[in] pars       Parameters to replace values with
+  \param[in] lglike     Log Likelihood of replacement step
 
   This should be used with extreme care.  Throws an exception if there
   is no last step to replace.
@@ -607,8 +607,8 @@ void affineChainSet::replaceLastStep(unsigned int walker_idx,
   \param[in] chunkidx   Which chunk to get the step from
   \param[in] walker_idx Which walker 
   \param[in] iter_idx   Which step
-  \param[out] p         Parameters of that step
-  \param[out] lgLike    Log Likelihood of that step
+  \param[out] par       Parameters of that step
+  \param[out] lglike    Log Likelihood of that step
 
   Throws an exception if no steps taken
 */
@@ -1003,7 +1003,7 @@ bool affineChainSet::getAcorVector(std::vector<float>& tau) const
 
 /*!
   \param[out] tau Autocorrelation length for each parameter
-  \param[in] ignore Set to mcmc_affine::ACIGNORE where to ignore params.  
+  \param[in] param_state Set to mcmc_affine::ACIGNORE where to ignore params.  
                     tau is set to NaN where this is true
   \returns True if the autocorrelation vector was computed for all params
             that were not ignored

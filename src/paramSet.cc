@@ -19,7 +19,7 @@ paramSet::paramSet(unsigned int NPARAMS) {
 }
 
 /*!
-  \param[in] Vector of parameters
+  \param[in] vec Vector of parameters
 */
 paramSet::paramSet(const std::vector<float>& vec) {
   nparams = 0;
@@ -31,7 +31,7 @@ paramSet::paramSet(const std::vector<float>& vec) {
 }
 
 /*!
-  \param[in] Vector of parameters
+  \param[in] vec Vector of parameters
 
   Converted to float internally
 */
