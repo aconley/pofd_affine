@@ -9,29 +9,70 @@ paramSet::paramSet() {
   paramvals = NULL;
 }
 
+/*!
+  \param[in] NPARAMS Number of parameters
+*/
 paramSet::paramSet(unsigned int NPARAMS) {
   nparams = 0;
   paramvals = NULL;
   setNParams(NPARAMS);
 }
 
+/*!
+  \param[in] Vector of parameters
+*/
 paramSet::paramSet(const std::vector<float>& vec) {
   nparams = 0;
   paramvals = NULL;
   setNParams(vec.size());
-  if (nparams > 0) for (unsigned int i = 0; i < nparams; ++i)
-		     paramvals[i]=vec[i];
+  if (nparams > 0) 
+    for (unsigned int i = 0; i < nparams; ++i)
+      paramvals[i] = vec[i];
 }
 
+/*!
+  \param[in] Vector of parameters
+
+  Converted to float internally
+*/
+paramSet::paramSet(const std::vector<double>& vec) {
+  nparams = 0;
+  paramvals = NULL;
+  setNParams(vec.size());
+  if (nparams > 0) 
+    for (unsigned int i = 0; i < nparams; ++i)
+      paramvals[i] = static_cast<float>(vec[i]);
+}
+
+/*!
+  \param[in] Number of parameters
+  \param[in] VAL Array of paramters
+*/
 paramSet::paramSet(unsigned int N, const float* const VAL) {
   nparams = 0;
   paramvals = NULL;
   setNParams(N);
   if (nparams > 0) 
     for (unsigned int i = 0; i < nparams; ++i)
-      paramvals[i]=VAL[i];
+      paramvals[i] = VAL[i];
 }
 
+/*!
+  \param[in] Number of parameters
+  \param[in] VAL Array of paramters, converted to float internally
+*/
+paramSet::paramSet(unsigned int N, const double* const VAL) {
+  nparams = 0;
+  paramvals = NULL;
+  setNParams(N);
+  if (nparams > 0) 
+    for (unsigned int i = 0; i < nparams; ++i)
+      paramvals[i] = static_cast<float>(VAL[i]);
+}
+
+/*!
+  \param[in] other Parameter set to copy
+*/
 paramSet::paramSet(const paramSet& other) {
   nparams = 0;
   paramvals = NULL;
@@ -50,7 +91,10 @@ void paramSet::clear() {
   nparams = 0;
 }
 
-/*!  Doesn't preserve old params 
+/*!  
+  \param[in] npar Number of new parameters
+
+  Doesn't preserve old params 
  */
 void paramSet::setNParams(unsigned int npar) {
   if (npar == nparams) return;
@@ -59,6 +103,11 @@ void paramSet::setNParams(unsigned int npar) {
   nparams=npar;
 }
 
+/*!
+  \param[in] other paramSet to copy
+
+  Will resize as needed
+*/
 paramSet& paramSet::operator=(const paramSet& other) {
   if (this == &other) return *this;
   setNParams(other.nparams);
@@ -68,7 +117,11 @@ paramSet& paramSet::operator=(const paramSet& other) {
 }
 
 /*!
-  Floating point equals, always dangerous.
+  \param[in] other paramSet to check equality against
+  \returns True if they have the same number of parameters and same values
+
+  Floating point equals, always dangerous.  Returns true if no
+  parameters.
  */
 bool paramSet::operator==(const paramSet& other) const {
   if (nparams != other.nparams) return false;
@@ -80,8 +133,9 @@ bool paramSet::operator==(const paramSet& other) const {
 }
 
 /*!
+  \param[in] other paramSet to compute distance with respect to
   \returns Square root of the sum of the differences
- */
+*/
 float paramSet::getDist(const paramSet& other) const {
   if (other.nparams != nparams)
     throw affineExcept("paramSet","getDist",
@@ -97,11 +151,23 @@ float paramSet::getDist(const paramSet& other) const {
   return sqrt(val);
 }
 
+/*!
+  \param[in] i Index to access
+  \returns A constant reference to the value at index.
+
+  Throws a range error if the index is invalid
+*/
 const float& paramSet::at(unsigned int i) const throw(std::range_error) {
   if (i >= nparams) throw std::range_error("paramSet at out of range access");
   return paramvals[i];
 }
 
+/*!
+  \param[in] i Index to access
+  \returns A reference to the value at index.
+
+  Throws a range error if the index is invalid
+*/
 float& paramSet::at(unsigned int i) throw(std::range_error) {
   if (i >= nparams) throw std::range_error("paramSet at out of range access");
   return paramvals[i];
@@ -109,8 +175,9 @@ float& paramSet::at(unsigned int i) throw(std::range_error) {
 
 /*!
   \param[in] vec Input parameter vector
+
   Doesn't allow for resizing, doesn't change noise values
- */
+*/
 void paramSet::setParamValues(const std::vector<float>& vec) {
   if (vec.size() != nparams)
     throw affineExcept("paramSet","setParamValues",
@@ -120,8 +187,12 @@ void paramSet::setParamValues(const std::vector<float>& vec) {
 }
 
 /*!
+  \param[in] N Number of input values -- must be the same as the current
+     number of parameters
+  \param[in] VAL Array of values
+
   Doesn't allow for resizing
- */
+*/
 void paramSet::setParamValues(unsigned int N, const float* const VAL) {
   if (N != nparams)
     throw affineExcept("paramSet","setParamValues",
@@ -131,6 +202,8 @@ void paramSet::setParamValues(unsigned int N, const float* const VAL) {
 }
 
 /*!
+  \param[inout] is Input stream
+
   Doesn't allow resizing
 */
 void paramSet::readFromStream(std::istream& is) {
@@ -138,12 +211,20 @@ void paramSet::readFromStream(std::istream& is) {
     is >> paramvals[i];
 }
 
+/*!
+  \param[inout] os Output stream
+  \returns True
+*/
 bool paramSet::writeToStream(std::ostream& os) const {
   for (unsigned int i = 0; i < nparams; ++i)
     os << "   " << paramvals[i];
   return true;
 }
 
+/*!
+  \param[in] comm Communicator
+  \param[in] dest Destination of messages
+*/
 void paramSet::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<unsigned int*>(&nparams), 1, MPI_UNSIGNED, 
 	   dest, mcmc_affine::PSSENDNPARS, comm);
@@ -151,6 +232,10 @@ void paramSet::sendSelf(MPI_Comm comm, int dest) const {
 	   comm);
 }
 
+/*!
+  \param[in] comm Communicator
+  \param[in] src Source of messages
+*/
 void paramSet::recieveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
   unsigned int newpars;
@@ -161,12 +246,19 @@ void paramSet::recieveCopy(MPI_Comm comm, int src) {
 	   comm, &Info);
 }
 
-
+/*!
+  \param[inout] is Input stream
+  \param[inout] p paramSet to load
+*/
 std::istream& operator>>(std::istream& is, paramSet& p) {
   p.readFromStream(is);
   return is;
 }
 
+/*!
+  \param[inout] os Output stream
+  \param[in] p paramSet to write.
+*/
 std::ostream& operator<<(std::ostream& os, const paramSet& p) {
   p.writeToStream(os);
   return os;

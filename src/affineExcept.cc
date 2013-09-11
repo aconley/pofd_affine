@@ -5,63 +5,72 @@
 
 using namespace std;
 
-//Cheerfully stolen from deepexcpt, written by Rob Knop
-
 /*!
+  \param[in] CLASS Class generating exception, or routine if not in a class
+  \param[in] METHOD Method generating exception
+  \param[in] ERRSTR Error string 
+  \param[in] ERRNUMBER Error number
+
   Does the work of the constructors, except for setting the flags
-  \param[in] inclass Class generating exception
-  \param[in] inmethod Method generating exception
-  \param[in] inerrstr Error string 
-  \param[in] inerr Error number
 */
-void affineExcept::init(const std::string& inclass,
-			const std::string& inmethod,
-			const std::string& inerrstr, int inerr) {
-  errclass=inclass;
-  errmethod=inmethod;
-  errstr=inerrstr;
-  errnum=inerr;
+void affineExcept::init(const std::string& CLASS,
+			const std::string& METHOD,
+			const std::string& ERRSTR, int ERRNUMBER) {
+  errclass = CLASS;
+  errmethod = METHOD;
+  errstr = ERRSTR;
+  errnum = ERRNUMBER;
 }
 
-
+/*!
+  Basic constructor
+*/
 affineExcept::affineExcept() {
   init("","","",0);
   classset = methodset = strset = errset = false;
 }
 
 /*!
-  Most basic error, specifying only the error message
- */
-affineExcept::affineExcept(const std::string errstr) {
-  init("","",errstr,0);
+  \param[in] errstr Error string
+*/
+affineExcept::affineExcept(const std::string& errstr) {
+  init("", "", errstr, 0);
   strset = true;
 }
 
 /*!
-  Error with error string and error number
+  \param[in] errstr Error string
+  \paran[in] errnum Error number
 */
-affineExcept::affineExcept(const std::string errstr,int err) {
-  init("","",errstr,err);
+affineExcept::affineExcept(const std::string& errstr, int errnum) {
+  init("", "", errstr, errnum);
   strset = errset = true;
 }
 
 /*!
-  Error with error string, class and method generating exception
+  \param[in] errclass Class generating error
+  \param[in] errmethod Method generating error
+  \param[in] errstr Error string
 */
-affineExcept::affineExcept(const std::string errclass,
-			   const std::string errmethod,
-			   const std::string errstr) {
-  init(errclass,errmethod,errstr,0);
+affineExcept::affineExcept(const std::string& errclass,
+			   const std::string& errmethod,
+			   const std::string& errstr) {
+  init(errclass, errmethod, errstr, 0);
   classset = methodset = strset = true;
 }
 
-/*!
-  Full error specification: error std::string, number, class, and method.
- */
-affineExcept::affineExcept(const std::string errclass,
-			   const std::string errmethod,
-			   const std::string errstr, int err) {
-  init(errclass,errmethod,errstr,err);
+/*!  
+  \param[in] errclass Class generating error
+  \param[in] errmethod Method generating error
+  \param[in] errstr Error string
+  \paran[in] errnum Error number
+
+*/
+affineExcept::affineExcept(const std::string& errclass,
+			   const std::string& errmethod,
+			   const std::string& errstr, 
+			   int errnum) {
+  init(errclass, errmethod, errstr, errnum);
   classset = methodset = strset = errset = true;
 }
 
@@ -92,7 +101,7 @@ std::string affineExcept::what() const {
 
 /*
   Provides output capabilities, not outputting stuff not set.
- */
+*/
 ostream& operator<<(std::ostream& os, const affineExcept& err) {
   os << err.what();
   return os;
