@@ -26,7 +26,7 @@
   \param[in] BURN_MULTIPLE This fraction of autocorrelation steps to add
                             before checking burn-in again
   \param[in] SCALEFAC Scale factor of Z distribution
- */
+*/
 affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
 			       unsigned int NSAMPLES, unsigned int INIT_STEPS,
 			       double INIT_TEMP, unsigned int MIN_BURN, 
@@ -80,8 +80,10 @@ affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
 affineEnsemble::~affineEnsemble() {}
 
 /*!
+  \returns True if the ensemble is in a valid state, false otherwise
+
   Only meaningful for the master node, always return true for slaves
- */
+*/
 bool affineEnsemble::isValid() const {
   if (rank != 0) return true;
   if (!is_init) return false;
@@ -96,6 +98,9 @@ bool affineEnsemble::isValid() const {
 
 }
 
+/*!
+  \returns z value
+*/
 float affineEnsemble::generateZ() const {
   //Don't check isValid or if master for speed
   //Generate a random number satisfying g \propto 1/sqrt(z)
@@ -112,7 +117,7 @@ float affineEnsemble::generateZ() const {
   \param[in] n New number of walkers
   
   Does not preserve contents unless new value is the same as current one.
- */
+*/
 void affineEnsemble::setNWalkers(unsigned int n) {
   if (nwalkers == n) return;
   if (n == 0)
@@ -139,7 +144,7 @@ void affineEnsemble::setNWalkers(unsigned int n) {
   \param[in] n New number of parameters
   
   Does not preserve contents unless new value is the same as current one.
- */
+*/
 void affineEnsemble::setNParams(unsigned int n) {
   if (nparams == n) return;
   if (n == 0)
@@ -162,11 +167,18 @@ void affineEnsemble::setNParams(unsigned int n) {
   nparams = n;
 }
 
+/*!
+  \returns Maximum likelihood of all steps taken
+*/
 double affineEnsemble::getMaxLogLike() const {
   if (rank != 0) return std::numeric_limits<double>::quiet_NaN();
   return chains.getMaxLogLike();
 }
 
+/*!
+  \param[out] val Maximum likelihood of all steps taken
+  \param[out] p Parameters corresponding to that likelihood
+*/
 void affineEnsemble::getMaxLogLikeParam(double& val, paramSet& p) const {
   if (rank != 0) {
     val = std::numeric_limits<double>::quiet_NaN();
@@ -184,14 +196,23 @@ void affineEnsemble::clearParamState() {
   nfixed = nignore = 0;
 }
 
+/*!
+  \returns Number of parameters being fit (nparams minus number of fixed ones)
+*/
 unsigned int affineEnsemble::getNFitParams() const {
   return nparams - nfixed;
 }
 
+/*!
+  \returns Number of parameters being used in autocorrelation computation
+*/
 unsigned int affineEnsemble::getNAcorParams() const {
   return nparams - nignore;
 }
 
+/*!
+  \param[in] idx Parameter index of parameter to fix
+*/
 void affineEnsemble::fixParam(unsigned int idx) {
   if (rank != 0) return;
   param_state[idx] |= mcmc_affine::FIXED;
@@ -205,11 +226,18 @@ void affineEnsemble::fixParam(unsigned int idx) {
     if (param_state[i] & mcmc_affine::ACIGNORE) ++nignore;
 }
 
+/*!
+  \param[in] idx Parameter index
+  \returns True if that parameter is fixed, false otherwise
+*/
 bool affineEnsemble::isParamFixed(unsigned int idx) const {
   if (rank != 0) return false;
   return param_state[idx] & mcmc_affine::FIXED;
 }
 
+/*!
+  \param[idx] idx Index of parameter to ignore in autocorrelation computation
+*/
 void affineEnsemble::ignoreParamAcor(unsigned int idx) {
   if (rank != 0) return;
   param_state[idx] |= mcmc_affine::ACIGNORE;
@@ -219,11 +247,20 @@ void affineEnsemble::ignoreParamAcor(unsigned int idx) {
     if (param_state[i] & mcmc_affine::ACIGNORE) ++nignore;
 }
 
+/*!
+  \param[in] idx Parameter index
+  \returns True if that parameter is being ignored in autocorrelation 
+    computation, false otherwise
+*/
 bool affineEnsemble::isParamIgnoredAcor(unsigned int idx) const {
   if (rank != 0) return false;
   return param_state[idx] & mcmc_affine::ACIGNORE;
 }
 
+/*!
+  \param[in] idx Parameter index
+  \param[in] parnm Name of parameter
+*/
 void affineEnsemble::setParamName(unsigned int idx, const std::string& parnm) {
   if (idx >= nparams) throw affineExcept("affineEnsemble", "setParamName",
 					 "Invalid index", 1);
@@ -232,6 +269,9 @@ void affineEnsemble::setParamName(unsigned int idx, const std::string& parnm) {
   parnames[idx] = parnm;
 }
 
+/*!
+  \param[in] idx Parameter index to remove name for
+*/
 void affineEnsemble::unsetParamName(unsigned int idx) {
   if (idx >= nparams) throw affineExcept("affineEnsemble", "unsetParamName",
 					 "Invalid index", 1);
@@ -242,6 +282,10 @@ void affineEnsemble::unsetParamName(unsigned int idx) {
     has_any_names |= has_name[i];
 }
 
+/*!
+  \param[in] idx Parameter index
+  \returns Name of parameter, or empty string if there is none
+*/
 std::string affineEnsemble::getParamName(unsigned int idx) const {
   if (idx >= nparams) throw affineExcept("affineEnsemble", "getParamName",
 					 "Invalid index", 1);
@@ -249,6 +293,9 @@ std::string affineEnsemble::getParamName(unsigned int idx) const {
   return parnames[idx];
 }
 
+/*!
+  \returns True if the autocorrelation was computed
+*/
 bool affineEnsemble::computeAcor() const {
   if (rank != 0) return false;
   if (!isValid())
@@ -262,6 +309,13 @@ bool affineEnsemble::computeAcor() const {
   return success;
 }
 
+/*!
+  \param[out] retval Autocorrelation length for each parameter.  Resized
+    to nparams.  Some entries may not be set (if ignored)
+  \return True if the computation was successful
+  
+  Does not recompute the autocorrelation if already available
+*/
 bool affineEnsemble::getAcor(std::vector<float>& retval) const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "getAcor", "Don't call on slave", 1);
@@ -274,6 +328,9 @@ bool affineEnsemble::getAcor(std::vector<float>& retval) const {
   return success;
 }
 
+/*!
+  \returns True if at least one step has been accepted on any walker
+*/
 bool affineEnsemble::hasOneStepBeenAccepted() const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "hasOneStepBeenAccepted", 
@@ -286,6 +343,9 @@ bool affineEnsemble::hasOneStepBeenAccepted() const {
   return false;
 }
 
+/*!
+  \returns retval Vector of acceptance fraction per walker
+*/
 void affineEnsemble::getAcceptanceFrac(std::vector<float>& retval) const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "getAcceptanceFrac",
@@ -305,8 +365,12 @@ void affineEnsemble::getAcceptanceFrac(std::vector<float>& retval) const {
   }
 }
 
-float affineEnsemble::getParamMean(unsigned int p) const {
-  return chains.getParamMean(p);
+/*!
+  \param[in] paridx Parameter index
+  \returns Mean value of that parameter across all walkers and steps
+*/
+float affineEnsemble::getParamMean(unsigned int paridx) const {
+  return chains.getParamMean(paridx);
 }
 
 /*!
@@ -388,15 +452,16 @@ void affineEnsemble::sample() {
 }
 
 /*!
-  A quick and dirty routine to do a fixed number of steps.
-  Assumes that initChains is already called.
-
   \param[in] nsteps  Number of steps to do in each walker
   \param[in] initsteps Number of initial steps to do then discard.
                        If this is non-zero, the parameters are re-initialized
 		       by calling generateInitialPosition with the best
 		       step from this set.
- */
+
+  A quick and dirty routine to do a fixed number of steps.
+  Assumes that initChains is already called.
+
+*/
 void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
   if (!is_init) initChains();
 
@@ -569,6 +634,9 @@ void affineEnsemble::masterSample() {
     MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
 }
 
+/*!
+  \returns Maximimum autocorrelation
+*/
 float affineEnsemble::getMaxAcor() const {
   if (!acor_set) 
     throw affineExcept("affineEnsemble", "getMaxAcor",
@@ -587,15 +655,17 @@ float affineEnsemble::getMaxAcor() const {
   return maxval;
 }
 
-// This does the burn in in a few steps.  Only called from master node
-// 1) Possibly do init_steps, taking the best one to re-seed the
-//     initial position for burn-in
-// 2) Do the burn in 
-//    a) if fixed_burn is set, just do that many steps
-//    b) if not, do steps until the number of steps is greater than
-//        burn_mult * autocorrelation 
-// 3) Throw away all steps, keeping the last step as the first one of
-//     the main loop (but don't count it in any statistics, etc.)
+/*!
+ This does the burn in.  Only called from master node
+ 1) Possibly do init_steps, taking the best one to re-seed the
+     initial position for burn-in
+ 2) Do the burn in 
+    a) if fixed_burn is set, just do that many steps
+    b) if not, do steps until the number of steps is greater than
+        burn_mult * autocorrelation 
+ 3) Throw away all steps, keeping the last step as the first one of
+     the main loop (but don't count it in any statistics, etc.)
+*/
 void affineEnsemble::doBurnIn() throw(affineExcept) {
 
   const unsigned int max_acor_iters = 20;
@@ -793,7 +863,7 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
 }
 
 /*!
-  Redoes the likelihood compuatation for the most recent step.
+  Redos the likelihood compuatation for the most recent step.
   The idea behind this is that sometimes -- like when initializing
   the chains -- you need to compute the likelihood of a step, but it's
   computationally difficult.  This provides a mechanism for doing that 
@@ -935,7 +1005,7 @@ double affineEnsemble::getLogLike(const paramSet& p) {
 
   This generates a new step, checking the parameter limits to make sure
   they are obeyed, and obeying fixed parameters.
- */
+*/
 void affineEnsemble::generateNewStep(unsigned int idx1, unsigned int idx2,
 				     proposedStep& prstep) const 
   throw (affineExcept) {
@@ -1076,6 +1146,8 @@ void affineEnsemble::doMasterStep(double temp) throw (affineExcept) {
 
 /*
   \param[in] temp Temperature to use for step acceptance
+
+  Does all steps currently in the queue
 */
 void affineEnsemble::emptyMasterQueue(double temp) throw (affineExcept) {
   //Step loop
@@ -1291,6 +1363,9 @@ void affineEnsemble::slaveSample() {
   }
 }
 
+/*!
+  \param[inout] os Stream to write to
+*/
 void affineEnsemble::writeToStream(std::ostream& os) const {
   if (rank != 0) return;
 
@@ -1328,6 +1403,9 @@ void affineEnsemble::writeToStream(std::ostream& os) const {
     os << std::endl << "Number of main loop steps per walker: " << nsteps;
 }
 
+/*!
+  \param[in] filename File to write to as text
+*/
 void affineEnsemble::writeToFile(const std::string& filename) const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "writeToFile",
@@ -1335,6 +1413,9 @@ void affineEnsemble::writeToFile(const std::string& filename) const {
   chains.writeToFile(filename);
 }
 
+/*!
+  \param[in] filename File to write to as HDF5
+*/
 void affineEnsemble::writeToHDF5(const std::string& filename) const {
   // In addition to writing the chains and likelihoods, writes some
   // additional attributes at the root level
@@ -1464,6 +1545,10 @@ void affineEnsemble::writeToHDF5(const std::string& filename) const {
   status = H5Fclose(file_id);
 }
 
+/*!
+  \param[inout] os Stream to write to
+  \param[in] a Ensemble to write
+*/
 std::ostream& operator<<(std::ostream& os, const affineEnsemble& a) {
   a.writeToStream(os);
   return os;

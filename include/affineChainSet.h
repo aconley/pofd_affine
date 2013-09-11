@@ -8,8 +8,11 @@
 #include "paramSet.h"
 #include "affineExcept.h"
 #include "global_settings.h"
+
 /*!
   \brief Set of params and likelihoods
+
+  This stores a chunk of steps
 */
 struct affineStepChunk {
   // The parameters are kept as floats, but the likelihoods as doubles
@@ -73,6 +76,10 @@ std::ostream& operator<<(std::ostream& os, const affineStepChunk&);
 
 /*!
   \brief Holds chains
+
+  Chains are comprised of a set of affineStepChunks.
+  This also contains routines for computing the autocorrelation of
+  the chains, as well as serialization routines.
 */
 class affineChainSet {
  private:

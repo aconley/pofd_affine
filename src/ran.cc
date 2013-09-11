@@ -2,6 +2,9 @@
 
 #include "../include/ran.h"
 
+/*!
+  \param[in] seed New seed
+*/
 void ran::setSeed(unsigned long long int seed) {
   v = 4101842887655102017LL;
   w = 1LL;
@@ -10,6 +13,9 @@ void ran::setSeed(unsigned long long int seed) {
   w = v; int64();
 }
 
+/*!
+  \returns 64 bit random integer
+*/
 unsigned long long int ran::int64() {
   u = u * 2862933555777941757LL + 7046029254386353087LL;
   v ^= v >> 17; 
@@ -23,15 +29,20 @@ unsigned long long int ran::int64() {
 }
 
 /*!
-  Select a random integer from the range [minidx,maxidx) -- that is,
-  maxidx can't be generated
+  \param[in] minidx Minimum index
+  \param[in] maxidx Maximum index
+  \returns Random integer from the range [minidx,maxidx) -- that is,
+     maxidx can't be generated
 */
-unsigned int ran::selectFromRange( unsigned int minidx,
-				     unsigned int maxidx ) {
+unsigned int ran::selectFromRange(unsigned int minidx,
+				  unsigned int maxidx) {
   double relidx = (maxidx - minidx) * doub();
   return static_cast<unsigned int>(relidx) + minidx;
 }
 
+/*!
+  \returns Gaussian deviate with mean 0 and variance 1
+*/
 double ran::gauss() {
   double u1,v1,x,y,q;
   do {

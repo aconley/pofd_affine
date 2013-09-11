@@ -4,7 +4,7 @@ AC_PREREQ(2.59)
 AC_INIT(mcmc_affine, 0.2.4, alexander.conley@colorado.edu)
 AC_LANG_CPLUSPLUS
 dnl AC_CONFIG_SRCDIR([src])
-AM_INIT_AUTOMAKE(mcmc_affine, 0.2.4)
+AM_INIT_AUTOMAKE
 AC_CONFIG_MACRO_DIR([m4])
 
 dnl Checks for programs.

@@ -14,6 +14,11 @@ const unsigned int affineChainSet::winmult = 5;
 const unsigned int affineChainSet::maxlag = taumax * winmult;
 const unsigned int affineChainSet::minfac = 5;
 
+/*!
+  \param[in] NWALKERS Number of walkers
+  \param[in] NITERS Maximum number of steps allowed in this chunk
+  \param[in] NPARAMS Number of parameters in this chunk
+*/
 affineStepChunk::affineStepChunk(unsigned int NWALKERS,
 				 unsigned int NITERS,
 				 unsigned int NPARAMS) {
@@ -36,7 +41,9 @@ affineStepChunk::affineStepChunk(unsigned int NWALKERS,
   }
 }
 
-//copy constructor
+/*!
+  \param[in] other affineStepChunk to copy
+*/
 affineStepChunk::affineStepChunk(const affineStepChunk& other) {
   nwalkers = other.nwalkers;
   niters = other.niters;
@@ -66,11 +73,11 @@ affineStepChunk::~affineStepChunk() {
 }
 
 /*!
+  \param[in] other Other chunk to fill from
+
   Takes this chunk, throws out the contents, makes it one iteration long,
   and sets the only entry for each walker to the last step from the other
   walker. 
-
-  \param[in] other Other chunk to fill from
 */
 void affineStepChunk::fillFromLastStep(const affineStepChunk& other)
   throw (affineExcept) {
@@ -135,6 +142,9 @@ void affineStepChunk::clear() {
   nwalkers = niters = nparams = 0;
 }
 
+/*!
+  \returns Minimum number of steps taken by any walker
+*/
 unsigned int affineStepChunk::getMinNSteps() const {
   if (nwalkers == 0) return 0;
   unsigned int minstep = nsteps[0];
@@ -146,6 +156,10 @@ unsigned int affineStepChunk::getMinNSteps() const {
   return minstep;
 }
 
+/*!
+  \param[in] other affineStepChunk to copy
+  \returns Reference to updated chunk
+*/
 affineStepChunk& affineStepChunk::operator=(const affineStepChunk& other) {
   if (this == &other) return *this; //Self copy
   
@@ -181,6 +195,10 @@ affineStepChunk& affineStepChunk::operator=(const affineStepChunk& other) {
   return *this;
 }
 
+/*!
+  \returns Maximum log likelihood of any step in this chunk, or NaN
+    if no steps available
+*/
 double affineStepChunk::getMaxLogLike() const {
   if (nwalkers == 0 || niters == 0 || nparams == 0) 
     return std::numeric_limits<double>::quiet_NaN();
@@ -208,6 +226,12 @@ double affineStepChunk::getMaxLogLike() const {
   return maxval;
 }
 
+/*!
+  \param[out] maxval Maximum log likelihood in this chunk, 
+    or NaN if no steps taken
+  \param[out] p parameter values at maximum likelihood.  Unmodified
+    if no steps in this chunk
+*/
 void affineStepChunk::getMaxLogLikeParam(double& maxval, paramSet& p) const {
   if (nwalkers == 0 || niters == 0 || nparams == 0) {
     maxval = std::numeric_limits<double>::quiet_NaN();
@@ -245,8 +269,12 @@ void affineStepChunk::getMaxLogLikeParam(double& maxval, paramSet& p) const {
 }
 
 /*!
-  returns true if the parameter was set, false otherwise
- */
+  \param[in] walker_idx Walker to add step to
+  \param[in] pars Parameters of step to be added
+  \param[in] lglike Log-likelihood of step
+
+  \returns true if the parameter was set, false otherwise
+*/
 bool affineStepChunk::addStep(unsigned int walker_idx, 
 			      const paramSet& pars, double lglike) {
   if (walker_idx >= nwalkers) return false;
@@ -265,6 +293,9 @@ bool affineStepChunk::addStep(unsigned int walker_idx,
 }
 
 /*!
+  \param[in] walker_idx Walker to get last step from
+  \param[in] pars Parameters of last step
+  \param[in] lglike Log-likelihood of step
   \returns true if it got the step, false otherwise
  */
 bool affineStepChunk::getLastStep(unsigned int walker_idx,
@@ -281,10 +312,13 @@ bool affineStepChunk::getLastStep(unsigned int walker_idx,
 
 
 /*!
+  \param[in] walker_idx Walker to replace last step with
+  \param[in] pars New parameters for last step
+  \param[in] lglike Log-likelihood of new step
   \returns true if it was able to do the replacement, false otherwise
 
   This should be used with care!
- */
+*/
 bool affineStepChunk::replaceLastStep(unsigned int walker_idx,
 				      const paramSet& pars, double lglike) {
   if (walker_idx >= nwalkers) return false;
@@ -301,8 +335,12 @@ bool affineStepChunk::replaceLastStep(unsigned int walker_idx,
 }
 
 /*!
+  \param[in] walker_idx Walker to replace last step with
+  \param[in] iter_idx Step to get from that walker
+  \param[out] pars parameters of that step
+  \param[out] lglike Log-likelihood of that step
   \returns true if it got the step, false otherwise
- */
+*/
 bool affineStepChunk::getStep(unsigned int walker_idx, unsigned int iter_idx,
 			      paramSet& pars, double& lglike) const {
   if (walker_idx >= nwalkers) return false;
@@ -315,7 +353,11 @@ bool affineStepChunk::getStep(unsigned int walker_idx, unsigned int iter_idx,
   return true;
 }
 
-
+/*!
+  \param[in] walker_idx Walker to replace last step with
+  \param[in] iter_idx Step to get from that walker
+  \returns Pointer to that set of parameters, NULL if invalid step
+*/
 float* affineStepChunk::getParamPointer(unsigned int walker_idx,
 					unsigned int iter_idx) {
   if (walker_idx >= nwalkers) return NULL;
@@ -323,6 +365,11 @@ float* affineStepChunk::getParamPointer(unsigned int walker_idx,
   return steps + (niters * walker_idx + iter_idx) * nparams;
 }
 
+/*!
+  \param[in] walker_idx Walker to replace last step with
+  \param[in] iter_idx Step to get from that walker
+  \returns Pointer to const of that set of parameters, NULL if invalid step
+*/
 float* const affineStepChunk::getParamPointer(unsigned int walker_idx,
 					      unsigned int iter_idx) const {
   if (walker_idx >= nwalkers) return NULL;
@@ -330,6 +377,10 @@ float* const affineStepChunk::getParamPointer(unsigned int walker_idx,
   return steps + (niters * walker_idx + iter_idx) * nparams;
 }
 
+/*!
+  \param[in] walker_idx Walker to replace last step with
+  \returns Pointer to last set of parameters, NULL if no steps in this chunk
+*/
 float* affineStepChunk::getLastParamPointer(unsigned int walker_idx) {
   if (walker_idx >= nwalkers) return NULL;
   unsigned int iter_idxp1 = nsteps[walker_idx];
@@ -337,6 +388,11 @@ float* affineStepChunk::getLastParamPointer(unsigned int walker_idx) {
   return steps + (niters * walker_idx + iter_idxp1 - 1) * nparams;
 }
 
+/*!
+  \param[in] walker_idx Walker to replace last step with
+  \returns Pointer to const of last set of parameters, NULL 
+     if no steps in this chunk
+*/
 float* const affineStepChunk::getLastParamPointer(unsigned int walker_idx) 
   const {
   if (walker_idx >= nwalkers) return NULL;
@@ -345,6 +401,9 @@ float* const affineStepChunk::getLastParamPointer(unsigned int walker_idx)
   return steps + (niters * walker_idx + iter_idxp1 - 1) * nparams;
 }
 
+/*!
+  \param[inout] os Stream to write to
+*/
 void affineStepChunk::writeToStream(std::ostream& os) const {
   //Do each walker in turn
   if (nparams == 0 || nwalkers == 0 || niters == 0) return;
@@ -367,7 +426,10 @@ void affineStepChunk::writeToStream(std::ostream& os) const {
 
 /////////////////////////////////////////////////////
 
-
+/*!
+  \param[in] NWALKERS Number of walkers
+  \param[out] NPARAMS Number of parameters
+*/
 affineChainSet::affineChainSet(unsigned int NWALKERS,
 			       unsigned int NPARAMS) {
   nwalkers = NWALKERS;
@@ -386,6 +448,10 @@ void affineChainSet::clear() {
   skipfirst = false;
 }
 
+/*!
+  Clear out all values, perserving the last step from the last chunk.
+  Throws and exception if the chain is empty
+*/
 void affineChainSet::clearPreserveLast() throw (affineExcept) {
   if (steps.size() == 0)
     throw affineExcept("affineChainSet","clearPreserveLast",
@@ -441,18 +507,28 @@ void affineChainSet::setNParams(unsigned int n) throw (affineExcept) {
   \param[in] p          Parameters to add
   \param[in] logLike    Log Likelihood of step
   \returns true if the step was added
- */
+*/
 bool affineChainSet::addNewStep(unsigned int walker_idx, const paramSet& p, 
 				double logLike) {
   return steps.back()->addStep(walker_idx, p, logLike);
 }
 
+/*!
+  \param[in] sz Size (in number of steps) of new chunk to add
+*/
 void affineChainSet::addChunk(unsigned int sz) {
   affineStepChunk *chnkptr;
   chnkptr = new affineStepChunk(nwalkers, sz, nparams);
   steps.push_back(chnkptr);
 }
 
+/*!
+  \param[in] walker_idx Which walker look for last step of
+  \param[in] p          Parameters of last step
+  \param[in] lgLike     Log Likelihood of last step
+
+  Throws an exception if no steps taken
+*/
 void affineChainSet::getLastStep(unsigned int walker_idx,
 				 paramSet& par, double& lglike) const 
   throw (affineExcept) {
@@ -492,7 +568,12 @@ void affineChainSet::getLastStep(unsigned int walker_idx,
 }
 
 /*!
-  This should be used with extreme care.
+  \param[in] walker_idx Which walker to replace last step of
+  \param[in] p          Parameters to replace values with
+  \param[in] lgLike     Log Likelihood of replacement step
+
+  This should be used with extreme care.  Throws an exception if there
+  is no last step to replace.
 */
 void affineChainSet::replaceLastStep(unsigned int walker_idx,
 				     const paramSet& pars, double lglike) {
@@ -522,6 +603,15 @@ void affineChainSet::replaceLastStep(unsigned int walker_idx,
 		       "Error replacing last step", 3);
 }
 
+/*!
+  \param[in] chunkidx   Which chunk to get the step from
+  \param[in] walker_idx Which walker 
+  \param[in] iter_idx   Which step
+  \param[out] p         Parameters of that step
+  \param[out] lgLike    Log Likelihood of that step
+
+  Throws an exception if no steps taken
+*/
 void affineChainSet::getStep(unsigned int chunkidx, 
 			     unsigned int walker_idx, 
 			     unsigned int iter_idx,
@@ -536,6 +626,10 @@ void affineChainSet::getStep(unsigned int chunkidx,
 		       "Error getting specified step", 2);
 }
 
+/*!
+  \param[in] a Other affineChainSet to copy
+  \returns Reference to lhs
+*/
 affineChainSet& affineChainSet::operator=(const affineChainSet& a) {
   if (this == &a) return *this; //Self copy
   clear(); //Throw away current contents
@@ -551,6 +645,10 @@ affineChainSet& affineChainSet::operator=(const affineChainSet& a) {
   return *this;
 }
 
+/*!
+  \param[in] other affineChainSet to append to this one
+  \returns Reference to lhs
+*/
 affineChainSet& affineChainSet::operator+=(const affineChainSet& other) 
   throw (affineExcept) {
   //Now things like the number of params and walkers have to be the same
@@ -571,7 +669,10 @@ affineChainSet& affineChainSet::operator+=(const affineChainSet& other)
     steps.push_back(new affineStepChunk(*other.steps[i]));
   return *this;
 }
- 
+
+/*!
+  \returns Total number of iterations across all chunks
+*/
 unsigned int affineChainSet::getNIters() const {
   unsigned int ntotiter = 0;
   const affineStepChunk* chunk;
@@ -585,6 +686,10 @@ unsigned int affineChainSet::getNIters() const {
   return ntotiter;
 }
 
+/*!
+  \param[in] walker Which walker
+  \returns Total number of iterations across all chunks for specified walker
+*/
 unsigned int affineChainSet::getNIters(unsigned int walker) const 
   throw (affineExcept) {
   unsigned int ntotiter = 0;
@@ -598,7 +703,11 @@ unsigned int affineChainSet::getNIters(unsigned int walker) const
  return ntotiter;
 }
 
-//Requires auxilliary storage equal to the number of walkers
+/*!
+  \returns Number of iterations for walker with the smallest number
+
+  Requires auxilliary storage equal to the number of walkers
+*/
 unsigned int affineChainSet::getMinNIters() const {
   unsigned int *iterarr;
   if (steps.size() == 0) return 0;
@@ -626,7 +735,9 @@ unsigned int affineChainSet::getMinNIters() const {
   return miniter;
 }
 
-
+/*!
+  \returns Maximum log likelihood of all steps taken
+*/
 double affineChainSet::getMaxLogLike() const {
   if (steps.size() == 0) return std::numeric_limits<double>::quiet_NaN();
   unsigned int firststep = 0;
@@ -640,7 +751,10 @@ double affineChainSet::getMaxLogLike() const {
   return maxval;
 }
 
-
+/*!
+  \param[out] maxval Maximum log likelihood of all steps
+  \param[out] p paramSet corresponding to that likelihood
+*/
 void affineChainSet::getMaxLogLikeParam(double& maxval, paramSet& p) const {
   p.setNParams(nparams);
 
@@ -664,8 +778,12 @@ void affineChainSet::getMaxLogLikeParam(double& maxval, paramSet& p) const {
   }
 }
  
-
-
+/*!
+  \param[in] walkeridx Walker index
+  \param[in] paramidx Parameter index
+  \param[out] pvec Contains all the steps for that parameter for specified
+     walker
+*/
 void affineChainSet::getParamVector(unsigned int walkeridx,
 				    unsigned int paramidx,
 				    std::vector<float>& pvec) const 
@@ -698,10 +816,12 @@ void affineChainSet::getParamVector(unsigned int walkeridx,
 }
 
 /*!
-  Returns parameter list averaged over all walkers.
-  Only includes steps where all walkers have that step.
- */
+  \param[in] paramidx parameter index
+  \param[out] pvec Parameter values averaged across walkers.  Resized
+    to the minimum number of steps taken for any walker.
 
+  Only includes steps where all walkers have that step.
+*/
 void affineChainSet::getAverageParamVector(unsigned int paramidx,
 					   std::vector<float>& pvec) const 
   throw (affineExcept) {
@@ -758,8 +878,7 @@ void affineChainSet::getAverageParamVector(unsigned int paramidx,
   goodman@cims.nyu.edu, http://www.cims.nyu.edu/faculty/goodman
 
   Calls itself recursively, destroying X in the process.
- */
-
+*/
 //  The way this handles errors is a bit funny, but is based on the orignial
 //  code.  Basically, it's a good idea to do the first L < minfac*maxlag
 //  test before calling this.
@@ -838,7 +957,7 @@ int affineChainSet::acor(double& mean, double& sigma,
   \param[out] sigma     Sigma of parameter
   \param[out] succ      True if the autocorrelation was computed
   \returns \f$\tau\f$, the estimated autocorrelation length
- */
+*/
 double affineChainSet::getAcor(unsigned int paramidx, double& mean,
 			       double& sigma, bool& succ) 
   const throw (affineExcept) {
@@ -866,8 +985,9 @@ double affineChainSet::getAcor(unsigned int paramidx, double& mean,
 }
 
 /*!
+  \param[out] tau The autocorrelation vector
   \returns True if the autocorrelation vector was computed for all params
- */
+*/
 bool affineChainSet::getAcorVector(std::vector<float>& tau) const 
   throw (affineExcept) {
   double mn, sigma; //Throw away
@@ -887,7 +1007,7 @@ bool affineChainSet::getAcorVector(std::vector<float>& tau) const
                     tau is set to NaN where this is true
   \returns True if the autocorrelation vector was computed for all params
             that were not ignored
- */
+*/
 bool affineChainSet::getAcorVector(std::vector<float>& tau,
 				   const std::vector<int> param_state) 
   const 
@@ -913,7 +1033,7 @@ bool affineChainSet::getAcorVector(std::vector<float>& tau,
 /*
   \params[in] paridx Parameter index
   \returns Mean of parameter
- */
+*/
 float affineChainSet::getParamMean(unsigned int paridx) const 
   throw (affineExcept) {
   if (paridx >= nparams)
@@ -1046,6 +1166,9 @@ void affineChainSet::getParamStats(unsigned int paridx, float& mean,
 }
 
 /*!
+  \param[inout] covmat Covariance matrix.  Must be pre-allocated
+    to nparams by nparams.
+
   Requires temporary storage equal to the full size of the chain
 */
 void affineChainSet::makeCovMatrix(float** covmat) const {
@@ -1127,7 +1250,9 @@ void affineChainSet::makeCovMatrix(float** covmat) const {
   delete[] tmpdata;
 }
 
-
+/*!
+  \param[in] outfile File to write chains to
+*/
 void affineChainSet::writeToFile(const std::string& outfile) const 
   throw (affineExcept) {
   if (steps.size() == 0) return;
@@ -1146,7 +1271,7 @@ void affineChainSet::writeToFile(const std::string& outfile) const
 }
 
 /*!
-  \param[in] filename File to write to.  Will be overwritten if it exists.
+  \param[in] filename HDF5 File to write to.  Will be overwritten if it exists.
 
   Only works if all walkers have the same number of steps.
 */

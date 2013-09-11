@@ -17,11 +17,14 @@ class paramSet {
  private:
   unsigned int nparams; //!< Number of parameters
   float* paramvals;    //!< Array holding parameter values
+
  public:
   paramSet(); //!< Basic constructor
   paramSet(unsigned int NPARAMS); //!< Constructor with number of parameters
-  paramSet(unsigned int, const float* const); //!< Constructor with parameter c array
   paramSet(const std::vector<float>&); //!< Constructor with parameter vector
+  paramSet(const std::vector<double>&); //!< Constructor with parameter vector
+  paramSet(unsigned int, const float* const); //!< Constructor with parameter c array
+  paramSet(unsigned int, const double* const); //!< Constructor with parameter c array
   paramSet(const paramSet&); //!< Copy constructor
   ~paramSet(); //!< Destructor
 
