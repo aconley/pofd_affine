@@ -312,7 +312,8 @@ bool pofdMCMC::initChainsSlave() {
 
 /*!
   \param[in] p Parameters to evaluate model for
- */
+  \param[out] pars_invalid Set to true if parameters are invalid
+*/
 double pofdMCMC::getLogLike(const paramSet& p, bool& pars_invalid) {
   if (!is_init)
     throw affineExcept("pofdMCMC", "getLogLike",

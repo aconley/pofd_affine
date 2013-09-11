@@ -10,15 +10,17 @@
 const double PDFactory::subedgemult = 1e-5;
 
 /*!
- */
+  \param[in] NINTERP number of interpolation points
+*/
 PDFactory::PDFactory(unsigned int NINTERP) { 
   init(NINTERP);
 }
 
 /*
   \param[in] wisfile Wisdom file filename
- */
-PDFactory::PDFactory(const std::string& wisfile, unsigned int NINTERP ) {
+  \param[in] NINETERP number of interpolation points
+*/
+PDFactory::PDFactory(const std::string& wisfile, unsigned int NINTERP) {
   init(NINTERP);
   addWisdom(wisfile);
 }
@@ -38,8 +40,11 @@ PDFactory::~PDFactory() {
   if (plan_inv != NULL) fftw_destroy_plan(plan_inv);
 }
 
+/*!
+  \param[in] NINTERP number of interpolation points
+*/
 void PDFactory::init(unsigned int NINTERP) {
-  lastfftlen = 0;
+  currfftlen = 0;
   currsize = 0;
   ninterp = NINTERP;
 
@@ -78,6 +83,9 @@ void PDFactory::resetTime() {
   edgeTime = meanTime = logTime = 0;
 }
 
+/*!
+  \param[in] nindent Number of indentation spaces
+*/
 void PDFactory::summarizeTime(unsigned int nindent) const {
   std::string prestring(nindent,' ');
   prestring = "  ";
@@ -103,13 +111,12 @@ void PDFactory::summarizeTime(unsigned int nindent) const {
 }
 #endif
 
-
 /*
   Doesn't force resize if there is already enough room available
 
   \param[in] NSIZE new size
   \returns True if a resize was needed
- */
+*/
 bool PDFactory::resize(unsigned int NSIZE) {
   if (NSIZE > currsize) {
     strict_resize(NSIZE);
@@ -121,7 +128,7 @@ bool PDFactory::resize(unsigned int NSIZE) {
   Forces a resize
 
   \param[in] NSIZE new size (must be > 0)
- */
+*/
 //I don't check for 0 NSIZE because that should never happen
 // in practice, and it isn't worth the idiot-proofing
 // rtrans always gets nulled in here, then refilled when you
@@ -157,7 +164,7 @@ void PDFactory::freeRvars() {
 
 /*!
   \param[in] NINTERP New interpolation length
- */
+*/
 void PDFactory::setNInterp(unsigned int NINTERP) {
   if (NINTERP == ninterp) return;
   ninterp = NINTERP;
@@ -200,7 +207,7 @@ void PDFactory::free() {
 /*!
   \param[in] filename Name of wisdom file
 */
-bool PDFactory::addWisdom(const std::string& filename) {
+void PDFactory::addWisdom(const std::string& filename) {
   FILE *fp = NULL;
   fp = fopen(filename.c_str(), "r");
   if (fp == NULL) {
@@ -227,60 +234,19 @@ bool PDFactory::addWisdom(const std::string& filename) {
   }
 
   initialized = false;
-
-  return true;
 }
 
-
 /*!
-  Gets ready for P(D) computation by preparing R, including forward
-  transforming it.  The idea is to compute everything that doesn't
-  require knowing sigma here so we can call this multiple times on
-  maps with the same beam but different noise values.
- 
-  \param[in] n       Size of transform 
-  \param[in] sigma   Maximum allowed sigma
-  \param[in] maxflux Maximum flux generated in R
-  \param[in] model   number counts model to use for fill.  Params must be set
-  \param[in] bm      Beam 
-
-  \returns True if the P(D) could be initialized, false if something
-           about the parameters prevented initialization.  Note that
-	   a genuine error results in throwing an exception, not setting this
-	   to false.
-
-  Note that n is the transform size; the output array will generally
-  be smaller because of padding.  Furthermore, because of mean shifting,
-  the maximum flux will end up being -less- than maxflux in practice
-  by about the mean flux + 10 sigma.
- */
-bool PDFactory::initPD(unsigned int n, double sigma,
-		       double maxflux, const numberCounts& model,
-		       const beam& bm) {
-
-  initialized = false;
+  \param[in] n Transform size
+*/
+void PDFactory::setupPlans(unsigned int n) {
 
   //Make sure we have enough room
   bool did_resize = resize(n);
 
-  //Allocate memory if needed; this is a way of not allocating
-  // these until we run into something that needs them
-  if (!rvars_allocated) allocateRvars();
-  if (!interpvars_allocated) allocateInterp();  //Need to alloc before planning
-
-  //Make the plans, or keep the old ones if possible
-  // Note we have to do this before we fill R, as plan construction
-  // may overwrite the values.
-  //The transform plan is that the forward transform
-  // takes rvals to rtrans.  We then do things to rtrans
-  // to turn it into pval, including shifting, adding noise,
-  // etc, and then transform from pval to pofd.
-  //Only the rvals->rtrans transformation happens in this
-  // routine.  The other (pval->pofd), which depends on the value of
-  // sigma for each map, happens in getPD.  But we can make
-  // both plans here...
+  // Resize as needed
   int intn = static_cast<int>(n);
-  if (did_resize || (lastfftlen != n) || (plan == NULL)) {
+  if (did_resize || (currfftlen != n) || (plan == NULL)) {
     if (plan != NULL) fftw_destroy_plan(plan);
     plan = fftw_plan_dft_r2c_1d(intn, rvals, rtrans,
 				fftw_plan_style);
@@ -290,10 +256,10 @@ bool PDFactory::initPD(unsigned int n, double sigma,
     str << "Plan creation failed for forward transform of size: " << n;
     if (has_wisdom) str << std::endl << "Your wisdom file may not have"
 			<< " that size";
-    throw affineExcept("PDFactory", "initPD", str.str(), 1);
+    throw affineExcept("PDFactory", "setupPlans", str.str(), 1);
   }
 
-  if (did_resize || (lastfftlen != n) || (plan_inv == NULL)) {
+  if (did_resize || (currfftlen != n) || (plan_inv == NULL)) {
     if (plan_inv != NULL) fftw_destroy_plan(plan_inv);
     plan_inv = fftw_plan_dft_c2r_1d(intn, pval, pofd,
 				    fftw_plan_style);
@@ -303,37 +269,43 @@ bool PDFactory::initPD(unsigned int n, double sigma,
     str << "Plan creation failed for inverse transform of size: " << n;
     if (has_wisdom) str << std::endl << "Your wisdom file may not have"
 			<< " that size";
-    throw affineExcept("PDFactory", "initPD", str.str(), 2);
+    throw affineExcept("PDFactory", "setupPlans", str.str(), 2);
   }
 
+  currfftlen = n;
+}
+
+/*!
+  \param[in] model number counts model to use for fill.  Params must be set
+  \param[in] bm Beam 
+  \returns The maximum index that is actually filled
+*/
+unsigned int PDFactory::computeR(const numberCounts& model, 
+				 const beam& bm) {
+
+  //Allocate memory if needed; this is a way of not allocating
+  // these until we run into something that needs them
+  if (!rvars_allocated) allocateRvars();
+  if (!interpvars_allocated) allocateInterp();  //Need to alloc before planning
 
   //Set whether we have beam
   bool has_pos = bm.hasPos();
   bool has_neg = bm.hasNeg();
-  if ( ! ( has_pos || has_neg ) )
-    throw affineExcept("PDFactory", "initPD",
-		       "Beam has neither positive nor negative bits", 3);
+  if ( !(has_pos || has_neg))
+    throw affineExcept("PDFactory", "computeR",
+		       "Beam has neither positive nor negative bits", 1);
 
   //Set min/max interpolation is filled in for; the lower
   // limit is tricky.  For now controlled by user
   //The max must be slightly less than the top value because R is zero there
   //The max value is the max model flux times the max pixel
   // so we have to have different versions for pos/neg
-  double ininterpm1 = 1.0/static_cast<double>(ninterp-1);
+  double ininterpm1 = 1.0 / static_cast<double>(ninterp-1);
   modelmin = model.getMinFlux();
   modelmax = model.getMaxFlux();
 
-  double inm1 = 1.0 / static_cast<double>(n-1);
-  dflux = maxflux * inm1;
-
-  //Compute R.  We do this via interpolation -- compute R
-  // for ninterp positions, then fill that into rvals.
-  // We do pos and neg seperately because the interpolation works
-  // better on each component, rather than interpolating on
-  // the sum of R.  At least, that's the theory.  Note that the
-  // interpolated R is always computed out to its highest non-zero value
-
   unsigned int max_fill_idx = 0; // Maximum index in R that is set
+  unsigned int n = currfftlen;
   if (has_pos) {
     double mininterpflux = modelmin * subedgemult;
     double maxinterpflux = modelmax * bm.getMaxPos();
@@ -343,7 +315,7 @@ bool PDFactory::initPD(unsigned int n, double sigma,
     maxinterpflux -= dinterp;
 
     //Note that the interpolation is in log space
-    double dinterpflux = (log2(maxinterpflux/mininterpflux))*ininterpm1;
+    double dinterpflux = (log2(maxinterpflux / mininterpflux)) * ininterpm1;
     for (unsigned int i = 0; i < ninterp; ++i)
       RinterpFlux[i] = mininterpflux * 
 	exp2(static_cast<double>(i) * dinterpflux);
@@ -373,14 +345,14 @@ bool PDFactory::initPD(unsigned int n, double sigma,
     // interpolation for efficiency
     int st = static_cast<int>(mininterpflux / dflux + 0.9999999999999999);
     unsigned int minitidx = (st < 0) ? 0 : static_cast<unsigned int>(st);
-    unsigned int maxitidx = static_cast<unsigned int>(maxinterpflux/dflux);
-    if (maxitidx >= n) maxitidx=n-1;
+    unsigned int maxitidx = static_cast<unsigned int>(maxinterpflux / dflux);
+    if (maxitidx >= n) maxitidx=n - 1;
 
     //Now interpolate, setting to zero outside the range
     if (minitidx > 0) memset(rvals, 0, minitidx * sizeof(double));
     double cflux, splval;
     for (unsigned int i = minitidx; i <= maxitidx; ++i) {
-      cflux = static_cast<double>(i)*dflux; //Min is always 0 in R
+      cflux = static_cast<double>(i) * dflux; //Min is always 0 in R
       splval = gsl_spline_eval(spline, cflux, acc);
       rvals[i] = exp2(splval);
     }
@@ -446,8 +418,15 @@ bool PDFactory::initPD(unsigned int n, double sigma,
       max_fill_idx = maxitidx;
     }
   }
+  return max_fill_idx;
+}
 
-  //Now that we have R, use it to compute the mean and variance
+/*!
+  The mean is stored in mn, the variance in var_noi
+*/
+void PDFactory::getMeanVarFromR() {
+
+  unsigned int n = currfftlen;
   // mn = \int x R dx.
   mn = rvals[1]; //Noting that RFlux[0] = 0 always
   for (unsigned int i = 2; i < n-1; ++i)
@@ -465,6 +444,63 @@ bool PDFactory::initPD(unsigned int n, double sigma,
   idbl = static_cast<double>(n-1);
   var_noi += 0.5 * rvals[n-1] * idbl * idbl;
   var_noi *= dflux * dflux * dflux;
+}
+
+/*!
+  \param[in] n       Size of transform 
+  \param[in] sigma   Maximum allowed sigma
+  \param[in] maxflux Maximum flux generated in R
+  \param[in] model   number counts model to use for fill.  Params must be set
+  \param[in] bm      Beam 
+  \returns True if the P(D) could be initialized, false if something
+           about the parameters prevented initialization.  Note that
+	   a genuine error results in throwing an exception, not setting this
+	   to false.
+
+  Gets ready for P(D) computation by preparing R, including forward
+  transforming it.  The idea is to compute everything that doesn't
+  require knowing sigma here so we can call this multiple times on
+  maps with the same beam but different noise values.
+ 
+  Note that n is the transform size; the output array will generally
+  be smaller because of padding.  Furthermore, because of mean shifting,
+  the maximum flux will end up being -less- than maxflux in practice
+  by about the mean flux + 10 sigma.
+*/
+bool PDFactory::initPD(unsigned int n, double sigma,
+		       double maxflux, const numberCounts& model,
+		       const beam& bm) {
+
+  initialized = false;
+
+  //Make the plans, or keep the old ones if possible
+  // Note we have to do this before we fill R, as plan construction
+  // may overwrite the values.
+  //The transform plan is that the forward transform
+  // takes rvals to rtrans.  We then do things to rtrans
+  // to turn it into pval, including shifting, adding noise,
+  // etc, and then transform from pval to pofd.
+  //Only the rvals->rtrans transformation happens in this
+  // routine.  The other (pval->pofd), which depends on the value of
+  // sigma for each map, happens in getPD.  But we can make
+  // both plans here...
+  setupPlans(n);
+
+  double inm1 = 1.0 / static_cast<double>(n-1);
+  dflux = maxflux * inm1;
+
+  //Compute R.  We do this via interpolation -- compute R
+  // for ninterp positions, then fill that into rvals.
+  // We do pos and neg seperately because the interpolation works
+  // better on each component, rather than interpolating on
+  // the sum of R.  At least, that's the theory.  Note that the
+  // interpolated R is always computed out to its highest non-zero value
+  unsigned int max_fill_idx;
+  max_fill_idx = computeR(model, bm);
+  
+  //Now that we have R, use it to compute the mean and variance
+  // (stored in mn and var_noi)
+  getMeanVarFromR();
 
   //Now, compute the sigma for the maximum instrumental sigma
   // supported by this call to init
@@ -567,8 +603,7 @@ bool PDFactory::initPD(unsigned int n, double sigma,
 #ifdef TIMING
   fftTime += std::clock() - starttime;
 #endif
-  
-  lastfftlen = n;
+
   max_sigma = sigma;
   initialized = true;
 
@@ -612,8 +647,8 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog,
   }
 
   //Output array from 2D FFT is n/2+1
-  unsigned int n = lastfftlen;
-  unsigned int ncplx = n/2 + 1;
+  unsigned int n = currfftlen;
+  unsigned int ncplx = n / 2 + 1;
       
   //Calculate p(omega) = exp( r(omega) - r(0) ),
   // convolving together all the bits into pval, which

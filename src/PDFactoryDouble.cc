@@ -8,14 +8,14 @@
 #include "../include/PDFactoryDouble.h"
 #include "../include/affineExcept.h"
 
-const double PDFactoryDouble::lowEdgeRMult=1e-9;
+const double PDFactoryDouble::lowEdgeRMult=1e-9; //!< How far to go down on edge
 //Control of how we do the edge integrals -- linear or log?
-const bool PDFactoryDouble::use_edge_log_x = true;
-const bool PDFactoryDouble::use_edge_log_y = false;
+const bool PDFactoryDouble::use_edge_log_x = true; //!< edge log x spacing
+const bool PDFactoryDouble::use_edge_log_y = false; //!< edge log y spacing
 
 /*!
   \param[in] nedge Size of edge integrals
- */
+*/
 PDFactoryDouble::PDFactoryDouble(unsigned int nedge) {
   init(nedge);
 }
@@ -23,7 +23,7 @@ PDFactoryDouble::PDFactoryDouble(unsigned int nedge) {
 /*
   \param[in] wisfile Wisdom file filename
   \param[in] nedge Size of edge integrals
- */
+*/
 PDFactoryDouble::PDFactoryDouble(const std::string& wisfile,
 				 unsigned int nedge) {
   init(nedge);
@@ -49,9 +49,9 @@ PDFactoryDouble::~PDFactoryDouble() {
 
 /*!
   \param[in] NEDGE Number of edge integral steps
- */
+*/
 void PDFactoryDouble::init(unsigned int NEDGE) {
-  lastfftlen = 0;
+  currfftlen = 0;
   currsize = 0;
 
 #ifdef TIMING
@@ -88,7 +88,7 @@ void PDFactoryDouble::init(unsigned int NEDGE) {
 
 /*!
   \param[in] nedg Edge integration size
- */
+*/
 void PDFactoryDouble::setNEdge(unsigned int nedg) {
   if (nedg == nedge) return;
   nedge = nedg;
@@ -105,6 +105,9 @@ void PDFactoryDouble::resetTime() {
   edgeTime = meanTime = logTime = 0;
 }
 
+/*!
+  \param[in] nindent Number of indentation spaces
+*/
 void PDFactoryDouble::summarizeTime(unsigned int nindent) const {
   std::string prestring(nindent,' ');
     
@@ -133,11 +136,11 @@ void PDFactoryDouble::summarizeTime(unsigned int nindent) const {
 
 
 /*
-  Doesn't force resize if there is already enough room available
-
   \param[in] NSIZE new size
   \returns True if a resize was needed
- */
+
+  Doesn't force resize if there is already enough room available
+*/
 bool PDFactoryDouble::resize(unsigned int NSIZE) {
   if (NSIZE > currsize) {
     strict_resize(NSIZE);
@@ -146,10 +149,10 @@ bool PDFactoryDouble::resize(unsigned int NSIZE) {
 }
 
 /*!
-  Forces a resize
-
   \param[in] NSIZE new size (must be > 0)
- */
+
+  Forces a resize
+*/
 //I don't check for 0 NSIZE because that should never happen
 // in practice, and it isn't worth the idiot-proofing
 // rtrans always gets nulled in here, then refilled when you
@@ -223,7 +226,7 @@ void PDFactoryDouble::free() {
 /*!
   \param[in] filename Name of wisdom file
 */
-bool PDFactoryDouble::addWisdom(const std::string& filename) {
+void PDFactoryDouble::addWisdom(const std::string& filename) {
   FILE *fp = NULL;
   fp = fopen(filename.c_str(), "r");
   if (fp == NULL) {
@@ -250,11 +253,15 @@ bool PDFactoryDouble::addWisdom(const std::string& filename) {
   }
 
   initialized = false;
-
-  return true;
 }
 
 /*!
+  \param[in] n Number of elements in R
+  \param[out] mn1 Mean in band 1
+  \param[out] mn2 Mean in band 2
+  \param[out] var1 Variance in band 1
+  \param[out] var2 Variance in band 2
+
   This assumes R, Rflux, etc. is set and doesn't check, so be careful
   It also ignores the edges.  The instrument noise is not included
   in the returned variances.
@@ -385,107 +392,65 @@ void PDFactoryDouble::getRStats(unsigned int n, double& mn1, double& mn2,
   
 }
   
+void PDFactoryDouble::setupPlans(unsigned int n) {
 
-/*!
-  Gets ready for P(D) computation by preparing R
- 
-  \param[in] n Size of transform (square)
-  \param[in] sigma1 Maximum allowed sigma in dimension 1
-  \param[in] sigma2 Maximum allwed sigma in dimension 2
-  \param[in] maxflux1 Maximum flux generated for R, dimension 1
-  \param[in] maxflux2 Maximum flux generator for R, dimension 2
-  \param[in] model    number counts model to use for fill.  Params must be set
-  \param[in] bm       Beam
-  \param[in] setEdge  Use integral of mean values at the edges
-
-  \returns True if the P(D) could be initialized, false if something
-           about the parameters prevented initialization.  Note that
-	   a genuine error results in throwing an exception, not setting this
-	   to false.
-
-  Note that n is the transform size; the output array will generally
-  be smaller because of padding.  Furthermore, because of mean shifting,
-  the maximum flux often won't quite match the target values.
- */
-bool PDFactoryDouble::initPD(unsigned int n, double sigma1,
-			     double sigma2, double maxflux1, 
-			     double maxflux2, 
-			     const numberCountsDouble& model,
-			     const doublebeam& bm,
-			     bool setEdge) {
-
-  if (n == 0)
-    throw affineExcept("PDFactoryDouble", "initPD",
-		       "Invalid (non-positive) n", 1);  
-  if (sigma1 < 0.0)
-    throw affineExcept("PDFactoryDouble", "initPD",
-		       "Invalid (negative) sigma1", 2);
-  if (sigma2 < 0.0)
-    throw affineExcept("PDFactoryDouble", "initPD",
-		       "Invalid (negative) sigma2", 3);
-  if (maxflux1 <= 0.0)
-    throw affineExcept("PDFactoryDouble", "initPD",
-		       "Invalid (non-positive) maxflux1", 4);
-  if (maxflux2 <= 0.0)
-    throw affineExcept("PDFactoryDouble", "initPD",
-		       "Invalid (non-positive) maxflux2", 5);
-  
-  initialized = false;
-
-  //Make sure we have enough room
   bool did_resize = resize(n);
-  if (!rvars_allocated) allocateRvars(); //Necessary to do the plans
 
-  //Make the plans, or keep the old ones if possible
-  //Note that the forward transform dumps into rtrans
-  // but the backwards one comes from pval.  The idea
-  // is that out_part holds the working bit.  These are
-  // convolved together into pval.  This is inefficient
-  // if there is only one sign present, but the special
-  // case doesn't seem worth the effort
-  //We will have to use the advanced interfact to point
-  // specifically at the rvals subindex we are using on the
-  // forward plan, but the backwards plan is fine
   int intn = static_cast<int>(n);
-  if (did_resize || (lastfftlen != n) || (plan == NULL) ) {
+  if (did_resize || (currfftlen != n) || (plan == NULL) ) {
     if (plan != NULL) fftw_destroy_plan(plan);
     plan = fftw_plan_dft_r2c_2d(intn, intn, rvals, rtrans,
 				fftw_plan_style);
-  }
-  if (did_resize || (lastfftlen != n) || (plan_inv == NULL) ) {
-    if (plan_inv != NULL) fftw_destroy_plan(plan_inv);
-    plan_inv = fftw_plan_dft_c2r_2d(intn, intn, pval, pofd,
-				    fftw_plan_style);
   }
   if (plan == NULL) {
     std::stringstream str;
     str << "Plan creation failed for forward transform of size: " << n;
     if (has_wisdom) str << std::endl << "Your wisdom file may not have"
 			<< " that size";
-    throw affineExcept("PDFactoryDouble", "initPD", str.str(), 14);
+    throw affineExcept("PDFactoryDouble", "setupPlans", str.str(), 1);
+  }
+
+  if (did_resize || (currfftlen != n) || (plan_inv == NULL) ) {
+    if (plan_inv != NULL) fftw_destroy_plan(plan_inv);
+    plan_inv = fftw_plan_dft_c2r_2d(intn, intn, pval, pofd,
+				    fftw_plan_style);
   }
   if (plan_inv == NULL) {
     std::stringstream str;
     str << "Plan creation failed for inverse transform of size: " << n;
     if (has_wisdom) str << std::endl << "Your wisdom file may not have"
 			<< " that size";
-    throw affineExcept("PDFactoryDouble", "initPD", str.str(), 15);
+    throw affineExcept("PDFactoryDouble", "setupPlans", str.str(), 2);
   }
 
+  currfftlen = n;
+}
 
-  //Initial guess at dflux, will be changed later
-  double inm1 = 1.0 / static_cast<double>(n-1);
-  dflux1 = maxflux1 * inm1;
-  dflux2 = maxflux2 * inm1;
+/*!
+  \param[in] maxflux1 Maximum flux in band 1
+  \param[in] maxflux2 Maximum flux in band 2
+  \param[in] model Number Counts model
+  \param[in] bm beams
+  \param[in] setEdge Compute edge components
+*/
+void PDFactoryDouble::computeR(double maxflux1, double maxflux2,
+			       const numberCountsDouble& model,
+			       const doublebeam& bm,
+			       bool setEdge) {
+
+  //Make sure we have enough room
+  if (!rvars_allocated) allocateRvars(); //Necessary to do the plans
+
+  unsigned int n = currfftlen;
 
   //Now fill R.  Some setup is required first
 
   //Fill in flux values for main and edge pieces
   //Main bit
   for (unsigned int i = 0; i < n; ++i)
-    RFlux1[i] = static_cast<double>(i)*dflux1;
+    RFlux1[i] = static_cast<double>(i) * dflux1;
   for (unsigned int i = 0; i < n; ++i)
-    RFlux2[i] = static_cast<double>(i)*dflux2;
+    RFlux2[i] = static_cast<double>(i) * dflux2;
 
   //Now fill in R.  The edges require special care.  This
   // first call will fill nonsense values into the lower edges, which
@@ -495,7 +460,7 @@ bool PDFactoryDouble::initPD(unsigned int n, double sigma1,
 #ifdef TIMING
   std::clock_t starttime = std::clock();
 #endif
-  model.getR(n,RFlux1,n,RFlux2,bm,rvals,numberCountsDouble::BEAMALL);
+  model.getR(n, RFlux1, n, RFlux2, bm, rvals, numberCountsDouble::BEAMALL);
 #ifdef TIMING
   RTime += std::clock() - starttime;
 #endif
@@ -510,34 +475,36 @@ bool PDFactoryDouble::initPD(unsigned int n, double sigma1,
     //Minimum values in integral; maximum are dflux1, dflux2
     double minedge1 = dflux1 *  PDFactoryDouble::lowEdgeRMult;
     double minedge2 = dflux2 *  PDFactoryDouble::lowEdgeRMult;
-    double inedgem1 = 1.0/static_cast<double>(nedge-1);
+    double inedgem1 = 1.0 / static_cast<double>(nedge-1);
     double dinterpfluxedge1, dinterpfluxedge2;
     double iRxnorm = 0.0, iRynorm = 0.0, iR00norm = 0.0;
     
     if (setEdge) {
       if (!edgevars_allocated) allocateEdgevars();
       if (use_edge_log_x) {
-	dinterpfluxedge1 = -log(PDFactoryDouble::lowEdgeRMult)*inedgem1;
+	dinterpfluxedge1 = -log(PDFactoryDouble::lowEdgeRMult) * inedgem1;
 	for (unsigned int i = 0; i < nedge; ++i)
-	  REdgeFlux1[i] = minedge1*exp(static_cast<double>(i)*dinterpfluxedge1);
+	  REdgeFlux1[i] = minedge1 * 
+	    exp(static_cast<double>(i) * dinterpfluxedge1);
       } else {
-	dinterpfluxedge1 = (dflux1-minedge1)*inedgem1;
+	dinterpfluxedge1 = (dflux1 - minedge1) * inedgem1;
 	for (unsigned int i = 0; i < nedge; ++i)
-	  REdgeFlux1[i] = minedge1 + static_cast<double>(i)*dinterpfluxedge1;
+	  REdgeFlux1[i] = minedge1 + static_cast<double>(i) * dinterpfluxedge1;
       }
       if (use_edge_log_y) {
-	dinterpfluxedge2 = -log(PDFactoryDouble::lowEdgeRMult)*inedgem1;
+	dinterpfluxedge2 = -log(PDFactoryDouble::lowEdgeRMult) * inedgem1;
 	for (unsigned int i = 0; i < nedge; ++i)
-	  REdgeFlux2[i] = minedge2*exp(static_cast<double>(i)*dinterpfluxedge2);
+	  REdgeFlux2[i] = minedge2 * 
+	    exp(static_cast<double>(i) * dinterpfluxedge2);
       } else {
-	dinterpfluxedge2 = (dflux2-minedge2)*inedgem1;
+	dinterpfluxedge2 = (dflux2 - minedge2) * inedgem1;
 	for (unsigned int i = 0; i < nedge; ++i)
-	  REdgeFlux2[i] = minedge2 + static_cast<double>(i)*dinterpfluxedge2;
+	  REdgeFlux2[i] = minedge2 + static_cast<double>(i) * dinterpfluxedge2;
       }
-      iRxnorm  = dinterpfluxedge1/(dflux1-minedge1);
-      iRynorm  = dinterpfluxedge2/(dflux2-minedge2);
-      iR00norm = dinterpfluxedge1*dinterpfluxedge2/
-	( (dflux1-minedge1) * (dflux2-minedge2) );
+      iRxnorm  = dinterpfluxedge1 / (dflux1 - minedge1);
+      iRynorm  = dinterpfluxedge2 / (dflux2 - minedge2);
+      iR00norm = dinterpfluxedge1 * dinterpfluxedge2 /
+	((dflux1 - minedge1) * (dflux2 - minedge2));
     }
 
     //First, do r[0,0]
@@ -554,16 +521,16 @@ bool PDFactoryDouble::initPD(unsigned int n, double sigma1,
     //Do y integral first, store in REdgeWork[0,*]
     if (use_edge_log_y) {
       for (unsigned int i = 0; i < nedge; ++i) {
-	rptr = REdgeWork + i*nedge; //row pointer
-	scriptr = 0.5*(REdgeFlux2[0]*rptr[0] + 
-		       REdgeFlux2[nedge-1]*rptr[nedge-1]);
+	rptr = REdgeWork + i * nedge; //row pointer
+	scriptr = 0.5*(REdgeFlux2[0] * rptr[0] + 
+		       REdgeFlux2[nedge-1] * rptr[nedge-1]);
 	for (unsigned int j = 1; j < nedge-1; ++j)
-	  scriptr += REdgeFlux2[j]*rptr[j];
+	  scriptr += REdgeFlux2[j] * rptr[j];
 	REdgeWork[i] = scriptr;
       }
     } else {
       for (unsigned int i = 0; i < nedge; ++i) {
-	rptr = REdgeWork + i*nedge; 
+	rptr = REdgeWork + i * nedge; 
 	scriptr = 0.5*(rptr[0] + rptr[nedge-1]);
 	for (unsigned int j = 1; j < nedge-1; ++j)
 	  scriptr += rptr[j];
@@ -573,16 +540,16 @@ bool PDFactoryDouble::initPD(unsigned int n, double sigma1,
     //Now X integral, put in integral step size and area
     // of bin, store in R[0,0]
     if (use_edge_log_x) {
-      scriptr = 0.5*(REdgeFlux1[0]*REdgeWork[0]+
-		     REdgeFlux1[nedge-1]*REdgeWork[nedge-1]);
+      scriptr = 0.5*(REdgeFlux1[0] * REdgeWork[0]+
+		     REdgeFlux1[nedge-1] * REdgeWork[nedge-1]);
       for (unsigned int i = 1; i < nedge-1; ++i)
-	scriptr += REdgeFlux1[i]*REdgeWork[i];
-      rvals[0] = scriptr*iR00norm;
+	scriptr += REdgeFlux1[i] * REdgeWork[i];
+      rvals[0] = scriptr * iR00norm;
     } else {
-      scriptr = 0.5*(REdgeWork[0]+REdgeWork[nedge-1]);
+      scriptr = 0.5*(REdgeWork[0] + REdgeWork[nedge-1]);
       for (unsigned int i = 1; i < nedge-1; ++i)
 	scriptr += REdgeWork[i];
-      rvals[0] = scriptr*iR00norm;
+      rvals[0] = scriptr * iR00norm;
     }
     
     //Now do Rx = R[0,y], integral along x
@@ -641,6 +608,64 @@ bool PDFactoryDouble::initPD(unsigned int n, double sigma1,
     for (unsigned int i = 1; i < n; ++i)
       rvals[i*n] = 0.0;
   }
+}
+
+/*!
+  \param[in] n Size of transform (square)
+  \param[in] sigma1 Maximum allowed sigma in dimension 1
+  \param[in] sigma2 Maximum allwed sigma in dimension 2
+  \param[in] maxflux1 Maximum flux generated for R, dimension 1
+  \param[in] maxflux2 Maximum flux generator for R, dimension 2
+  \param[in] model    number counts model to use for fill.  Params must be set
+  \param[in] bm       Beam
+  \param[in] setEdge  Use integral of mean values at the edges
+
+  \returns True if the P(D) could be initialized, false if something
+           about the parameters prevented initialization.  Note that
+	   a genuine error results in throwing an exception, not setting this
+	   to false.
+
+  Gets ready for P(D) computation by preparing R
+
+  Note that n is the transform size; the output array will generally
+  be smaller because of padding.  Furthermore, because of mean shifting,
+  the maximum flux often won't quite match the target values.
+ */
+bool PDFactoryDouble::initPD(unsigned int n, double sigma1,
+			     double sigma2, double maxflux1, 
+			     double maxflux2, 
+			     const numberCountsDouble& model,
+			     const doublebeam& bm,
+			     bool setEdge) {
+
+  if (n == 0)
+    throw affineExcept("PDFactoryDouble", "initPD",
+		       "Invalid (non-positive) n", 1);  
+  if (sigma1 < 0.0)
+    throw affineExcept("PDFactoryDouble", "initPD",
+		       "Invalid (negative) sigma1", 2);
+  if (sigma2 < 0.0)
+    throw affineExcept("PDFactoryDouble", "initPD",
+		       "Invalid (negative) sigma2", 3);
+  if (maxflux1 <= 0.0)
+    throw affineExcept("PDFactoryDouble", "initPD",
+		       "Invalid (non-positive) maxflux1", 4);
+  if (maxflux2 <= 0.0)
+    throw affineExcept("PDFactoryDouble", "initPD",
+		       "Invalid (non-positive) maxflux2", 5);
+  
+  initialized = false;
+
+  // Set up plans (also sets currfftlen)
+  setupPlans(n);
+
+  //Initial guess at dfluxes, will be changed later
+  double inm1 = 1.0 / static_cast<double>(n-1);
+  dflux1 = maxflux1 * inm1;
+  dflux2 = maxflux2 * inm1;
+
+  // Compute R
+  computeR(maxflux1, maxflux2, model, bm, setEdge);
 
   //Whew!  R is now filled.  Now estimate the mean and standard
   // deviation of the resulting P(D)
@@ -652,19 +677,19 @@ bool PDFactoryDouble::initPD(unsigned int n, double sigma1,
   RStatsTime += std::clock() - starttime;
 #endif
   //Add the instrument noise into the variances
-  sg1 = sqrt(var_noi1 + sigma1*sigma1);
-  sg2 = sqrt(var_noi2 + sigma2*sigma2);
+  sg1 = sqrt(var_noi1 + sigma1 * sigma1);
+  sg2 = sqrt(var_noi2 + sigma2 * sigma2);
 
   //Decide if we will shift and pad, and if so by how much
   //Only do shifts if the noise is larger than one actual step size
   // Otherwise we can't represent it well.
   bool dopad1 = (sigma1 > dflux1);
   bool dopad2 = (sigma2 > dflux2);
-  doshift1 = (dopad1 && (mn1 < pofd_mcmc::n_sigma_shift2d*sg1));
-  doshift2 = (dopad2 && (mn2 < pofd_mcmc::n_sigma_shift2d*sg2));
-  if (doshift1) shift1 = pofd_mcmc::n_sigma_shift2d*sg1 - mn1; else
+  doshift1 = (dopad1 && (mn1 < pofd_mcmc::n_sigma_shift2d * sg1));
+  doshift2 = (dopad2 && (mn2 < pofd_mcmc::n_sigma_shift2d * sg2));
+  if (doshift1) shift1 = pofd_mcmc::n_sigma_shift2d * sg1 - mn1; else
     shift1=0.0;
-  if (doshift2) shift2 = pofd_mcmc::n_sigma_shift2d*sg2 - mn2; else
+  if (doshift2) shift2 = pofd_mcmc::n_sigma_shift2d * sg2 - mn2; else
     shift2=0.0;
 
   if (verbose) {
@@ -712,8 +737,9 @@ bool PDFactoryDouble::initPD(unsigned int n, double sigma1,
   // to contaminate the top by an amount n_sigma_pad2d*sg - (mn+shift).
   // We therefore zero pad and discard anything above
   // maxflux - (n_sigma_pad2d*sg - (mn+shift))
+  double *rptr;  
   if (dopad1) {
-    double contam = pofd_mcmc::n_sigma_pad2d*sg1 - (mn1+shift1);
+    double contam = pofd_mcmc::n_sigma_pad2d * sg1 - (mn1+shift1);
     if (contam <= 0) maxidx1 = n; else {
       double topflux = maxflux1 - contam;
       if (topflux < 0) {
@@ -751,7 +777,7 @@ bool PDFactoryDouble::initPD(unsigned int n, double sigma1,
 
   if (dopad2) {
     double contam = pofd_mcmc::n_sigma_pad2d*sg2 - (mn2+shift2);
-      if (contam <= 0) maxidx2 = n; else {
+    if (contam <= 0) maxidx2 = n; else {
       double topflux = maxflux2 - contam;
       if (topflux < 0) {
 	std::stringstream errstr;
@@ -809,7 +835,6 @@ bool PDFactoryDouble::initPD(unsigned int n, double sigma1,
   fftTime += std::clock() - starttime;
 #endif
   
-  lastfftlen = n;
   max_sigma1 = sigma1;
   max_sigma2 = sigma2;
   initialized = true;
@@ -862,7 +887,7 @@ void PDFactoryDouble::getPD( double sigma1, double sigma2,
   }
 
   //Output array from 2D FFT is n * (n/2+1)
-  unsigned int n = lastfftlen;
+  unsigned int n = currfftlen;
   unsigned int ncplx = n/2 + 1;
       
   //Calculate p(omega) = exp( r(omega1,omega2) - r(0,0) ),

@@ -22,7 +22,7 @@
   Always call initPD before using getPD for a given model.
   Uses and interpolative approach -- fills R into an interpolation array,
   then get the full R from that, which is much faster.
- */
+*/
 class PDFactory {
  private :
   static const double subedgemult; //!< Controls interpolation lower edge
@@ -30,7 +30,7 @@ class PDFactory {
   bool initialized; //!< some R transform is filled
 
   unsigned int currsize; //!< Current memory allocation for R, rtrans, etc.
-  unsigned int lastfftlen; //!< FFT length of last transform
+  unsigned int currfftlen; //!< FFT length of current transform
   double max_sigma; //!< Current supported max sigma
   double mn; //!< Expected mean
   double var_noi; //!< Expected variance without instrument noise
@@ -75,6 +75,11 @@ class PDFactory {
   bool resize(unsigned int); //!< Sets transform size arrays
   void strict_resize(unsigned int); //!< Sets transform size arrays
   
+  void setupPlans(unsigned int); //!< Sets up FFTW plans
+  /*! \brief Computes R using interpolation*/
+  unsigned int computeR(const numberCounts&, const beam&); 
+  void getMeanVarFromR(); //!< Compute mean and variance from R
+
 #ifdef TIMING
   std::clock_t RTime, p0Time, fftTime, posTime, copyTime, normTime, edgeTime;
   std::clock_t meanTime, logTime;
@@ -90,8 +95,8 @@ class PDFactory {
   void setVerbose() { verbose = true; } //!< Sets verbose mode
   void unsetVerbose() { verbose = false; } //!< Unset verbose mode
 
-  /*! \brief Get fft size of last transformation */
-  unsigned int getLastFFTLen() const { return lastfftlen; }
+  /*! \brief Get fft size of current transformation */
+  unsigned int getCurrFFTLen() const { return currfftlen; }
 
   /*! \brief Get number of interpolation elements for R */
   unsigned int getNInterp() const { return ninterp; }
@@ -99,7 +104,7 @@ class PDFactory {
   void setNInterp(unsigned int);
 
   /*! \brief Adds FFTW wisdom file*/
-  bool addWisdom(const std::string& filename);
+  void addWisdom(const std::string& filename);
 
   /*! \brief Initializes P(D) by computing R and forward transforming it*/
   bool initPD(unsigned int, double, double, 

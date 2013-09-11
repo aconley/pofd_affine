@@ -154,15 +154,10 @@ int getPDSingle(int argc, char **argv) {
     model.setParams(pars);
     PD pd;
 
-    bool success;
     if (has_wisdom) {
       std::cout << "Reading in wisdom file: " << wisdom_file 
 		<< std::endl;
-      success = pfactory.addWisdom(wisdom_file);
-      if (!success) {
-	std::cerr << "Error reading wisdom file: " << wisdom_file << std::endl;
-	return 4;
-      }
+      pfactory.addWisdom(wisdom_file);
     }
     if (verbose) pfactory.setVerbose();
 
@@ -355,15 +350,10 @@ int getPDDouble(int argc, char** argv) {
 
     PDDouble pd;
 
-    bool success;
     if (has_wisdom) {
       std::cout << "Reading in wisdom file: " << wisdom_file 
 		<< std::endl;
-      success = pfactory.addWisdom(wisdom_file);
-      if (!success) {
-	std::cerr << "Error reading wisdom file: " << wisdom_file << std::endl;
-	return 4;
-      }
+      pfactory.addWisdom(wisdom_file);
     }
     if (verbose) pfactory.setVerbose();
 

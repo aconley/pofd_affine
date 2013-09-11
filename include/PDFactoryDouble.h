@@ -36,7 +36,7 @@ class PDFactoryDouble {
   bool initialized; //!< forward transformed R is filled
 
   unsigned int currsize; //!< Current memory allocation
-  unsigned int lastfftlen; //!< FFT length of last transform
+  unsigned int currfftlen; //!< Current FFT length (in each dimension)
   double max_sigma1; //!< Current max supported sigma, band 1
   double max_sigma2; //!< Current max supported sigma, band 2
   double mn1; //!< Expected mean, band 1
@@ -89,7 +89,11 @@ class PDFactoryDouble {
   void init(unsigned int); //!< Initializes memory
   bool resize(unsigned int); //!< Sets transform size arrays
   void strict_resize(unsigned int); //!< Sets transform size arrays
-  
+
+  void setupPlans(unsigned int); //!< Set up plans
+  void computeR(double, double, const numberCountsDouble&,
+		const doublebeam&, bool);
+
   /*! \brief Get P(D) statistics from R computation (so without inst. noise) */
   void getRStats(unsigned int n, double& mn1, double& mn2,
 		 double& var1, double& var2) const;
@@ -110,15 +114,15 @@ class PDFactoryDouble {
   void setVerbose() { verbose = true; } //!< Sets verbose mode
   void unsetVerbose() { verbose = false; } //!< Unset verbose mode
 
-  /*! \brief Get size of last FFT */
-  unsigned int getLastFFTLen() const { return lastfftlen; }
+  /*! \brief Get size of current FFT */
+  unsigned int getCurrFFTLen() const { return currfftlen; }
 
   /*! \brief Returns edge integration length */
   unsigned int getNEdge() const { return nedge; }
   void setNEdge(unsigned int); //!< Set nedge
 
   /*! \brief Adds FFTW wisdom file*/
-  bool addWisdom(const std::string& filename);
+  void addWisdom(const std::string& filename);
 
   /*! \brief Initializes P(D) by computing R and forward transforming it*/
   bool initPD(unsigned int, double, double, double, double, 

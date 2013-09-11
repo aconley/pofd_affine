@@ -593,7 +593,7 @@ void numberCountsDoubleLogNormal::setKnotPositions(unsigned int n,
 }
 
 /*!
-  \param[in] idx Index into knot positions
+  \param[in] i Index into knot positions
   \returns Position of idx-th knot
 
   Access is not checked.
@@ -701,12 +701,11 @@ void numberCountsDoubleLogNormal::setSigmaPositions(unsigned int n,
 }
 
 /*!
-  \param[in] idx Index into sigma knot positions
+  \param[in] i Index into sigma knot positions
   \returns Position of idx-th sigma knot
 
   Access is not checked.
 */
-
 double numberCountsDoubleLogNormal::
 getSigmaPosition(const unsigned int i) const {
   return sigmaknots[i];
@@ -761,7 +760,7 @@ setOffsetPositions(const std::vector<double>& S) {
 }
 
 /*!
-  \param[in] idx Index into offset knot positions
+  \param[in] i Index into offset knot positions
   \returns Position of idx-th offset knot
 
   Access is not checked.
