@@ -22,10 +22,9 @@ namespace mcmc_affine {
 			 PSTSENDIDX=110, PSTSENDOLIKE=111, 
 			 PSTSENDNLIKE=112, PSTSENDZ=113};
 			 
-  // Keeps track of special states for parameters
+  /*! \brief Keeps track of special states for parameters */
   enum { FIXED=1, ACIGNORE=2 };
   
-  // Sleep time if no message ready
-  const useconds_t usleeplen = 1; //in usec
+  const useconds_t usleeplen = 1; //!< Sleep time if no message ready in usec
 }
 #endif

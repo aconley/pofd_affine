@@ -147,9 +147,9 @@ public:
   */
   virtual void generateInitialPosition(const paramSet&) = 0; //!< 
 
-  /*\brief Computes the log likelihood.  
-    Uses the second argument to signal if the parameters were rejected */
+  /*! \brief Computes the log likelihood. */
   virtual double getLogLike(const paramSet&, bool& params_rejected) = 0;
+
   double getLogLike(const paramSet&); //!< Computes log likelihood
 
   /*! \brief Tests whether a given parameter set is valid */

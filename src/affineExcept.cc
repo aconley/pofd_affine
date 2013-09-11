@@ -40,7 +40,7 @@ affineExcept::affineExcept(const std::string& errstr) {
 
 /*!
   \param[in] errstr Error string
-  \paran[in] errnum Error number
+  \param[in] errnum Error number
 */
 affineExcept::affineExcept(const std::string& errstr, int errnum) {
   init("", "", errstr, errnum);
@@ -63,7 +63,7 @@ affineExcept::affineExcept(const std::string& errclass,
   \param[in] errclass Class generating error
   \param[in] errmethod Method generating error
   \param[in] errstr Error string
-  \paran[in] errnum Error number
+  \param[in] errnum Error number
 
 */
 affineExcept::affineExcept(const std::string& errclass,
