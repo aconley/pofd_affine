@@ -45,7 +45,7 @@ paramSet::paramSet(const std::vector<double>& vec) {
 }
 
 /*!
-  \param[in] Number of parameters
+  \param[in] N Number of parameters
   \param[in] VAL Array of paramters
 */
 paramSet::paramSet(unsigned int N, const float* const VAL) {
@@ -58,7 +58,7 @@ paramSet::paramSet(unsigned int N, const float* const VAL) {
 }
 
 /*!
-  \param[in] Number of parameters
+  \param[in] N Number of parameters
   \param[in] VAL Array of paramters, converted to float internally
 */
 paramSet::paramSet(unsigned int N, const double* const VAL) {
@@ -202,13 +202,13 @@ void paramSet::setParamValues(unsigned int N, const float* const VAL) {
 }
 
 /*!
-  \param[inout] is Input stream
+  \param[inout] ifs Input stream
 
   Doesn't allow resizing
 */
-void paramSet::readFromStream(std::istream& is) {
+void paramSet::readFromStream(std::istream& ifs) {
   for (unsigned int i = 0; i < nparams; ++i)
-    is >> paramvals[i];
+    ifs >> paramvals[i];
 }
 
 /*!

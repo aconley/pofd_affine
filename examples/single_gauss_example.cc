@@ -56,6 +56,8 @@ void singleGauss::initChains() {
   paramSet p(1);
   //Don't quite start in the right place
   p[0] = mean + 2 * sqrt(var) * rangen.gauss(); 
+  has_initStep = true;
+  initStep = p;
   generateInitialPosition(p);
 }
 

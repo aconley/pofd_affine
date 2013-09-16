@@ -39,6 +39,8 @@ void rosenbrockDensity::initChains() {
   paramSet p(2);
   p[0] = a1 + 0.25 * rangen.gauss();
   p[1] = a2 + 0.15 * rangen.gauss();
+  has_initStep = true;
+  initStep = p;
   generateInitialPosition(p);
 
 }

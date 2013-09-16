@@ -99,6 +99,8 @@ void polyFit::initChains() {
   paramSet p(npar);
   for (unsigned int i = 0; i < npar; ++i)
     p[i] = 0.0;
+  has_initStep = true;
+  initStep = p;
   generateInitialPosition(p);
 }
 

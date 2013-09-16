@@ -80,6 +80,8 @@ void multiGauss::initChains() {
   paramSet p(npar);
   for (unsigned int i = 0; i < npar; ++i)
     p[i] = 0.55; //Slightly off
+  has_initStep = true;
+  initStep = p;
   generateInitialPosition(p);
 }
 

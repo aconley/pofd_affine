@@ -35,7 +35,9 @@ affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
   nwalkers(NWALKERS), nparams(NPARAMS), has_any_names(false), 
   scalefac(SCALEFAC), init_steps(INIT_STEPS), init_temp(INIT_TEMP),
   min_burn(MIN_BURN), fixed_burn(FIXED_BURN), burn_multiple(BURN_MULTIPLE), 
-  pstep(NPARAMS), is_init(false), chains(NWALKERS,NPARAMS), verbosity(0) {
+  pstep(NPARAMS), is_init(false), has_initStep(false), initStep(NPARAMS),
+  has_regenFirstStep(false), regenFirstStep(NPARAMS),
+  chains(NWALKERS,NPARAMS), verbosity(0) {
   
   has_name.resize(nparams);
   has_name.assign(nparams, false);
@@ -150,6 +152,11 @@ void affineEnsemble::setNParams(unsigned int n) {
   if (n == 0)
     throw affineExcept("affineEnsemble", "setNParams",
 		       "n must be positive", 1);
+
+  has_initStep = false;
+  initStep.setNParams(n);
+  has_regenFirstStep = false;
+  regenFirstStep.setNParams(n);
 
   chains.setNParams(n);
   nfixed = 0;
@@ -517,6 +524,10 @@ void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
 	std::cout << " Generating new initial position from that" << std::endl;
       }
       generateInitialPosition(p);
+
+      // Store new initial position
+      has_regenFirstStep = true;
+      regenFirstStep = p;
     }
 
     // Follow with main step loop
@@ -597,6 +608,10 @@ void affineEnsemble::masterSample() {
       std::cout << " Generating new initial position from that" << std::endl;
     }
     generateInitialPosition(p);
+
+    // Store new initial position
+    has_regenFirstStep = true;
+    regenFirstStep = p;
     
     // Get the likelihoods
     calcLastLikelihood();
@@ -1505,6 +1520,34 @@ void affineEnsemble::writeToHDF5(const std::string& filename) const {
   status = H5Aclose(att_id);
   status = H5Sclose(mems_id);
  
+  // Initial values
+  if (has_initStep) {
+    adims = nparams;
+    mems_id = H5Screate_simple(1, &adims, NULL);
+    float *ftmp;
+    ftmp = new float[nparams];
+    for (unsigned int i = 0; i < nparams; ++i) 
+      ftmp[i] = initStep[i];
+    att_id = H5Acreate2(file_id, "initial_position", H5T_NATIVE_FLOAT,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    status = H5Awrite(att_id, H5T_NATIVE_FLOAT, ftmp);
+    status = H5Aclose(att_id);
+    delete[] ftmp;
+  }
+  if (has_regenFirstStep) {
+    adims = nparams;
+    mems_id = H5Screate_simple(1, &adims, NULL);
+    float *ftmp;
+    ftmp = new float[nparams];
+    for (unsigned int i = 0; i < nparams; ++i) 
+      ftmp[i] = regenFirstStep[i];
+    att_id = H5Acreate2(file_id, "regenerated_first_step", H5T_NATIVE_FLOAT,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    status = H5Awrite(att_id, H5T_NATIVE_FLOAT, ftmp);
+    status = H5Aclose(att_id);
+    delete ftmp;
+  }
+
   // Names of parameters -- complicated
   if (has_any_names) {
     hid_t datatype = H5Tcopy(H5T_C_S1);
