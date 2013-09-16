@@ -1431,9 +1431,9 @@ void affineEnsemble::writeToFile(const std::string& filename) const {
 /*!
   \param[in] objid HDF5 group to write to
 */
-void affineEnsemble::writeToHDF5(hid_t objid) const {
+void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
   if (rank != 0) 
-    throw affineExcept("affineEnsemble", "writeToHDF5",
+    throw affineExcept("affineEnsemble", "writeToHDF5Handle",
 		       "Should only be called from master node", 1);  
   herr_t status;
 
@@ -1557,6 +1557,8 @@ void affineEnsemble::writeToHDF5(hid_t objid) const {
 			mems_id, H5P_DEFAULT);
     status = H5Awrite(att_id, datatype, catmp);
     delete[] catmp;
+    status = H5Aclose(att_id);
+    status = H5Sclose(mems_id);
   }
 }
 
@@ -1564,11 +1566,11 @@ void affineEnsemble::writeToHDF5(hid_t objid) const {
   \param[in] filename File to write to as HDF5
 */
 void affineEnsemble::writeToHDF5(const std::string& filename) const {
-  // In addition to writing the chains and likelihoods, writes some
-  // additional attributes at the root level
+
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "writeToHDF5",
 		       "Should only be called from master node", 1);  
+
   hid_t file_id;
   herr_t status;
   // Create
@@ -1576,7 +1578,7 @@ void affineEnsemble::writeToHDF5(const std::string& filename) const {
 		      H5P_DEFAULT);
 
   //Write
-  writeToHDF5(file_id);
+  writeToHDF5Handle(file_id);
 
   // All done
   status = H5Fclose(file_id);
