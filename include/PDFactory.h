@@ -75,7 +75,7 @@ class PDFactory {
   bool resize(unsigned int); //!< Sets transform size arrays
   void strict_resize(unsigned int); //!< Sets transform size arrays
   
-  void setupPlans(unsigned int); //!< Sets up FFTW plans
+  void setupTransforms(unsigned int); //!< Sets up FFTW plans and resizes
   /*! \brief Computes R using interpolation*/
   unsigned int computeR(const numberCounts&, const beam&); 
   void getMeanVarFromR(); //!< Compute mean and variance from R

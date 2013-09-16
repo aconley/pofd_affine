@@ -9,8 +9,13 @@
 #include "../include/PD.h"
 #include "../include/affineExcept.h"
 
-const double PD::lowsigval = 3.0;
+const double PD::lowsigval = 2.5;
 
+/*!
+  \param[in] N Number of elements
+  \param[in] MINFLUX minimum flux value
+  \param[in] DFLUX Delta flux value
+*/
 PD::PD(unsigned int N, double MINFLUX, double DFLUX) :
   n(N), capacity(N), logflat(false), minflux(MINFLUX), dflux(DFLUX) {
   if (capacity == 0) pd_ = NULL; else
@@ -22,8 +27,11 @@ PD::~PD() {
 }
 
 /*!
-  Generally doesn't preserve data
- */
+  \param[in] N New number of elements
+
+  Does nothing if new size is smaller than old capacity.
+  Otherwise doesn't preserve data.
+*/
 void PD::resize(unsigned int N) {
   //Doesn't actually resize arrays if it can avoid it
   unsigned int newcap = N;
@@ -38,7 +46,7 @@ void PD::resize(unsigned int N) {
 
 /*!
   Tries to preserve data
- */
+*/
 void PD::shrink() {
   unsigned int newcap = n;
   if (newcap < capacity) {
@@ -57,8 +65,10 @@ void PD::shrink() {
 }
 
 /*!
-  Generally doesn't preserve data
- */
+  \param[in] N New number of elements
+
+  Doesn't preserve data unless new size is the same as old
+*/
 void PD::strict_resize(unsigned int N) {
   if (N != capacity) {
     if (pd_ != NULL) fftw_free(pd_);
@@ -69,6 +79,9 @@ void PD::strict_resize(unsigned int N) {
   n = N;
 }
 
+/*!
+  \returns Total of all elements
+*/
 double PD::getTotal() const {
   if (n == 0)
     return std::numeric_limits<double>::quiet_NaN();
@@ -85,6 +98,11 @@ double PD::getTotal() const {
   return retval;
 }
 
+/*!
+  \returns Integral of P(D)
+
+  Uses the trapezoidal rule
+*/
 double PD::getIntegral() const {
   if (n == 0)
     return std::numeric_limits<double>::quiet_NaN();
@@ -107,7 +125,7 @@ double PD::getIntegral() const {
 /*!
   Normalize the P(D), using the trapezoidal rule
   to integrate
- */
+*/
 void PD::normalize() {
   if (n == 0)
     throw affineExcept("PD","normalize",
@@ -125,6 +143,12 @@ void PD::normalize() {
   }
 }
 
+/*!
+  \param[in] nocheck Don't check whether or not values are positive
+
+  If doing check and value is less than or equal to zero, set to 
+  pofd_mcmc::smalllogval
+*/
 void PD::applyLog(bool nocheck) {
   if (logflat) return;
   unsigned int sz = n;
@@ -142,7 +166,6 @@ void PD::applyLog(bool nocheck) {
   logflat = true;
 }
 
-
 void PD::deLog() {
   if (!logflat) return;
   unsigned int sz = n;
@@ -151,10 +174,9 @@ void PD::deLog() {
   logflat = false;
 }
 
-
 /*
   \param[in] donorm Do not assume P(D) is normalized
- */
+*/
 void PD::edgeFix(bool donorm) {
   //Compute mean and stdev
   if (n < 3) return; //No point
@@ -176,7 +198,7 @@ void PD::edgeFix(bool donorm) {
     if (std::isinf(var)) errstr << std::endl << "Var is Inf";
     throw affineExcept("PD", "edgeFix", errstr.str(), 2);
   }
-  double istdev = 1.0/sqrt(var);
+  double istdev = 1.0 / sqrt(var);
 
   //Figure out what indexes these represent in x and y
   double maxfluxfix;
@@ -203,7 +225,7 @@ void PD::edgeFix(bool donorm) {
 /*!
   \param[out] mean mean of P(D)
   \param[in] donorm Do not assume that P(D) is normalized.
- */
+*/
 void PD::getMean(double& mean, bool donorm) const {
   if (n == 0) {
     mean = std::numeric_limits<double>::quiet_NaN();
@@ -235,13 +257,11 @@ void PD::getMean(double& mean, bool donorm) const {
   mean += minflux;
 }
 
-/////////////////// STOP ////////////////////
-
 /*!
   \param[out] mean mean value
   \param[out] var  variance
   \param[in] donorm Do not assume that P(D) is normalized.
- */
+*/
 void PD::getMeanAndVar(double& mean, double& var,
 		       bool donorm) const {
   if (n == 0) {
@@ -251,7 +271,7 @@ void PD::getMeanAndVar(double& mean, double& var,
   }
   
   double normfac = 1.0;
-  if (donorm) normfac = 1.0/getIntegral();
+  if (donorm) normfac = 1.0 / getIntegral();
   
   //It is more efficient to do this as a <x^2> - <x>^2 calculation
   //The problem is that that way results on fine cancellations.
@@ -309,6 +329,9 @@ void PD::getMeanAndVar(double& mean, double& var,
   mean += minflux;
 }
 
+/*!
+  \param[in] other PD to copy from
+*/
 PD& PD::operator=(const PD& other) {
   if (this == &other) return *this; //Self-copy
   resize(other.n);
@@ -319,6 +342,13 @@ PD& PD::operator=(const PD& other) {
   return *this;
 }
 
+/*!
+  \param[in] N New number of elements
+  \param[in] MINFLUX New minimum flux density
+  \param[in] DFLUX New delta flux density
+  \param[in] PD New values
+  \param[in] LOG Is the input PD log2?
+*/
 void PD::fill(unsigned int N, double MINFLUX, double DFLUX,
 	      const double* const PD, bool LOG) {
   logflat = LOG;
@@ -328,6 +358,14 @@ void PD::fill(unsigned int N, double MINFLUX, double DFLUX,
   if (n > 0) memcpy(pd_, PD, n * sizeof(double));
 }
 
+/*!
+  \param[in] x Flux density to evaluate P(D) at
+  \returns Interpolated P(D) value.  Will be log2 if P(D) is
+    stored as a log.
+
+  Uses linear interpolation.  Note that this will work differently
+  if the P(D) has been converted to log values.
+*/
 double PD::getPDVal(double x) const {
   if (pd_ == NULL) return std::numeric_limits<double>::quiet_NaN();
 
@@ -343,7 +381,9 @@ double PD::getPDVal(double x) const {
   return p0 + dx / dflux * (pd_[idx + 1] - p0);
 }
 
-
+/*!
+  \param[inout] os Stream to output values to
+*/
 std::ostream& PD::writeToStream(std::ostream& os) const {
   os << n << " " << minflux << " " << dflux << std::endl;
   if (n > 0) {
@@ -356,9 +396,9 @@ std::ostream& PD::writeToStream(std::ostream& os) const {
 }
 
 /*!
-  \param[in] outputfile File to write to
+  \param[in] outputfile File to write to in FITS format
   \returns 0 on success, an error code (!=0) for anything else
- */
+*/
 int PD::writeToFits(const std::string& outputfile) const {
 
   //Make the fits file
@@ -409,6 +449,10 @@ int PD::writeToFits(const std::string& outputfile) const {
   return status;
 }
 
+/*!
+  \param[in] data Data to evaluate the log Likelihood of
+  \returns Log likelihood
+*/
 double PD::getLogLike(const fitsData& data) const {
   if (pd_ == NULL) throw affineExcept("PD","getLogLike",
 				      "pd not filled before likelihood calc",1);
@@ -420,6 +464,13 @@ double PD::getLogLike(const fitsData& data) const {
   else return getLogLikeUnbinned(data);
 }
 
+/*!
+  \param[in] data Data to evaluate the log Likelihood of
+  \returns Log likelihood
+
+  Because this uses interpolation, slightly different values
+  will result if the P(D) is stored in log form or not.
+*/
 double PD::getLogLikeBinned(const fitsData& data) const {
 
   if (!data.isBinned())
@@ -485,6 +536,13 @@ double PD::getLogLikeBinned(const fitsData& data) const {
   return pofd_mcmc::log2toe * loglike;
 }
 
+/*!
+  \param[in] data Data to evaluate the log Likelihood of
+  \returns Log likelihood
+
+  Because this uses interpolation, slightly different values
+  will result if the P(D) is stored in log form or not.
+*/
 double PD::getLogLikeUnbinned(const fitsData& data) const {
 
   unsigned int ndata = data.getN();
@@ -536,7 +594,10 @@ double PD::getLogLikeUnbinned(const fitsData& data) const {
   return pofd_mcmc::log2toe * loglike;
 }
 
-
+/*!
+  \param[inout] os Stream to write to
+  \param[in] b PD to output
+*/
 std::ostream& operator<<(std::ostream& os, const PD& b) {
   b.writeToStream(os);
   return os;

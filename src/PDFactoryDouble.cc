@@ -101,7 +101,7 @@ void PDFactoryDouble::setNEdge(unsigned int nedg) {
 
 #ifdef TIMING
 void PDFactoryDouble::resetTime() {
-  RTime = RStatsTime = p0Time = fftTime = posTime = copyTime = normTime = 0;
+  RTime = p0Time = fftTime = posTime = copyTime = normTime = 0;
   edgeTime = meanTime = logTime = 0;
 }
 
@@ -113,8 +113,6 @@ void PDFactoryDouble::summarizeTime(unsigned int nindent) const {
     
   std::cout << "R time: " << prestring 
 	    << 1.0*RTime/CLOCKS_PER_SEC << std::endl;
-  std::cout << "R stats time: " << prestring 
-	    << 1.0*RStatsTime/CLOCKS_PER_SEC << std::endl;
   std::cout << "p0 time: " << prestring 
 	    << 1.0*p0Time/CLOCKS_PER_SEC << std::endl;
   std::cout << "fft time: " << prestring 
@@ -391,10 +389,26 @@ void PDFactoryDouble::getRStats(unsigned int n, double& mn1, double& mn2,
   var2  *= fluxfac;
   
 }
-  
-void PDFactoryDouble::setupPlans(unsigned int n) {
 
+/*!
+  \param[in] n Transform size
+*/
+void PDFactoryDouble::setupTransforms(unsigned int n) {
+
+  //The transform plan is that the forward transform
+  // takes rvals to rtrans.  We then do things to rtrans
+  // to turn it into pval, including shifting, adding noise,
+  // etc, and then transform from pval to pofd.
+
+  if (n == 0)
+    throw affineExcept("PDFactoryDouble", "setupTransforms",
+		       "Invalid (0) transform size", 1);
+
+  // Make sure we have enough room
   bool did_resize = resize(n);
+
+  //We need the R variables allocated so we can plan to them
+  if (!rvars_allocated) allocateRvars();
 
   int intn = static_cast<int>(n);
   if (did_resize || (currfftlen != n) || (plan == NULL) ) {
@@ -407,7 +421,7 @@ void PDFactoryDouble::setupPlans(unsigned int n) {
     str << "Plan creation failed for forward transform of size: " << n;
     if (has_wisdom) str << std::endl << "Your wisdom file may not have"
 			<< " that size";
-    throw affineExcept("PDFactoryDouble", "setupPlans", str.str(), 1);
+    throw affineExcept("PDFactoryDouble", "setupTransforms", str.str(), 2);
   }
 
   if (did_resize || (currfftlen != n) || (plan_inv == NULL) ) {
@@ -420,7 +434,7 @@ void PDFactoryDouble::setupPlans(unsigned int n) {
     str << "Plan creation failed for inverse transform of size: " << n;
     if (has_wisdom) str << std::endl << "Your wisdom file may not have"
 			<< " that size";
-    throw affineExcept("PDFactoryDouble", "setupPlans", str.str(), 2);
+    throw affineExcept("PDFactoryDouble", "setupTransforms", str.str(), 3);
   }
 
   currfftlen = n;
@@ -432,14 +446,17 @@ void PDFactoryDouble::setupPlans(unsigned int n) {
   \param[in] model Number Counts model
   \param[in] bm beams
   \param[in] setEdge Compute edge components
+
+  The R variables must have been previously allocated
 */
 void PDFactoryDouble::computeR(double maxflux1, double maxflux2,
 			       const numberCountsDouble& model,
 			       const doublebeam& bm,
 			       bool setEdge) {
 
-  //Make sure we have enough room
-  if (!rvars_allocated) allocateRvars(); //Necessary to do the plans
+  if (!rvars_allocated)
+    throw affineExcept("PDFactoryDouble", "computeR",
+		       "R variables must have been previously allocated", 1);
 
   unsigned int n = currfftlen;
 
@@ -656,8 +673,10 @@ bool PDFactoryDouble::initPD(unsigned int n, double sigma1,
   
   initialized = false;
 
-  // Set up plans (also sets currfftlen)
-  setupPlans(n);
+  //Make the plans, or keep the old ones if possible
+  // Note we have to do this before we fill R, as plan construction
+  // may overwrite the values.  This allocates R and sets currfftlen
+  setupTransforms(n);
 
   //Initial guess at dfluxes, will be changed later
   double inm1 = 1.0 / static_cast<double>(n-1);
@@ -669,13 +688,8 @@ bool PDFactoryDouble::initPD(unsigned int n, double sigma1,
 
   //Whew!  R is now filled.  Now estimate the mean and standard
   // deviation of the resulting P(D)
-#ifdef TIMING
-  starttime = std::clock();
-#endif
   getRStats(n, mn1, mn2, var_noi1, var_noi2);
-#ifdef TIMING
-  RStatsTime += std::clock() - starttime;
-#endif
+
   //Add the instrument noise into the variances
   sg1 = sqrt(var_noi1 + sigma1 * sigma1);
   sg2 = sqrt(var_noi2 + sigma2 * sigma2);

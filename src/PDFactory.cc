@@ -145,11 +145,11 @@ void PDFactory::allocateRvars() {
   if (currsize == 0)
     throw affineExcept("PDFactory", "allocate_rvars",
 		       "Invalid (0) currsize", 1);
-  rvals = (double*) fftw_malloc(sizeof(double)*currsize);
-  pofd = (double*) fftw_malloc(sizeof(double)*currsize);
-  unsigned int fsize = currsize/2+1;
-  rtrans = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*fsize);
-  pval = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*fsize);
+  rvals = (double*) fftw_malloc(sizeof(double) * currsize);
+  pofd = (double*) fftw_malloc(sizeof(double) * currsize);
+  unsigned int fsize = currsize / 2 + 1;
+  rtrans = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * fsize);
+  pval = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * fsize);
   rvars_allocated = true;
 }
 
@@ -239,12 +239,23 @@ void PDFactory::addWisdom(const std::string& filename) {
 /*!
   \param[in] n Transform size
 */
-void PDFactory::setupPlans(unsigned int n) {
+void PDFactory::setupTransforms(unsigned int n) {
 
-  //Make sure we have enough room
+  //The transform plan is that the forward transform
+  // takes rvals to rtrans.  We then do things to rtrans
+  // to turn it into pval, including shifting, adding noise,
+  // etc, and then transform from pval to pofd.
+
+  if (n == 0)
+    throw affineExcept("PDFactoryDouble", "setupTransforms",
+		       "Invalid (0) transform size", 1);
+
+  // Make sure we have enough room
   bool did_resize = resize(n);
 
-  // Resize as needed
+  //We need the R variables allocated so we can plan to them
+  if (!rvars_allocated) allocateRvars();
+
   int intn = static_cast<int>(n);
   if (did_resize || (currfftlen != n) || (plan == NULL)) {
     if (plan != NULL) fftw_destroy_plan(plan);
@@ -256,7 +267,7 @@ void PDFactory::setupPlans(unsigned int n) {
     str << "Plan creation failed for forward transform of size: " << n;
     if (has_wisdom) str << std::endl << "Your wisdom file may not have"
 			<< " that size";
-    throw affineExcept("PDFactory", "setupPlans", str.str(), 1);
+    throw affineExcept("PDFactory", "setupTransforms", str.str(), 2);
   }
 
   if (did_resize || (currfftlen != n) || (plan_inv == NULL)) {
@@ -269,7 +280,7 @@ void PDFactory::setupPlans(unsigned int n) {
     str << "Plan creation failed for inverse transform of size: " << n;
     if (has_wisdom) str << std::endl << "Your wisdom file may not have"
 			<< " that size";
-    throw affineExcept("PDFactory", "setupPlans", str.str(), 2);
+    throw affineExcept("PDFactory", "setupTransforms", str.str(), 3);
   }
 
   currfftlen = n;
@@ -279,21 +290,23 @@ void PDFactory::setupPlans(unsigned int n) {
   \param[in] model number counts model to use for fill.  Params must be set
   \param[in] bm Beam 
   \returns The maximum index that is actually filled
+
+  The R and interpolation variables must have already been allocated
 */
 unsigned int PDFactory::computeR(const numberCounts& model, 
 				 const beam& bm) {
 
-  //Allocate memory if needed; this is a way of not allocating
-  // these until we run into something that needs them
-  if (!rvars_allocated) allocateRvars();
-  if (!interpvars_allocated) allocateInterp();  //Need to alloc before planning
+  if (!rvars_allocated)
+    throw affineExcept("PDFactory", "computeR",
+		       "R variables must have been previously allocated", 1);
+  if (!interpvars_allocated) allocateInterp();
 
-  //Set whether we have beam
+  // What beams are we using?
   bool has_pos = bm.hasPos();
   bool has_neg = bm.hasNeg();
   if ( !(has_pos || has_neg))
     throw affineExcept("PDFactory", "computeR",
-		       "Beam has neither positive nor negative bits", 1);
+		       "Beam has neither positive nor negative bits", 2);
 
   //Set min/max interpolation is filled in for; the lower
   // limit is tricky.  For now controlled by user
@@ -426,6 +439,10 @@ unsigned int PDFactory::computeR(const numberCounts& model,
 */
 void PDFactory::getMeanVarFromR() {
 
+  if (!rvars_allocated)
+    throw affineExcept("PDFactory", "getMeanVarFromR",
+		       "R variables not allocated", 1);
+
   unsigned int n = currfftlen;
   // mn = \int x R dx.
   mn = rvals[1]; //Noting that RFlux[0] = 0 always
@@ -471,23 +488,22 @@ bool PDFactory::initPD(unsigned int n, double sigma,
 		       double maxflux, const numberCounts& model,
 		       const beam& bm) {
 
+  if (n == 0)
+    throw affineExcept("PDFactory", "initPD",
+		       "Invalid (non-positive) n", 1);  
+  if (sigma < 0.0)
+    throw affineExcept("PDFactory", "initPD",
+		       "Invalid (negative) sigma1", 2);
+  if (maxflux <= 0.0)
+    throw affineExcept("PDFactory", "initPD",
+		       "Invalid (non-positive) maxflux", 4);
+
   initialized = false;
 
   //Make the plans, or keep the old ones if possible
   // Note we have to do this before we fill R, as plan construction
-  // may overwrite the values.
-  //The transform plan is that the forward transform
-  // takes rvals to rtrans.  We then do things to rtrans
-  // to turn it into pval, including shifting, adding noise,
-  // etc, and then transform from pval to pofd.
-  //Only the rvals->rtrans transformation happens in this
-  // routine.  The other (pval->pofd), which depends on the value of
-  // sigma for each map, happens in getPD.  But we can make
-  // both plans here...
-  setupPlans(n);
-
-  double inm1 = 1.0 / static_cast<double>(n-1);
-  dflux = maxflux * inm1;
+  // may overwrite the values.  This allocates R and sets currfftlen
+  setupTransforms(n);
 
   //Compute R.  We do this via interpolation -- compute R
   // for ninterp positions, then fill that into rvals.
@@ -495,11 +511,13 @@ bool PDFactory::initPD(unsigned int n, double sigma,
   // better on each component, rather than interpolating on
   // the sum of R.  At least, that's the theory.  Note that the
   // interpolated R is always computed out to its highest non-zero value
+  dflux = maxflux / static_cast<double>(n - 1);
   unsigned int max_fill_idx;
-  max_fill_idx = computeR(model, bm);
+  max_fill_idx = computeR(model, bm); //Also allocates the interp vars as needed
   
   //Now that we have R, use it to compute the mean and variance
   // (stored in mn and var_noi)
+  std::cerr << "Computing mean and var" << std::endl;
   getMeanVarFromR();
 
   //Now, compute the sigma for the maximum instrumental sigma

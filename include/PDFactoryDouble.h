@@ -90,7 +90,7 @@ class PDFactoryDouble {
   bool resize(unsigned int); //!< Sets transform size arrays
   void strict_resize(unsigned int); //!< Sets transform size arrays
 
-  void setupPlans(unsigned int); //!< Set up plans
+  void setupTransforms(unsigned int); //!< Sets up FFTW plans and resizes
   void computeR(double, double, const numberCountsDouble&,
 		const doublebeam&, bool);
 
@@ -99,7 +99,7 @@ class PDFactoryDouble {
 		 double& var1, double& var2) const;
 
 #ifdef TIMING
-  std::clock_t RTime, RStatsTime, p0Time, fftTime, posTime, copyTime;
+  std::clock_t RTime, p0Time, fftTime, posTime, copyTime;
   std::clock_t normTime, edgeTime, meanTime, logTime;
 #endif
 

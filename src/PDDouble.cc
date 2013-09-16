@@ -9,8 +9,17 @@
 #include "../include/PDDouble.h"
 #include "../include/affineExcept.h"
 
-const double PDDouble::lowsigval = 3.0;
+const double PDDouble::lowsigval = 2.5;
 
+/*!
+  \param[in] N1 Dimension along band 1
+  \param[in] MINFLUX1 Minimum flux density in band 1
+  \param[in] DFLUX1 Delta flux density along band 1
+  \param[in] N2 Dimension along band 2
+  \param[in] MINFLUX2 Minimum flux density in band 2
+  \param[in] DFLUX2 Delta flux density along band 2
+  \param[in] LOG Assume data is stored as log
+*/
 PDDouble::PDDouble(unsigned int N1, double MINFLUX1, double DFLUX1,
 		   unsigned int N2, double MINFLUX2, double DFLUX2,
 		   bool LOG) : n1(N1), n2(N2), capacity(N1*N2),
@@ -26,8 +35,11 @@ PDDouble::~PDDouble() {
 }
 
 /*!
-  Generally doesn't preserve data
- */
+  \param[in] N1 New number of elements, band 1
+  \param[in] N2 New number of elements, band 2
+
+  Only preserves data if new dimensions are the same as the old.
+*/
 void PDDouble::resize(unsigned int N1, unsigned int N2) {
   //Doesn't actually resize arrays if it can avoid it
   unsigned int newcap = N1 * N2;
@@ -43,7 +55,7 @@ void PDDouble::resize(unsigned int N1, unsigned int N2) {
 
 /*!
   Tries to preserve data
- */
+*/
 void PDDouble::shrink() {
   unsigned int newcap = n1*n2;
   if (newcap < capacity) {
@@ -62,8 +74,11 @@ void PDDouble::shrink() {
 }
 
 /*!
-  Generally doesn't preserve data
- */
+  \param[in] N1 New number of elements
+  \param[in] N2 New number of elements
+
+  Doesn't preserve data unless new size is the same as old
+*/
 void PDDouble::strict_resize(unsigned int N1, unsigned int N2) {
   unsigned int newcap = N1*N2;
   if (newcap != capacity) {
@@ -76,6 +91,9 @@ void PDDouble::strict_resize(unsigned int N1, unsigned int N2) {
   n2 = N2;
 }
 
+/*!
+  \returns Total of all elements
+*/
 double PDDouble::getTotal() const {
   if ((n1 == 0) || (n2 == 0))
     return std::numeric_limits<double>::quiet_NaN();
@@ -93,6 +111,11 @@ double PDDouble::getTotal() const {
   return retval;
 }
 
+/*!
+  \returns Integral of P(D)
+
+  Uses the trapezoidal rule
+*/
 double PDDouble::getIntegral() const {
   if ((n1 == 0) || (n2 == 0))
     return std::numeric_limits<double>::quiet_NaN();
@@ -141,7 +164,7 @@ double PDDouble::getIntegral() const {
 /*!
   Normalize the P(D), using the trapezoidal rule
   to integrate
- */
+*/
 void PDDouble::normalize() {
   if ((n1 == 0) || (n2 == 0))
     throw affineExcept("PDDouble","normalize",
@@ -161,6 +184,12 @@ void PDDouble::normalize() {
   }
 }
 
+/*!
+  \param[in] nocheck Don't check whether or not values are positive
+
+  If doing check and value is less than or equal to zero, set to 
+  pofd_mcmc::smalllogval
+*/
 void PDDouble::applyLog(bool nocheck) {
   if (logflat) return;
   unsigned int sz = n1*n2;
@@ -177,7 +206,6 @@ void PDDouble::applyLog(bool nocheck) {
   logflat = true;
 }
 
-
 void PDDouble::deLog() {
   if (!logflat) return;
   unsigned int sz = n1*n2;
@@ -189,7 +217,7 @@ void PDDouble::deLog() {
 
 /*
   \param[in] donorm Do not assume P(D) is normalized
- */
+*/
 void PDDouble::edgeFix(bool donorm) {
   //Compute mean and stdev in each row and column.
   if (n1 < 3 || n2 < 3) return; //No point
@@ -299,7 +327,7 @@ void PDDouble::edgeFix(bool donorm) {
   \param[out] mean1 mean along axis 1
   \param[out] mean2 mean along axis 2
   \param[in] donorm Do not assume that P(D) is normalized.
- */
+*/
 void PDDouble::getMeans(double& mean1, double& mean2,
 			bool donorm) const {
   if ((n1 == 0) || (n2 == 0)) {
@@ -399,7 +427,7 @@ void PDDouble::getMeans(double& mean1, double& mean2,
   \param[out] var1  variance along axis 1
   \param[out] var2  variance along axis 2
   \param[in] donorm Do not assume that P(D) is normalized.
- */
+*/
 void PDDouble::getMeansAndVars(double& mean1, double& mean2,
 			       double& var1, double& var2,
 			       bool donorm) const {
@@ -617,7 +645,9 @@ void PDDouble::getMeansAndVars(double& mean1, double& mean2,
 }
 
 
-
+/*!
+  \param[in] other PDDouble to copy from
+*/
 PDDouble& PDDouble::operator=(const PDDouble& other) {
   if (this == &other) return *this; //Self-copy
   resize(other.n1, other.n2);
@@ -637,6 +667,16 @@ PDDouble& PDDouble::operator=(const PDDouble& other) {
   return *this;
 }
 
+/*!
+  \param[in] N1 New number of elements, band 1
+  \param[in] MINFLUX1 New minimum flux density, band 1
+  \param[in] DFLUX1 New delta flux density, band 1
+  \param[in] N2 New number of elements, band 2
+  \param[in] MINFLUX2 New minimum flux density, band 2
+  \param[in] DFLUX2 New delta flux density, band 2
+  \param[in] PD New values in row-major order
+  \param[in] LOG Is the input PD log2?
+*/
 void PDDouble::fill(unsigned int N1, double MINFLUX1, double DFLUX1,
 		    unsigned int N2, double MINFLUX2, double DFLUX2,
 		    const double* const PD, bool LOG) {
@@ -657,10 +697,15 @@ void PDDouble::fill(unsigned int N1, double MINFLUX1, double DFLUX1,
 }
 
 /*!
-  This doesn't interpolate the same way as getLogLike, returning
-  the interpolation in whatever way the PD is stored.
- */
-double PDDouble::getPDVal(double x, double y,bool logval) const {
+  \param[in] x Flux density in band 1 to evaluate P(D) at
+  \param[in] y Flux density in band 2 to evaluate P(D) at
+  \param[in] logval Return log (base e) value
+  \returns Interpolated P(D) value.  
+
+  Uses linear interpolation.  Note that this will work differently
+  if the P(D) has been converted to log values.
+*/
+double PDDouble::getPDVal(double x, double y, bool logval) const {
   if (pd_ == NULL) return std::numeric_limits<double>::quiet_NaN();
 
   //look up the effective indexes
@@ -701,12 +746,14 @@ double PDDouble::getPDVal(double x, double y,bool logval) const {
     if (logflat) return exp2(interp_val); else return interp_val;
   } else {
     //Note we return ln, not log2
-    if (logflat) return pofd_mcmc::log2toe*interp_val; 
+    if (logflat) return pofd_mcmc::log2toe * interp_val; 
     else return log(interp_val);
   }
 }
 
-
+/*!
+  \param[inout] os Stream to output values to
+*/
 std::ostream& PDDouble::writeToStream(std::ostream& os) const {
   os << n1 << " " << minflux1 << " " << dflux1 << std::endl;
   os << n2 << " " << minflux2 << " " << dflux2 << std::endl;
@@ -724,7 +771,7 @@ std::ostream& PDDouble::writeToStream(std::ostream& os) const {
 }
 
 /*!
-  \param[in] outputfile File to write to
+  \param[in] outputfile File to write to in FITS format
   \returns 0 on success, an error code (!=0) for anything else
  */
 int PDDouble::writeToFits(const std::string& outputfile) const {
@@ -813,6 +860,13 @@ int PDDouble::writeToFits(const std::string& outputfile) const {
   return status;
 }
 
+/*!
+  \param[in] data Data to evaluate the log Likelihood of
+  \returns Log likelihood
+
+  Because this uses interpolation, slightly different values
+  will result if the P(D) is stored in log form or not.
+*/
 double PDDouble::getLogLike(const fitsDataDouble& data) const {
   if (pd_ == NULL) throw affineExcept("PDDouble","getLogLike",
 				      "pd not filled before likelihood calc",1);
@@ -824,6 +878,13 @@ double PDDouble::getLogLike(const fitsDataDouble& data) const {
   else return getLogLikeUnbinned(data);
 }
 
+/*!
+  \param[in] data Data to evaluate the log Likelihood of
+  \returns Log likelihood
+
+  Because this uses interpolation, slightly different values
+  will result if the P(D) is stored in log form or not.
+*/
 double PDDouble::getLogLikeUnbinned(const fitsDataDouble& data) const {
   unsigned int ndata = data.getN();
 
@@ -926,7 +987,13 @@ double PDDouble::getLogLikeUnbinned(const fitsDataDouble& data) const {
   return pofd_mcmc::log2toe * loglike;
 }
 
+/*!
+  \param[in] data Data to evaluate the log Likelihood of
+  \returns Log likelihood
 
+  Because this uses interpolation, slightly different values
+  will result if the P(D) is stored in log form or not.
+*/
 double PDDouble::getLogLikeBinned(const fitsDataDouble& data) const {
   if (!data.isBinned())
     throw affineExcept("PDDouble","getLogLikeBinned",
@@ -1049,7 +1116,10 @@ double PDDouble::getLogLikeBinned(const fitsDataDouble& data) const {
   return pofd_mcmc::log2toe * loglike;
 }
 
-
+/*!
+  \param[inout] os Stream to write to
+  \param[in] b PD to output
+*/
 std::ostream& operator<<(std::ostream& os, const PDDouble& b) {
   b.writeToStream(os);
   return os;
