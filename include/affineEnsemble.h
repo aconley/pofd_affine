@@ -66,6 +66,12 @@ private:
 protected:
   bool is_init; //!< Have the chains been initialized?
 
+  bool has_initStep; //!< Is initial position recorded?
+  paramSet initStep; //!< Initial position
+
+  bool has_regenFirstStep; //!< Has post initial steps regenerated postion
+  paramSet regenFirstStep; //!< Regenerated initial position (after init_steps)
+
   affineChainSet chains; //!< Holds actual steps
   std::vector<unsigned int> naccept; //!< Number of accepted steps
 
