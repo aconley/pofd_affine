@@ -1744,10 +1744,72 @@ void numberCountsDoubleLogNormal::recieveCopy(MPI_Comm comm, int src) {
 
 }
 
+
+/*!
+  \param[inout] objid HDF5 handle to write to
+*/
+void numberCountsKnotsDoubleLogNormal::writeToHDF5Handle(hid_t objid) const {
+  herr_t status;
+  hsize_t adims;
+  hid_t mems_id, att_id;
+
+  // Name of model
+  const char modeltype[] = "numberCountsDoubleLogNormal";
+  hid_t datatype = H5Tcopy(H5T_C_S1);
+  status = H5Tset_size(datatype, strlen(modeltype)); 
+  adims = 1;
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  att_id = H5Acreate1(objid, "model_type", datatype,
+		      mems_id, H5P_DEFAULT);
+  status = H5Awrite(att_id, datatype, modeltype);
+  status = H5Aclose(att_id);
+  status = H5Sclose(mems_id);
+  
+  // Number of knots
+  adims = 1;
+  att_id = H5Acreate2(objid, "nknots", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nknots);
+  status = H5Aclose(att_id);
+  att_id = H5Acreate2(objid, "nsigmaknots", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nsigmaknots);
+  status = H5Aclose(att_id);
+  att_id = H5Acreate2(objid, "noffsetknots", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, &noffsetknots);
+  status = H5Aclose(att_id);
+
+  status = H5Sclose(mems_id);
+
+  // Knot positions
+  adims = nknots;
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  att_id = H5Acreate2(objid, "knotpos", H5T_NATIVE_DOUBLE,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, knots);
+  status = H5Aclose(att_id);
+  status = H5Sclose(mems_id);
+  adims = nsigma;
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  att_id = H5Acreate2(objid, "sigmaknotpos", H5T_NATIVE_DOUBLE,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, sigmaknots);
+  status = H5Aclose(att_id);
+  status = H5Sclose(mems_id);
+  adims = nknots;
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  att_id = H5Acreate2(objid, "offsetknotpos", H5T_NATIVE_DOUBLE,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, offsetknots);
+  status = H5Aclose(att_id);
+  status = H5Sclose(mems_id);
+}
+
 /*!
   \param[inout] os Stream to write to.
   \returns True
- */
+*/
 bool numberCountsDoubleLogNormal::writeToStream(std::ostream& os) const {
   os << "Model parameters: " << std::endl;
   if (knotvals_loaded) {

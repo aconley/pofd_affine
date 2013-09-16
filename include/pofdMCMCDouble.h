@@ -36,6 +36,8 @@ public:
   bool areParamsValid(const paramSet&) const; //!< Test against limits
   void generateInitialPosition(const paramSet&); //!< Sets up initial position
   double getLogLike(const paramSet&, bool&); //!< Evaluates log likelihood
+
+  void writeToHDF5Handle(hid_t) const; //!< Serialize to HDF5 handle
 };
 
 

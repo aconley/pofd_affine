@@ -322,3 +322,13 @@ double pofdMCMC::getLogLike(const paramSet& p, bool& pars_invalid) {
 		       "Called on uninitialized object", 1);
   return likeSet.getLogLike(p, pars_invalid);
 }
+
+/*!
+  \param[in] objid HDF5 handle to write to
+*/
+void pofdMCMC::writeToHDF5Handle(hid_t objid) const {
+  // Do default stuff plus add knot positions, priors, etc.
+
+  affineEnsemble::writeToHDF5(objid);
+  likeSet.writeToHDF5(objid);
+}  

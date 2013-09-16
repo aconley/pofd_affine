@@ -231,7 +231,8 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
 	     const double* const, const doublebeam&, double*, 
 	     rtype=BEAMALL) const;
 
-   bool writeToStream(std::ostream& os) const; //<! Output
+   void writeToHDF5Handle(hid_t) const; //!< Write to HDF5 handle
+   bool writeToStream(std::ostream& os) const; //<! Output to stream
 
    void sendSelf(MPI_Comm, int dest) const; //!< Send self
    void recieveCopy(MPI_Comm, int src); //!< Recieve

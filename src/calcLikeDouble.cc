@@ -788,6 +788,133 @@ double calcLikeDouble::getLogLike(const paramSet& p, bool& pars_invalid) const {
   return LogLike;
 }
 
+/*!						
+  \param[in] objid HDF5 handle to write information to.  Must already be
+    open
+*/
+void calcLike::writeToHDF5Handle(hid_t objid) const {
+  herr_t status;
+
+  // Writes some meta information as a sub-group
+  hsize_t adims;
+  hid_t mems_id, att_id;
+
+  hid_t groupid;
+  groupid = H5Gcreate(objid, "LikelihoodParams", H5P_DEFAULT, H5P_DEFAULT, 
+		    H5P_DEFAULT);
+
+  // FFTSIZE
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  att_id = H5Acreate2(groupid, "fftsize", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, &fftsize);
+  status = H5Aclose(att_id);
+
+  // NEDGE
+  att_id = H5Acreate2(groupid, "nedge", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nedge);
+  status = H5Aclose(att_id);
+
+  // Edge integrate
+  att_id = H5Acreate2(groupid, "edge_integrate", H5T_NATIVE_HBOOL,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_HBOOL, &edgeInteg);
+  status = H5Aclose(att_id);
+
+  // Edge Fix
+  att_id = H5Acreate2(groupid, "edge_fix", H5T_NATIVE_HBOOL,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_HBOOL, &edgeFix);
+  status = H5Aclose(att_id);
+
+  // NBEAMSETS
+  att_id = H5Acreate2(groupid, "nbeamsets", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nbeamsets);
+  status = H5Aclose(att_id);
+
+  // DATA BINNING
+  att_id = H5Acreate2(groupid, "bin_data", H5T_NATIVE_HBOOL,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_HBOOL, &bin_data);
+  status = H5Aclose(att_id);
+  if (bin_data) {
+    att_id = H5Acreate2(groupid, "ndatabins", H5T_NATIVE_UINT,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    status = H5Awrite(att_id, H5T_NATIVE_UINT, &nbins);
+    status = H5Aclose(att_id);
+  }
+
+  // CFIRB PRIOR1
+  att_id = H5Acreate2(groupid, "has_cfirb_prior1", H5T_NATIVE_DOUBLE,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, &has_cfirb_prior1);
+  status = H5Aclose(att_id);
+  if (has_cfirb_prior1) {
+    att_id = H5Acreate2(groupid, "cfirb_prior_mean1", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, &cfirb_prior_mean1);
+    status = H5Aclose(att_id);
+    att_id = H5Acreate2(groupid, "cfirb_prior_sigma1", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, &cfirb_prior_sigma1);
+    status = H5Aclose(att_id);
+  }
+
+  // CFIRB PRIOR2
+  att_id = H5Acreate2(groupid, "has_cfirb_prior2", H5T_NATIVE_DOUBLE,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, &has_cfirb_prior2);
+  status = H5Aclose(att_id);
+  if (has_cfirb_prior2) {
+    att_id = H5Acreate2(groupid, "cfirb_prior_mean2", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, &cfirb_prior_mean1);
+    status = H5Aclose(att_id);
+    att_id = H5Acreate2(groupid, "cfirb_prior_sigma2", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, &cfirb_prior_sigma2);
+    status = H5Aclose(att_id);
+  }
+
+  // SIGMA PRIOR1
+  att_id = H5Acreate2(groupid, "has_sigma_prior1", H5T_NATIVE_DOUBLE,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, &has_sigma_prior1);
+  status = H5Aclose(att_id);
+  if (has_sigma_prior1) {
+    att_id = H5Acreate2(groupid, "sigma_prior_width1", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, &sigma_prior_width1);
+    status = H5Aclose(att_id);
+  }
+
+  // SIGMA PRIOR2
+  att_id = H5Acreate2(groupid, "has_sigma_prior2", H5T_NATIVE_DOUBLE,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, &has_sigma_prior2);
+  status = H5Aclose(att_id);
+  if (has_sigma_prior1) {
+    att_id = H5Acreate2(groupid, "sigma_prior_width2", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, &sigma_prior_width2);
+    status = H5Aclose(att_id);
+  }
+
+  status = H5Sclose(mems_id);
+
+  // Model info
+  model.writeToHDF5Handle(groupid);
+
+  // Close up
+  status = H5Gclose(groupid);
+}
+
+/*!
+  \param[in] comm Communicator
+  \param[in] dest Destination of messages
+*/
 void calcLikeDouble::sendSelf(MPI_Comm comm, int dest) const { 
   //Transform
   MPI_Send(const_cast<unsigned int*>(&fftsize), 1, MPI_UNSIGNED, dest,
@@ -848,6 +975,10 @@ void calcLikeDouble::sendSelf(MPI_Comm comm, int dest) const {
 
 }
 
+/*!
+  \param[in] comm Communicator
+  \param[in] src Source of messages
+*/
 void calcLikeDouble::recieveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
 

@@ -6,6 +6,8 @@
 #include<string>
 #include<fstream>
 
+#include "hdf5.h"
+
 #include "../include/doublebeam.h"
 #include "../include/paramSet.h"
 
@@ -57,7 +59,8 @@ class numberCountsDouble {
 		    unsigned int,const double* const,
 		    const doublebeam&, double*, rtype=BEAMALL) const = 0;
 
-  virtual bool writeToStream(std::ostream& os) const=0; //!< Output
+  virtual void writeToHDF5Handle(hid_t objid) const=0; //!< Output to HDF5
+  virtual bool writeToStream(std::ostream& os) const=0; //!< Output to stream
 };
 
 /*! \brief Write to stream */

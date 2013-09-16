@@ -68,8 +68,9 @@ class numberCountsKnots : public numberCounts {
 
   double getMaxFlux() const; //!< Maximum flux supported by model
   double getMinFlux() const; //!< Minimum flux supported by model
-  
-  bool writeToStream(std::ostream& os) const; //<! Output
+
+  virtual void writeToHDF5Handle(hid_t objid) const; //!< Output to HDF5
+  virtual bool writeToStream(std::ostream& os) const; //<! Output to stream
 
   virtual void sendSelf(MPI_Comm, int dest) const; //!< Send self
   virtual void recieveCopy(MPI_Comm, int src); //!< Recieve

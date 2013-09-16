@@ -9,6 +9,9 @@
 const double calcLikeSingle::bad_like = 1e25;
 const double calcLikeSingle::flux_safety = 1.1;
 
+/*!
+  \param[in] NINTERP Number of interpolation points in R evaluation
+*/
 calcLikeSingle::calcLikeSingle(unsigned int NINTERP) :
   data_read(false), ndatasets(0), data(NULL), maxflux(0.0), 
   pdfac(NINTERP), sigma_base(NULL), maxsigma_base(0.0),
@@ -180,6 +183,10 @@ void calcLikeSingle::removeBinning() {
     data[i].removeBinning();
 }
 
+/*!
+  \param[in] lnorm Vector of likelihood normalization values, of length
+    the number of datasets
+*/
 void calcLikeSingle::setLikeNorm(const std::vector<double>& lnorm) {
   unsigned int n = lnorm.size();
   if (n != ndatasets)
@@ -191,8 +198,12 @@ void calcLikeSingle::setLikeNorm(const std::vector<double>& lnorm) {
     like_norm[i] = lnorm[i];
 }
 
+/*!
+  \param[in] n Length of lnorm -- must be same as number of data sets
+  \param[in] lnorm Array of likelihood normalization values
+*/
 void calcLikeSingle::setLikeNorm(unsigned int n, 
-			   const double* const lnorm) {
+				 const double* const lnorm) {
   if (n != ndatasets)
     throw affineExcept("calcLikeSingle", "setLikeNorm",
 		       "like_norm array not same size as number of data sets",
@@ -202,6 +213,10 @@ void calcLikeSingle::setLikeNorm(unsigned int n,
     like_norm[i] = lnorm[i];
 }
 
+/*!
+  \param[in] s Vector of instrument sigma base values, of length
+    the number of datasets
+*/
 void calcLikeSingle::setSigmaBase(const std::vector<double>& s) {
   unsigned int n = s.size();
   if (n != ndatasets)
@@ -229,7 +244,11 @@ void calcLikeSingle::setSigmaBase(const std::vector<double>& s) {
   }
 }
 
-void calcLikeSingle::setSigmaBase(unsigned int n,const double* const s) {
+/*!
+  \param[in] n Number of elements in s, must be same as number of datasets
+  \param[in] s Array of instrument sigma base values
+*/
+void calcLikeSingle::setSigmaBase(unsigned int n, const double* const s) {
   if (n != ndatasets)
     throw affineExcept("calcLikeSingle", "setSigmaBase",
 		       "sigma arrays not same size as number of data sets", 1);
@@ -261,8 +280,10 @@ void calcLikeSingle::setSigmaBase(unsigned int n,const double* const s) {
   \param[in] sigmul  Sigma multiplier
   \param[in] fftsize Size of FFT to use
   
+  \returns The Log Likelihood of the model relative to the data.
+
   This is the guts of the operation, computing the P(D) and
-  finding the -log Likelihood
+  finding the log Likelihood
 
   Any auxilliary parameters (positions of knots, etc.) must already
   be set in model.  The last model parameter is the sigma multiplier,
@@ -313,12 +334,19 @@ calcLikeSingle::getLogLike(const numberCounts& model, bool& pars_invalid,
   return LogLike;
 }
 
+/*!
+  \param[inout] os Stream to write to
+*/
 void calcLikeSingle::writePDToStream(std::ostream& os) const {
   PD cpy(pd);
   cpy.deLog();
   os << cpy;
 }
 
+/*!
+  \param[in] comm Communicator
+  \param[in] dest Destination of messages
+*/
 void calcLikeSingle::sendSelf(MPI_Comm comm, int dest) const {
   //Data
   MPI_Send(const_cast<unsigned int*>(&ndatasets), 1, MPI_UNSIGNED, dest,
@@ -354,7 +382,10 @@ void calcLikeSingle::sendSelf(MPI_Comm comm, int dest) const {
   //Note we don't send verbose
 }
 
-
+/*!
+  \param[in] comm Communicator
+  \param[in] src Source of messages
+*/
 void calcLikeSingle::recieveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
 
@@ -400,6 +431,13 @@ void calcLikeSingle::recieveCopy(MPI_Comm comm, int src) {
 
 /////////////////////////////////////////////////////////////////
 
+/*!
+  \param[in] FFTSIZE Number of elements in FFT
+  \param[in] NINTERP Number of interpolation elements in R calculation
+  \param[in] EDGEFIX Apply edge fix
+  \param[in] BINNED Bin data
+  \param[in] NBINS Number of bins, if binning
+*/
 calcLike::calcLike(unsigned int FFTSIZE, unsigned int NINTERP, 
 		   bool EDGEFIX, bool BINNED, unsigned int NBINS):
   fftsize(FFTSIZE), ninterp(NINTERP), edgeFix(EDGEFIX), bin_data(BINNED),
@@ -425,6 +463,8 @@ void calcLike::freeData() {
 }
 
 /*!
+  \param[in] filename Name of wisdom file
+
   Don't do this before reading in the data files, or it will be overwritten
  */
 void calcLike::addWisdom(const std::string& filename) {
@@ -433,6 +473,16 @@ void calcLike::addWisdom(const std::string& filename) {
 }
 
 /*!
+  \param[in] datafiles Vector of data file names
+  \param[in] beamfiles Vector of beam file names
+  \param[in] sigmas Vector of instrumental sigmas
+  \param[in] like_norms Vector of likelihood normalizations
+  \param[in] IGNOREMASK Ignore any mask in data files
+  \param[in] MEANSUB Mean subtract the data
+  \param[in] HISTOGRAM Histogram the beams
+  \param[in] HISTOGRAMLOGSTEP Log beam step if binning
+  \param[in] EXPCONF Expected confusion noise value
+
   Read in a set of data, grouping the inputs by beam and storing
   all of the relevant instrument noise and likelihood normalization values
  */
@@ -548,6 +598,9 @@ void calcLike::unSetBinData() {
   bin_data = false;
 }
 
+/*!
+  \param[in] nbns Number of bins
+*/
 void calcLike::setNBins(unsigned int nbns) {
   if (nbns == nbins) return;
   
@@ -569,13 +622,18 @@ void calcLike::setNBins(unsigned int nbns) {
   \param[in] sg Sigma of CFIRB prior
   
   The prior is assumed Gaussian
- */
+*/
 void calcLike::setCFIRBPrior(double mn, double sg) {
   has_cfirb_prior = true;
   cfirb_prior_mean = mn;
   cfirb_prior_sigma = sg;
 }
 
+/*!
+  \param[in] p Parameters to evaluate
+  \param[out] pars_invalid True if parameters were not valid,
+   otherwise False
+*/
 double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
   const double half_log_2pi = 0.918938517570495605469;
 
@@ -626,6 +684,92 @@ double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
   return LogLike;
 }
 
+/*!						
+  \param[in] objid HDF5 handle to write information to.  Must already be
+    open
+*/
+void calcLike::writeToHDF5Handle(hid_t objid) const {
+  herr_t status;
+
+  // Writes some meta information as a sub-group
+  hsize_t adims;
+  hid_t mems_id, att_id;
+
+  hid_t groupid;
+  groupid = H5Gcreate(objid, "LikelihoodParams", H5P_DEFAULT, H5P_DEFAULT, 
+		    H5P_DEFAULT);
+
+  // FFTSIZE
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  att_id = H5Acreate2(groupid, "fftsize", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, &fftsize);
+  status = H5Aclose(att_id);
+
+  // NINTERP
+  att_id = H5Acreate2(groupid, "ninterp", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, &ninterp);
+  status = H5Aclose(att_id);
+
+  // NBEAMSETS
+  att_id = H5Acreate2(groupid, "nbeamsets", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nbeamsets);
+  status = H5Aclose(att_id);
+
+  // DATA BINNING
+  att_id = H5Acreate2(groupid, "bin_data", H5T_NATIVE_HBOOL,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_HBOOL, &bin_data);
+  status = H5Aclose(att_id);
+  if (bin_data) {
+    att_id = H5Acreate2(groupid, "ndatabins", H5T_NATIVE_UINT,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    status = H5Awrite(att_id, H5T_NATIVE_UINT, &nbins);
+    status = H5Aclose(att_id);
+  }
+
+  // CFIRB PRIOR
+  att_id = H5Acreate2(groupid, "has_cfirb_prior", H5T_NATIVE_DOUBLE,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, &has_cfirb_prior);
+  status = H5Aclose(att_id);
+  if (has_cfirb_prior) {
+    att_id = H5Acreate2(groupid, "cfirb_prior_mean", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, &cfirb_prior_mean);
+    status = H5Aclose(att_id);
+    att_id = H5Acreate2(groupid, "cfirb_prior_sigma", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, &cfirb_prior_sigma);
+    status = H5Aclose(att_id);
+  }
+
+  // SIGMA PRIOR
+  att_id = H5Acreate2(groupid, "has_sigma_prior", H5T_NATIVE_DOUBLE,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, &has_sigma_prior);
+  status = H5Aclose(att_id);
+  if (has_sigma_prior) {
+    att_id = H5Acreate2(groupid, "sigma_prior_width", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, &sigma_prior_width);
+    status = H5Aclose(att_id);
+  }
+  status = H5Sclose(mems_id);
+
+  // Model info
+  model.writeToHDF5Handle(groupid);
+
+  // Close up
+  status = H5Gclose(groupid);
+}
+
+/*!
+  \param[in] comm Communicator
+  \param[in] dest Destination of messages
+*/
 void calcLike::sendSelf(MPI_Comm comm, int dest) const { 
   //Transform
   MPI_Send(const_cast<unsigned int*>(&fftsize), 1, MPI_UNSIGNED,
@@ -672,6 +816,10 @@ void calcLike::sendSelf(MPI_Comm comm, int dest) const {
 
 }
 
+/*!
+  \param[in] comm Communicator
+  \param[in] src Source of messages
+*/
 void calcLike::recieveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
 

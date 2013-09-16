@@ -236,6 +236,9 @@ class calcLike {
   /*! \brief Get Log Likelihood for set of parameters */
   double getLogLike(const paramSet&, bool&) const;
 
+  /*! \brief Write to HDF5 handle */
+  void writeToHDF5Handle(hid_t) const;
+
   /*! \brief MPI copy send operation */
   void sendSelf(MPI_Comm, int dest) const;
   /*! \brief MPI copy send operation */

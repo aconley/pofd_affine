@@ -330,6 +330,33 @@ void numberCountsKnots::recieveCopy(MPI_Comm comm, int src) {
 }
 
 /*!
+  \param[inout] objid HDF5 handle to write to
+*/
+void numberCountsKnots::writeToHDF5Handle(hid_t objid) const {
+  herr_t status;
+  hsize_t adims;
+  hid_t mems_id, att_id;
+
+  // Number of knots
+  adims = 1;
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  att_id = H5Acreate2(objid, "nknots", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nknots);
+  status = H5Aclose(att_id);
+  status = H5Sclose(mems_id);
+
+  // Knot positions
+  adims = nknots;
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  att_id = H5Acreate2(objid, "knotpos", H5T_NATIVE_DOUBLE,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, knots);
+  status = H5Aclose(att_id);
+  status = H5Sclose(mems_id);
+}
+
+/*!
   \param[inout] os Stream to write to
 */
 bool numberCountsKnots::writeToStream(std::ostream& os) const {
