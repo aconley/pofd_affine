@@ -1429,18 +1429,13 @@ void affineEnsemble::writeToFile(const std::string& filename) const {
 }
 
 /*!
-  \param[in] filename File to write to as HDF5
+  \param[in] objid HDF5 group to write to
 */
-void affineEnsemble::writeToHDF5(const std::string& filename) const {
-  // In addition to writing the chains and likelihoods, writes some
-  // additional attributes at the root level
+void affineEnsemble::writeToHDF5(hid_t objid) const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "writeToHDF5",
 		       "Should only be called from master node", 1);  
-  hid_t file_id;
   herr_t status;
-  file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
-		      H5P_DEFAULT);
 
   // Write some attributes
   hsize_t adims;
@@ -1449,37 +1444,37 @@ void affineEnsemble::writeToHDF5(const std::string& filename) const {
   // First, simple 1 element objects
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, NULL);
-  att_id = H5Acreate2(file_id, "scalefac", H5T_NATIVE_FLOAT,
+  att_id = H5Acreate2(objid, "scalefac", H5T_NATIVE_FLOAT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   status = H5Awrite(att_id, H5T_NATIVE_FLOAT, &scalefac);
   status = H5Aclose(att_id);
-  att_id = H5Acreate2(file_id, "nfixed", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(objid, "nfixed", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   status = H5Awrite(att_id, H5T_NATIVE_UINT, &nfixed);
   status = H5Aclose(att_id);
-  att_id = H5Acreate2(file_id, "nignore", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(objid, "nignore", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   status = H5Awrite(att_id, H5T_NATIVE_UINT, &nignore);
   status = H5Aclose(att_id);
-  att_id = H5Acreate2(file_id, "init_steps", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(objid, "init_steps", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   status = H5Awrite(att_id, H5T_NATIVE_UINT, &init_steps);
   status = H5Aclose(att_id);
-  att_id = H5Acreate2(file_id, "min_burn", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(objid, "min_burn", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   status = H5Awrite(att_id, H5T_NATIVE_UINT, &min_burn);
   status = H5Aclose(att_id);
   hbool_t btmp;
   btmp = static_cast<hbool_t>(fixed_burn);
-  att_id = H5Acreate2(file_id, "fixed_burn", H5T_NATIVE_HBOOL,
+  att_id = H5Acreate2(objid, "fixed_burn", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   status = H5Awrite(att_id, H5T_NATIVE_HBOOL, &btmp);
   status = H5Aclose(att_id);
-  att_id = H5Acreate2(file_id, "burn_multiple", H5T_NATIVE_FLOAT,
+  att_id = H5Acreate2(objid, "burn_multiple", H5T_NATIVE_FLOAT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   status = H5Awrite(att_id, H5T_NATIVE_FLOAT, &burn_multiple);
   status = H5Aclose(att_id);
-  att_id = H5Acreate2(file_id, "nsteps", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(objid, "nsteps", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   status = H5Awrite(att_id, H5T_NATIVE_UINT, &nsteps);
   status = H5Aclose(att_id);
@@ -1491,7 +1486,7 @@ void affineEnsemble::writeToHDF5(const std::string& filename) const {
   unsigned int *uatmp;
   uatmp = new unsigned int[nwalkers];
   for (unsigned int i = 0; i < nwalkers; ++i) uatmp[i] = naccept[i];
-  att_id = H5Acreate2(file_id, "naccept", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(objid, "naccept", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   status = H5Awrite(att_id, H5T_NATIVE_UINT, uatmp);
   delete[] uatmp;
@@ -1506,14 +1501,14 @@ void affineEnsemble::writeToHDF5(const std::string& filename) const {
   // Fixed first
   for (unsigned int i = 0; i < nparams; ++i) 
     batmp[i] = param_state[i] & mcmc_affine::FIXED;
-  att_id = H5Acreate2(file_id, "fixed", H5T_NATIVE_HBOOL,
+  att_id = H5Acreate2(objid, "fixed", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   status = H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
   status = H5Aclose(att_id);
   // Ignored params
   for (unsigned int i = 0; i < nparams; ++i) 
     batmp[i] = param_state[i] & mcmc_affine::ACIGNORE;
-  att_id = H5Acreate2(file_id, "acignore", H5T_NATIVE_HBOOL,
+  att_id = H5Acreate2(objid, "acignore", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   status = H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
   delete[] batmp;
@@ -1528,7 +1523,7 @@ void affineEnsemble::writeToHDF5(const std::string& filename) const {
     ftmp = new float[nparams];
     for (unsigned int i = 0; i < nparams; ++i) 
       ftmp[i] = initStep[i];
-    att_id = H5Acreate2(file_id, "initial_position", H5T_NATIVE_FLOAT,
+    att_id = H5Acreate2(objid, "initial_position", H5T_NATIVE_FLOAT,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
     status = H5Awrite(att_id, H5T_NATIVE_FLOAT, ftmp);
     status = H5Aclose(att_id);
@@ -1541,7 +1536,7 @@ void affineEnsemble::writeToHDF5(const std::string& filename) const {
     ftmp = new float[nparams];
     for (unsigned int i = 0; i < nparams; ++i) 
       ftmp[i] = regenFirstStep[i];
-    att_id = H5Acreate2(file_id, "regenerated_first_step", H5T_NATIVE_FLOAT,
+    att_id = H5Acreate2(objid, "regenerated_first_step", H5T_NATIVE_FLOAT,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
     status = H5Awrite(att_id, H5T_NATIVE_FLOAT, ftmp);
     status = H5Aclose(att_id);
@@ -1558,31 +1553,30 @@ void affineEnsemble::writeToHDF5(const std::string& filename) const {
       catmp[i] = parnames[i].c_str();
     adims = nparams;
     mems_id = H5Screate_simple(1, &adims, NULL);
-    att_id = H5Acreate1(file_id, "param_names", datatype,
+    att_id = H5Acreate1(objid, "param_names", datatype,
 			mems_id, H5P_DEFAULT);
     status = H5Awrite(att_id, datatype, catmp);
     delete[] catmp;
-    status = H5Aclose(att_id);
-    status = H5Sclose(mems_id);
   }
+}
 
-  // Acor, if available
-  if (acor_set) {
-    adims = nparams;
-    mems_id = H5Screate_simple(1, &adims, NULL);
-    float *fatmp;
-    fatmp = new float[nparams];
-    for (unsigned int i = 0; i < nparams; ++i) fatmp[i] = acor[i];
-    att_id = H5Acreate2(file_id, "autocorrelation", H5T_NATIVE_FLOAT,
-			mems_id, H5P_DEFAULT, H5P_DEFAULT);
-    status = H5Awrite(att_id, H5T_NATIVE_FLOAT, fatmp);
-    delete[] fatmp;
-    status = H5Aclose(att_id);
-    status = H5Sclose(mems_id);
-  }
+/*!
+  \param[in] filename File to write to as HDF5
+*/
+void affineEnsemble::writeToHDF5(const std::string& filename) const {
+  // In addition to writing the chains and likelihoods, writes some
+  // additional attributes at the root level
+  if (rank != 0) 
+    throw affineExcept("affineEnsemble", "writeToHDF5",
+		       "Should only be called from master node", 1);  
+  hid_t file_id;
+  herr_t status;
+  // Create
+  file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
+		      H5P_DEFAULT);
 
-  // Write chains, likelihoods
-  chains.writeToHDF5(file_id);
+  //Write
+  writeToHDF5(file_id);
 
   // All done
   status = H5Fclose(file_id);
