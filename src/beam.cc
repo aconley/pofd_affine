@@ -44,6 +44,9 @@ beam::beam(const std::string& filename, bool histogram,
   readFile(filename, histogram, histogramlogstep);
 }
 
+/*!
+  \param[in] inp Beam to copy
+*/
 beam::beam(const beam& inp) {
   negpixarr = pospixarr = NULL;
   posinvpixarr = neginvpixarr = NULL;
@@ -83,6 +86,9 @@ beam::beam(const beam& inp) {
   }
 }
 
+/*!
+  \param[in] other beam to copy
+*/
 beam& beam::operator=(const beam& other) {
   if (this == &other) return *this;
   cleanup();
@@ -393,26 +399,42 @@ void beam::readFile(const std::string& filename,bool histogram,
   }
 }
 
+/*!
+  \returns Minimum value of positive beam
+*/
 double beam::getMinPos() const {
   if (! haspos) return std::numeric_limits<double>::quiet_NaN();
   return pospixarr[0];
 }
 
+/*!
+  \returns Maximum value of positive beam
+*/
 double beam::getMaxPos() const {
   if (! haspos) return std::numeric_limits<double>::quiet_NaN();
   return pospixarr[npos-1];
 }
 
+/*!
+  \returns Minimum absolute value of negative beam
+*/
 double beam::getMinAbsNeg() const {
   if (! hasneg) return std::numeric_limits<double>::quiet_NaN();
   return negpixarr[0];
 }
 
+/*!
+  \returns Maximum absolute value of negative beam
+*/
 double beam::getMaxAbsNeg() const {
   if (! hasneg) return std::numeric_limits<double>::quiet_NaN();
   return negpixarr[nneg-1];
 }
 
+/*!
+  \returns Range of positive beam values as a pair in min, max order.  
+    NaN if no positive beam
+*/
 std::pair<double,double> beam::getRangePos() const {
   if (!haspos) {
     double val = std::numeric_limits<double>::quiet_NaN();
@@ -423,6 +445,10 @@ std::pair<double,double> beam::getRangePos() const {
   return std::pair< double, double > (lowval, highval);
 }
 
+/*!
+  \returns Range of negative beam values as a pair in min, max order.  
+    NaN if no negative beam
+*/
 std::pair<double,double> beam::getRangeNeg() const {
   if (!hasneg) {
     double val = std::numeric_limits<double>::quiet_NaN();
@@ -434,9 +460,12 @@ std::pair<double,double> beam::getRangeNeg() const {
 }
 
 /*!
+  \param[in] exponent Power to raise beam to
+  \param[out] array Loaded with positive beam raised to exponent
+
   Size of array is unchecked and assumed to be at least large enough
   to hold all of pixels.
- */
+*/
 void beam::powerPos(double exponent, double* array) const {
   if (!haspos) return;
   if (fabs(exponent) < 1e-4) {
@@ -448,28 +477,37 @@ void beam::powerPos(double exponent, double* array) const {
 }
 
 /*!
+  \param[in] exponent Power to raise beam to
+  \param[out] array Loaded with beam raised to exponent
+
   Size of array is unchecked and assumed to be at least large enough
   to hold all of pixels.
- */
+*/
 void beam::powerNeg(double exponent, double* array) const {
   if (! hasneg) return;
   if (fabs(exponent) < 1e-4) {
-    for (unsigned int i = 0; i < nneg; ++i) array[i]=1.0;
+    for (unsigned int i = 0; i < nneg; ++i) array[i] = 1.0;
     return;
   }
   for (unsigned int i = 0; i < nneg; ++i)
     array[i] = pow(negpixarr[i], exponent);
 }
 
+/*!
+  \returns Effective area of beam, in square degrees
+*/
 double beam::getEffectiveArea() const {
   if (!(haspos || hasneg)) return 0.0;
   double convfac = pixsize / 3600.0;
   double area = 0.0;
-  if (haspos) area = totpos * convfac * convfac;
-  if (hasneg) area += totneg * convfac * convfac;
-  return area;
+  if (haspos) area = totpos;
+  if (hasneg) area += totneg;
+  return area * convfac * convfac;
 }
 
+/*!
+  \returns Effective area of positive beam, in square degrees
+*/
 double beam::getEffectiveAreaPos() const {
   if (!haspos) return 0.0;
   double convfac = pixsize / 3600.0;
@@ -477,6 +515,9 @@ double beam::getEffectiveAreaPos() const {
   return area;
 }
 
+/*!
+  \returns Effective area of negative beam, in square degrees
+*/
 double beam::getEffectiveAreaNeg() const {
   if (!hasneg) return 0.0;
   double convfac = pixsize / 3600.0;
@@ -484,6 +525,9 @@ double beam::getEffectiveAreaNeg() const {
   return area;
 }
 
+/*!
+  \returns Effective area of beam, in pixels
+*/
 double beam::getEffectiveAreaPix() const {
   if (!(haspos || hasneg)) return 0.0;
   double area = 0.0;
@@ -492,6 +536,9 @@ double beam::getEffectiveAreaPix() const {
   return area;
 }
 
+/*!
+  \returns Effective area of squared beam, in square degrees
+*/
 double beam::getEffectiveAreaSq() const {
   if (!(haspos || hasneg)) return 0.0;
   double convfac = pixsize / 3600.0;
@@ -501,6 +548,10 @@ double beam::getEffectiveAreaSq() const {
   return area;
 }
 
+/*!
+  \param[in] comm MPI communicator
+  \param[in] dest Destination for messages
+*/
 void beam::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<double*>(&pixsize), 1, MPI_DOUBLE, dest,
 	   pofd_mcmc::BEAMSENDPIXSIZE, comm);
@@ -541,6 +592,10 @@ void beam::sendSelf(MPI_Comm comm, int dest) const {
   }
 }
 
+/*!
+  \param[in] comm MPI communicator
+  \param[in] src Source for messages
+*/
 void beam::recieveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
   unsigned int new_n;

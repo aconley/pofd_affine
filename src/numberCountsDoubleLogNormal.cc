@@ -1748,7 +1748,7 @@ void numberCountsDoubleLogNormal::recieveCopy(MPI_Comm comm, int src) {
 /*!
   \param[inout] objid HDF5 handle to write to
 */
-void numberCountsKnotsDoubleLogNormal::writeToHDF5Handle(hid_t objid) const {
+void numberCountsDoubleLogNormal::writeToHDF5Handle(hid_t objid) const {
   herr_t status;
   hsize_t adims;
   hid_t mems_id, att_id;
@@ -1790,14 +1790,14 @@ void numberCountsKnotsDoubleLogNormal::writeToHDF5Handle(hid_t objid) const {
   status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, knots);
   status = H5Aclose(att_id);
   status = H5Sclose(mems_id);
-  adims = nsigma;
+  adims = nsigmaknots;
   mems_id = H5Screate_simple(1, &adims, NULL);
   att_id = H5Acreate2(objid, "sigmaknotpos", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, sigmaknots);
   status = H5Aclose(att_id);
   status = H5Sclose(mems_id);
-  adims = nknots;
+  adims = noffsetknots;
   mems_id = H5Screate_simple(1, &adims, NULL);
   att_id = H5Acreate2(objid, "offsetknotpos", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);

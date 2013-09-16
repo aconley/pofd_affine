@@ -95,6 +95,9 @@ doublebeam::doublebeam(const doublebeam& inp) {
     }
 }
 
+/*!
+  \param[in] other doublebeam to copy
+*/
 doublebeam& doublebeam::operator=(const doublebeam& other) {
   if (this == &other) return *this;
   cleanup();
@@ -170,7 +173,7 @@ void doublebeam::cleanup() {
 
   Will ignore pixels that are zero or with an absolute value
   larger than one.  Also may histogram beams, depending on settings
- */
+*/
 void doublebeam::setBeams(unsigned int n, const double* const bm1,
 			  const double* const bm2, double pixscale,
 			  bool histogram, double histogramlogstep ) {
@@ -580,7 +583,9 @@ void doublebeam::readFiles(const std::string& filename1,
   delete[] rpixarr2;
 }
 
-
+/*!
+  \returns Effective area of beam in square deg, band 1
+*/
 double doublebeam::getEffectiveArea1() const {
   bool hasval = hassign[0];
   for (unsigned int i = 1; i < 4; ++i) hasval |= hassign[i];
@@ -589,6 +594,9 @@ double doublebeam::getEffectiveArea1() const {
   return totsm1 * convfac * convfac;
 }
 
+/*!
+  \returns Effective area of beam in square deg, band 2
+*/
 double doublebeam::getEffectiveArea2() const {
   bool hasval = hassign[0];
   for (unsigned int i = 1; i < 4; ++i) hasval |= hassign[i];
@@ -597,6 +605,9 @@ double doublebeam::getEffectiveArea2() const {
   return totsm2 * convfac * convfac;
 }
 
+/*!
+  \returns Geometric mean of effective area of beams
+*/
 double doublebeam::getEffectiveAreaPixGeoMean() const {
  bool hasval = hassign[0];
   for (unsigned int i = 1; i < 4; ++i) hasval |= hassign[i];
@@ -604,6 +615,9 @@ double doublebeam::getEffectiveAreaPixGeoMean() const {
   return sqrt(totsm1*totsm2);
 }
 
+/*!
+  \returns Minimum area of any beam sign component
+*/
 double doublebeam::getMinAreaPix() const {
  bool hasval = hassign[0];
   for (unsigned int i = 1; i < 4; ++i) hasval |= hassign[i];
@@ -611,6 +625,10 @@ double doublebeam::getMinAreaPix() const {
   return totsm1 < totsm2 ? totsm1 : totsm2;
 }
 
+/*!
+  \param[in] idx Sign component (pp, pn, np, nn)
+  \returns Effective area of beam, band 1
+*/
 double doublebeam::getEffectiveAreaSign1(unsigned int idx) const {
   if (!hassign[idx]) return 0.0;
   double convfac = pixsize / 3600.0;
@@ -618,6 +636,10 @@ double doublebeam::getEffectiveAreaSign1(unsigned int idx) const {
   return area;
 }
 
+/*!
+  \param[in] idx Sign component (pp, pn, np, nn)
+  \returns Effective area of beam, band 2
+*/
 double doublebeam::getEffectiveAreaSign2(unsigned int idx) const {
   if (!hassign[idx]) return 0.0;
   double convfac = pixsize / 3600.0;
@@ -625,6 +647,10 @@ double doublebeam::getEffectiveAreaSign2(unsigned int idx) const {
   return area;
 }
 
+/*!
+  \param[in] idx Sign component (pp, pn, np, nn)
+  \returns Effective area of squared beam, band 1
+*/
 double doublebeam::getEffectiveAreaSqSign1(unsigned int idx) const {
   if (!hassign[idx]) return 0.0;
   double convfac = pixsize / 3600.0;
@@ -632,6 +658,10 @@ double doublebeam::getEffectiveAreaSqSign1(unsigned int idx) const {
   return area;
 }
 
+/*!
+  \param[in] idx Sign component (pp, pn, np, nn)
+  \returns Effective area of squared beam, band 2
+*/
 double doublebeam::getEffectiveAreaSqSign2(unsigned int idx) const {
   if (!hassign[idx]) return 0.0;
   double convfac = pixsize / 3600.0;
@@ -725,6 +755,10 @@ void doublebeam::getMinMax2(unsigned int bnd, double& min,
 
 }
 
+/*!
+  \param[in] comm MPI communicator
+  \param[in] dest Destination for messages
+*/
 void doublebeam::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<double*>(&pixsize), 1, MPI_DOUBLE, dest, 
 	   pofd_mcmc::DOUBLEBEAMSENDPIXSIZE, comm);
@@ -761,6 +795,10 @@ void doublebeam::sendSelf(MPI_Comm comm, int dest) const {
 	   pofd_mcmc::DOUBLEBEAMSENDTOTSM2, comm);
 }
 
+/*!
+  \param[in] comm MPI communicator
+  \param[in] src Source of messages
+*/
 void doublebeam::recieveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
 

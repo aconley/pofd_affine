@@ -356,7 +356,7 @@ int main(int argc, char** argv) {
     std::cerr << "Error encountered: " << ex << std::endl;
     int jnk;
     if (rank == 0)
-      for (unsigned int i = 1; i < nproc; ++i)
+      for (int i = 1; i < nproc; ++i)
 	MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
     else
       MPI_Send(&jnk, 1, MPI_INT, 0, mcmc_affine::ERROR, MPI_COMM_WORLD);
@@ -367,7 +367,7 @@ int main(int argc, char** argv) {
 	      << std::endl;
     int jnk;
     if (rank == 0)
-      for (unsigned int i = 1; i < nproc; ++i)
+      for (int i = 1; i < nproc; ++i)
 	MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
     else
       MPI_Send(&jnk, 1, MPI_INT, 0, mcmc_affine::ERROR, MPI_COMM_WORLD);

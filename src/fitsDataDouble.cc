@@ -21,7 +21,7 @@ fitsDataDouble::fitsDataDouble() {
   \param[in] file2  Name of data file, band 2
   \param[in] ignoremask Don't consider MASK information from files
   \param[in] meansub Do a mean subtraction
- */
+*/
 fitsDataDouble::fitsDataDouble(const std::string& file1, 
 			       const std::string& file2,
 			       bool ignoremask, bool meansub) {
@@ -42,13 +42,14 @@ fitsDataDouble::~fitsDataDouble() {
 
 
 /*
-  Internal reading function to avoid mass repetition
   \param[in] file Name of file to read
   \param[out] ndata Number of data points
   \param[out] data  On output, holds image pixels
   \param[out] mask  On output, holds mask pixels
   \param[out] ignore_mask Don't consider mask information from files
   \returns True if a mask was read, false if not
+
+  Internal reading function to avoid mass repetition
 
   It's up to the caller to not have stuff in data or mask before
   calling, or a memory leak will result
@@ -280,7 +281,7 @@ bool fitsDataDouble::readFile(const std::string& file,unsigned int& ndata,
 
   The mean subtraction is based on unmasked pixels.
   This will blow away any binning.
- */
+*/
 void fitsDataDouble::readData(const std::string& file1,
 			      const std::string& file2,
 			      bool ignore_mask, bool meansub) {
@@ -376,6 +377,9 @@ void fitsDataDouble::readData(const std::string& file1,
   if (meansub) meanSubtract();
 }
 
+/*!
+  \returns Minimum values in each band.  NaN if no data read
+*/
 std::pair<double,double> fitsDataDouble::getMin() const {
   std::pair<double,double> retval;
   if (n == 0) {
@@ -407,6 +411,9 @@ std::pair<double,double> fitsDataDouble::getMin() const {
   return retval;
 }
 
+/*!
+  \returns Maximum values in each band.  NaN if no data read
+*/
 std::pair<double,double> fitsDataDouble::getMax() const {
   std::pair<double,double> retval;
   if (n == 0) {
@@ -443,7 +450,7 @@ std::pair<double,double> fitsDataDouble::getMax() const {
   \param[out] max1 Maximum flux, band 1
   \param[out] min2 Minimum flux, band 2
   \param[out] max2 Maximum flux, band 2
- */
+*/
 void fitsDataDouble::getMinMax(double& min1, double& max1,
 			       double& min2, double& max2) const {
   if (n == 0) {
@@ -474,6 +481,9 @@ void fitsDataDouble::getMinMax(double& min1, double& max1,
   }
 }
 
+/*!
+  \returns Mean values in each band.  NaN if no data read
+*/
 std::pair<double,double> fitsDataDouble::getMean() const {
   std::pair<double,double> retval;
   if (n == 0) {
@@ -491,8 +501,13 @@ std::pair<double,double> fitsDataDouble::getMean() const {
   return retval;
 }
 
+/*!
+  \returns Mean values in each band before subtraction.  NaN if no data read
+*/
 std::pair<double,double> fitsDataDouble::meanSubtract() {
   std::pair<double,double> mnval = getMean();
+  if (n == 0) return mnval;
+
   double cmn = mnval.first;
   for (unsigned int i = 0; i < n; ++i) data1[i] -= cmn;
   if (is_binned) bincent01 -= cmn;
@@ -504,6 +519,10 @@ std::pair<double,double> fitsDataDouble::meanSubtract() {
   return mnval;
 }
 
+/*!						
+  \param[in] NBINS1 Number of bins, band 1
+  \param[in] NBINS2 Number of bins, band 2
+*/
 void fitsDataDouble::applyBinning(unsigned int NBINS1, unsigned int NBINS2) {
   if (n == 0) return;
   if (NBINS1 == 0) throw affineExcept("fitsDataDouble","applyBinning",
@@ -562,18 +581,34 @@ void fitsDataDouble::removeBinning() {
   is_binned = false;
 }
 
+/*!
+  \returns Number of bins in each band.  Does not imply that binning
+  has been applied.
+*/
 std::pair<unsigned int, unsigned int> fitsDataDouble::getNBins() const {
-  return std::make_pair(nbins1,nbins2);
+  return std::make_pair(nbins1, nbins2);
 }
 
+/*!
+  \returns Center of bottom bin in each band.  Does not imply that binning
+  has been applied.
+*/
 std::pair<double,double> fitsDataDouble::getBinCent0() const {
-  return std::make_pair(bincent01,bincent02);
+  return std::make_pair(bincent01, bincent02);
 }
 
+/*!
+  \returns Size of bins in each band.  Does not imply that binning
+  has been applied.
+*/
 std::pair<double,double> fitsDataDouble::getBinDelta() const {
-  return std::make_pair(bindelta1,bindelta2);
+  return std::make_pair(bindelta1, bindelta2);
 }
 
+/*!
+  \param[in] comm MPI communicator
+  \param[in] dest Destination of messages
+*/
 void fitsDataDouble::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<unsigned int*>(&n), 1, MPI_UNSIGNED, dest,
 	   pofd_mcmc::FDDSENDN, comm);
@@ -603,6 +638,10 @@ void fitsDataDouble::sendSelf(MPI_Comm comm, int dest) const {
   }
 }
 
+/*!
+  \param[in] comm MPI communicator
+  \param[in] src Source of messages
+*/
 void fitsDataDouble::recieveCopy(MPI_Comm comm, int src) {
   unsigned int newn;
   MPI_Status Info;

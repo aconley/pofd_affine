@@ -589,7 +589,7 @@ void numberCountsKnotsSpline::writeToHDF5Handle(hid_t objid) const {
   status = H5Sclose(mems_id);
   
   // Other writes
-  numberCountsKnots::writeToHDF5(objid);
+  numberCountsKnots::writeToHDF5Handle(objid);
 }
 
 void numberCountsKnotsSpline::sendSelf(MPI_Comm comm, int dest) const {

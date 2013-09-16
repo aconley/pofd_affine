@@ -20,7 +20,7 @@ fitsData::fitsData() {
   \param[in] file  Name of data file
   \param[in] ignoremask Don't consider MASK information from files
   \param[in] meansub Do a mean subtraction
- */
+*/
 fitsData::fitsData(const std::string& file, bool ignoremask, bool meansub) {
   n = 0;
   data=NULL;
@@ -43,7 +43,7 @@ fitsData::~fitsData() {
 
   The mean subtraction is based on unmasked pixels.
   This will blow away any binning.
- */
+*/
 void fitsData::readData(const std::string& file,
 			bool ignore_mask, bool meansub) {
 
@@ -297,6 +297,9 @@ void fitsData::readData(const std::string& file,
   if (meansub) meanSubtract();
 }
 
+/*!
+  \returns Minimum value of data
+*/
 double fitsData::getMin() const {
   if (n == 0) return std::numeric_limits<double>::quiet_NaN();
   //There is a shortcut if we are binned, since bincent0
@@ -311,6 +314,9 @@ double fitsData::getMin() const {
   return minval;
 }
 
+/*!
+  \returns Maximum value of data
+*/
 double fitsData::getMax() const {
   if (n == 0) return std::numeric_limits<double>::quiet_NaN();
   //There is a shortcut if we are binned, since 
@@ -329,7 +335,7 @@ double fitsData::getMax() const {
 /*!
   \param[out] min Minimum flux
   \param[out] max Maximum flux
- */
+*/
 void fitsData::getMinMax(double& min, double& max) const {
   if (n == 0) {
     min = max = std::numeric_limits<double>::quiet_NaN();
@@ -351,6 +357,9 @@ void fitsData::getMinMax(double& min, double& max) const {
   }
 }
 
+/*!
+  \returns Mean value of data
+*/
 double fitsData::getMean() const {
   if (n == 0) return std::numeric_limits<double>::quiet_NaN();
   double mnval;
@@ -360,6 +369,9 @@ double fitsData::getMean() const {
   return mnval;
 }
 
+/*!
+  \returns Mean value of data before subtraction
+*/
 double fitsData::meanSubtract() {
   double mnval = getMean();
   for (unsigned int i = 0; i < n; ++i) data[i] -= mnval;
@@ -370,35 +382,38 @@ double fitsData::meanSubtract() {
   return mnval;
 }
 
+/*!
+  \param[in] NBINS Number of bins
+*/
 void fitsData::applyBinning(unsigned int NBINS) {
   if (n == 0) return;
-  if (NBINS == 0) throw affineExcept("fitsData","applyBinning",
-				     "Trying to bin with no bins",1);
+  if (NBINS == 0) throw affineExcept("fitsData", "applyBinning",
+				     "Trying to bin with no bins", 1);
   if (is_binned && NBINS==nbins) return;
   if (NBINS != nbins) {
     if (binval != NULL) fftw_free(binval);
-    binval = (unsigned int*) fftw_malloc( sizeof(unsigned int)*NBINS );
+    binval = (unsigned int*) fftw_malloc(sizeof(unsigned int) * NBINS);
     nbins = NBINS;
   }
   for (unsigned int i = 0; i < nbins; ++i) binval[i] = 0;
 
   //First, we need the minimum and maximum
   double minval, maxval;
-  getMinMax(minval,maxval);
+  getMinMax(minval, maxval);
 
   //We want to put the max and min in the center of the top and
   // bottom bin (not at the edges -- a somewhat arbitrary choice)
    bincent0 = minval;
    if (nbins == 1)
-     bindelta = 2*(maxval-minval);
+     bindelta = 2 * (maxval - minval);
    else
-     bindelta = (maxval-minval)/static_cast<double>(nbins-1);
+     bindelta = (maxval - minval) / static_cast<double>(nbins - 1);
 
    //And... bin
    double ibindelta = 1.0/bindelta;
    unsigned int idx;
    for (unsigned int i = 0; i < n; ++i) {
-     idx = static_cast<unsigned int>( (data[i]-bincent0)*ibindelta + 0.5 );
+     idx = static_cast<unsigned int>((data[i] - bincent0) * ibindelta + 0.5);
      binval[idx] += 1;
    }
    is_binned = true;
@@ -411,6 +426,10 @@ void fitsData::removeBinning() {
   is_binned = false;
 }
 
+/*!
+  \param[in] comm MPI communicator
+  \param[in] dest Destination for messages
+*/
 void fitsData::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<unsigned int*>(&n), 1, MPI_UNSIGNED, dest,
 	   pofd_mcmc::FDSENDN, comm);
@@ -432,6 +451,10 @@ void fitsData::sendSelf(MPI_Comm comm, int dest) const {
   }
 }
 
+/*!
+  \param[in] comm MPI communicator
+  \param[in] src Source of messages
+*/
 void fitsData::recieveCopy(MPI_Comm comm, int src) {
   unsigned int newn;
   MPI_Status Info;

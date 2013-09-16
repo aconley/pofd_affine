@@ -9,6 +9,9 @@
 const double calcLikeDoubleSingle::bad_like = 1e25;
 const double calcLikeDoubleSingle::flux_safety = 1.1;
 
+/*!
+  \param[in] NEDGE Number of edge values if doing edge integration
+*/
 calcLikeDoubleSingle::calcLikeDoubleSingle(unsigned int NEDGE) :
   data_read(false), ndatasets(0), data(NULL), maxflux1(0.0), maxflux2(0.0),
   pdfac(NEDGE), sigma_base1(NULL), sigma_base2(NULL), maxsigma_base1(0.0),
@@ -46,7 +49,9 @@ void calcLikeDoubleSingle::free() {
   bm.free();
 }
 
-
+/*!
+  \param[in] n New number of datasets
+*/
 void calcLikeDoubleSingle::resize(unsigned int n) {
   if (ndatasets == n) return;  //Don't have to do anything
 
@@ -187,6 +192,12 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
   data_read = true;
 }
 
+/*!
+  \param[in] fl1 FITS filename to read band 1 beam from
+  \param[in] fl2 FITS filename to read band 2 beam from
+  \param[in] histogram Use beam histogramming
+  \param[in] histogramlogstep Bin size (log) for beam histogramming
+*/
 void calcLikeDoubleSingle::readBeam(const std::string& fl1, 
 				    const std::string& fl2,
 				    bool histogram, 
@@ -197,7 +208,7 @@ void calcLikeDoubleSingle::readBeam(const std::string& fl1,
 
 /*!
   \param[in] nbins Number of bins
- */
+*/
 void calcLikeDoubleSingle::applyBinning(unsigned int nbins) {
   if ((!data_read) || ndatasets == 0) return;
   //Does nothing if the data is already binned at the same size
@@ -211,7 +222,10 @@ void calcLikeDoubleSingle::removeBinning() {
     data[i].removeBinning();
 }
 
-
+/*!
+  \param[in] lnorm Vector of likelihood normalization.  Must have
+    ndatasets number of elements.
+*/
 void calcLikeDoubleSingle::setLikeNorm(const std::vector<double>& lnorm) {
   unsigned int n = lnorm.size();
   if (n != ndatasets)
@@ -223,8 +237,12 @@ void calcLikeDoubleSingle::setLikeNorm(const std::vector<double>& lnorm) {
     like_norm[i] = lnorm[i];
 }
 
+/*!
+  \param[in] n Length of lnorm.  Must be equal to the number of datasets.
+  \param[in] lnorm Array of likelihood normalization. 
+*/
 void calcLikeDoubleSingle::setLikeNorm(unsigned int n, 
-			   const double* const lnorm) {
+				       const double* const lnorm) {
   if (n != ndatasets)
     throw affineExcept("calcLikeDoubleSingle", "setLikeNorm",
 		       "like_norm array not same size as number of data sets",
@@ -234,6 +252,10 @@ void calcLikeDoubleSingle::setLikeNorm(unsigned int n,
     like_norm[i] = lnorm[i];
 }
 
+/*!
+  \param[in] s Vector of instrument noise base values, band 1.  Must have
+    ndatasets number of elements.
+*/
 void calcLikeDoubleSingle::setSigmaBase1(const std::vector<double>& s) {
   unsigned int n = s.size();
   if (n != ndatasets)
@@ -260,6 +282,10 @@ void calcLikeDoubleSingle::setSigmaBase1(const std::vector<double>& s) {
   }
 }
 
+/*!
+  \param[in] s Vector of instrument noise base values, band 2.  Must have
+    ndatasets number of elements.
+*/
 void calcLikeDoubleSingle::setSigmaBase2(const std::vector<double>& s) {
   unsigned int n = s.size();
   if (n != ndatasets)
@@ -286,7 +312,10 @@ void calcLikeDoubleSingle::setSigmaBase2(const std::vector<double>& s) {
   }
 }
 
-
+/*!
+  \param[in] n Length of s.  Must be same as the number of datasets
+  \param[in] s Array of instrument noise base values, band 1
+*/
 void calcLikeDoubleSingle::setSigmaBase1(unsigned int n,const double* const s) {
   if (n != ndatasets)
     throw affineExcept("calcLikeDoubleSingle", "setSigmaBase1",
@@ -311,8 +340,10 @@ void calcLikeDoubleSingle::setSigmaBase1(unsigned int n,const double* const s) {
   }
 }
 
-
-
+/*!
+  \param[in] n Length of s.  Must be same as the number of datasets
+  \param[in] s Array of instrument noise base values, band 2
+*/
 void calcLikeDoubleSingle::setSigmaBase2(unsigned int n,const double* const s) {
   if (n != ndatasets)
     throw affineExcept("calcLikeDoubleSingle", "setSigmaBase2",
@@ -347,8 +378,7 @@ void calcLikeDoubleSingle::setSigmaBase2(unsigned int n,const double* const s) {
   \param[in] edgefix Apply edge fix to P(D) for wrapping
   \param[in] setedge Fill in edges of R with integral average
 
-  This is the guts of the operation, computing the P(D) and
-  finding the -log Likelihood
+  \returns Log likelihood of data relative to model
 
   Any auxilliary parameters (positions of knots, etc.) must already
   be set in model.  The last model parameter is the sigma multiplier,
@@ -407,12 +437,19 @@ calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
   return LogLike;
 }
 
+/*!
+  \param[inout] os Stream to write most recent P(D) to
+*/
 void calcLikeDoubleSingle::writePDToStream(std::ostream& os) const {
   PDDouble cpy(pd);
   cpy.deLog();
   os << cpy;
 }
 
+/*!
+  \param[in] comm MPI communicator
+  \param[in] dest Destination of messages
+*/
 void calcLikeDoubleSingle::sendSelf(MPI_Comm comm, int dest) const {
   //Data
   MPI_Send(const_cast<unsigned int*>(&ndatasets), 1, 
@@ -456,7 +493,10 @@ void calcLikeDoubleSingle::sendSelf(MPI_Comm comm, int dest) const {
   //Note we don't send verbose
 }
 
-
+/*!
+  \param[in] comm MPI communicator
+  \param[in] src Source of messages
+*/
 void calcLikeDoubleSingle::recieveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
   //Data
@@ -510,6 +550,14 @@ void calcLikeDoubleSingle::recieveCopy(MPI_Comm comm, int src) {
 
 /////////////////////////////////////////////////////////////////
 
+/*!
+  \param[in] FFTSIZE Size of FFT transformation (along each edge)
+  \param[in] NEDGE Number of elements for edge integration (if used)
+  \param[in] EDGEFIX Apply edge fix for aliasing effects
+  \param[in] EDGEINTEG Use integration to set edge values
+  \param[in] BINNED Apply binning to data sets
+  \param[in] NBINS Number of bins if binning data set
+*/
 calcLikeDouble::calcLikeDouble(unsigned int FFTSIZE, unsigned int NEDGE, 
 			       bool EDGEFIX, bool EDGEINTEG,
 			       bool BINNED, unsigned int NBINS) :
@@ -531,7 +579,7 @@ calcLikeDouble::~calcLikeDouble() {
 /*!
   This doesn't actually deallocate beamsets, just frees the internal
   data storage
- */
+*/
 void calcLikeDouble::freeData() {
   for (unsigned int i = 0; i < nbeamsets; ++i)
     beamsets[i].free();
@@ -539,17 +587,33 @@ void calcLikeDouble::freeData() {
 
 
 /*!
+  \param[in] filename Name of FFTW wisdom file
+
   Don't do this before reading in the data files, or it will be overwritten
- */
+*/
 void calcLikeDouble::addWisdom(const std::string& filename) {
   for (unsigned int i = 0; i < nbeamsets; ++i)
     beamsets[i].addWisdom(filename);
 }
 
 /*!
+  \param[in] datafiles1 Files to read data from, band 1
+  \param[in] datafiles2 Files to read data from, band 2
+  \param[in] beamfiles1 Files to read beams from, band 1
+  \param[in] beamfiles2 Files to read beams from, band 2
+  \param[in] sigmas1 Instrumental sigma, band 1
+  \param[in] sigmas2 Instrumental sigma, band 2
+  \param[in] like_norms Vector of likelihood normalizations
+  \param[in] IGNOREMASK Ignore any mask in data files
+  \param[in] MEANSUB Mean subtract the data
+  \param[in] HISTOGRAM Histogram the beams
+  \param[in] HISTOGRAMLOGSTEP Log beam step if binning
+  \param[in] EXPCONF1 Expected confusion noise value, band 1
+  \param[in] EXPCONF2 Expected confusion noise value, band 2
+
   Read in a set of data, grouping the inputs by beam and storing
   all of the relevant instrument noise and likelihood normalization values
- */
+*/
 void calcLikeDouble::
 readDataFromFiles(const std::vector<std::string>& datafiles1, 
 		  const std::vector<std::string>& datafiles2, 
@@ -685,6 +749,9 @@ void calcLikeDouble::unSetBinData() {
   bin_data = false;
 }
 
+/*!
+  \param[in] nbns New number of bins for data binning
+*/
 void calcLikeDouble::setNBins(unsigned int nbns) {
   if (nbns == nbins) return;
   
@@ -707,7 +774,7 @@ void calcLikeDouble::setNBins(unsigned int nbns) {
   \param[in] sg Sigma of CFIRB prior, band 1
   
   The prior is assumed Gaussian
- */
+*/
 void calcLikeDouble::setCFIRBPrior1(double mn, double sg) {
   has_cfirb_prior1   = true;
   cfirb_prior_mean1  = mn;
@@ -719,7 +786,7 @@ void calcLikeDouble::setCFIRBPrior1(double mn, double sg) {
   \param[in] sg Sigma of CFIRB prior, band 2
   
   The prior is assumed Gaussian
- */
+*/
 void calcLikeDouble::setCFIRBPrior2(double mn, double sg) {
   has_cfirb_prior2   = true;
   cfirb_prior_mean2  = mn;
@@ -728,11 +795,16 @@ void calcLikeDouble::setCFIRBPrior2(double mn, double sg) {
 
 /*!
   \param[in] ifile Object holding information from model initializaiton file
- */
+*/
 void calcLikeDouble::setPositions(const initFileDoubleLogNormal& ifile) {
   ifile.getModelPositions(model);
 }
 
+/*!
+  \param[in] p Parameters to evaluate likelihood for
+  \param[out] pars_invalid True if parameters were not valid, False otherwise
+  \returns Log likelihood of data relative to model, including priors
+*/
 double calcLikeDouble::getLogLike(const paramSet& p, bool& pars_invalid) const {
   const double half_log_2pi = 0.918938517570495605469;
 
@@ -792,7 +864,7 @@ double calcLikeDouble::getLogLike(const paramSet& p, bool& pars_invalid) const {
   \param[in] objid HDF5 handle to write information to.  Must already be
     open
 */
-void calcLike::writeToHDF5Handle(hid_t objid) const {
+void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   herr_t status;
 
   // Writes some meta information as a sub-group

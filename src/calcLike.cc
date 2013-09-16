@@ -161,15 +161,20 @@ readDataFromFiles(const std::vector<std::string>& datafiles,
   data_read = true;
 }
 
+/*!
+  \param[in] fl Name of FITS file to read beam from
+  \param[in] histogram Apply beam histogramming
+  \param[in] histogramlogstep Step size for logarithmic binning of beam
+*/
 void calcLikeSingle::readBeam(const std::string& fl, bool histogram, 
 			      double histogramlogstep) {
-  bm.readFile(fl,histogram,histogramlogstep);
+  bm.readFile(fl, histogram, histogramlogstep);
   has_beam = true;
 }
 
 /*!
   \param[in] nbins Number of bins
- */
+*/
 void calcLikeSingle::applyBinning(unsigned int nbins) {
   if ((!data_read) || ndatasets == 0) return;
   //Does nothing if the data is already binned at the same size
@@ -335,7 +340,7 @@ calcLikeSingle::getLogLike(const numberCounts& model, bool& pars_invalid,
 }
 
 /*!
-  \param[inout] os Stream to write to
+  \param[inout] os Stream to write current P(D) to
 */
 void calcLikeSingle::writePDToStream(std::ostream& os) const {
   PD cpy(pd);
@@ -456,17 +461,17 @@ calcLike::~calcLike() {
 /*!
   This doesn't actually deallocate beamsets, just frees the internal
   data storage
- */
+*/
 void calcLike::freeData() {
   for (unsigned int i = 0; i < nbeamsets; ++i)
     beamsets[i].free();
 }
 
 /*!
-  \param[in] filename Name of wisdom file
+  \param[in] filename Name of FFTW wisdom file
 
   Don't do this before reading in the data files, or it will be overwritten
- */
+*/
 void calcLike::addWisdom(const std::string& filename) {
   for (unsigned int i = 0; i < nbeamsets; ++i)
     beamsets[i].addWisdom(filename);
@@ -485,7 +490,7 @@ void calcLike::addWisdom(const std::string& filename) {
 
   Read in a set of data, grouping the inputs by beam and storing
   all of the relevant instrument noise and likelihood normalization values
- */
+*/
 void calcLike::readDataFromFiles(const std::vector<std::string>& datafiles, 
 				 const std::vector<std::string>& beamfiles,
 				 const std::vector<double>& sigmas,
@@ -560,7 +565,7 @@ void calcLike::readDataFromFiles(const std::vector<std::string>& datafiles,
 
 /*! 
   \param[in] nint New interpolation length
- */
+*/
 void calcLike::setNInterp(unsigned int nint) {
   if (nint == ninterp) return;
   if (beamsets != NULL)

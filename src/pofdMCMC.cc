@@ -329,6 +329,6 @@ double pofdMCMC::getLogLike(const paramSet& p, bool& pars_invalid) {
 void pofdMCMC::writeToHDF5Handle(hid_t objid) const {
   // Do default stuff plus add knot positions, priors, etc.
 
-  affineEnsemble::writeToHDF5(objid);
-  likeSet.writeToHDF5(objid);
+  affineEnsemble::writeToHDF5Handle(objid);
+  likeSet.writeToHDF5Handle(objid);
 }  
