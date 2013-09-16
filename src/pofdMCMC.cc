@@ -65,7 +65,7 @@ bool pofdMCMC::initChainsMaster() {
 
   //Number of parameters is number of knots + 1 for the
   // sigma -- although that may be fixed
-  unsigned int npar = nknots+1;
+  unsigned int npar = nknots + 1;
   this->setNParams(npar);
 
   //Set up parameter names
@@ -176,6 +176,8 @@ bool pofdMCMC::initChainsMaster() {
     std::cout << "Setting up initial parameters" << std::endl;
   paramSet p(npar); //Generated parameter
   ifile.getParams(p); //Get central values from initialization file
+  has_initStep = true; //Store initial position
+  initStep = p;
   generateInitialPosition(p);
 
   is_init = true;

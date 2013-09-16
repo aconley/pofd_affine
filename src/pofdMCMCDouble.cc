@@ -203,6 +203,8 @@ bool pofdMCMCDouble::initChainsMaster() {
     std::cout << "Setting up initial parameters" << std::endl;
   paramSet p(npar); //Generated parameter
   ifile.getParams(p); //Get central values from initialization file
+  has_initStep = true; //Store initial position
+  initStep = p;
   generateInitialPosition(p);
 
   is_init = true;
