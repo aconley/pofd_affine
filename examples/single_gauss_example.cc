@@ -269,7 +269,7 @@ int main(int argc, char** argv) {
     std::cerr << ex << std::endl;
     int jnk;
     if (rank == 0)
-      for (unsigned int i = 1; i < nproc; ++i)
+      for (int i = 1; i < nproc; ++i)
 	MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
     MPI_Finalize();
     return 1;
