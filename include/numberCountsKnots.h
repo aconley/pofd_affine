@@ -83,7 +83,7 @@ std::ostream& operator<<(std::ostream& os, const numberCountsKnots& b);
   \brief A class to read in model specifications from init files, 1D case
 
   \ingroup Models
- */
+*/
 class initFileKnots {
  private:
   //These are all c arrays rather than vectors for ease of compatability

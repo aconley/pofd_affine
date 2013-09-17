@@ -16,6 +16,9 @@ numberCountsKnotsSpline::numberCountsKnotsSpline() : numberCountsKnots() {
   varr = new void*[5];
 }
 
+/*!
+  \param[in] NKNOTS Number of knots
+*/
 numberCountsKnotsSpline::numberCountsKnotsSpline(unsigned int NKNOTS) :
   numberCountsKnots(NKNOTS) {
   if (NKNOTS > 0) logknots = new double[NKNOTS]; else logknots = NULL;
@@ -30,6 +33,9 @@ numberCountsKnotsSpline::numberCountsKnotsSpline(unsigned int NKNOTS) :
   varr = new void*[5];
 }
 
+/*!
+  \param[in] v Vector of knot positions
+*/
 numberCountsKnotsSpline::numberCountsKnotsSpline(const std::vector<float>& v):
   numberCountsKnots(v) {
   if (nknots > 0) {
@@ -47,6 +53,9 @@ numberCountsKnotsSpline::numberCountsKnotsSpline(const std::vector<float>& v):
   varr = new void*[5];
 }
 
+/*!
+  \param[in] v Vector of knot positions
+*/
 numberCountsKnotsSpline::numberCountsKnotsSpline(const std::vector<double>& v):
   numberCountsKnots(v) {
   if (nknots > 0) {
@@ -64,6 +73,10 @@ numberCountsKnotsSpline::numberCountsKnotsSpline(const std::vector<double>& v):
   varr = new void*[5];
 }
 
+/*!
+  \param[in] n Number of knots
+  \param[in] S Array of knot positions.  Must be at least length n.
+*/
 numberCountsKnotsSpline::numberCountsKnotsSpline(unsigned int n, 
 						 const float* const S) :
   numberCountsKnots(n, S) {
@@ -79,6 +92,10 @@ numberCountsKnotsSpline::numberCountsKnotsSpline(unsigned int n,
   varr = new void*[5];
 }
 
+/*!
+  \param[in] n Number of knots
+  \param[in] S Array of knot positions.  Must be at least length n.
+*/
 numberCountsKnotsSpline::numberCountsKnotsSpline(unsigned int n, 
 						 const double* const S) :
   numberCountsKnots(n, S) {
@@ -94,6 +111,9 @@ numberCountsKnotsSpline::numberCountsKnotsSpline(unsigned int n,
   varr = new void*[5];
 }
 
+/*!
+  \param[in] other numberCountsKnotsSpline to copy
+*/
 numberCountsKnotsSpline::
 numberCountsKnotsSpline(const numberCountsKnotsSpline& other){
   if (this == &other) return; //Self-copy
@@ -125,6 +145,12 @@ numberCountsKnotsSpline::~numberCountsKnotsSpline() {
   delete[] varr;
 }
 
+/*!
+  \param[in] n New number of knots
+
+  Does nothing if same as the current number.  Otherwise contents
+  are destroyed.
+*/
 void numberCountsKnotsSpline::setNKnots(unsigned int n) {
   if (nknots == n) return;
   if (knots != NULL) delete[] knots;
@@ -148,6 +174,10 @@ void numberCountsKnotsSpline::setNKnots(unsigned int n) {
   knotvals_loaded = false;
 }
 
+/*!
+  \param[in] other numberCountsKnotsSpline instance to copy
+  \returns Reference to this object
+*/
 numberCountsKnotsSpline& 
 numberCountsKnotsSpline::operator=(const numberCountsKnotsSpline& other) {
   if (this == &other) return *this; //Self-copy
@@ -178,18 +208,34 @@ numberCountsKnotsSpline::operator=(const numberCountsKnotsSpline& other) {
   return *this;
 }
  
+/*!
+  \param[in] vec Vector of knot positions.  
+
+  This will change the number of knots if needed.
+*/
 void numberCountsKnotsSpline::setKnotPositions(const std::vector<float>& vec) {
   numberCountsKnots::setKnotPositions(vec);
   for (unsigned int i = 0; i < nknots; ++i)
     logknots[i] = log2(knots[i]);
 }
 
+/*!
+  \param[in] vec Vector of knot positions.  
+
+  This will change the number of knots if needed.
+*/
 void numberCountsKnotsSpline::setKnotPositions(const std::vector<double>& vec) {
   numberCountsKnots::setKnotPositions(vec);
   for (unsigned int i = 0; i < nknots; ++i)
     logknots[i] = log2(knots[i]);
 }
 
+/*!
+  \param[in] n Number of elements in vals
+  \param[in] vals Array of knot positions.  
+
+  This will change the number of knots if needed.
+*/
 void numberCountsKnotsSpline::setKnotPositions(unsigned int n, 
 					       const float* const vals) {
   numberCountsKnots::setKnotPositions(n, vals);
@@ -197,6 +243,12 @@ void numberCountsKnotsSpline::setKnotPositions(unsigned int n,
     logknots[i] = log2(knots[i]);
 }
 
+/*!
+  \param[in] n Number of elements in vals
+  \param[in] vals Array of knot positions.  
+
+  This will change the number of knots if needed.
+*/
 void numberCountsKnotsSpline::setKnotPositions(unsigned int n, 
 					       const double* const vals) {
   numberCountsKnots::setKnotPositions(n, vals);
@@ -208,7 +260,7 @@ void numberCountsKnotsSpline::setKnotPositions(unsigned int n,
 /*!
   \param[in] F Parameters.  Will ignore any after
                     the first nknots
- */
+*/
 void numberCountsKnotsSpline::setParams(const paramSet& F) {
   if (nknots > F.getNParams())
     throw affineExcept("numberCountsKnotsSpline", "setKnots",
@@ -222,25 +274,28 @@ void numberCountsKnotsSpline::setParams(const paramSet& F) {
 
 
 /*!
-  Note that this has some overhead, so within inner computation loops
-  shouldn't be called directly.
- */
-double numberCountsKnotsSpline::getNumberCounts(double value) const {
+  \param[in] fdens Flux density to evaluate number counts at
+  \returns Number counts evaluated at fdens, or NaN if model is
+    not valid
+  
+  Does input validity checks.
+*/
+double numberCountsKnotsSpline::getNumberCounts(double fdens) const {
   if (nknots < 2) return std::numeric_limits<double>::quiet_NaN();
   if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
-  if (value < knots[0] || value >= knots[nknots-1]) return 0.0; //Out of range
-  return exp2(gsl_spline_eval(splinelog, log2(value), acc)); 
+  if (fdens < knots[0] || fdens >= knots[nknots-1]) return 0.0; //Out of range
+  return exp2(gsl_spline_eval(splinelog, log2(fdens), acc)); 
 }
 
 /*!
+  \param[in] alpha  Power of flux
+  \returns Integral over number counts
+
   Computes
   \f[
    \int dS\, S^{\alpha} \frac{dN}{dS}
   \f]
-
-  \param[in] alpha  Power of flux
-  \returns Integral
- */
+*/
 double numberCountsKnotsSpline::splineInt(double alpha) const {
   if (nknots < 2) return std::numeric_limits<double>::quiet_NaN();
   if (! isValid()) return std::numeric_limits<double>::quiet_NaN();
@@ -265,14 +320,23 @@ double numberCountsKnotsSpline::splineInt(double alpha) const {
   return result;
 }
 
+/*!
+  \returns Number of sources per unit area
+*/
 double numberCountsKnotsSpline::getNS() const {
   return splineInt(0);
 }
 
+/*!
+  \returns Total flux density per unit area
+*/
 double numberCountsKnotsSpline::getFluxPerArea() const {
   return splineInt(1);
 }
 
+/*!
+  \returns Total flux density squared per unit area
+*/
 double numberCountsKnotsSpline::getFluxSqPerArea() const {
   return splineInt(2);
 }
@@ -283,7 +347,7 @@ double numberCountsKnotsSpline::getFluxSqPerArea() const {
   \params[in] params Parameters
   \params[in] beam Beam
   \returns R(fluxdensity) for the positive beam
- */
+*/
 double numberCountsKnotsSpline::getRPos(double fluxdensity,
 					const beam& bm) const {
 
@@ -329,11 +393,11 @@ double numberCountsKnotsSpline::getRPos(double fluxdensity,
   \param[in] n Number of elements to get R for (length of flux)
   \param[in] flux Fluxes to get R for
   \param[in] bm   Beam
-  \param[in,out] R Values of R from the positive beam are added onto this 
+  \param[inout] R Values of R from the positive beam are added onto this 
                  (len n)
 
   Note you need to zero your input array first if you just want R+
- */
+*/
 void numberCountsKnotsSpline::getRPos(unsigned int n, const double* const flux,
 				      const beam& bm, double* R) const {
   if (n == 0) return;
@@ -398,7 +462,7 @@ void numberCountsKnotsSpline::getRPos(unsigned int n, const double* const flux,
   \params[in] params Parameters
   \params[in] bm Beam
   \returns R(fluxdensity) for the negative beam
- */
+*/
 double numberCountsKnotsSpline::getRNeg(double fluxdensity,
 					const beam& bm) const {
 
@@ -445,7 +509,7 @@ double numberCountsKnotsSpline::getRNeg(double fluxdensity,
   \param[in] bm   Beam
   \param[in,out] R Values of R from the negative beam are added onto this 
           (len n)
- */
+*/
 void numberCountsKnotsSpline::getRNeg(unsigned int n,const double* const flux,
 				      const beam& bm,double* R) const {
   if (n == 0) return;
@@ -509,7 +573,7 @@ void numberCountsKnotsSpline::getRNeg(unsigned int n,const double* const flux,
   \param[in] bm Beam
   \param[in] rt Controls whether one gets the positive, negative, or sum
        of both
-  \returns R(fluxdensity)
+  \returns R evaluated at fluxdensity
 */
 double numberCountsKnotsSpline::getR(double fluxdensity,const beam& bm,
 				     rtype rt) const {
@@ -542,7 +606,7 @@ double numberCountsKnotsSpline::getR(double fluxdensity,const beam& bm,
   \param[in,out] R Values of R from the negative beam are added onto 
                  this (len n)
   \param[in] rt Type of R desired (pos, neg, sum of both)
- */
+*/
 void numberCountsKnotsSpline::getR(unsigned int n,const double* const flux,
 				   const beam& bm,double* R, rtype rt) const {
   if (n == 0) return;
@@ -576,6 +640,10 @@ void numberCountsKnotsSpline::writeToHDF5Handle(hid_t objid) const {
   hsize_t adims;
   hid_t mems_id, att_id;
 
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("numberCountsKnotsSpline", "writeToHDF5Handle",
+		       "Input handle is not valid", 1);
+
   // Name of model
   const char modeltype[] = "numberCountsKnots";
   hid_t datatype = H5Tcopy(H5T_C_S1);
@@ -592,6 +660,10 @@ void numberCountsKnotsSpline::writeToHDF5Handle(hid_t objid) const {
   numberCountsKnots::writeToHDF5Handle(objid);
 }
 
+/*!
+  \param[in] comm Communicator
+  \param[in] dest Destination of messages
+*/
 void numberCountsKnotsSpline::sendSelf(MPI_Comm comm, int dest) const {
   numberCountsKnots::sendSelf(comm, dest);
   if (nknots > 0)
@@ -599,6 +671,10 @@ void numberCountsKnotsSpline::sendSelf(MPI_Comm comm, int dest) const {
 	     pofd_mcmc::NCKSSENDLOGKNOTS, comm);
 }
 
+/*!
+  \param[in] comm Communicator
+  \param[in] src Source of messages
+*/
 void numberCountsKnotsSpline::recieveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
   unsigned int oldnknots = nknots;
@@ -621,6 +697,11 @@ void numberCountsKnotsSpline::recieveCopy(MPI_Comm comm, int src) {
   }
 }
 
+/*!
+  \param[in] x Flux density to evaluate at
+  \param[in] params Array containing information about spline
+  \returns x^power times the number counts evaluated at x
+*/
 static double evalPowfNKnotsSpline(double x, void* params) {
   //Params are:
   // parmas[0] power
@@ -644,6 +725,6 @@ static double evalPowfNKnotsSpline(double x, void* params) {
   if (fabs(power) < 1e-2) return splval;
   if (fabs(power-1.0) < 1e-2) return x*splval;
   if (fabs(power-2.0) < 1e-2) return x*x*splval;
-  return pow(x,power)*splval;
+  return pow(x, power) * splval;
 
 }

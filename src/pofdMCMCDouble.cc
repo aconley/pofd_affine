@@ -374,6 +374,10 @@ double pofdMCMCDouble::getLogLike(const paramSet& p, bool& pars_invalid) {
 void pofdMCMCDouble::writeToHDF5Handle(hid_t objid) const {
   // Do default stuff plus add knot positions, priors, etc.
 
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("pofdMCMC", "writeToHDF5Handle",
+		       "Input handle is not valid", 1);
+
   affineEnsemble::writeToHDF5Handle(objid);
   likeSet.writeToHDF5Handle(objid);
 }  

@@ -517,7 +517,6 @@ bool PDFactory::initPD(unsigned int n, double sigma,
   
   //Now that we have R, use it to compute the mean and variance
   // (stored in mn and var_noi)
-  std::cerr << "Computing mean and var" << std::endl;
   getMeanVarFromR();
 
   //Now, compute the sigma for the maximum instrumental sigma

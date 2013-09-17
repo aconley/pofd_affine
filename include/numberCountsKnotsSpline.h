@@ -17,7 +17,7 @@
   the knots
 
   \ingroup Models
- */
+*/
 class numberCountsKnotsSpline : public numberCountsKnots {
  private :
   double *logknots; //!< Log2 of knot positions

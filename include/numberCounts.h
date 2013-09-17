@@ -12,9 +12,9 @@
 #include "../include/paramSet.h"
 
 /*!
-  \brief Galaxy counts model abstract base class, 2D case
+  \brief Number counts model abstract base class, 2D case
 
-  It is up to each subclass to interpret paramSet
+  It is up to each subclass to interpret the values in paramSet
 
   \ingroup Models
 */
@@ -25,8 +25,8 @@ class numberCounts {
   /*! \brief For user to request what R they want */
   enum rtype { BEAMPOS=1, BEAMNEG=2, BEAMBOTH=3 }; 
   
-  numberCounts() {};
-  virtual ~numberCounts() {};
+  numberCounts() {}; //!< Constructor
+  virtual ~numberCounts() {}; //!< Destructor
 
   virtual void setParams(const paramSet& params)=0; //!< Set parameters  
   virtual bool isValid() const = 0; //!< See if model params are valid

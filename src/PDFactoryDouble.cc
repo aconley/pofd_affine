@@ -647,7 +647,7 @@ void PDFactoryDouble::computeR(double maxflux1, double maxflux2,
   Note that n is the transform size; the output array will generally
   be smaller because of padding.  Furthermore, because of mean shifting,
   the maximum flux often won't quite match the target values.
- */
+*/
 bool PDFactoryDouble::initPD(unsigned int n, double sigma1,
 			     double sigma2, double maxflux1, 
 			     double maxflux2, 
@@ -1156,6 +1156,10 @@ void PDFactoryDouble::getPD( double sigma1, double sigma2,
 #endif
 }
  
+/*!
+  \param[in] comm Communicator
+  \param[in] dest Destination of messages
+*/
 void PDFactoryDouble::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<unsigned int*>(&fftw_plan_style), 1, MPI_UNSIGNED,
 	   dest, pofd_mcmc::PDFDSENDPLANSTYLE, comm);
@@ -1176,7 +1180,12 @@ void PDFactoryDouble::sendSelf(MPI_Comm comm, int dest) const {
 	   pofd_mcmc::PDFDNEDGE, comm);
 }
 
-//Note this doesn't copy over interal variables
+/*!
+  \param[in] comm Communicator
+  \param[in] src Source of messages
+
+  Doesn't copy over interal variables
+*/
 void PDFactoryDouble::recieveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
   MPI_Recv(&fftw_plan_style, 1, MPI_UNSIGNED, src, 

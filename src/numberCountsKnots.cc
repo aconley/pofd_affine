@@ -112,7 +112,7 @@ numberCountsKnots::~numberCountsKnots() {
 
   If number of knots does not change, then previous contents are
   preserved.  Otherwise, they are cleared.
- */
+*/
 void numberCountsKnots::setNKnots(unsigned int n) {
   if (nknots == n) return;
   if (knots != NULL) delete[] knots;
@@ -337,6 +337,10 @@ void numberCountsKnots::writeToHDF5Handle(hid_t objid) const {
   hsize_t adims;
   hid_t mems_id, att_id;
 
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("numberCountsKnots", "writeToHDF5Handle",
+		       "Input handle is not valid", 1);
+
   // Number of knots
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, NULL);
@@ -373,6 +377,10 @@ bool numberCountsKnots::writeToStream(std::ostream& os) const {
   return true;
 }
 
+/*!
+  \param[inout] os Stream to write to
+  \param[in] b Model to write
+*/
 std::ostream& operator<<(std::ostream& os, const numberCountsKnots& b) {
   b.writeToStream(os);
   return os;
@@ -431,7 +439,7 @@ initFileKnots::~initFileKnots() {
   lowlim and uplim may be present, and are looked for if read_limits is set.
     range must also be present, and the first element found is lowlim.
     If another is also found, it is interpreted as uplim
- */
+*/
 void initFileKnots::readFile(const std::string& flname, 
 			     bool read_range, bool read_limits) {
   if (read_limits) read_range = true;
@@ -555,6 +563,9 @@ void initFileKnots::readFile(const std::string& flname,
 
 }
 
+/*!
+  Throws an exception if they aren't valid
+*/
 void initFileKnots::checkLimitsDontCross() const {
   if (nknots == 0) return;
   if (!(has_lower_limits && has_upper_limits)) return; //Nothing to check
@@ -580,6 +591,9 @@ void initFileKnots::checkLimitsDontCross() const {
   }
 }
 
+/*!
+  Throws an exception if any parameter range is not valid
+*/
 void initFileKnots::checkRange() const {
   //Make sure that if range is 0 then the mean value falls within
   // the range of any limits
@@ -623,7 +637,7 @@ std::pair<double,double> initFileKnots::getKnot(unsigned int idx) const {
 
 /*
   \param[out] kp Set to knot positions on output
- */
+*/
 void initFileKnots::getKnotPos(std::vector<double>& kp) const {
   if (nknots == 0)
     throw affineExcept("initFileKnots","getKnotPos",
@@ -652,7 +666,7 @@ double initFileKnots::getKnotPos(unsigned int idx) const {
 
   This will change the number of knots in the model if they
   don't match.
- */
+*/
 void initFileKnots::getKnotPos(numberCountsKnots& model) const {
   if (nknots == 0)
     throw affineExcept("initFileKnots","getKnotPos",
@@ -662,7 +676,7 @@ void initFileKnots::getKnotPos(numberCountsKnots& model) const {
 
 /*
   \param[out] kp Set to knot positions on output
- */
+*/
 void initFileKnots::getKnotVals(std::vector<double>& kv) const {
   if (nknots == 0)
     throw affineExcept("initFileKnots","getKnotVals",
@@ -728,7 +742,7 @@ void initFileKnots::generateRandomKnotValues(ran& rangen,
   This only fills the first nknots parameters.  This version
   allows the caller to use different central values than the ones
   from the initial file, but keep the ranges, limits, etc.
- */
+*/
 void initFileKnots::generateRandomKnotValues(ran& rangen, paramSet& pnew, 
 					     const paramSet& pcen) const {
   const unsigned int maxiters = 1000; //Maximum number of generation attempts
@@ -912,7 +926,7 @@ double initFileKnots::getKnotRange(unsigned int idx) const {
 /*
   \param[in] idx Knot index
   \returns True if knot is fixed, otherwise false
- */
+*/
 bool initFileKnots::isKnotFixed(unsigned int idx) const {
   if (idx >= nknots)
     throw affineExcept("initFileKnots", "isKnotFixed",

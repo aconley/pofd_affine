@@ -185,9 +185,9 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   void setOffsetPositions(unsigned int, const double* const);
 
   //Get individual positions
-  double getKnotPosition(unsigned int i) const; //!< Get knot position (unchecked)
-  double getSigmaPosition(unsigned int i) const; //!< Get knot position (unchecked)
-  double getOffsetPosition(unsigned int i) const; //!< Get knot position (unchecked)
+  double getKnotPosition(unsigned int i) const; //!< Get band 1 model knot position (unchecked)
+  double getSigmaPosition(unsigned int i) const; //!< Get sigma knot position (unchecked)
+  double getOffsetPosition(unsigned int i) const; //!< Get offset knot position (unchecked)
 
   /*! \brief Gets total number of parameters */
   unsigned int getNParams() const { return nknots+nsigmaknots+noffsetknots; }

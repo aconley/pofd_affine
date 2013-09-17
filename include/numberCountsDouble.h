@@ -12,9 +12,9 @@
 #include "../include/paramSet.h"
 
 /*!
-  \brief Galaxy counts model abstract base class, 2D case
+  \brief Number counts model abstract base class, 2D case
 
-  It is up to each subclass to interpret paramSet
+  It is up to each subclass to interpret the values in paramSet
 
   \ingroup Models
 */

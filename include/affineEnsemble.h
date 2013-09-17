@@ -83,7 +83,7 @@ protected:
   unsigned int verbosity; //!< Verbosity level
 
 public:
-  /* \brief Constructor */
+  /*! \brief Constructor */
   affineEnsemble(unsigned int, unsigned int, unsigned int,
 		 unsigned int=0, double=2.0, unsigned int=50, 
 		 bool=false, float=5, float=2);
@@ -138,9 +138,9 @@ public:
   bool hasOneStepBeenAccepted() const; //!< Has at least one step been accepted
   void getAcceptanceFrac(std::vector<float>&) const; //!< Returns acceptance fraction for each walker
 
-  float getParamMean(unsigned int) const;
+  float getParamMean(unsigned int) const; //!< Get parameter mean
   void getParamStats(unsigned int, float&, float&, float&,
-		     float&, float=0.683) const;
+		     float&, float=0.683) const; //!< Get parameter statistics
   virtual void printStatistics(float=0.683, std::ostream& = std::cout) const; //!< Output statistics for run
 
   //User must subclass these for their use.

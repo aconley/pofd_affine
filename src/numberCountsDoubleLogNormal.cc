@@ -1753,6 +1753,10 @@ void numberCountsDoubleLogNormal::writeToHDF5Handle(hid_t objid) const {
   hsize_t adims;
   hid_t mems_id, att_id;
 
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("numberCountsDoubleLogNormal", "writeToHDF5Handle",
+		       "Input handle is not valid", 1);
+
   // Name of model
   const char modeltype[] = "numberCountsDoubleLogNormal";
   hid_t datatype = H5Tcopy(H5T_C_S1);
