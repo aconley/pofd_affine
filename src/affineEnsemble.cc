@@ -1435,6 +1435,10 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "writeToHDF5Handle",
 		       "Should only be called from master node", 1);  
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("affineEnsemble", "writeToHDF5Handle",
+		       "Input handle is not valid", 2);
+
   herr_t status;
 
   // Write some attributes
@@ -1576,6 +1580,12 @@ void affineEnsemble::writeToHDF5(const std::string& filename) const {
   // Create
   file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
 		      H5P_DEFAULT);
+
+  if (H5Iget_ref(file_id) < 0) {
+    status = H5Fclose(file_id);
+    throw affineExcept("affineEnsemble", "writeToHDF5",
+		       "Failed to open HDF5 file to write", 2);
+  }
 
   //Write
   writeToHDF5Handle(file_id);
