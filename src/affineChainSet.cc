@@ -1283,8 +1283,15 @@ void affineChainSet::writeToHDF5(const std::string& filename) const {
   herr_t status;
   file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
 		      H5P_DEFAULT);
+
+  if (H5Iget_ref(file_id) < 0) {
+    status = H5Fclose(file_id);
+    throw affineExcept("affineChainSet", "writeToHDF5",
+		       "Failed to open HDF5 file to write", 1);
+  }
+
   // Write
-  writeToHDF5(file_id);
+  writeToHDF5Handle(file_id);
 
   // All done
   status = H5Fclose(file_id);
@@ -1292,13 +1299,13 @@ void affineChainSet::writeToHDF5(const std::string& filename) const {
 
 
 /*!
-  \param[in] objid HDF5 group to write to
+  \param[in] objid HDF5 handle to write to
 
   Only works if all walkers have the same number of steps.
   objid can be either a file id or a group id.  If it's a file id,
   everything is written to the root of that file.
 */
-void affineChainSet::writeToHDF5(hid_t objid) const {
+void affineChainSet::writeToHDF5Handle(hid_t objid) const {
   if (steps.size() == 0) return;
 
   // Make sure all the walkers have the same number of iterations
@@ -1314,6 +1321,10 @@ void affineChainSet::writeToHDF5(hid_t objid) const {
 			 errstr.str(), 1);
     }
   }
+
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("affineChainSet", "writeToHDF5Handle",
+		       "Input handle is not valid", 2);
 
   // Two datasets to write -- the steps (nwalkers * nsteps * nparams)
   //  and the likelihoods (nwalkers * nsteps).  

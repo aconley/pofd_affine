@@ -172,7 +172,7 @@ class affineChainSet {
 
   void writeToFile(const std::string&) const throw (affineExcept); //!< Write to file
 
-  void writeToHDF5(hid_t) const; //!< Write to HDF5 file
+  void writeToHDF5Handle(hid_t) const; //!< Write to HDF5 handle
   void writeToHDF5(const std::string&) const; //!< Write to HDF5 file
 };
 

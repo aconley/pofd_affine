@@ -871,11 +871,20 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   hsize_t adims;
   hid_t mems_id, att_id;
 
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("calcLikeDouble", "writeToHDF5",
+		       "Input handle is not valid", 1);
+
   hid_t groupid;
   groupid = H5Gcreate(objid, "LikelihoodParams", H5P_DEFAULT, H5P_DEFAULT, 
 		    H5P_DEFAULT);
 
+  if (H5Iget_ref(groupid) < 0)
+    throw affineExcept("calcLikeDouble", "writeToHDF5",
+		       "Failed to create HDF5 group", 2);
+
   // FFTSIZE
+  adims = 1;
   mems_id = H5Screate_simple(1, &adims, NULL);
   att_id = H5Acreate2(groupid, "fftsize", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
@@ -889,15 +898,18 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   status = H5Aclose(att_id);
 
   // Edge integrate
+  hbool_t bl;
   att_id = H5Acreate2(groupid, "edge_integrate", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_HBOOL, &edgeInteg);
+  bl = static_cast<hbool_t>(edgeInteg);
+  status = H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
   status = H5Aclose(att_id);
 
   // Edge Fix
   att_id = H5Acreate2(groupid, "edge_fix", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_HBOOL, &edgeFix);
+  bl = static_cast<hbool_t>(edgeFix);
+  status = H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
   status = H5Aclose(att_id);
 
   // NBEAMSETS
@@ -909,7 +921,8 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   // DATA BINNING
   att_id = H5Acreate2(groupid, "bin_data", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_HBOOL, &bin_data);
+  bl = static_cast<hbool_t>(bin_data);
+  status = H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
   status = H5Aclose(att_id);
   if (bin_data) {
     att_id = H5Acreate2(groupid, "ndatabins", H5T_NATIVE_UINT,
@@ -919,9 +932,10 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   }
 
   // CFIRB PRIOR1
-  att_id = H5Acreate2(groupid, "has_cfirb_prior1", H5T_NATIVE_DOUBLE,
+  att_id = H5Acreate2(groupid, "has_cfirb_prior1", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, &has_cfirb_prior1);
+  bl = static_cast<hbool_t>(has_cfirb_prior1);
+  status = H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
   status = H5Aclose(att_id);
   if (has_cfirb_prior1) {
     att_id = H5Acreate2(groupid, "cfirb_prior_mean1", H5T_NATIVE_DOUBLE,
@@ -935,9 +949,10 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   }
 
   // CFIRB PRIOR2
-  att_id = H5Acreate2(groupid, "has_cfirb_prior2", H5T_NATIVE_DOUBLE,
+  att_id = H5Acreate2(groupid, "has_cfirb_prior2", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, &has_cfirb_prior2);
+  bl = static_cast<hbool_t>(has_cfirb_prior2);
+  status = H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
   status = H5Aclose(att_id);
   if (has_cfirb_prior2) {
     att_id = H5Acreate2(groupid, "cfirb_prior_mean2", H5T_NATIVE_DOUBLE,
@@ -951,9 +966,10 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   }
 
   // SIGMA PRIOR1
-  att_id = H5Acreate2(groupid, "has_sigma_prior1", H5T_NATIVE_DOUBLE,
+  att_id = H5Acreate2(groupid, "has_sigma_prior1", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, &has_sigma_prior1);
+  bl = static_cast<hbool_t>(has_sigma_prior1);
+  status = H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
   status = H5Aclose(att_id);
   if (has_sigma_prior1) {
     att_id = H5Acreate2(groupid, "sigma_prior_width1", H5T_NATIVE_DOUBLE,
@@ -963,9 +979,10 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   }
 
   // SIGMA PRIOR2
-  att_id = H5Acreate2(groupid, "has_sigma_prior2", H5T_NATIVE_DOUBLE,
+  att_id = H5Acreate2(groupid, "has_sigma_prior2", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, &has_sigma_prior2);
+  bl = static_cast<hbool_t>(has_sigma_prior2);
+  status = H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
   status = H5Aclose(att_id);
   if (has_sigma_prior1) {
     att_id = H5Acreate2(groupid, "sigma_prior_width2", H5T_NATIVE_DOUBLE,
