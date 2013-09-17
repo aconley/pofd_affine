@@ -243,7 +243,7 @@ bool affineEnsemble::isParamFixed(unsigned int idx) const {
 }
 
 /*!
-  \param[idx] idx Index of parameter to ignore in autocorrelation computation
+  \param[in] idx Index of parameter to ignore in autocorrelation computation
 */
 void affineEnsemble::ignoreParamAcor(unsigned int idx) {
   if (rank != 0) return;

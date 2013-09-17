@@ -12,7 +12,9 @@
 // the gcc version!
 
 /*!
-  Queue (FIFO stack) of fixed capacity.  Implemented as a circular list.
+  \brief Queue (FIFO stack) of fixed capacity.  
+
+  Implemented as a circular list.
 */
 template <class Item> class affineQueue {
  private :
@@ -66,7 +68,7 @@ template< class Item > affineQueue<Item>::~affineQueue() {
 }
 
 /*!
-  \param[in] CAP capacity
+  \param[in] CAP New capacity
 */
 template< class Item > void affineQueue<Item>::setCapacity(unsigned int CAP) {
   if (cap != CAP) {
@@ -89,6 +91,8 @@ template< class Item > void affineQueue<Item>::clear() {
 
 /*!
   \param[in] item Item to push onto queue
+
+  Throws an exception if the queue is already full.
 */
 template< class Item > void affineQueue<Item>::push(const Item& item)
   throw (affineExcept) {
@@ -105,6 +109,8 @@ template< class Item > void affineQueue<Item>::push(const Item& item)
 
 /*!
   \returns Item pulled off of queue
+
+  Throws an exception if the queue is empty.
 */
 template< class Item > Item affineQueue<Item>::pop()
   throw (affineExcept) {
