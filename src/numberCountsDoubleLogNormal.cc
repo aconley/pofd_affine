@@ -1767,10 +1767,8 @@ void numberCountsDoubleLogNormal::writeToHDF5Handle(hid_t objid) const {
 		      mems_id, H5P_DEFAULT);
   status = H5Awrite(att_id, datatype, modeltype);
   status = H5Aclose(att_id);
-  status = H5Sclose(mems_id);
   
   // Number of knots
-  adims = 1;
   att_id = H5Acreate2(objid, "nknots", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   status = H5Awrite(att_id, H5T_NATIVE_UINT, &nknots);

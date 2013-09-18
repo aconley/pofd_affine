@@ -698,13 +698,12 @@ void calcLike::writeToHDF5Handle(hid_t objid) const {
 
   // Writes some meta information as a sub-group
   hsize_t adims;
-  hid_t mems_id, att_id;
+  hid_t mems_id, att_id, groupid;
 
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("calcLike", "writeToHDF5",
 		       "Input handle is not valid", 1);
 
-  hid_t groupid;
   groupid = H5Gcreate(objid, "LikelihoodParams", H5P_DEFAULT, H5P_DEFAULT, 
 		      H5P_DEFAULT);
 
