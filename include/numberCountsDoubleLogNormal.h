@@ -312,6 +312,8 @@ class initFileDoubleLogNormal {
 
   bool isValid(const paramSet&) const; //!< Checks if parameters are within allowed ranges
 
+  void writeToHDF5Handle(hid_t) const; //!< Write to HDF5 handle
+
   void sendSelf(MPI_Comm, int dest) const; //!< Send self
   void recieveCopy(MPI_Comm, int src); //!< Recieve
 };

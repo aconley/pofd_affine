@@ -6,6 +6,8 @@
 #include<string>
 #include<vector>
 
+#include "hdf5.h"
+
 /*!
   \brief Structure to read in spec files for fits, 2D case
 
@@ -128,6 +130,8 @@ struct specFileDouble {
   specFileDouble(const std::string&); //!< Constructor with file read
 
   void init(); //!< Reset values
+
+  void writeToHDF5Handle(hid_t) const; //!< Write to HDF5 Handle
 
   void readFile(const std::string&); //!< Read in file
 };

@@ -45,7 +45,7 @@ void specFile::init() {
 
 /*!
   \param[in] flname Name of file to read
- */
+*/
 void specFile::readFile(const std::string& flname) {
   init();
 
@@ -344,4 +344,83 @@ void specFile::readFile(const std::string& flname) {
   }
 
   ifs.close();
+}
+
+/*!
+  \param[in] objid HDF5 group to write to
+
+  Writes the name of input files (datafiles, beamfiles),
+  plus instrumental sigmas and likelihood normalizations
+*/
+void specFile::writeToHDF5Handle(hid_t objid) const {
+
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("specFile", "writeToHDF5Handle",
+		       "Input handle is not valid", 1);
+
+  hsize_t adims;
+  hid_t mems_id, att_id;
+
+  // Set up string writing
+  hid_t datatype = H5Tcopy(H5T_C_S1);
+  H5Tset_size(datatype, H5T_VARIABLE);
+  const char ** catmp;
+
+  if (datafiles.size() > 0) {
+    catmp = new const char*[datafiles.size()];
+    for (unsigned int i = 0; i < datafiles.size(); ++i)
+      catmp[i] = datafiles[i].c_str();
+    adims = static_cast<hsize_t>(datafiles.size());
+    mems_id = H5Screate_simple(1, &adims, NULL);
+    att_id = H5Acreate1(objid, "datafiles", datatype,
+			mems_id, H5P_DEFAULT);
+    H5Awrite(att_id, datatype, catmp);
+    H5Aclose(att_id);
+    H5Sclose(mems_id);
+    delete[] catmp;
+  }
+
+  if (psffiles.size() > 0) {
+    catmp = new const char*[psffiles.size()];
+    for (unsigned int i = 0; i < psffiles.size(); ++i)
+      catmp[i] = psffiles[i].c_str();
+    adims = static_cast<hsize_t>(psffiles.size());
+    mems_id = H5Screate_simple(1, &adims, NULL);
+    att_id = H5Acreate1(objid, "psffiles", datatype,
+			mems_id, H5P_DEFAULT);
+    H5Awrite(att_id, datatype, catmp);
+    H5Aclose(att_id);
+    H5Sclose(mems_id);
+    delete[] catmp;
+  }
+
+  // Numerical data
+  double *dtmp;
+  if (sigmas.size() > 0) {
+    dtmp = new double[sigmas.size()];
+    for (unsigned int i = 0; i < sigmas.size(); ++i)
+      dtmp[i] = sigmas[i];
+    adims = static_cast<hsize_t>(sigmas.size());
+    mems_id = H5Screate_simple(1, &adims, NULL);
+    att_id = H5Acreate1(objid, "inst_sigma", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT);
+    H5Awrite(att_id, H5T_NATIVE_DOUBLE, dtmp);
+    H5Aclose(att_id);
+    H5Sclose(mems_id);
+    delete[] dtmp;
+  }
+
+  if (like_norm.size() > 0) {
+    dtmp = new double[like_norm.size()];
+    for (unsigned int i = 0; i < like_norm.size(); ++i)
+      dtmp[i] = like_norm[i];
+    adims = static_cast<hsize_t>(like_norm.size());
+    mems_id = H5Screate_simple(1, &adims, NULL);
+    att_id = H5Acreate1(objid, "like_norm", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT);
+    H5Awrite(att_id, H5T_NATIVE_DOUBLE, dtmp);
+    H5Aclose(att_id);
+    H5Sclose(mems_id);
+    delete[] dtmp;
+  }
 }

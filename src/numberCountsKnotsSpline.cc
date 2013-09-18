@@ -636,7 +636,6 @@ void numberCountsKnotsSpline::getR(unsigned int n,const double* const flux,
   \param[inout] objid HDF5 handle to write to
 */
 void numberCountsKnotsSpline::writeToHDF5Handle(hid_t objid) const {
-  herr_t status;
   hsize_t adims;
   hid_t mems_id, att_id;
 
@@ -647,14 +646,14 @@ void numberCountsKnotsSpline::writeToHDF5Handle(hid_t objid) const {
   // Name of model
   const char modeltype[] = "numberCountsKnots";
   hid_t datatype = H5Tcopy(H5T_C_S1);
-  status = H5Tset_size(datatype, strlen(modeltype)); 
+  H5Tset_size(datatype, strlen(modeltype)); 
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, NULL);
   att_id = H5Acreate1(objid, "model_type", datatype,
 		      mems_id, H5P_DEFAULT);
-  status = H5Awrite(att_id, datatype, modeltype);
-  status = H5Aclose(att_id);
-  status = H5Sclose(mems_id);
+  H5Awrite(att_id, datatype, modeltype);
+  H5Aclose(att_id);
+  H5Sclose(mems_id);
   
   // Other writes
   numberCountsKnots::writeToHDF5Handle(objid);

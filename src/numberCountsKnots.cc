@@ -333,7 +333,6 @@ void numberCountsKnots::recieveCopy(MPI_Comm comm, int src) {
   \param[inout] objid HDF5 handle to write to
 */
 void numberCountsKnots::writeToHDF5Handle(hid_t objid) const {
-  herr_t status;
   hsize_t adims;
   hid_t mems_id, att_id;
 
@@ -346,18 +345,18 @@ void numberCountsKnots::writeToHDF5Handle(hid_t objid) const {
   mems_id = H5Screate_simple(1, &adims, NULL);
   att_id = H5Acreate2(objid, "nknots", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nknots);
-  status = H5Aclose(att_id);
-  status = H5Sclose(mems_id);
+  H5Awrite(att_id, H5T_NATIVE_UINT, &nknots);
+  H5Aclose(att_id);
+  H5Sclose(mems_id);
 
   // Knot positions
   adims = nknots;
   mems_id = H5Screate_simple(1, &adims, NULL);
   att_id = H5Acreate2(objid, "knotpos", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_DOUBLE, knots);
-  status = H5Aclose(att_id);
-  status = H5Sclose(mems_id);
+  H5Awrite(att_id, H5T_NATIVE_DOUBLE, knots);
+  H5Aclose(att_id);
+  H5Sclose(mems_id);
 }
 
 /*!
@@ -1004,6 +1003,87 @@ bool initFileKnots::isValid(const paramSet& p) const {
     if (has_uplim[i] && (val > uplim[i])) return false;
   }
   return true;
+}
+
+/*!
+  \param[in] objid Handle to write information to
+*/
+void initFileKnots::writeToHDF5Handle(hid_t objid) const {
+  hsize_t adims;
+  hid_t mems_id, att_id;
+
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("initFileKnots", "writeToHDF5Handle",
+		       "Input handle is not valid", 1);
+
+  // Has range, limits, etc.
+  adims = 1;
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  hbool_t bl;
+  // Range
+  bl = static_cast<hbool_t>(has_range);
+  att_id = H5Acreate2(objid, "has_range", H5T_NATIVE_HBOOL,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
+  H5Aclose(att_id);
+  // Lower limits
+  bl = static_cast<hbool_t>(has_lower_limits);
+  att_id = H5Acreate2(objid, "has_lower_limits", H5T_NATIVE_HBOOL,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
+  H5Aclose(att_id);
+  // Upper limits
+  bl = static_cast<hbool_t>(has_upper_limits);
+  att_id = H5Acreate2(objid, "has_upper_limits", H5T_NATIVE_HBOOL,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
+  H5Aclose(att_id);
+  H5Sclose(mems_id);
+
+  // Ranges
+  if ((nknots > 0) && (has_range || has_lower_limits || has_upper_limits)) {
+    adims = static_cast<hsize_t>(nknots);
+    mems_id = H5Screate_simple(1, &adims, NULL);
+
+    if (has_range) {
+      att_id = H5Acreate2(objid, "range", H5T_NATIVE_DOUBLE,
+			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
+      H5Awrite(att_id, H5T_NATIVE_DOUBLE, range);
+      H5Aclose(att_id);
+    }
+
+    if (has_lower_limits || has_upper_limits) {
+      hbool_t *batmp;
+      batmp = new hbool_t[nknots];
+
+      if (has_lower_limits) {
+	for (unsigned int i = 0; i < nknots; ++i)
+	  batmp[i] = static_cast<hbool_t>(has_lowlim[i]);
+	att_id = H5Acreate2(objid, "has_lowlim", H5T_NATIVE_HBOOL,
+			    mems_id, H5P_DEFAULT, H5P_DEFAULT);
+	H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
+	H5Aclose(att_id);
+	att_id = H5Acreate2(objid, "lowlim", H5T_NATIVE_DOUBLE,
+			    mems_id, H5P_DEFAULT, H5P_DEFAULT);
+	H5Awrite(att_id, H5T_NATIVE_DOUBLE, lowlim);
+	H5Aclose(att_id);
+      }
+      if (has_upper_limits) {
+	for (unsigned int i = 0; i < nknots; ++i)
+	  batmp[i] = static_cast<hbool_t>(has_uplim[i]);
+	att_id = H5Acreate2(objid, "has_uplim", H5T_NATIVE_HBOOL,
+			    mems_id, H5P_DEFAULT, H5P_DEFAULT);
+	H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
+	H5Aclose(att_id);
+	att_id = H5Acreate2(objid, "uplim", H5T_NATIVE_DOUBLE,
+			    mems_id, H5P_DEFAULT, H5P_DEFAULT);
+	H5Awrite(att_id, H5T_NATIVE_DOUBLE, uplim);
+	H5Aclose(att_id);
+      }
+      delete[] batmp;
+    }
+    H5Sclose(mems_id);
+  }
 }
 
 /*!

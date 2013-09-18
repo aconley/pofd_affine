@@ -447,3 +447,123 @@ void specFileDouble::readFile(const std::string& flname) {
 
   ifs.close();
 }
+
+/*!
+  \param[in] objid HDF5 group to write to
+
+  Writes the name of input files (datafiles, beamfiles),
+  plus instrumental sigmas and likelihood normalizations.
+*/
+void specFileDouble::writeToHDF5Handle(hid_t objid) const {
+
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("specFileDouble", "writeToHDF5Handle",
+		       "Input handle is not valid", 1);
+  hsize_t adims;
+  hid_t mems_id, att_id;
+
+  // Set up string writing
+  hid_t datatype = H5Tcopy(H5T_C_S1);
+  H5Tset_size(datatype, H5T_VARIABLE);
+  const char ** catmp;
+
+  if (datafiles1.size() > 0) {
+    catmp = new const char*[datafiles1.size()];
+    for (unsigned int i = 0; i < datafiles1.size(); ++i)
+      catmp[i] = datafiles1[i].c_str();
+    adims = static_cast<hsize_t>(datafiles1.size());
+    mems_id = H5Screate_simple(1, &adims, NULL);
+    att_id = H5Acreate1(objid, "datafiles1", datatype,
+			mems_id, H5P_DEFAULT);
+    H5Awrite(att_id, datatype, catmp);
+    H5Aclose(att_id);
+    H5Sclose(mems_id);
+    delete[] catmp;
+  }
+
+  if (datafiles2.size() > 0) {
+    catmp = new const char*[datafiles2.size()];
+    for (unsigned int i = 0; i < datafiles2.size(); ++i)
+      catmp[i] = datafiles2[i].c_str();
+    adims = static_cast<hsize_t>(datafiles2.size());
+    mems_id = H5Screate_simple(1, &adims, NULL);
+    att_id = H5Acreate1(objid, "datafiles2", datatype,
+			mems_id, H5P_DEFAULT);
+    H5Awrite(att_id, datatype, catmp);
+    H5Aclose(att_id);
+    H5Sclose(mems_id);
+    delete[] catmp;
+  }
+
+  if (psffiles1.size() > 0) {
+    catmp = new const char*[psffiles1.size()];
+    for (unsigned int i = 0; i < psffiles1.size(); ++i)
+      catmp[i] = psffiles1[i].c_str();
+    adims = static_cast<hsize_t>(psffiles1.size());
+    mems_id = H5Screate_simple(1, &adims, NULL);
+    att_id = H5Acreate1(objid, "psffiles1", datatype,
+			mems_id, H5P_DEFAULT);
+    H5Awrite(att_id, datatype, catmp);
+    H5Aclose(att_id);
+    H5Sclose(mems_id);
+    delete[] catmp;
+  }
+
+  if (psffiles2.size() > 0) {
+    catmp = new const char*[psffiles2.size()];
+    for (unsigned int i = 0; i < psffiles2.size(); ++i)
+      catmp[i] = psffiles2[i].c_str();
+    adims = static_cast<hsize_t>(psffiles2.size());
+    mems_id = H5Screate_simple(1, &adims, NULL);
+    att_id = H5Acreate1(objid, "psffiles2", datatype,
+			mems_id, H5P_DEFAULT);
+    H5Awrite(att_id, datatype, catmp);
+    H5Aclose(att_id);
+    H5Sclose(mems_id);
+    delete[] catmp;
+  }
+
+  // Numerical data
+  double *dtmp;
+  if (sigmas1.size() > 0) {
+    dtmp = new double[sigmas1.size()];
+    for (unsigned int i = 0; i < sigmas1.size(); ++i)
+      dtmp[i] = sigmas1[i];
+    adims = static_cast<hsize_t>(sigmas1.size());
+    mems_id = H5Screate_simple(1, &adims, NULL);
+    att_id = H5Acreate1(objid, "inst_sigma1", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT);
+    H5Awrite(att_id, H5T_NATIVE_DOUBLE, dtmp);
+    H5Aclose(att_id);
+    H5Sclose(mems_id);
+    delete[] dtmp;
+  }
+  if (sigmas2.size() > 0) {
+    dtmp = new double[sigmas2.size()];
+    for (unsigned int i = 0; i < sigmas2.size(); ++i)
+      dtmp[i] = sigmas2[i];
+    adims = static_cast<hsize_t>(sigmas2.size());
+    mems_id = H5Screate_simple(1, &adims, NULL);
+    att_id = H5Acreate1(objid, "inst_sigma2", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT);
+    H5Awrite(att_id, H5T_NATIVE_DOUBLE, dtmp);
+    H5Aclose(att_id);
+    H5Sclose(mems_id);
+    delete[] dtmp;
+  }
+
+  if (like_norm.size() > 0) {
+    dtmp = new double[like_norm.size()];
+    for (unsigned int i = 0; i < like_norm.size(); ++i)
+      dtmp[i] = like_norm[i];
+    adims = static_cast<hsize_t>(like_norm.size());
+    mems_id = H5Screate_simple(1, &adims, NULL);
+    att_id = H5Acreate1(objid, "like_norm", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT);
+    H5Awrite(att_id, H5T_NATIVE_DOUBLE, dtmp);
+    H5Aclose(att_id);
+    H5Sclose(mems_id);
+    delete[] dtmp;
+  }
+
+}

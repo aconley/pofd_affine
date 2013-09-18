@@ -378,6 +378,20 @@ void pofdMCMCDouble::writeToHDF5Handle(hid_t objid) const {
     throw affineExcept("pofdMCMC", "writeToHDF5Handle",
 		       "Input handle is not valid", 1);
 
+  // Write to top level
   affineEnsemble::writeToHDF5Handle(objid);
-  likeSet.writeToHDF5Handle(objid);
+  ifile.writeToHDF5Handle(objid);
+
+  // Write to subgroup
+  hid_t groupid;
+  groupid = H5Gcreate(objid, "LikelihoodParams", H5P_DEFAULT, H5P_DEFAULT, 
+		      H5P_DEFAULT);
+
+  if (H5Iget_ref(groupid) < 0)
+    throw affineExcept("pofdMCMCDouble", "writeToHDF5",
+		       "Failed to create HDF5 group", 2);
+
+  likeSet.writeToHDF5Handle(groupid);
+  spec_info.writeToHDF5Handle(groupid);
+  H5Gclose(groupid);
 }  
