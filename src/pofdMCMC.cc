@@ -174,8 +174,9 @@ bool pofdMCMC::initChainsMaster() {
   // Generate initial positions
   if (verbosity >= 3)
     std::cout << "Setting up initial parameters" << std::endl;
-  paramSet p(npar); //Generated parameter
-  ifile.getParams(p); //Get central values from initialization file
+  paramSet p(npar); // Generated parameter
+  ifile.getParams(p); // Get central values from initialization file
+  p[npar - 1] = 1.0; // Sigma mult
   has_initStep = true; //Store initial position
   initStep = p;
   generateInitialPosition(p);

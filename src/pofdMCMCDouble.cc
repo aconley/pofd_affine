@@ -204,6 +204,8 @@ bool pofdMCMCDouble::initChainsMaster() {
   paramSet p(npar); //Generated parameter
   ifile.getParams(p); //Get central values from initialization file
   has_initStep = true; //Store initial position
+  p[npar - 2] = 1.0; // Sigma mult, band 1
+  p[npar - 1] = 1.0; // Sigma mult, band 2
   initStep = p;
   generateInitialPosition(p);
 

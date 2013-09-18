@@ -2706,7 +2706,7 @@ void initFileDoubleLogNormal::writeToHDF5Handle(hid_t objid) const {
     mems_id = H5Screate_simple(1, &adims, NULL);
 
     if (has_range) {
-      att_id = H5Acreate2(objid, "range", H5T_NATIVE_DOUBLE,
+      att_id = H5Acreate2(objid, "param_range", H5T_NATIVE_DOUBLE,
 			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
       H5Awrite(att_id, H5T_NATIVE_DOUBLE, range);
       H5Aclose(att_id);
@@ -2719,11 +2719,11 @@ void initFileDoubleLogNormal::writeToHDF5Handle(hid_t objid) const {
       if (has_lower_limits) {
 	for (unsigned int i = 0; i < ntotknots; ++i)
 	  batmp[i] = static_cast<hbool_t>(has_lowlim[i]);
-	att_id = H5Acreate2(objid, "has_lowlim", H5T_NATIVE_HBOOL,
+	att_id = H5Acreate2(objid, "param_has_lowlim", H5T_NATIVE_HBOOL,
 			    mems_id, H5P_DEFAULT, H5P_DEFAULT);
 	H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
 	H5Aclose(att_id);
-	att_id = H5Acreate2(objid, "lowlim", H5T_NATIVE_DOUBLE,
+	att_id = H5Acreate2(objid, "param_lowlim", H5T_NATIVE_DOUBLE,
 			    mems_id, H5P_DEFAULT, H5P_DEFAULT);
 	H5Awrite(att_id, H5T_NATIVE_DOUBLE, lowlim);
 	H5Aclose(att_id);
@@ -2731,11 +2731,11 @@ void initFileDoubleLogNormal::writeToHDF5Handle(hid_t objid) const {
       if (has_upper_limits) {
 	for (unsigned int i = 0; i < ntotknots; ++i)
 	  batmp[i] = static_cast<hbool_t>(has_uplim[i]);
-	att_id = H5Acreate2(objid, "has_uplim", H5T_NATIVE_HBOOL,
+	att_id = H5Acreate2(objid, "param_has_uplim", H5T_NATIVE_HBOOL,
 			    mems_id, H5P_DEFAULT, H5P_DEFAULT);
 	H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
 	H5Aclose(att_id);
-	att_id = H5Acreate2(objid, "uplim", H5T_NATIVE_DOUBLE,
+	att_id = H5Acreate2(objid, "param_uplim", H5T_NATIVE_DOUBLE,
 			    mems_id, H5P_DEFAULT, H5P_DEFAULT);
 	H5Awrite(att_id, H5T_NATIVE_DOUBLE, uplim);
 	H5Aclose(att_id);
