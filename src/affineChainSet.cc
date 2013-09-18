@@ -1280,12 +1280,11 @@ void affineChainSet::writeToHDF5(const std::string& filename) const {
 
   // Open
   hid_t file_id;
-  herr_t status;
   file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
 		      H5P_DEFAULT);
 
   if (H5Iget_ref(file_id) < 0) {
-    status = H5Fclose(file_id);
+    H5Fclose(file_id);
     throw affineExcept("affineChainSet", "writeToHDF5",
 		       "Failed to open HDF5 file to write", 1);
   }
@@ -1294,7 +1293,7 @@ void affineChainSet::writeToHDF5(const std::string& filename) const {
   writeToHDF5Handle(file_id);
 
   // All done
-  status = H5Fclose(file_id);
+  H5Fclose(file_id);
 }
 
 
@@ -1343,7 +1342,6 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
 
   // Data space
   hid_t dataspace_idsteps;
-  herr_t status;
   dataspace_idsteps = H5Screate_simple(3, dims_steps, NULL);
   
   // Data set
@@ -1359,17 +1357,17 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
   mems_id = H5Screate_simple(1, &adims, NULL);
   att_id = H5Acreate2(dataset_idsteps, "nwalkers", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nwalkers);
-  status = H5Aclose(att_id);
+  H5Awrite(att_id, H5T_NATIVE_UINT, &nwalkers);
+  H5Aclose(att_id);
   att_id = H5Acreate2(dataset_idsteps, "nsteps", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nit);
-  status = H5Aclose(att_id);
+  H5Awrite(att_id, H5T_NATIVE_UINT, &nit);
+  H5Aclose(att_id);
   att_id = H5Acreate2(dataset_idsteps, "nparams", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nparams);
-  status = H5Aclose(att_id);
-  status = H5Sclose(mems_id);
+  H5Awrite(att_id, H5T_NATIVE_UINT, &nparams);
+  H5Aclose(att_id);
+  H5Sclose(mems_id);
 
   // Write the data in chunks
   unsigned int cntr, firststep, nstp;
@@ -1394,18 +1392,17 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
 
     // Now write chunk
     offset_steps[0] = static_cast<hsize_t>(walkidx);
-    status = H5Sselect_hyperslab(dataspace_idsteps, H5S_SELECT_SET, 
-				 offset_steps, NULL, count_steps, 
-				 memsdim_steps);
-    status = H5Dwrite(dataset_idsteps, H5T_NATIVE_FLOAT, mems_id,
-		      dataspace_idsteps, H5P_DEFAULT, fwrkarr);
+    H5Sselect_hyperslab(dataspace_idsteps, H5S_SELECT_SET, 
+			offset_steps, NULL, count_steps, memsdim_steps);
+    H5Dwrite(dataset_idsteps, H5T_NATIVE_FLOAT, mems_id,
+	     dataspace_idsteps, H5P_DEFAULT, fwrkarr);
   }
   delete[] fwrkarr;
 
   // Close up step variables
-  status = H5Sclose(mems_id);
-  status = H5Dclose(dataset_idsteps);
-  status = H5Sclose(dataspace_idsteps);
+  H5Sclose(mems_id);
+  H5Dclose(dataset_idsteps);
+  H5Sclose(dataspace_idsteps);
 
   // Now do the same thing for the likelihood, writing in nwalker
   // chunks of size nsteps
@@ -1425,13 +1422,13 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
   mems_id = H5Screate_simple(1, &adims, NULL);
   att_id = H5Acreate2(dataset_idlike, "nwalkers", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nwalkers);
-  status = H5Aclose(att_id);
+  H5Awrite(att_id, H5T_NATIVE_UINT, &nwalkers);
+  H5Aclose(att_id);
   att_id = H5Acreate2(dataset_idlike, "nsteps", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nit);
-  status = H5Aclose(att_id);
-  status = H5Sclose(mems_id);
+  H5Awrite(att_id, H5T_NATIVE_UINT, &nit);
+  H5Aclose(att_id);
+  H5Sclose(mems_id);
   double *dwrkarr;
   dwrkarr = new double[nit];
   mems_id = H5Screate_simple(2, memsdim_like, NULL);
@@ -1447,15 +1444,14 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
 
     // Now write chunk
     offset_like[0] = static_cast<hsize_t>(walkidx);
-    status = H5Sselect_hyperslab(dataspace_idlike, H5S_SELECT_SET, 
-				 offset_like, NULL, count_like, 
-				 memsdim_like);
-    status = H5Dwrite(dataset_idlike, H5T_NATIVE_DOUBLE, mems_id,
-		      dataspace_idlike, H5P_DEFAULT, dwrkarr);
+    H5Sselect_hyperslab(dataspace_idlike, H5S_SELECT_SET, 
+			offset_like, NULL, count_like, memsdim_like);
+    H5Dwrite(dataset_idlike, H5T_NATIVE_DOUBLE, mems_id,
+	     dataspace_idlike, H5P_DEFAULT, dwrkarr);
   }
   delete[] dwrkarr;
-  status = H5Sclose(mems_id);
-  status = H5Dclose(dataset_idlike);
-  status = H5Sclose(dataspace_idlike);
+  H5Sclose(mems_id);
+  H5Dclose(dataset_idlike);
+  H5Sclose(dataspace_idlike);
 
 }
