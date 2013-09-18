@@ -1397,9 +1397,11 @@ void affineEnsemble::writeToStream(std::ostream& os) const {
 			  << parnames[i];
   }
   if (init_steps > 0) {
-    os << std::endl << "Number of initial steps: " << init_steps;
+    os << std::endl << "Will take initial steps to generate new starting"
+       << " position";
+    os << std::endl << " Number of initial steps: " << init_steps;
     if (init_temp != 1)
-      os << std::endl << "Initial step temperature: " << init_steps;
+      os << std::endl << " Initial step temperature: " << init_temp;
   }
   if (min_burn > 0) {
     if (fixed_burn) {
