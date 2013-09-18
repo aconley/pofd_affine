@@ -1441,8 +1441,6 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
     throw affineExcept("affineEnsemble", "writeToHDF5Handle",
 		       "Input handle is not valid", 2);
 
-  herr_t status;
-
   // Write some attributes
   hsize_t adims;
   hid_t mems_id, att_id;
@@ -1452,39 +1450,39 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
   mems_id = H5Screate_simple(1, &adims, NULL);
   att_id = H5Acreate2(objid, "scalefac", H5T_NATIVE_FLOAT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_FLOAT, &scalefac);
-  status = H5Aclose(att_id);
+  H5Awrite(att_id, H5T_NATIVE_FLOAT, &scalefac);
+  H5Aclose(att_id);
   att_id = H5Acreate2(objid, "nfixed", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nfixed);
-  status = H5Aclose(att_id);
+  H5Awrite(att_id, H5T_NATIVE_UINT, &nfixed);
+  H5Aclose(att_id);
   att_id = H5Acreate2(objid, "nignore", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nignore);
-  status = H5Aclose(att_id);
+  H5Awrite(att_id, H5T_NATIVE_UINT, &nignore);
+  H5Aclose(att_id);
   att_id = H5Acreate2(objid, "init_steps", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_UINT, &init_steps);
-  status = H5Aclose(att_id);
+  H5Awrite(att_id, H5T_NATIVE_UINT, &init_steps);
+  H5Aclose(att_id);
   att_id = H5Acreate2(objid, "min_burn", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_UINT, &min_burn);
-  status = H5Aclose(att_id);
+  H5Awrite(att_id, H5T_NATIVE_UINT, &min_burn);
+  H5Aclose(att_id);
   hbool_t btmp;
   btmp = static_cast<hbool_t>(fixed_burn);
   att_id = H5Acreate2(objid, "fixed_burn", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_HBOOL, &btmp);
-  status = H5Aclose(att_id);
+  H5Awrite(att_id, H5T_NATIVE_HBOOL, &btmp);
+  H5Aclose(att_id);
   att_id = H5Acreate2(objid, "burn_multiple", H5T_NATIVE_FLOAT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_FLOAT, &burn_multiple);
-  status = H5Aclose(att_id);
+  H5Awrite(att_id, H5T_NATIVE_FLOAT, &burn_multiple);
+  H5Aclose(att_id);
   att_id = H5Acreate2(objid, "nsteps", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_UINT, &nsteps);
-  status = H5Aclose(att_id);
-  status = H5Sclose(mems_id);
+  H5Awrite(att_id, H5T_NATIVE_UINT, &nsteps);
+  H5Aclose(att_id);
+  H5Sclose(mems_id);
 
   // Number of accepted steps
   adims = nwalkers;
@@ -1494,10 +1492,10 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
   for (unsigned int i = 0; i < nwalkers; ++i) uatmp[i] = naccept[i];
   att_id = H5Acreate2(objid, "naccept", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_UINT, uatmp);
+  H5Awrite(att_id, H5T_NATIVE_UINT, uatmp);
   delete[] uatmp;
-  status = H5Aclose(att_id);
-  status = H5Sclose(mems_id);
+  H5Aclose(att_id);
+  H5Sclose(mems_id);
 
   // Parameter state (fixed, ignored) information
   adims = nparams;
@@ -1509,17 +1507,17 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
     batmp[i] = param_state[i] & mcmc_affine::FIXED;
   att_id = H5Acreate2(objid, "fixed", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
-  status = H5Aclose(att_id);
+  H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
+  H5Aclose(att_id);
   // Ignored params
   for (unsigned int i = 0; i < nparams; ++i) 
     batmp[i] = param_state[i] & mcmc_affine::ACIGNORE;
   att_id = H5Acreate2(objid, "acignore", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
+  H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
   delete[] batmp;
-  status = H5Aclose(att_id);
-  status = H5Sclose(mems_id);
+  H5Aclose(att_id);
+  H5Sclose(mems_id);
  
   // Initial values
   if (has_initStep) {
@@ -1531,8 +1529,8 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
       ftmp[i] = initStep[i];
     att_id = H5Acreate2(objid, "initial_position", H5T_NATIVE_FLOAT,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
-    status = H5Awrite(att_id, H5T_NATIVE_FLOAT, ftmp);
-    status = H5Aclose(att_id);
+    H5Awrite(att_id, H5T_NATIVE_FLOAT, ftmp);
+    H5Aclose(att_id);
     delete[] ftmp;
   }
   if (has_regenFirstStep) {
@@ -1544,8 +1542,8 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
       ftmp[i] = regenFirstStep[i];
     att_id = H5Acreate2(objid, "regenerated_first_step", H5T_NATIVE_FLOAT,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
-    status = H5Awrite(att_id, H5T_NATIVE_FLOAT, ftmp);
-    status = H5Aclose(att_id);
+    H5Awrite(att_id, H5T_NATIVE_FLOAT, ftmp);
+    H5Aclose(att_id);
     delete ftmp;
   }
 
@@ -1561,10 +1559,10 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
     mems_id = H5Screate_simple(1, &adims, NULL);
     att_id = H5Acreate1(objid, "param_names", datatype,
 			mems_id, H5P_DEFAULT);
-    status = H5Awrite(att_id, datatype, catmp);
+    H5Awrite(att_id, datatype, catmp);
     delete[] catmp;
-    status = H5Aclose(att_id);
-    status = H5Sclose(mems_id);
+    H5Aclose(att_id);
+    H5Sclose(mems_id);
   }
 }
 
@@ -1577,14 +1575,13 @@ void affineEnsemble::writeToHDF5(const std::string& filename) const {
     throw affineExcept("affineEnsemble", "writeToHDF5",
 		       "Should only be called from master node", 1);  
 
-  hid_t file_id;
-  herr_t status;
   // Create
+  hid_t file_id;
   file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
 		      H5P_DEFAULT);
 
   if (H5Iget_ref(file_id) < 0) {
-    status = H5Fclose(file_id);
+    H5Fclose(file_id);
     throw affineExcept("affineEnsemble", "writeToHDF5",
 		       "Failed to open HDF5 file to write", 2);
   }
@@ -1593,7 +1590,7 @@ void affineEnsemble::writeToHDF5(const std::string& filename) const {
   writeToHDF5Handle(file_id);
 
   // All done
-  status = H5Fclose(file_id);
+  H5Fclose(file_id);
 }
 
 /*!
