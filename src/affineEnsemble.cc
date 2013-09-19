@@ -1564,6 +1564,9 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
     H5Aclose(att_id);
     H5Sclose(mems_id);
   }
+
+  // And the actual chains and likelihoods
+  chains.writeToHDF5Handle(objid);
 }
 
 /*!
