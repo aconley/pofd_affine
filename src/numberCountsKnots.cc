@@ -1022,19 +1022,19 @@ void initFileKnots::writeToHDF5Handle(hid_t objid) const {
   hbool_t bl;
   // Range
   bl = static_cast<hbool_t>(has_range);
-  att_id = H5Acreate2(objid, "has_range", H5T_NATIVE_HBOOL,
+  att_id = H5Acreate2(objid, "has_init_param_range", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
   H5Aclose(att_id);
   // Lower limits
   bl = static_cast<hbool_t>(has_lower_limits);
-  att_id = H5Acreate2(objid, "has_lower_limits", H5T_NATIVE_HBOOL,
+  att_id = H5Acreate2(objid, "has_param_lower_limits", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
   H5Aclose(att_id);
   // Upper limits
   bl = static_cast<hbool_t>(has_upper_limits);
-  att_id = H5Acreate2(objid, "has_upper_limits", H5T_NATIVE_HBOOL,
+  att_id = H5Acreate2(objid, "has_param_upper_limits", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
   H5Aclose(att_id);
@@ -1046,7 +1046,7 @@ void initFileKnots::writeToHDF5Handle(hid_t objid) const {
     mems_id = H5Screate_simple(1, &adims, NULL);
 
     if (has_range) {
-      att_id = H5Acreate2(objid, "param_range", H5T_NATIVE_DOUBLE,
+      att_id = H5Acreate2(objid, "param_init_range", H5T_NATIVE_DOUBLE,
 			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
       H5Awrite(att_id, H5T_NATIVE_DOUBLE, range);
       H5Aclose(att_id);
