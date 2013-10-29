@@ -124,6 +124,7 @@ paramSet& paramSet::operator=(const paramSet& other) {
   parameters.
  */
 bool paramSet::operator==(const paramSet& other) const {
+  if (this == &other) return true;
   if (nparams != other.nparams) return false;
   if (nparams == 0) return true; //ambiguous...
   bool retval = (paramvals[0] == other.paramvals[0]);
@@ -137,18 +138,19 @@ bool paramSet::operator==(const paramSet& other) const {
   \returns Square root of the sum of the differences
 */
 float paramSet::getDist(const paramSet& other) const {
+  if (this == &other) return 0.0;
   if (other.nparams != nparams)
     throw affineExcept("paramSet","getDist",
 		       "Input paramSets don't have the same size",1);
   if (nparams == 0) return 0.0; //ambigouous case
   float val, distsq;
   val = paramvals[0] - other.paramvals[0];
-  distsq = val*val;
+  distsq = val * val;
   for (unsigned int i = 1; i < nparams; ++i) {
     val = paramvals[i] - other.paramvals[i];
-    distsq += val*val;
+    distsq += val * val;
   }
-  return sqrt(val);
+  return sqrt(distsq);
 }
 
 /*!

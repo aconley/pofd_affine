@@ -297,7 +297,7 @@ bool affineStepChunk::addStep(unsigned int walker_idx,
   \param[in] pars Parameters of last step
   \param[in] lglike Log-likelihood of step
   \returns true if it got the step, false otherwise
- */
+*/
 bool affineStepChunk::getLastStep(unsigned int walker_idx,
 				  paramSet& pars, double& lglike) const {
   if (walker_idx >= nwalkers) return false;
