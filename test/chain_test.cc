@@ -39,6 +39,10 @@ TEST(paramSetTest, SetRecover) {
   EXPECT_FLOAT_EQ(-4.0, p.at(2)) << "Third element not recovered";
   EXPECT_THROW(p.at(3), std::range_error) << "Out of range didn't throw";
 
+  // Set not using []
+  p.setParamValue(2, 7);
+  EXPECT_FLOAT_EQ(p[2], 7.0) << "setParamValue failed";
+
   //Set with wrong length
   std::vector<float> v1(2);
   EXPECT_THROW(p.setParamValues(v1), affineExcept) 
@@ -50,6 +54,12 @@ TEST(paramSetTest, SetRecover) {
   ASSERT_NO_THROW(p.setParamValues(v2)) << "Setting param values failed";
   for (unsigned int i = 0; i < 3; ++i)
     ASSERT_FLOAT_EQ(v2[i], p[i]) << "Vector set didn't set right values";
+
+  // Set array
+  float v3[3] = {-2, 11.5, 21.7};
+  ASSERT_NO_THROW(p.setParamValues(3, v3)) << "Setting param values failed";
+  for (unsigned int i = 0; i < 3; ++i)
+    ASSERT_FLOAT_EQ(v3[i], p[i]) << "Array set didn't set right values";
 
 }
 
@@ -71,6 +81,15 @@ TEST(paramSetTest, Equality) {
   for (unsigned int i = 0; i < nparams; ++i)
     ASSERT_FLOAT_EQ(p3[i], p[i]) << "Operator= didn't set right values";
  
+}
+
+//Test distance
+TEST(paramSetTest, Distance) {
+  const unsigned int nparams = 2;
+  paramSet p1(nparams), p2(nparams);
+  p1[0] = 2.0; p1[1] = 2.0;
+  p2[0] = -1.0; p2[1] = 6.0;
+  ASSERT_FLOAT_EQ(5.0, p1.getDist(p2)) << "Distance not correct";
 }
 
 ////////////////////////////////

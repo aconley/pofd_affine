@@ -164,7 +164,7 @@ class affineChainSet {
   affineChainSet& operator+=(const affineChainSet&) throw (affineExcept);  //!<Merge another chain set onto this
 
   float getParamMean(unsigned int) const throw (affineExcept); //!< Get mean value of param across all walkers
-  /* \brief Get statistics on a given parameter across all walkers */
+  /*! \brief Get statistics on a given parameter across all walkers */
   void getParamStats(unsigned int, float&, float&, float&,
 		     float&, float=0.683) const
     throw (affineExcept); 
