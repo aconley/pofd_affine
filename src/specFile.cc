@@ -27,8 +27,9 @@ void specFile::init() {
   fftsize = 131072;
   ninterp = 1024;
   edge_fix = true;
+  minbeamval = 1e-5;
   beam_histogram = true;
-  hist_logstep = 0.2;
+  nbeamhist = 120;
   fit_sigma = false;
   has_sigprior = false;
   sigprior_stdev = 0.0;
@@ -181,6 +182,21 @@ void specFile::readFile(const std::string& flname) {
       }
 
       edge_fix = utility::string_true(words[1]);
+    } else if (words[0] == "minbeamval") {
+      if (words.size() < 2) {
+	errstr << "minbeamval line doesn't have right number of entries: "
+	       << line;
+	throw affineExcept("specFile", "readFile", errstr.str(), 2);
+      }
+
+      str.str(words[1]); str.clear(); str >> dblval;
+      if (dblval < 0.0) {
+	errstr << "Invalid (non-negative) minbeamval value " << dblval
+	       << " from line: " << line;
+	throw affineExcept("specFile", "readFile", errstr.str(), 3);
+      }
+
+      minbeamval = dblval;
 
     } else if (words[0] == "beam_histogram") {
       if (words.size() < 2) {
@@ -191,21 +207,21 @@ void specFile::readFile(const std::string& flname) {
 
       beam_histogram = utility::string_true(words[1]);
 
-    } else if (words[0] == "hist_logstep") {
+    } else if (words[0] == "nbeamhist") {
       if (words.size() < 2) {
-	errstr << "hist_logstep line doesn't have right number of entries: "
+	errstr << "nbeamhist line doesn't have right number of entries: "
 	       << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 2);
       }
 
-      str.str(words[1]); str.clear(); str >> dblval;
-      if (dblval <= 0.0) {
-	errstr << "Invalid (non positive) hist_logstep value " << dblval
+      str.str(words[1]); str.clear(); str >> ival;
+      if (ival <= 0) {
+	errstr << "Invalid (non positive) nbeamhist value " << ival
 	       << " from line: " << line;
 	throw affineExcept("specFile", "readFile", errstr.str(), 3);
       }
 
-      hist_logstep = dblval;
+      nbeamhist = static_cast<unsigned int>(ival);
 
     } else if (words[0] == "fit_sigma") {
       if (words.size() < 2) {

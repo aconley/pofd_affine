@@ -14,9 +14,11 @@
 #include "../include/utility.h"
 
 /*!
-  \brief Represents PSF parameters for beam.
+  \brief Represents beam in 1D case.
 
   Note that zero beam values are not stored
+
+  Can also store the histogrammed inverse beam.
 
   \ingroup Beams
 */
@@ -25,21 +27,34 @@ class beam {
   static const unsigned int histothresh; //!< Minimum number of pix to histogram
   unsigned int npos; //!< Number of positive pixels
   unsigned int nneg; //!< Number of negative pixels
+
+  // Raw beam
   bool haspos; //!< Has positive pixels
   bool hasneg; //!< Has negative pixels
-  bool hasposweights; //!< Has weights for positive pixels (histogrammed)
-  bool hasnegweights; //!< Has weights for negative pixels (histogrammed)
-  double *posweights; //!< Positive weights; double to avoid casting
-  double *negweights; //!< Negative weights; double to avoid casting
   double *pospixarr; //!< Holds positive pixel values (sorted)
   double *negpixarr; //!< Holds absolute value of negative pixel values (sorted)
   double *posinvpixarr; //!< Inverse positive pixels
-  double *neginvpixarr; //!< Inverse negative pixels
+  double *neginvpixarr; //!< Inverse negative pixels (abs value)
+
+  // Histogrammed beam, if present
+  unsigned int nbins; //!< Number of histogram bins
+  bool is_pos_histogrammed; //!< Is the positive inverse beam histogrammed?
+  bool is_neg_histogrammed; //!< Is the negative inverse beam histogrammed?
+  unsigned int posnbins; //!< Number of non-zero weights in pos hist beam
+  unsigned int negnbins; //!< Number of non-zero weights in neg hist beam
+  double *posweights; //!< Positive weights; double to avoid casting
+  double *negweights; //!< Negative weights; double to avoid casting
+  double *poshistval; //!< Positive inverse histogrammed beam values
+  double *neghistval; //!< Negative inverse histogrammed beam values (abs value)
+
+  // Descriptive parameters
   double pixsize; //!< Size of pixel in arcsec (if oversampled, not real pix)
   double totpos; //!< Sum of all positive elements
   double totpossq; //!< Sum of positive elements squared
   double totneg; //!< Sum of all negative elements
   double totnegsq; //!< Sum of negative elements squared
+
+  double minval; //!< Smallest value to keep (based on abs for neg beam)
 
   void cleanup(); //!< Frees internal structures
   bool revSort(const double&, const double&) const; //!< Reverse sort comparison
@@ -47,14 +62,14 @@ class beam {
  public :
   beam(); //!< Default constructor
   beam(const std::string& filename, bool histogram=false, 
-	double histogramlogstep=0.2); //!< Reads beam from file
+       unsigned int NBINS=120, double MINVAL=1e-5); //!< Reads beam from file
   beam(const beam&); //!< Copy constructor
   ~beam() { cleanup(); } //!< Destructor
 
   void free() { cleanup(); } //!< Free all memory
 
-  void readFile(const std::string& filename, bool histogram=false, 
-		double histogramlogstep=0.2); //!< Read in file
+  void readFile(const std::string& filename, double MINVAL=1e-5); //!< Read in file
+  void makeHistogram(unsigned int NBINS=120); //!< Prepare the histogram
 
   double getEffectiveArea() const; //!< Get effective area of beam in sq deg
   double getEffectiveAreaPos() const; //!< Get effective area of positive beam in sq deg
@@ -68,24 +83,31 @@ class beam {
   unsigned int getNNeg() const { return nneg; } //!< Number of negative beam pix
   bool hasPos() const { return haspos; } //!< Beam has positive pixels
   bool hasNeg() const { return hasneg; } //!< Beam has negative pixels
-  bool hasPosWeights() const { return hasposweights; } //!< Has positive pixel weights
-  bool hasNegWeights() const { return hasnegweights; } //!< Has negative pixel weights
+  bool isPosHist() const { return is_pos_histogrammed; } //!< Inverse positive hstogrammed beam is available
+  bool isNegHist() const { return is_pos_histogrammed; } //!< Inverse negative hstogrammed beam is available
+  unsigned int getNHistPos() const { return posnbins; } //!< Number of positive hist bins
+  unsigned int getNHistNeg() const { return negnbins; } //!< Number of negative hist bins
 
   double getPixSize() const { return pixsize; } //!< Pixel size (1d)
   double getPos(unsigned int i) const { return pospixarr[i]; } //!< Get positive pixel
   double& getPos(unsigned int i) { return pospixarr[i]; } //!< Get positive pixel
   double getNeg(unsigned int i) const { return negpixarr[i]; } //!< Get negative pixel
   double& getNeg(unsigned int i) { return negpixarr[i]; } //!< Get negative pixel
-
+  
+  // Access to un-histogrammed beam
   /*! \brief Access inverse positive pixel array */
   const double* const getPosInvPixArr() const { return posinvpixarr; }
   /*! \brief Access inverse negative pixel array */
   const double* const getNegInvPixArr() const { return neginvpixarr; }
-  /*! \brief Access positive pixel weight array */
-  const double* const getPosWeights() const { return posweights; }
-  /*! \brief Access negative pixel weight array */
-  const double* const getNegWeights() const { return negweights; }
 
+  // Access to histogrammed beam
+  /*! \brief Access positive pixel weight array */
+  const double* const getPosHistWeights() const { return posweights; }
+  /*! \brief Access negative pixel weight array */
+  const double* const getNegHistWeights() const { return negweights; }
+  const double* const getPosHist() const { return poshistval; }
+  const double* const getNegHist() const { return neghistval; }
+  
   double getMinPos() const; //!< Minimum positive pixel
   double getMaxPos() const; //!< Maximum positive pixel
   double getMinAbsNeg() const; //!< Minimum absolute value negative pixel

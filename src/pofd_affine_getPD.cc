@@ -46,7 +46,7 @@ int getPDSingle(int argc, char **argv) {
   double maxflux;
   std::string wisdom_file;
   
-  std::string initfile; //Init file (having model we want)
+  std::string modelfile; //Model file
   std::string outputfile; //Ouput pofd option
   std::string psffile;  //Beam file
 
@@ -109,7 +109,7 @@ int getPDSingle(int argc, char **argv) {
 	      << std::endl;
     return 1;
   }
-  initfile   = std::string(argv[optind]);
+  modelfile  = std::string(argv[optind]);
   psffile    = std::string(argv[optind+1]);
   outputfile = std::string(argv[optind+2]);
 
@@ -140,7 +140,7 @@ int getPDSingle(int argc, char **argv) {
 
   //Actual PD computation
   try {
-    initFileKnots model_info(initfile, false, false);
+    initFileKnots model_info(modelfile, false, false);
 
     numberCountsKnotsSpline model;
     model_info.getKnotPos(model);
@@ -238,7 +238,7 @@ int getPDDouble(int argc, char** argv) {
   double maxflux1, maxflux2;
   std::string wisdom_file;
   
-  std::string initfile; //Init file (having model we want)
+  std::string modelfile; //Model file
   std::string outputfile; //Ouput pofd option
   std::string psffile1, psffile2;  //Beam file
 
@@ -309,7 +309,7 @@ int getPDDouble(int argc, char** argv) {
 	      << std::endl;
     return 1;
   }
-  initfile   = std::string(argv[optind]);
+  modelfile  = std::string(argv[optind]);
   psffile1   = std::string(argv[optind+1]);
   psffile2   = std::string(argv[optind+2]);
   outputfile = std::string(argv[optind+3]);
@@ -337,7 +337,7 @@ int getPDDouble(int argc, char** argv) {
 
   //Actual PD computation
   try {
-    initFileDoubleLogNormal model_info(initfile, false, false);
+    initFileDoubleLogNormal model_info(modelfile, false, false);
 
     numberCountsDoubleLogNormal model;
     model_info.getModelPositions(model);
@@ -468,19 +468,19 @@ int main( int argc, char** argv ) {
       std::cerr << "\tEither" << std::endl;
       std::cerr << std::endl;
 
-      std::cerr << "\t pofd_mcmc_getPD [options] initfile beamfile outputfile"
+      std::cerr << "\t pofd_mcmc_getPD [options] modelfile beamfile outputfile"
 		<< std::endl;
       std::cerr << std::endl;
       std::cerr << "\tfor the 1D case or" << std::endl;
       std::cerr << std::endl;
-      std::cerr << "\t pofd_mcmc_getPD -d [options] initfile beamfile1"
+      std::cerr << "\t pofd_mcmc_getPD -d [options] modelfile beamfile1"
 		<< " beamfile2" << std::endl;
       std::cerr << "\t  outputfile" << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tfor the 2D case." << std::endl;
       std::cerr << std::endl;
       std::cerr << "DESCRIPTION" << std::endl;
-      std::cerr << "\tEvaluates P(D) for the model in initfile and write it"
+      std::cerr << "\tEvaluates P(D) for the model in modelfile and write it"
 		<< " to" << std::endl;
       std::cerr << "\toutputfile.  The 1D model is a log-space spline model for"
 		<< " the" << std::endl;
@@ -492,18 +492,18 @@ int main( int argc, char** argv ) {
 		<< " the flux" << std::endl;
       std::cerr << "\tof the first band." << std::endl;
       std::cerr << std::endl;
-      std::cerr << "\tinitfile is a text file specifying the model; the exact"
+      std::cerr << "\tmodelfile is a text file specifying the model; the exact"
 		<< " details" << std::endl;
       std::cerr << "\t(given below) depend on whether the 1D or 2D case is"
 		<< " being used." << std::endl;
       std::cerr << std::endl;
-      std::cerr << "\tFor the 1D case, initfile is a text file giving the "
+      std::cerr << "\tFor the 1D case, modelfile is a text file giving the "
 		<< "positions" << std::endl;
       std::cerr << "\tof the spline knots and their values in the format"
 		<< " knotflux value." << std::endl;
       std::cerr << "\tAdditional elements on each line are ignored."
 		<< std::endl;
-      std::cerr << "\tFor the 2D case, initfile is a text file giving the "
+      std::cerr << "\tFor the 2D case, modelfile is a text file giving the "
 		<< "positions" << std::endl;
       std::cerr << "\tof the knot points and their values, followed by the "
 		<< "sigma" << std::endl;

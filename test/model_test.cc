@@ -22,19 +22,19 @@ TEST(beam1DTest, Read) {
   beam bm("testdata/band1_beam.fits");
   
   EXPECT_TRUE(bm.hasPos()) << "Beam should have positive pixels";
-  EXPECT_EQ(625U, bm.getNPos()) << "Beam had wrong number of positive pixels";
-  EXPECT_FALSE(bm.hasPosWeights()) << "Beam should not have positive weights";
+  EXPECT_EQ(277U, bm.getNPos()) << "Beam had wrong number of positive pixels";
+  EXPECT_FALSE(bm.isPosHist()) << "Beam should not have positive weights";
   EXPECT_FALSE(bm.hasNeg()) << "Beam should have no negative pixels";
   EXPECT_EQ(0U, bm.getNNeg()) << "Beam had wrong number of negative pixels";
-  EXPECT_FALSE(bm.hasNegWeights()) << "Beam should not have negative weights";
+  EXPECT_FALSE(bm.isNegHist()) << "Beam should not have negative weights";
   EXPECT_NEAR(4.0, bm.getPixSize(), 0.0001) << "Wrong pixel size";
-  EXPECT_NEAR(2.8327253e-5, bm.getEffectiveArea(), 1e-8) <<
+  EXPECT_NEAR(2.8327039e-5, bm.getEffectiveArea(), 1e-8) <<
     "Beam had wrong effective area";
-  EXPECT_NEAR(2.8327253e-5, bm.getEffectiveAreaPos(), 1e-8) <<
+  EXPECT_NEAR(2.8327039e-5, bm.getEffectiveAreaPos(), 1e-8) <<
     "Beam had wrong positive effective area";
   EXPECT_FLOAT_EQ(0.0, bm.getEffectiveAreaNeg()) <<
     "Beam should have zero negative area";
-  EXPECT_NEAR(22.945073, bm.getEffectiveAreaPix(), 1e-4) << 
+  EXPECT_NEAR(22.944899, bm.getEffectiveAreaPix(), 1e-4) << 
     "Didn't get expected beam area in pixels";
   EXPECT_NEAR(1.3852891e-5, bm.getEffectiveAreaSq(), 1e-8) <<
     "Beam^2 had wrong effective area";
@@ -94,21 +94,22 @@ TEST(beam1DTest, Equals) {
 }
 
 TEST(beam1DTest, Histogram) {
-  beam bm("testdata/band1_beam.fits", true, 0.2);
+  beam bm("testdata/band1_beam.fits", true, 120, 1e-5);
   
-  ASSERT_TRUE(bm.hasPosWeights()) << "Beam should have positive weights";
-  EXPECT_TRUE(bm.hasPos()) << "Beam should have positive pixels";
-  EXPECT_EQ(76U, bm.getNPos()) << "Beam had wrong number of positive pixels";
+  ASSERT_TRUE(bm.hasPos()) << "Beam should have positive pixels";
+  ASSERT_TRUE(bm.isPosHist()) << "Beam should have positive weights";
+  EXPECT_EQ(39U, bm.getNHistPos()) 
+    << "Beam had wrong number of positive pixels";
   EXPECT_FALSE(bm.hasNeg()) << "Beam should have no negative pixels";
   EXPECT_EQ(0U, bm.getNNeg()) << "Beam had wrong number of negative pixels";
   EXPECT_NEAR(4.0, bm.getPixSize(), 0.0001) << "Wrong pixel size";
-  EXPECT_NEAR(2.8327253e-5, bm.getEffectiveArea(), 1e-8) <<
+  EXPECT_NEAR(2.8327039e-5, bm.getEffectiveArea(), 1e-8) <<
     "Beam had wrong effective area";
-  EXPECT_NEAR(2.8327253e-5, bm.getEffectiveAreaPos(), 1e-8) <<
+  EXPECT_NEAR(2.8327039e-5, bm.getEffectiveAreaPos(), 1e-8) <<
     "Beam had wrong positive effective area";
   EXPECT_FLOAT_EQ(0.0, bm.getEffectiveAreaNeg()) <<
     "Beam should have zero negative area";
-  EXPECT_NEAR(22.945073, bm.getEffectiveAreaPix(), 1e-4) << 
+  EXPECT_NEAR(22.944899, bm.getEffectiveAreaPix(), 1e-6) << 
     "Didn't get expected beam area in pixels";
   EXPECT_NEAR(1.3852891e-5, bm.getEffectiveAreaSq(), 1e-8) <<
     "Beam^2 had wrong effective area";
@@ -116,14 +117,15 @@ TEST(beam1DTest, Histogram) {
     "Beam had unexpected maximum pixel value";
 
   //Check histogram
-  const double *wts = bm.getPosWeights();
-  double exp_posweights[5] = {4.0, 8.0, 8.0, 4.0, 8.0};
-  for (unsigned int i = 0; i < 5; ++i)
-    EXPECT_FLOAT_EQ(exp_posweights[i], wts[i]) << "Didn't get expected weight";
-  const double* iparr = bm.getPosInvPixArr();
+  const double *wts = bm.getPosHistWeights();
+  const double* iparr = bm.getPosHist();
+  double exp_posweights[5] = {8.0, 4.0, 4.0, 4.0, 1.0};
+  for (unsigned int i = 34; i < 39; ++i)
+    EXPECT_FLOAT_EQ(exp_posweights[i-34], wts[i]) << 
+      "Didn't get expected weight";
   const double exp_inv[5] = {1.99712, 1.74686, 1.33647, 1.169, 1.02251};
-  for (unsigned int i = 71; i < 76; ++i)
-    EXPECT_NEAR(exp_inv[i-71], iparr[i], 0.001) << 
+  for (unsigned int i = 34; i < 39; ++i)
+    EXPECT_NEAR(exp_inv[i-34], iparr[i], 0.0001) << 
       "Got unexpected binned inverse pixel value in index: " << i;
 
 }
@@ -466,8 +468,8 @@ TEST(model1DTest, getRHist) {
   model.setParams(p);
   ASSERT_TRUE(model.isValid()) << "Model should consider itself valid";
 
-  beam bm("testdata/band1_beam.fits", true, 0.2);
-  ASSERT_TRUE(bm.hasPosWeights()) << "Beam should have weights after binning";
+  beam bm("testdata/band1_beam.fits", true, 120, 1e-5);
+  ASSERT_TRUE(bm.isPosHist()) << "Beam should have weights after binning";
 
   const unsigned int ntest = 3;
   const double fluxdens[ntest] = {0.003, 0.011, 0.03};

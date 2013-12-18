@@ -352,25 +352,25 @@ double numberCountsKnotsSpline::getRPos(double fluxdensity,
 					const beam& bm) const {
 
   if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
-  if (! bm.hasPos()) return std::numeric_limits<double>::quiet_NaN();
+  if (!bm.hasPos()) return std::numeric_limits<double>::quiet_NaN();
 
   if (fluxdensity <= 0.0) return 0.0;
   double minknot = knots[0];
-  double maxknot = knots[nknots-1];
+  double maxknot = knots[nknots - 1];
   if (fluxdensity > maxknot) return 0.0; //Since max(beam) = 1
 
   double prefac;
-  prefac = bm.getPixSize()/3600.0;  //To sq deg
-  prefac = prefac*prefac;
-
-  unsigned int npsf = bm.getNPos();
+  prefac = bm.getPixSize() / 3600.0;  //To sq deg
+  prefac = prefac * prefac;
   
   double currarg, ieta, retval;
   retval = 0.0;
-  const double *ipixarr = bm.getPosInvPixArr();
-  if (bm.hasPosWeights()) {
-    const double* warr = bm.getPosWeights();
-    for (unsigned int i = 0; i < npsf; ++i) {
+  if (bm.isPosHist()) {
+    // Histogrammed beam
+    unsigned int nposhist = bm.getNHistPos();
+    const double* warr = bm.getPosHistWeights();
+    const double *ipixarr = bm.getPosHist();
+    for (unsigned int i = 0; i < nposhist; ++i) {
       ieta = ipixarr[i];
       currarg = fluxdensity * ieta;
       if (currarg < minknot || currarg >= maxknot) continue;
@@ -378,6 +378,9 @@ double numberCountsKnotsSpline::getRPos(double fluxdensity,
 	exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
     } 
   } else {
+    // Raw beam
+    unsigned int npsf = bm.getNPos();
+    const double *ipixarr = bm.getPosInvPixArr();
     for (unsigned int i = 0; i < npsf; ++i) {
       ieta = ipixarr[i];
       currarg = fluxdensity * ieta;
@@ -386,7 +389,7 @@ double numberCountsKnotsSpline::getRPos(double fluxdensity,
     } 
   }
 
-  return prefac*retval;
+  return prefac * retval;
 }
 
 /*!
@@ -411,40 +414,36 @@ void numberCountsKnotsSpline::getRPos(unsigned int n, const double* const flux,
   double maxknot = knots[nknots-1];
 
   double prefac;
-  prefac = bm.getPixSize()/3600.0;  //To sq deg
-  prefac = prefac*prefac;
+  prefac = bm.getPixSize() / 3600.0;  //To sq deg
+  prefac = prefac * prefac;
 
-  unsigned int npsf = bm.getNPos();
   
   double currarg, ieta, workval, fluxdensity;
-  const double *ipixarr = bm.getPosInvPixArr();
-  if (bm.hasPosWeights()) { 
+  if (bm.isPosHist()) { 
     //Binned beam
-    const double* warr = bm.getPosWeights();
+    unsigned int nposhist = bm.getNHistPos();
+    const double* warr = bm.getPosHistWeights();
+    const double *ipixarr = bm.getPosHist();
     for (unsigned int j = 0; j < n; ++j) {
       fluxdensity = flux[j];
-      if (fluxdensity <= 0.0) {
-	R[j] = 0.0;
-	continue;
-      }
+      if (fluxdensity <= 0.0) continue; // out of range
       workval = 0.0;
-      for (unsigned int i = 0; i < npsf; ++i) {
+      for (unsigned int i = 0; i < nposhist; ++i) {
 	ieta = ipixarr[i];
 	currarg = fluxdensity * ieta;
 	if (currarg < minknot || currarg >= maxknot) continue;
 	workval += warr[i] *
 	  exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
       } 
-      R[j] += prefac*workval;
+      R[j] += prefac * workval;
     }
   } else {
     //Unbinned beam
+    unsigned int npsf = bm.getNPos();
+    const double *ipixarr = bm.getPosInvPixArr();
     for (unsigned int j = 0; j < n; ++j) {
       fluxdensity = flux[j];
-      if (fluxdensity <= 0.0) {
-	R[j] = 0.0;
-	continue;
-      }
+      if (fluxdensity <= 0.0) continue;
       workval = 0.0;
       for (unsigned int i = 0; i < npsf; ++i) {
 	ieta = ipixarr[i];
@@ -452,7 +451,7 @@ void numberCountsKnotsSpline::getRPos(unsigned int n, const double* const flux,
 	if (currarg < minknot || currarg >= maxknot) continue;
 	workval += exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
       } 
-      R[j] += prefac*workval;
+      R[j] += prefac * workval;
     }
   }
 }
@@ -475,17 +474,17 @@ double numberCountsKnotsSpline::getRNeg(double fluxdensity,
   if (fluxdensity > maxknot) return 0.0; //Since max(beam) = 1
 
   double prefac;
-  prefac = bm.getPixSize()/3600.0;  //To sq deg
-  prefac = prefac*prefac;
+  prefac = bm.getPixSize() / 3600.0;  //To sq deg
+  prefac = prefac * prefac;
 
-  unsigned int npsf = bm.getNNeg();
-  
   double currarg, ieta, retval;
   retval = 0.0;
-  const double *ipixarr = bm.getNegInvPixArr();
-  if (bm.hasNegWeights()) {
-    const double* warr = bm.getPosWeights();
-    for (unsigned int i = 0; i < npsf; ++i) {
+  if (bm.isNegHist()) {
+    // Histogrammed negative beam
+    unsigned int nneghist = bm.getNHistNeg();
+    const double* warr = bm.getNegHistWeights();
+    const double *ipixarr = bm.getNegHist();
+    for (unsigned int i = 0; i < nneghist; ++i) {
       ieta = ipixarr[i];
       currarg = fluxdensity * ieta;
       if (currarg < minknot || currarg >= maxknot) continue;
@@ -493,6 +492,9 @@ double numberCountsKnotsSpline::getRNeg(double fluxdensity,
 	exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
     } 
   } else {
+    // Raw beam
+    unsigned int npsf = bm.getNNeg();
+    const double *ipixarr = bm.getNegInvPixArr();
     for (unsigned int i = 0; i < npsf; ++i) {
       ieta = ipixarr[i];
       currarg = fluxdensity * ieta;
@@ -510,8 +512,8 @@ double numberCountsKnotsSpline::getRNeg(double fluxdensity,
   \param[in,out] R Values of R from the negative beam are added onto this 
           (len n)
 */
-void numberCountsKnotsSpline::getRNeg(unsigned int n,const double* const flux,
-				      const beam& bm,double* R) const {
+void numberCountsKnotsSpline::getRNeg(unsigned int n, const double* const flux,
+				      const beam& bm, double* R) const {
   if (n == 0) return;
   if ((!isValid()) || (!bm.hasNeg())) {
     for (unsigned int i = 0; i < n; ++i)
@@ -523,23 +525,20 @@ void numberCountsKnotsSpline::getRNeg(unsigned int n,const double* const flux,
   double maxknot = knots[nknots-1];
 
   double prefac;
-  prefac = bm.getPixSize()/3600.0;  //To sq deg
-  prefac = prefac*prefac;
+  prefac = bm.getPixSize() / 3600.0;  //To sq deg
+  prefac = prefac * prefac;
 
-  unsigned int npsf = bm.getNNeg();
   double currarg, ieta, workval, fluxdensity;
-  double df = flux[1] - flux[0];
-  const double *ipixarr = bm.getNegInvPixArr();
-  if (bm.hasNegWeights()) {
-    const double* warr = bm.getPosWeights();
+  if (bm.isNegHist()) {
+    // Histogrammed beam
+    unsigned int nneghist = bm.getNHistNeg();
+    const double* warr = bm.getNegHistWeights();
+    const double *ipixarr = bm.getNegHist();
     for (unsigned int j = 0; j < n; ++j) {
-      fluxdensity = flux[j] - df;
-      if (fluxdensity <= 0.0) {
-	R[j] = 0.0;
-	continue;
-      }
+      fluxdensity = flux[j];
+      if (fluxdensity <= 0.0) continue;
       workval = 0.0;
-      for (unsigned int i = 0; i < npsf; ++i) {
+      for (unsigned int i = 0; i < nneghist; ++i) {
 	ieta = ipixarr[i];
 	currarg = fluxdensity * ieta;
 	if (currarg < minknot || currarg >= maxknot) continue;
@@ -549,12 +548,12 @@ void numberCountsKnotsSpline::getRNeg(unsigned int n,const double* const flux,
       R[j] += prefac*workval;
     }
   } else {
+    // Raw beam
+    unsigned int npsf = bm.getNPos();
+    const double *ipixarr = bm.getPosInvPixArr();
     for (unsigned int j = 0; j < n; ++j) {
       fluxdensity = flux[j];
-      if (fluxdensity <= 0.0) {
-	R[j] = 0.0;
-	continue;
-      }
+      if (fluxdensity <= 0.0) continue;
       workval = 0.0;
       for (unsigned int i = 0; i < npsf; ++i) {
 	ieta = ipixarr[i];
@@ -575,7 +574,7 @@ void numberCountsKnotsSpline::getRNeg(unsigned int n,const double* const flux,
        of both
   \returns R evaluated at fluxdensity
 */
-double numberCountsKnotsSpline::getR(double fluxdensity,const beam& bm,
+double numberCountsKnotsSpline::getR(double fluxdensity, const beam& bm,
 				     rtype rt) const {
   switch (rt) {
   case BEAMBOTH :

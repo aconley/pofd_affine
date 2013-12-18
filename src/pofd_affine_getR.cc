@@ -45,8 +45,8 @@ int getRSingle( int argc, char** argv ) {
   int c;
   int option_index = 0;
   optind = 1; //!< Reset parse
-  while ( ( c = getopt_long(argc,argv,optstring,long_options,
-			    &option_index ) ) != -1 ) 
+  while ((c = getopt_long(argc,argv,optstring,long_options,
+			  &option_index)) != -1) 
     switch(c) {
     case 'H' :
       histogram = true;
@@ -113,7 +113,7 @@ int getRSingle( int argc, char** argv ) {
       fluxes[i] = minflux + static_cast<double>(i)*dflux;
 
     R = new double[nflux];
-    model.getR(nflux,fluxes,bm,R,rt);
+    model.getR(nflux, fluxes, bm, R, rt);
     
     FILE *fp;
     fp = fopen( outfile.c_str(),"w");

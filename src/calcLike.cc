@@ -85,7 +85,7 @@ void calcLikeSingle::resize(unsigned int n) {
   \param[in] IGNOREMASK Ignore mask info in files
   \param[in] MEANSUB Subtract mean from data
   \param[in] BINDATA Bin the data
-  \param[in] NBINS Number of bins to use
+  \param[in] NBINS Number of data bins to use
 
   Special case for only a single data file
 */
@@ -163,12 +163,14 @@ readDataFromFiles(const std::vector<std::string>& datafiles,
 
 /*!
   \param[in] fl Name of FITS file to read beam from
+  \param[in] MINVAL Minimum bin value used
   \param[in] histogram Apply beam histogramming
-  \param[in] histogramlogstep Step size for logarithmic binning of beam
+  \param[in] NBINS Number of beam histogram bins to use
 */
-void calcLikeSingle::readBeam(const std::string& fl, bool histogram, 
-			      double histogramlogstep) {
-  bm.readFile(fl, histogram, histogramlogstep);
+void calcLikeSingle::readBeam(const std::string& fl, double MINVAL,
+			      bool histogram, unsigned int NBINS) {
+  bm.readFile(fl, MINVAL);
+  if (histogram) bm.makeHistogram(NBINS);
   has_beam = true;
 }
 
@@ -441,7 +443,7 @@ void calcLikeSingle::recieveCopy(MPI_Comm comm, int src) {
   \param[in] NINTERP Number of interpolation elements in R calculation
   \param[in] EDGEFIX Apply edge fix
   \param[in] BINNED Bin data
-  \param[in] NBINS Number of bins, if binning
+  \param[in] NBINS Number of data bins, if binning
 */
 calcLike::calcLike(unsigned int FFTSIZE, unsigned int NINTERP, 
 		   bool EDGEFIX, bool BINNED, unsigned int NBINS):
@@ -484,8 +486,9 @@ void calcLike::addWisdom(const std::string& filename) {
   \param[in] like_norms Vector of likelihood normalizations
   \param[in] IGNOREMASK Ignore any mask in data files
   \param[in] MEANSUB Mean subtract the data
-  \param[in] HISTOGRAM Histogram the beams
-  \param[in] HISTOGRAMLOGSTEP Log beam step if binning
+  \param[in] MINBEAMVAL Minimum beam value used
+  \param[in] HISTOGRAMBEAMS Histogram the beams
+  \param[in] NBEAMHIST Number of beam histogram bins to use
   \param[in] EXPCONF Expected confusion noise value
 
   Read in a set of data, grouping the inputs by beam and storing
@@ -496,8 +499,8 @@ void calcLike::readDataFromFiles(const std::vector<std::string>& datafiles,
 				 const std::vector<double>& sigmas,
 				 const std::vector<double>& like_norms,
 				 bool IGNOREMASK, bool MEANSUB,
-				 bool HISTOGRAM, double HISTOGRAMLOGSTEP,
-				 double EXPCONF) {
+				 double MINBEAMVAL, bool HISTOGRAM, 
+				 unsigned int NBEAMHIST, double EXPCONF) {
 
   //Make sure they are all the same length
   unsigned int ndat = datafiles.size();
@@ -554,8 +557,8 @@ void calcLike::readDataFromFiles(const std::vector<std::string>& datafiles,
       beamsets[i].setNInterp(ninterp);
       beamsets[i].readDataFromFiles(grpmap_it->second.datafiles,
 				    IGNOREMASK, MEANSUB, bin_data, nbins);
-      beamsets[i].readBeam(grpmap_it->second.beamfile, 
-			   HISTOGRAM, HISTOGRAMLOGSTEP);
+      beamsets[i].readBeam(grpmap_it->second.beamfile, MINBEAMVAL,
+			   HISTOGRAM, NBEAMHIST);
       beamsets[i].setExpConf(EXPCONF);
       beamsets[i].setSigmaBase(grpmap_it->second.sigmas);
       beamsets[i].setLikeNorm(grpmap_it->second.like_norms);

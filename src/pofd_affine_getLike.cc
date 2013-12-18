@@ -42,8 +42,8 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
     likeSet.readDataFromFiles(spec_info.datafiles, spec_info.psffiles, 
 			      spec_info.sigmas, spec_info.like_norm,
 			      spec_info.ignore_mask, spec_info.mean_sub, 
-			      spec_info.beam_histogram, spec_info.hist_logstep, 
-			      spec_info.exp_conf);
+			      spec_info.minbeamval, spec_info.beam_histogram, 
+			      spec_info.nbeamhist, spec_info.exp_conf);
     
     if (spec_info.has_wisdom_file) likeSet.addWisdom(spec_info.wisdom_file);
 

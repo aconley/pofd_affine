@@ -39,10 +39,16 @@
                   Number of R interpolation points (def: 1024)
    edge_fix=    bool
                   Apply edge fix to P(D).  On by default.		  
+   minbeamval=  value
+                  Minimum beam value used.  Everything with an absolute
+		  value <= than this is ignored.  This can be zero if you
+		  are not histogramming, but with histogramming a non-zero
+		  value is advisable.  You should look at your
+		  beam to decide a reasonable cutoff (def: 1e-5)
    beam_histogram= bool
                   Activates beam histogramming.  On by default.
-   hist_logstep= value
-                  If beam histogramming, log bin size of histogram (def: 0.2)
+   nbeamhist= value
+                  If beam histogramming, number of bins in histogram (def: 120)
    fit_sigma=   value
                   If value is true, this turns on fitting for sigma
    sigmaprior=  stdev
@@ -89,8 +95,9 @@ struct specFile {
   unsigned int fftsize; //!< Length of fft
   unsigned int ninterp; //!< Size of R interpolation
   bool edge_fix; //!< Apply edge fix to P(D)
+  double minbeamval; //!< Minimum beam value used
   bool beam_histogram; //!< Do beam histogramming
-  double hist_logstep; //!< Size of Beam histogram log step
+  unsigned int nbeamhist; //!< Number of beam histogram bins
   bool fit_sigma; //!< Are we fitting for sigma
   bool has_sigprior; //!< Is the sigma prior on
   double sigprior_stdev; //!< Stdev of sigma prior

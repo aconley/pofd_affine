@@ -131,6 +131,10 @@ void master( int argc, char **argv ) {
     for (int i = 1; i < nproc; ++i)
       MPI_Send(&n, 1, MPI_UNSIGNED, i, SENDUIVAL, MPI_COMM_WORLD);
 
+    n = bm.getNHistPos();
+    for (int i = 1; i < nproc; ++i)
+      MPI_Send(&n, 1, MPI_UNSIGNED, i, SENDUIVAL, MPI_COMM_WORLD);
+
     double val;
     val = bm.getEffectiveArea();
     for (int i = 1; i < nproc; ++i)
@@ -506,6 +510,10 @@ void slave() {
     MPI_Recv(&n, 1, MPI_UNSIGNED, 0, SENDUIVAL, MPI_COMM_WORLD, &Info);
     if (n != bm.getNNeg())
       throw affineExcept("test_copy","slave", "beam has wrong Nneg",
+			 35);
+    MPI_Recv(&n, 1, MPI_UNSIGNED, 0, SENDUIVAL, MPI_COMM_WORLD, &Info);
+    if (n != bm.getNHistPos())
+      throw affineExcept("test_copy","slave", "beam has wrong NHistPos",
 			 35);
     double val;
     MPI_Recv(&val, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);

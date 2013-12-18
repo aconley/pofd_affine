@@ -73,8 +73,11 @@ TEST(specFile1DTest, ReadCheck) {
   EXPECT_EQ(spec_info.exp_conf, 0.0) <<
     "Expected zero expected confusion noise";
 
-  EXPECT_EQ(spec_info.hist_logstep, 0.2) <<
-    "Unexpected beam histogram log step";
+  EXPECT_FLOAT_EQ(spec_info.minbeamval, 1e-6) <<
+    "Unexpected minimum beam value";
+
+  EXPECT_EQ(spec_info.nbeamhist, 120) <<
+    "Unexpected number of beam histogram bins";
 
   ASSERT_TRUE(spec_info.has_cfirbprior) << "Expected to have CFIRB prior";
   EXPECT_NEAR(spec_info.cfirbprior_mean, 1.05, 0.0001) <<

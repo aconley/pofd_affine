@@ -82,8 +82,8 @@ class calcLikeSingle {
 			 bool BINDATA=false, unsigned int NBINS=1000);
 
   /*! \brief Read in beam file */
-  void readBeam(const std::string&, bool histogram=false, 
-		double histogramlogstep=0.2);
+  void readBeam(const std::string&, double MINVAL=1e-5, bool histogram=false,
+		unsigned int NBINS=120);
 
   /*! \brief Access to beam info */
   const beam& getBeam() const { return bm; }
@@ -188,8 +188,8 @@ class calcLike {
 			 const std::vector<double>&,
 			 const std::vector<double>&,
 			 bool IGNOREMASK=false, bool MEANSUB=false,
-			 bool HISTOGRAM=false, double HISTOGRAMLOGSTEP=0.2,
-			 double EXPCONF=0.0);
+			 double MINBEAMVAL=1e-5, bool HISTOGRAMBEAMS=false, 
+			 unsigned int NBEAMHIST=120, double EXPCONF=0.0);
   
   void setVerbose() { verbose=true; } //!< Turn on verbose mode
   void unSetVerbose() { verbose = false; } //!< Turn off verbose mode
