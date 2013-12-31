@@ -129,9 +129,9 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
 			      spec_info.psffiles1, spec_info.psffiles2,
 			      spec_info.sigmas1, spec_info.sigmas2, 
 			      spec_info.like_norm, spec_info.ignore_mask, 
-			      spec_info.mean_sub, spec_info.beam_histogram,
-			      spec_info.hist_logstep, spec_info.exp_conf1, 
-			      spec_info.exp_conf2);
+			      spec_info.mean_sub, spec_info.minbeamval,
+			      spec_info.beam_histogram, spec_info.nbeamhist,
+			      spec_info.exp_conf1, spec_info.exp_conf2);
 
     if (spec_info.has_wisdom_file) likeSet.addWisdom(spec_info.wisdom_file);
 

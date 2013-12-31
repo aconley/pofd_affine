@@ -42,10 +42,16 @@
                   is only useful for turning it off)
    nedge=       value
                   Set size of edge interpolation (def: 256).
+   minbeamval=  value
+                  Minimum beam value used.  Everything with an absolute
+		  value <= than this is ignored.  This can be zero if you
+		  are not histogramming, but with histogramming a non-zero
+		  value is advisable.  You should look at your
+		  beam to decide a reasonable cutoff (def: 1e-6)
    beam_histogram= bool
                   Activates beam histogramming.  On by default.
-   hist_logstep= value
-                  If beam histogramming, log bin size of histogram (def: 0.2)  
+   nbeamhist= value
+                  If beam histogramming, number of bins in histogram (def: 150)
    edge_fix=    bool
                   Apply edge fix to P(D). On by default.
    fit_sigma1=  value
@@ -104,8 +110,10 @@ struct specFileDouble {
   bool edge_set; //!< Do edge setting integration
   unsigned int nedge; //!< Number of edge integration points
   bool edge_fix; //!< Apply edge fix to P(D)
+  double minbeamval; //!< Minimum beam value used
   bool beam_histogram; //!< Do beam histogramming
   double hist_logstep; //!< Size of Beam histogram log step
+  unsigned int nbeamhist; //!< Number of beam histogram bins
   bool fit_sigma1; //!< Do fit to sigma in band 1
   bool fit_sigma2; //!< Do fit to sigma in band 2
   bool has_sigprior1; //!< Is the sigma prior on, band 1

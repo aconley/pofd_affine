@@ -7,9 +7,8 @@
 
 #include<mpi.h>
 
-#include <string>
-#include <algorithm>
-#include <limits>
+#include<string>
+#include<utility>
 
 #include "../include/utility.h"
 
@@ -19,121 +18,107 @@
   Note that zero beam values are not stored.  The two beams must have the same
   pixel size and extent, and are assumed co-aligned.
 
+  This can also store the histogram of the inverse beam.
+
+  There are four sign components to keep track of.  These are always
+  in the order pos-pos, pos-neg, neg-pos, neg-neg
+
   \ingroup Beams
 */
 class doublebeam {
  private :
-  double pixsize; //!< Size of pixel in arcsec (if oversampled, not real pix)
-
-  //There are 4 combinations to worry about:
-  // positive+positive, positive+negative, negative+positive, negative+negative
-  //They will always be stored in that order
-  bool hassign[4]; //!< Do we have pp,pn,np,nn pixels
-  unsigned int npix[4]; //!< Number of pp, pn, np, nn pixels
-
   static const unsigned int histothresh; //!< Don't bother histogramming for this many or fewer
 
-  bool has_weights[4]; //!< Using histogrammed weights? (pp,pn,np,nn)
-  double *weights[4]; //!< Histogram weights, if has weights (pp,pn,np,nn); double to avoid casting
-  double *pixarr1[4]; //!< Array of pixels, beam 1 (pp,pn,np,nn)
-  double *pixarr2[4]; //!< Array of pixels, beam 2 (pp,pn,np,nn)
-  double *ipixarr1[4]; //!< Array of inverse pixels, beam 1 (pp,pn,np,nn)
-  double *ipixarr2[4]; //!< Array of inverse pixels, beam 2 (pp,pn,np,nn)
+  double pixsize; //!< Size of pixel in arcsec
 
+  // Raw beam
+  bool hassign[4]; //!< Do we have any elements of given sign component?
+  unsigned int npix[4];  //!< Number of pp, pn, np, nn pixels
+  double *pixarr1[4]; //!< Array of pixels, beam 1.  Length npix
+  double *pixarr2[4]; //!< Array of pixels, beam 2.  Length npix
+  double *invpixarr1[4]; //!< Array of inverse pixels, beam 1.  Length npix
+  double *invpixarr2[4]; //!< Array of inverse pixels, beam 2.  Length npix
+
+  // Histogrammed inverse beam
+  // We build the nbins x nbins histogram, but only keep the non-zero entries
+  unsigned int nbins; //!< Number of histogram bins
+  bool ishistogrammed[4]; //!< Is given histogram sign available?
+  unsigned int nhist[4]; //!< Number of bins actually stored for each histogram
+  double *binweights[4]; //!< Weights (double to avoid casting expense)
+  double *binvals1[4]; //!< Bin values, inverse beam, band 1
+  double *binvals2[4]; //!< Bin values, inverse beam, band 2
+
+  // Descriptive parameters. 
   double tot1[4]; //!< Sum of pp,pn,np,nn elements, beam 1
   double tot2[4]; //!< Sum of pp,pn,np,nn elements, beam 2
   double totsq1[4]; //!< Sum of pp,pn,np,nn squared elements, beam 1
   double totsq2[4]; //!< Sum of pp,pn,np,nn squared elements, beam 2
-  double totsm1; //!< Sum of tot1
-  double totsm2; //!< Sum of tot2
+
+  double minval; //!< Minimum absolute value kept
 
   void cleanup(); //!< Frees internal structures
 
  public :
   doublebeam(); //!< Default constructor
-  doublebeam(const std::string&, const std::string&,
-	     bool histogram=false, double histogramlogstep=0.2); //!< Reads beam from files
-  doublebeam(const doublebeam&); //!< Copy constructor
+  doublebeam(const std::string&, const std::string&, bool histogram=false,
+	     unsigned int NBINS=150, double MINVAL=1e-6); //!< Reads beam from files
   ~doublebeam() { cleanup(); } //!< Destructor
 
   void free() { cleanup(); } //!< Free all memory
 
   /*! \brief Read in files */
-  void readFiles(const std::string&, const std::string& filename2,
-		 bool histogram=false, double histogramlogstep=0.2); 
-  
-  void setBeams(unsigned int, const double* const,
-		const double* const, double, bool histogram=false,
-		double histogramlogstep=0.2); //!< Set beams by hand
+  void readFiles(const std::string& filename1, const std::string& filename2,
+		 double MINVAL=1e-6); 
+
+  /*! \brief Sets beams from arrays */
+  void setBeams(unsigned int n, const double* const beam1,
+		const double* const beam2, double PIXSIZE, double MINVAL=1e-6);
+
+  /*! \brief Build histograms */
+  void makeHistogram(unsigned int NBINS=150); //!< Prepare the histogram
+
+  bool hasData() const; //!< Is there any data set?
 
   double getEffectiveArea1() const; //!< Get effective area of beam1 in sq deg
-  double getEffectiveAreaSign1(unsigned int) const; //!< Get effective area of either pp,pn,np, or nn beam 1, in pixels
-  double getEffectiveAreaSqSign1(unsigned int) const; //!< Get effective squared area of either pp,pn,np, or nn, beam 1
+  double getEffectiveAreaSign1(unsigned int) const; //!< Get effective area of either pp, pn, np, or nn beam 1, in pixels
+  double getEffectiveAreaSqSign1(unsigned int) const; //!< Get effective squared area of either pp, pn, np, or nn, beam 1
   double getEffectiveArea2() const; //!< Get effective area of beam2 in sq deg
-  double getEffectiveAreaSign2(unsigned int) const; //!< Get effective area of either pp,pn,np, or nn beam 2, in pixels
-  double getEffectiveAreaSqSign2(unsigned int) const; //!< Get effective squared area of either pp,pn,np, or nn, beam 2
-
-  double getEffectiveAreaPixGeoMean() const; //!< Get the geometric mean of the effective areas in pixels
+  double getEffectiveAreaSign2(unsigned int) const; //!< Get effective area of either pp, pn, np, or nn beam 2, in pixels
+  double getEffectiveAreaSqSign2(unsigned int) const; //!< Get effective squared area of either pp, pn, np, or nn, beam 2
   
-  double getMinAreaPix() const; //!< Get area of minimum area beam
-
-  doublebeam& operator=(const doublebeam&); //!< Copy
-
-  unsigned int getNPix(unsigned int i) const { return npix[i]; } //!< Number of pixels in pp,pn,np,nn beams
+  bool hasSign(unsigned int i) const { return hassign[i]; } //!< Does beam have given sign component?
+  unsigned int getNPix(unsigned int i) const { return npix[i]; } //!< Number of pixels in pp, pn, np, nn beams
   unsigned int getTotalNPix() const; //!< Total number of pix
-  bool hasSign(unsigned int i) const { return hassign[i]; } //!< Do beams have certain sign combinations? (pp,pn,np,nn)
-  bool hasWeights(unsigned int i) const { return has_weights[i]; } //!< Has beam weights in sign combination (pp,pn,np,nn)
+  double getMinval() const { return minval; }
+  double getPixSize() const { return pixsize; }
 
   /*! \brief Get max values for pp,pn,np,nn pieces of beam 1*/
-  double getMax1(unsigned int) const;
+  std::pair<double, double> getMinMax1(unsigned int) const;
   /*! \brief Get max values for pp,pn,np,nn pieces of beam 2*/
-  double getMax2(unsigned int) const;
+  std::pair<double, double> getMinMax2(unsigned int) const;
 
-  /*! \brief Get min/max values for pp,pn,np,nn pieces of beam 1*/
-  void getMinMax1(unsigned int, double&, double&) const;
-  /*! \brief Get min/max values for pp,pn,np,nn pieces of beam 2*/
-  void getMinMax2(unsigned int, double&, double&) const;
-
-  /*! \brief Get pixel array element, band 1 */
-  const double* const getPixArr1(unsigned int idx) const { return pixarr1[idx]; }
-  /*! \brief Get pixel array element, band 2 */
-  const double* const getPixArr2(unsigned int idx) const { return pixarr2[idx]; }
-
+  // Direct access to inverse pixel array.  Bad style, but important
+  // for efficiency reasons
   /*! \brief Get inverse pixel array element, band 1 */
-  const double* const getInvPixArr1(unsigned int idx) const { return ipixarr1[idx]; }
+  const double* const getInvPixArr1(unsigned int idx) const { return invpixarr1[idx]; }
   /*! \brief Get inverse pixel array element, band 2 */
-  const double* const getInvPixArr2(unsigned int idx) const { return ipixarr2[idx]; }
+  const double* const getInvPixArr2(unsigned int idx) const { return invpixarr2[idx]; }
 
-  /*! \brief Get weights element */
-  const double* const getWeights(unsigned int idx) const { return weights[idx]; }
-
-  double getPixSize() const { return pixsize; } //!< Get pixel size (1d)
+  // Histogram information
+  unsigned int getNBins() const { return nbins; }
+  bool isHistogrammed(unsigned int i) const { return ishistogrammed[i]; }
+  bool getNHist(unsigned int i) const { return nhist[i]; }
+  
+  // More direct acess 
+  const double* const getBinWeights(unsigned int i) const { return binweights[i]; }
+  const double* const getBinVals1(unsigned int i) const { return binvals1[i]; }
+  const double* const getBinVals2(unsigned int i) const { return binvals2[i]; }
+  
 
   /*! \brief MPI copy send operation */
   void sendSelf(MPI_Comm, int dest) const;
   /*! \brief MPI copy recieve operation */
   void recieveCopy(MPI_Comm, int dest);
-};
-
-/*! \brief Structure for beam histogramming */
-struct bmhist {
-public:
-  //For some reason averaging over 1/beam works badly
-  unsigned int cnt; //!< Number of elements in bin
-  double tot1; //!< Total in band 1
-  double tot2; //!< Total in band 2
-  bmhist() { cnt = 0; tot1=tot2=0.0; } //!< Constructor
-  /*! \brief Copy constructor */
-  bmhist(const bmhist& other) {
-    cnt = other.cnt; tot1=other.tot1; tot2=other.tot2;
-  }
-  /*! \brief Copy operator */
-  bmhist& operator=(const bmhist& other) {
-    if (this == &other) return *this;
-    cnt = other.cnt; tot1=other.tot1; tot2=other.tot2;
-    return *this;
-  }
-    
 };
 
 #endif

@@ -1319,18 +1319,18 @@ getFluxPowerPerArea(double p1, double p2) const {
 
   Does not check inputs for validity, and does not include area prefactor
 */
-double numberCountsDoubleLogNormal::getRInternal(double f1,double f2,
+double numberCountsDoubleLogNormal::getRInternal(double f1, double f2,
 						 const doublebeam& bm, 
 						 unsigned int sgn) const {
   double ieta1, ieta2, retval;
   const double* iparr1;
   const double* iparr2;
   unsigned int npsf = bm.getNPix(sgn);
-  iparr1 = bm.getInvPixArr1(sgn);
-  iparr2 = bm.getInvPixArr2(sgn);
   retval = 0.0;
-  if (bm.hasWeights(sgn)) {
-    const double* warr = bm.getWeights(sgn);
+  if (bm.isHistogrammed(sgn)) {
+    const double* warr = bm.getBinWeights(sgn);
+    iparr1 = bm.getBinVals1(sgn);
+    iparr2 = bm.getBinVals2(sgn);
     for (unsigned int i = 0; i < npsf; ++i) {
       ieta1 = iparr1[i];
       ieta2 = iparr2[i];
@@ -1338,6 +1338,8 @@ double numberCountsDoubleLogNormal::getRInternal(double f1,double f2,
 	getNumberCountsInner(f1 * ieta1, f2 * ieta2);
     } 
   } else {
+    iparr1 = bm.getInvPixArr1(sgn);
+    iparr2 = bm.getInvPixArr2(sgn);
     for (unsigned int i = 0; i < npsf; ++i) {
       ieta1 = iparr1[i];
       ieta2 = iparr2[i];
@@ -1369,8 +1371,6 @@ getRInternal(unsigned int n1, const double* const f1,
   double minknot = knots[0];
   double maxknot = knots[nknots-1];
 
-  double maxf1 = maxknot / bm.getMax1(sgn); //!< Max non-zero flux, band 1
-
   unsigned int npsf = bm.getNPix(sgn);
   setRWorkSize(npsf);
 
@@ -1380,18 +1380,14 @@ getRInternal(unsigned int n1, const double* const f1,
   const double *iparr2;
   double ieta1, workval, f1val, f1prod, f2val, f2prod, isigma, tfac, if2;
 
-  iparr1 = bm.getInvPixArr1(sgn);
-  iparr2 = bm.getInvPixArr2(sgn);
-  if (bm.hasWeights(sgn)) {
-    const double* warr = bm.getWeights(sgn);
+  if (bm.isHistogrammed(sgn)) {
+    const double* warr = bm.getBinWeights(sgn);
+    iparr1 = bm.getBinVals1(sgn);
+    iparr2 = bm.getBinVals2(sgn);
     for (unsigned int i = 0; i < n1; ++i) {
       rowptr = R + i * n2;
       f1val = f1[i];
-      if (f1val <= 0 || f1val >= maxf1) { 
-	//R always zero at these boundaries or outside them
-	//Do nothing
-      } else {
-	//Precompute f1 related values
+      if (f1val > 0.0)
 	for (unsigned int j = 0; j < npsf; ++j) {
 	  ieta1 = iparr1[j];
 	  f1prod = f1val * ieta1;
@@ -1403,31 +1399,31 @@ getRInternal(unsigned int n1, const double* const f1,
 	      exp2(gsl_spline_eval(splinelog, log2(f1prod), acc));
 	    RWorkValid[j] = true;
 	  } else RWorkValid[j] = false;
-	}
-	//Now loop over flux 2 values
-	for (unsigned int j = 0; j < n2; ++j) {
-	  f2val = f2[j];
-	  workval = 0;
-	  if (f2val > 0) {
-	    if2 = 1.0 / f2val;
-	    for (unsigned int k = 0; k < npsf; ++k)
-	      if (RWorkValid[k]) {
-		f2prod = f2val * iparr2[k];
-		tfac = log(f2prod) - RWork1[k];
-		workval += RWork2[k] * if2 * exp(tfac * tfac * RWork3[k]);
-	      }
+	  //Now loop over flux 2 values
+	  for (unsigned int j = 0; j < n2; ++j) {
+	    f2val = f2[j];
+	    workval = 0;
+	    if (f2val > 0) {
+	      if2 = 1.0 / f2val;
+	      for (unsigned int k = 0; k < npsf; ++k)
+		if (RWorkValid[k]) {
+		  f2prod = f2val * iparr2[k];
+		  tfac = log(f2prod) - RWork1[k];
+		  workval += RWork2[k] * if2 * exp(tfac * tfac * RWork3[k]);
+		}
+	    }
+	    rowptr[j] += workval;
 	  }
-	  rowptr[j] += workval;
 	}
-      }
     }
   } else {
+    // No histogram
+    iparr1 = bm.getInvPixArr1(sgn);
+    iparr2 = bm.getInvPixArr2(sgn);
     for (unsigned int i = 0; i < n1; ++i) {
       rowptr = R + i * n2;
       f1val = f1[i];
-      if (f1val <= 0.0 || f1val >= maxf1) { 
-	//Do nothing
-      } else {
+      if (f1val >= 0.0)
 	for (unsigned int j = 0; j < npsf; ++j) {
 	  ieta1 = iparr1[j];
 	  f1prod = f1val * ieta1;
@@ -1455,7 +1451,6 @@ getRInternal(unsigned int n1, const double* const f1,
 	  }
 	  rowptr[j] += workval;
 	}
-      }
     }
   }
 }
@@ -1478,10 +1473,6 @@ double numberCountsDoubleLogNormal::getR(double f1, double f2,
     return std::numeric_limits<double>::quiet_NaN();
 
   if ((f1 <= 0.0) || (f2 <= 0.0)) return 0.0;
-  if (f1 > knots[nknots-1]) {
-    //Since max(beam) = 1
-    return 0.0;
-  }
 
   double Rval;
 
@@ -1489,38 +1480,38 @@ double numberCountsDoubleLogNormal::getR(double f1, double f2,
   case BEAMPOS :
     if (! bm.hasSign(0))
       return std::numeric_limits<double>::quiet_NaN();
-    Rval = getRInternal(f1,f2,bm,0);
+    Rval = getRInternal(f1, f2, bm, 0);
     break;
   case BEAMPOSNEG :
     if (! bm.hasSign(1))
       return std::numeric_limits<double>::quiet_NaN();
-    Rval = getRInternal(f1,f2,bm,1);
+    Rval = getRInternal(f1, f2, bm, 1);
     break;
   case BEAMNEGPOS :
     if (! bm.hasSign(2))
       return std::numeric_limits<double>::quiet_NaN();
-    Rval = getRInternal(f1,f2,bm,2);
+    Rval = getRInternal(f1, f2, bm, 2);
     break;
   case BEAMNEG :
     if (! bm.hasSign(3))
       return std::numeric_limits<double>::quiet_NaN();
-    Rval = getRInternal(f1,f2,bm,3);
+    Rval = getRInternal(f1, f2, bm, 3);
     break;
   case BEAMALL :
     Rval = 0.0;
     for (unsigned int i = 0; i < 4; ++i) {
       if (bm.hasSign(i))
-	Rval += getRInternal(f1,f2,bm,i);
+	Rval += getRInternal(f1, f2, bm, i);
     }
     break;
   default :
-    throw affineExcept("numberCountsDoubleLogNormal","getR",
-		       "Invalid bmtype",1);
+    throw affineExcept("numberCountsDoubleLogNormal", "getR",
+		       "Invalid bmtype", 1);
     break;
   }
 
   double prefac;
-  prefac = bm.getPixSize()/3600.0;  //To sq deg
+  prefac = bm.getPixSize() / 3600.0;  //To sq deg
   
   return prefac * prefac * Rval;
 
@@ -1566,7 +1557,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 	vals[i] = std::numeric_limits<double>::quiet_NaN();
       return;
     }
-    getRInternal(n1,f1,n2,f2,bm,0,vals);
+    getRInternal(n1, f1, n2, f2, bm, 0, vals);
     break;
   case BEAMPOSNEG :
     if (! bm.hasSign(1)) {
@@ -1574,7 +1565,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 	vals[i] = std::numeric_limits<double>::quiet_NaN();
       return;
     }
-    getRInternal(n1,f1,n2,f2,bm,1,vals);
+    getRInternal(n1, f1, n2, f2, bm, 1, vals);
     break;
   case BEAMNEGPOS :
    if (! bm.hasSign(2)) {
@@ -1582,7 +1573,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 	vals[i] = std::numeric_limits<double>::quiet_NaN();
       return;
     }
-    getRInternal(n1,f1,n2,f2,bm,2,vals);
+    getRInternal(n1, f1, n2, f2, bm, 2, vals);
     break;
   case BEAMNEG :
    if (! bm.hasSign(2)) {
@@ -1590,11 +1581,11 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 	vals[i] = std::numeric_limits<double>::quiet_NaN();
       return;
     }
-    getRInternal(n1,f1,n2,f2,bm,3,vals);
+    getRInternal(n1, f1, n2, f2, bm, 3, vals);
     break;
   case BEAMALL :
     for (unsigned int k = 0; k < 4; ++k) {
-      if (bm.hasSign(k)) getRInternal(n1,f1,n2,f2,bm,k,vals);
+      if (bm.hasSign(k)) getRInternal(n1, f1, n2, f2, bm, k, vals);
     }
     break;
   default :

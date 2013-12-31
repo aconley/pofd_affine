@@ -319,16 +319,17 @@ int main( int argc, char** argv ) {
       std::cerr << "\tEither" << std::endl;
       std::cerr << std::endl;
 
-      std::cerr << "\t pofd_mcmc_getR [options] minflux maxflux nflux initfile"
+      std::cerr << "\t pofd_affine_getR [options] minflux maxflux nflux initfile"
 		<< std::endl;
       std::cerr<< "\t  beamfile outfile" << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tfor the 1D case or" << std::endl;
       std::cerr << std::endl;
-      std::cerr << "\t pofd_mcmc_getR -d [options] minflux1 maxflux1 nflux1"
+      std::cerr << "\t pofd_affine_getR -d [options] minflux1 maxflux1 nflux1"
 		<< std::endl;
-      std::cerr << "\t  minflux2 minflux2 initfile beamfile1 beamfile2 outfile"
+      std::cerr << "\t  minflux2 manflux2 nflux2 initfile beamfile1 beamfile2"
 		<< std::endl;
+      std::cerr << "\t  outfile" << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tfor the 2D case." << std::endl;
       std::cerr << std::endl;

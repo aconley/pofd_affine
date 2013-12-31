@@ -195,14 +195,18 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
 /*!
   \param[in] fl1 FITS filename to read band 1 beam from
   \param[in] fl2 FITS filename to read band 2 beam from
-  \param[in] histogram Use beam histogramming
-  \param[in] histogramlogstep Bin size (log) for beam histogramming
+  \param[in] MINVAL Minimum value; specificall, only values where
+     both beams satisfy fabs(val) > minval are kept.
+  \param[in] histogram Apply beam histogramming
+  \param[in] NBINS Number of beam histogram bins to use
 */
 void calcLikeDoubleSingle::readBeam(const std::string& fl1, 
 				    const std::string& fl2,
+				    double MINVAL,
 				    bool histogram, 
-				    double histogramlogstep) {
-  bm.readFiles(fl1, fl2, histogram, histogramlogstep);
+				    unsigned int NBINS) {
+  bm.readFiles(fl1, fl2, MINVAL);
+  if (histogram) bm.makeHistogram(NBINS);
   has_beam = true;
 }
 
@@ -606,8 +610,9 @@ void calcLikeDouble::addWisdom(const std::string& filename) {
   \param[in] like_norms Vector of likelihood normalizations
   \param[in] IGNOREMASK Ignore any mask in data files
   \param[in] MEANSUB Mean subtract the data
-  \param[in] HISTOGRAM Histogram the beams
-  \param[in] HISTOGRAMLOGSTEP Log beam step if binning
+  \param[in] MINBEAMVAL Minimum beam value used
+  \param[in] HISTOGRAMBEAMS Histogram the beams
+  \param[in] NBEAMHIST Number of beam histogram bins to use
   \param[in] EXPCONF1 Expected confusion noise value, band 1
   \param[in] EXPCONF2 Expected confusion noise value, band 2
 
@@ -622,8 +627,8 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
 		  const std::vector<double>& sigmas1,
 		  const std::vector<double>& sigmas2,
 		  const std::vector<double>& like_norms,
-		  bool IGNOREMASK, bool MEANSUB,
-		  bool HISTOGRAM, double HISTOGRAMLOGSTEP,
+		  bool IGNOREMASK, bool MEANSUB, double MINBEAMVAL, 
+		  bool HISTOGRAM, unsigned int NBEAMHIST, 
 		  double EXPCONF1, double EXPCONF2) {
 
   //Make sure they are all the same length
@@ -699,7 +704,7 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
 				    IGNOREMASK, MEANSUB, bin_data, nbins);
       beamsets[i].readBeam(grpmap_it->second.beamfile1, 
 			   grpmap_it->second.beamfile2, 
-			   HISTOGRAM, HISTOGRAMLOGSTEP);
+			   MINBEAMVAL, HISTOGRAM, NBEAMHIST);
       beamsets[i].setExpConf1(EXPCONF1);
       beamsets[i].setExpConf2(EXPCONF2);
       beamsets[i].setSigmaBase1(grpmap_it->second.sigmas1);

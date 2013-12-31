@@ -91,8 +91,9 @@ class calcLikeDoubleSingle { //Odd name...
 			 bool BINDATA=false, unsigned int NBINS=100);
 
   /*! \brief Read in beam files */
-  void readBeam(const std::string&, const std::string&, bool histogram=false, 
-		double histogramlogstep=0.2);
+  void readBeam(const std::string&, const std::string&, 
+		double MINVAL=1e-6, bool histogram=false, 
+		unsigned int NBINS=150);
 
   /*! \brief Access to beam info */
   const doublebeam& getBeam() const { return bm; }
@@ -212,7 +213,8 @@ class calcLikeDouble {
 			 const std::vector<double>&,
 			 const std::vector<double>&,
 			 bool IGNOREMASK=false, bool MEANSUB=false,
-			 bool HISTOGRAM=false, double HISTOGRAMLOGSTEP=0.2,
+			 double MINBEAMVAL=1e-6, bool HISTOGRAM=false,
+			 unsigned int NBEAMHIST=160,
 			 double EXPCONF1=0.0, double EXPCONF2=0.0);
   
   void setVerbose() { verbose=true; } //!< Turn on verbose mode
