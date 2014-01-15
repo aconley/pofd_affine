@@ -48,20 +48,20 @@ void pofdMCMCDouble::initChains() {
 bool pofdMCMCDouble::initChainsMaster() {
   if (rank != 0)
     throw affineExcept("pofdMCMCDouble", "initChainsMaster",
-		       "Should not be called except on master node", 1);
+		       "Should not be called except on master node");
 
   //Model initialization file
   ifile.readFile(initfile, true, true);
   unsigned int ntot = ifile.getNTot();
   if (ntot == 0)
     throw affineExcept("pofdMCMCDouble", "initChainsMaster",
-		       "No model parameters read in", 2);
+		       "No model parameters read in");
   
   //Data/fit initialization file
   spec_info.readFile(specfile);
   if (spec_info.datafiles1.size() == 0)
       throw affineExcept("pofdMCMCDouble", "initChainsMaster",
-			 "No data files read", 3);
+			 "No data files read");
 
   //Number of parameters is number of knots (ntot) + 2 for the
   // sigma in each band -- although some may be fixed
@@ -222,7 +222,7 @@ bool pofdMCMCDouble::areParamsValid(const paramSet& p) const {
   unsigned int nparams = getNParams();
   if (!is_init)
     throw affineExcept("pofdMCMCDouble", "areParamsValid",
-		       "Can't check params without initialization", 1);
+		       "Can't check params without initialization");
   if (!ifile.isValid(p)) return false; //Doesn't check sigma multipliers
   if (p[nparams-2] <= 0.0) return false;
   if (p[nparams-1] <= 0.0) return false;
@@ -238,12 +238,12 @@ void pofdMCMCDouble::generateInitialPosition(const paramSet& p) {
   unsigned int ntot = ifile.getNTot();
   if (ntot == 0)
     throw affineExcept("pofdMCMCDouble", "generateInitialPosition",
-		       "No model info read in", 1);
+		       "No model info read in");
 
   unsigned int npar = getNParams();
   if (p.getNParams() < npar)
     throw affineExcept("pofdMCMCDouble", "generateInitialPosition",
-		       "Wrong number of params in input", 2);
+		       "Wrong number of params in input");
 
   chains.clear();
   chains.addChunk(1);
@@ -286,7 +286,7 @@ void pofdMCMCDouble::generateInitialPosition(const paramSet& p) {
       }
       if (j == maxtrials)
 	throw affineExcept("pofdMCMCDouble", "initChainsMaster",
-			   "Couldn't generate sigma multiplier1 value", 3);
+			   "Couldn't generate sigma multiplier1 value");
       pnew[ntot] = trialval;
     } else pnew[ntot] = 1.0;
 
@@ -298,7 +298,7 @@ void pofdMCMCDouble::generateInitialPosition(const paramSet& p) {
       }
       if (j == maxtrials)
 	throw affineExcept("pofdMCMCDouble", "initChainsMaster",
-			   "Couldn't generate sigma multiplier2 value", 4);
+			   "Couldn't generate sigma multiplier2 value");
       pnew[ntot + 1] = trialval;
     } else pnew[ntot + 1] = 1.0;
     
@@ -315,7 +315,7 @@ void pofdMCMCDouble::generateInitialPosition(const paramSet& p) {
 bool pofdMCMCDouble::initChainsSlave() {
   if (rank == 0)
     throw affineExcept("pofdMCMCDouble","initChainsSlave",
-		       "Should not be called on master node", 1);
+		       "Should not be called on master node");
   //Send message to master saying we are ready
   int jnk;
   MPI_Send(&jnk, 1, MPI_INT, 0, pofd_mcmc::PMCMCSENDINIT, MPI_COMM_WORLD);
@@ -366,7 +366,7 @@ bool pofdMCMCDouble::initChainsSlave() {
 double pofdMCMCDouble::getLogLike(const paramSet& p, bool& pars_invalid) {
   if (!is_init)
     throw affineExcept("pofdMCMC", "getLogLike",
-		       "Called on unitialized object", 1);
+		       "Called on unitialized object");
   return likeSet.getLogLike(p, pars_invalid);
 }
 
@@ -378,7 +378,7 @@ void pofdMCMCDouble::writeToHDF5Handle(hid_t objid) const {
 
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("pofdMCMC", "writeToHDF5Handle",
-		       "Input handle is not valid", 1);
+		       "Input handle is not valid");
 
   // Write to top level
   affineEnsemble::writeToHDF5Handle(objid);
@@ -391,7 +391,7 @@ void pofdMCMCDouble::writeToHDF5Handle(hid_t objid) const {
 
   if (H5Iget_ref(groupid) < 0)
     throw affineExcept("pofdMCMCDouble", "writeToHDF5",
-		       "Failed to create HDF5 group", 2);
+		       "Failed to create HDF5 group");
 
   likeSet.writeToHDF5Handle(groupid);
   spec_info.writeToHDF5Handle(groupid);

@@ -47,20 +47,20 @@ void pofdMCMC::initChains() {
 bool pofdMCMC::initChainsMaster() {
   if (rank != 0)
     throw affineExcept("pofdMCMC", "initChainsMaster",
-		       "Should not be called except on master node", 1);
+		       "Should not be called except on master node");
 
   //Model initialization file
   ifile.readFile(initfile, true, true);
   unsigned int nknots = ifile.getNKnots();
   if (nknots == 0)
     throw affineExcept("pofdMCMC", "initChainsMaster",
-		       "No model knots read in", 2);
+		       "No model knots read in");
   
   //Data/fit initialization file
   spec_info.readFile(specfile);
   if (spec_info.datafiles.size() == 0)
       throw affineExcept("pofdMCMC", "initChainsMaster",
-			 "No data files read", 3);
+			 "No data files read");
 
 
   //Number of parameters is number of knots + 1 for the
@@ -193,7 +193,7 @@ bool pofdMCMC::areParamsValid(const paramSet& p) const {
   unsigned int nparams = getNParams();
   if (!is_init)
     throw affineExcept("pofdMCMC", "areParamsValid",
-		       "Can't check params without initialization", 1);
+		       "Can't check params without initialization");
   if (!ifile.isValid(p)) return false; //Doesn't check sigma multiplier
   if (p[nparams-1] <= 0.0) return false;
   return true;
@@ -206,12 +206,12 @@ void pofdMCMC::generateInitialPosition(const paramSet& p) {
   unsigned int nknots = ifile.getNKnots();
   if (nknots == 0)
     throw affineExcept("pofdMCMC", "generateInitialPosition",
-		       "No model knots read in", 1);
+		       "No model knots read in");
   
   unsigned int npar = p.getNParams();
   if (npar < getNParams())
     throw affineExcept("pofdMCMC", "generateInitialPosition",
-		       "Wrong number of params in input", 2);
+		       "Wrong number of params in input");
 
   chains.clear();
   chains.addChunk(1);
@@ -250,7 +250,7 @@ void pofdMCMC::generateInitialPosition(const paramSet& p) {
       }
       if (j == maxtrials)
 	throw affineExcept("pofdMCMC", "generateInitialPosition",
-			   "Couldn't generate sigma multiplier value", 3);
+			   "Couldn't generate sigma multiplier value");
       pnew[nknots] = trialval;
     } else pnew[nknots] = 1.0;
     
@@ -267,7 +267,7 @@ void pofdMCMC::generateInitialPosition(const paramSet& p) {
 bool pofdMCMC::initChainsSlave() {
   if (rank == 0)
     throw affineExcept("pofdMCMC","initChainsSlave",
-		       "Should not be called on master node", 1);
+		       "Should not be called on master node");
   //Send message to master saying we are ready
   int jnk;
   MPI_Send(&jnk, 1, MPI_INT, 0, pofd_mcmc::PMCMCSENDINIT, MPI_COMM_WORLD);
@@ -320,7 +320,7 @@ bool pofdMCMC::initChainsSlave() {
 double pofdMCMC::getLogLike(const paramSet& p, bool& pars_invalid) {
   if (!is_init)
     throw affineExcept("pofdMCMC", "getLogLike",
-		       "Called on uninitialized object", 1);
+		       "Called on uninitialized object");
   return likeSet.getLogLike(p, pars_invalid);
 }
 
@@ -332,7 +332,7 @@ void pofdMCMC::writeToHDF5Handle(hid_t objid) const {
 
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("pofdMCMC", "writeToHDF5Handle",
-		       "Input handle is not valid", 1);
+		       "Input handle is not valid");
 
   // To top level
   affineEnsemble::writeToHDF5Handle(objid);
@@ -344,7 +344,7 @@ void pofdMCMC::writeToHDF5Handle(hid_t objid) const {
 		      H5P_DEFAULT);
   if (H5Iget_ref(groupid) < 0)
     throw affineExcept("pofdMCMC", "writeToHDF5Handle",
-		       "Failed to create HDF5 group", 2);
+		       "Failed to create HDF5 group");
   likeSet.writeToHDF5Handle(groupid);
   spec_info.writeToHDF5Handle(groupid);
   H5Gclose(groupid);

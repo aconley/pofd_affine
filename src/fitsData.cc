@@ -76,7 +76,7 @@ void fitsData::readData(const std::string& file,
   if (status) {
     fits_report_error(stderr,status);
     fits_close_file(fptr,&status);
-    throw affineExcept("fitsData","readData","Problem opening file",1);
+    throw affineExcept("fitsData", "readData", "Problem opening file");
   }
 
   //Try to find a mask extension
@@ -87,7 +87,7 @@ void fitsData::readData(const std::string& file,
       if (status != BAD_HDU_NUM) {
 	fits_report_error(stderr, status);
 	fits_close_file(fptr, &status);
-	throw affineExcept("fitsData","readData","Error looking for mask",2);
+	throw affineExcept("fitsData", "readData", "Error looking for mask");
       } else {
 	//Try uppercase
 	fits_movnam_hdu(fptr, IMAGE_HDU, const_cast<char*>("MASK"),
@@ -96,8 +96,8 @@ void fitsData::readData(const std::string& file,
 	  if (status != BAD_HDU_NUM) {
 	    fits_report_error(stderr, status);
 	    fits_close_file(fptr, &status);
-	    throw affineExcept("fitsData","readData",
-			       "Error looking for mask",2);
+	    throw affineExcept("fitsData", "readData",
+			       "Error looking for mask");
 	  }
       }
     }
@@ -107,54 +107,53 @@ void fitsData::readData(const std::string& file,
   status = 0;
   if (has_mask) {
     //Check checksum if available
-    fits_verify_chksum(fptr, &dataok, &hduok, &status );
+    fits_verify_chksum(fptr, &dataok, &hduok, &status);
     if (dataok == -1) {
-      fits_close_file(fptr,&status);
-      throw affineExcept("fitsData","readData",
-			 "Data in mask extension fails checksum test",3);
+      fits_close_file(fptr, &status);
+      throw affineExcept("fitsData", "readData",
+			 "Data in mask extension fails checksum test");
     }
     if (hduok == -1) {
-      fits_close_file(fptr,&status);
-      throw affineExcept("fitsData","readData",
-			 "Mask extension HDU fails checksum test",4);
+      fits_close_file(fptr, &status);
+      throw affineExcept("fitsData", "readData",
+			 "Mask extension HDU fails checksum test");
     }
     
     fits_get_img_dim(fptr, &naxis, &status);
     if (status) {
-      fits_close_file(fptr,&status);
-      throw affineExcept("fitsData","readData",
-			 "Error getting mask dimensions",5);
+      fits_close_file(fptr, &status);
+      throw affineExcept("fitsData", "readData", 
+			 "Error getting mask dimensions");
     }
     if (naxis != 2) {
-      fits_close_file(fptr,&status);
-      throw affineExcept("fitsData","readData",
-			 "Mask present but not 2D",6);
+      fits_close_file(fptr, &status);
+      throw affineExcept("fitsData", "readData", "Mask present but not 2D");
     }
 
     fits_get_img_size(fptr, 2, masknaxes, &status);
     if (status) {
       fits_close_file(fptr,&status);
-      throw affineExcept("fitsData","readData",
-			 "Mask failure getting mask extents",7);
+      throw affineExcept("fitsData", "readData",
+			 "Mask failure getting mask extents");
     }
     
     nmask = masknaxes[0] * masknaxes[1];
     if (nmask == 0) {
       fits_close_file(fptr,&status);
-      throw affineExcept("fitsData","readData",
-			 "Mask present zero extent",8);
+      throw affineExcept("fitsData", "readData",
+			 "Mask present zero extent");
     } 
 
     //The actual read.  Man fitsio takes a lot of code...
-    mask = (int*) fftw_malloc( sizeof(int)*nmask );
+    mask = (int*) fftw_malloc(sizeof(int) * nmask);
     fpixel[0] = 1; fpixel[1] = 1;
     fits_read_pix(fptr, TINT, fpixel, nmask, 0, mask, 0, &status);
     if (status) {
-      fits_report_error(stderr,status);
-      fits_close_file(fptr,&status);
+      fits_report_error(stderr, status);
+      fits_close_file(fptr, &status);
       fftw_free(mask);
-      throw affineExcept("fitsData","readData",
-			 "Error reading mask data",9);
+      throw affineExcept("fitsData", "readData",
+			 "Error reading mask data");
     }
   }
 
@@ -175,76 +174,69 @@ void fitsData::readData(const std::string& file,
     if (hdutype != IMAGE_HDU) {
       fits_close_file(fptr, &status);
       if (has_mask) fftw_free(mask);
-      throw affineExcept("fitsData","readData",
-			 "Couldn't find image",10);
+      throw affineExcept("fitsData", "readData", "Couldn't find image");
     }
   }
   if (status) {
     fits_report_error(stderr, status);
     fits_close_file(fptr, &status);
     if (has_mask) fftw_free(mask);
-    throw affineExcept("fitsData","readData",
-		       "Error locating image data",11);
+    throw affineExcept("fitsData", "readData", "Error locating image data");
   }
 
   //Check checksum if available
-  fits_verify_chksum(fptr, &dataok, &hduok, &status );
+  fits_verify_chksum(fptr, &dataok, &hduok, &status);
   if (dataok == -1) {
-    fits_close_file(fptr,&status);
+    fits_close_file(fptr, &status);
     if (has_mask) fftw_free(mask);
-    throw affineExcept("fitsData","readData",
-		       "Image data fails checksum",12);
+    throw affineExcept("fitsData", "readData", "Image data fails checksum");
   }
   if (hduok == -1) {
-    fits_close_file(fptr,&status);
+    fits_close_file(fptr, &status);
     if (has_mask) fftw_free(mask);
-    throw affineExcept("fitsData","readData",
-		       "Image HDU fails checksum",13);
+    throw affineExcept("fitsData", "readData", "Image HDU fails checksum");
   }
 
   fits_get_img_dim(fptr, &naxis, &status);
   if (status) {
-    fits_close_file(fptr,&status);
+    fits_close_file(fptr, &status);
     if (has_mask) fftw_free(mask);
-    throw affineExcept("fitsData","readData",
-		       "Error getting image dimensions",14);
+    throw affineExcept("fitsData", "readData", 
+		       "Error getting image dimensions");
   }
   if (naxis != 2) {
-    fits_close_file(fptr,&status);
+    fits_close_file(fptr, &status);
     if (has_mask) fftw_free(mask);
-    throw affineExcept("fitsData","readData",
-		     "Image is not 2D",15);
+    throw affineExcept("fitsData", "readData", "Image is not 2D");
   }
 
   fits_get_img_size(fptr, 2, naxes, &status);
   if (status) {
-    fits_close_file(fptr,&status);
+    fits_close_file(fptr, &status);
     if (has_mask) fftw_free(mask);
-    throw affineExcept("fitsData","readData",
-		       "Error getting image dimensions",16);
+    throw affineExcept("fitsData", "readData", 
+		       "Error getting image dimensions");
   }
   if (has_mask) {
     if (naxes[0] != masknaxes[0] ) {
-      fits_close_file(fptr,&status);
+      fits_close_file(fptr, &status);
       fftw_free(mask);
-      throw affineExcept("fitsData","readData",
-			 "Image does not match mask extent along first dimension",
-			 17);
+      throw affineExcept("fitsData", "readData",
+			 "Image does not match mask extent along first dimension");
     }
     if (naxes[1] != masknaxes[1] ) {
-      fits_close_file(fptr,&status);
+      fits_close_file(fptr, &status);
       fftw_free(mask);
-      throw affineExcept("fitsData","readData",
-			 "Image does not match mask extent along second dimension",
-			 18);
+      throw affineExcept("fitsData", "readData",
+			 "Image does not match mask extent along second dimension");
     }
   }
 
   ndat_ = static_cast<unsigned int>(naxes[0] * naxes[1]);
   if (ndat_ == 0) {
-    fits_close_file(fptr,&status);
+    fits_close_file(fptr, &status);
     if (has_mask) fftw_free(mask);
-    throw affineExcept("fitsData","readData","Image is of zero extent",19);
+    throw affineExcept("fitsData", "readData", "Image is of zero extent");
   }
 
   //Read
@@ -253,19 +245,19 @@ void fitsData::readData(const std::string& file,
   fits_read_pix(fptr, TDOUBLE, fpixel, ndat_, 0, data_, 0, &status);
   if (status) {
     fits_report_error(stderr,status);
-    fits_close_file(fptr,&status);
+    fits_close_file(fptr, &status);
     if (has_mask) fftw_free(mask);
     fftw_free(data_);
-    throw affineExcept("fitsData","readData","Error reading image",20);
+    throw affineExcept("fitsData", "readData", "Error reading image");
   }
 
   //Close out
   fits_close_file(fptr,&status);
   if (status) {
-    fits_report_error(stderr,status);
+    fits_report_error(stderr, status);
     if (has_mask) fftw_free(mask);
     fftw_free(data_);
-    throw affineExcept("fitsData","readData","Error closing file",21);
+    throw affineExcept("fitsData", "readData", "Error closing file");
   }
 
   //If there is no mask, easy cakes
@@ -276,18 +268,18 @@ void fitsData::readData(const std::string& file,
     //First, count the number of bits to copy
     unsigned int nkeep = 0;
     for (unsigned int i = 0; i < ndat_; ++i)
-      if ( mask[i] == 0 ) ++nkeep;
+      if (mask[i] == 0) ++nkeep;
     if (nkeep == 0) {
       if (data_ != NULL) fftw_free(data_);      
       if (mask != NULL) fftw_free(mask);
-      throw affineExcept("fitsData","readData","All data masked",22);
+      throw affineExcept("fitsData", "readData", "All data masked");
     }
 
     //Now actually copy
-    data = (double*) fftw_malloc(sizeof(double)*nkeep);
+    data = (double*) fftw_malloc(sizeof(double) * nkeep);
     unsigned int cntr = 0;
     for (unsigned int i = 0; i < ndat_; ++i)
-      if ( mask[i] == 0 ) data[++cntr] = data_[i];
+      if (mask[i] == 0) data[++cntr] = data_[i];
     
     fftw_free(data_);
     n = nkeep;
@@ -388,14 +380,14 @@ double fitsData::meanSubtract() {
 void fitsData::applyBinning(unsigned int NBINS) {
   if (n == 0) return;
   if (NBINS == 0) throw affineExcept("fitsData", "applyBinning",
-				     "Trying to bin with no bins", 1);
+				     "Trying to bin with no bins");
   if (is_binned && NBINS==nbins) return;
   if (NBINS != nbins) {
     if (binval != NULL) fftw_free(binval);
     binval = (unsigned int*) fftw_malloc(sizeof(unsigned int) * NBINS);
     nbins = NBINS;
   }
-  for (unsigned int i = 0; i < nbins; ++i) binval[i] = 0;
+  std::memset(binval, 0, nbins * sizeof(unsigned int));
 
   //First, we need the minimum and maximum
   double minval, maxval;

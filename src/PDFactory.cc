@@ -144,7 +144,7 @@ void PDFactory::allocateRvars() {
   if (rvars_allocated) return;
   if (currsize == 0)
     throw affineExcept("PDFactory", "allocate_rvars",
-		       "Invalid (0) currsize", 1);
+		       "Invalid (0) currsize");
   rvals = (double*) fftw_malloc(sizeof(double) * currsize);
   pofd = (double*) fftw_malloc(sizeof(double) * currsize);
   unsigned int fsize = currsize / 2 + 1;
@@ -178,7 +178,7 @@ void PDFactory::allocateInterp() {
   if (interpvars_allocated) return;
   if (ninterp == 0)
     throw affineExcept("PDFactory", "allocateInterp",
-		       "Invalid (0) ninterp", 1);
+		       "Invalid (0) ninterp");
   
   //Note that acc is always allocated
   spline = gsl_spline_alloc( gsl_interp_cspline, 
@@ -213,12 +213,12 @@ void PDFactory::addWisdom(const std::string& filename) {
   if (fp == NULL) {
     std::stringstream str;
     str << "Error opening wisdom file: " << filename;
-    throw affineExcept("PDFactory", "addWisdom", str.str(), 1);
+    throw affineExcept("PDFactory", "addWisdom", str.str());
   }
   if (fftw_import_wisdom_from_file(fp) == 0) {
     std::stringstream str;
     str << "Error reading wisdom file: " << filename;
-    throw affineExcept("PDFactory", "addWisdom", str.str(), 2);
+    throw affineExcept("PDFactory", "addWisdom", str.str());
   }
   fclose(fp);
   fftw_plan_style = FFTW_WISDOM_ONLY;
@@ -248,7 +248,7 @@ void PDFactory::setupTransforms(unsigned int n) {
 
   if (n == 0)
     throw affineExcept("PDFactoryDouble", "setupTransforms",
-		       "Invalid (0) transform size", 1);
+		       "Invalid (0) transform size");
 
   // Make sure we have enough room
   bool did_resize = resize(n);
@@ -267,7 +267,7 @@ void PDFactory::setupTransforms(unsigned int n) {
     str << "Plan creation failed for forward transform of size: " << n;
     if (has_wisdom) str << std::endl << "Your wisdom file may not have"
 			<< " that size";
-    throw affineExcept("PDFactory", "setupTransforms", str.str(), 2);
+    throw affineExcept("PDFactory", "setupTransforms", str.str());
   }
 
   if (did_resize || (currfftlen != n) || (plan_inv == NULL)) {
@@ -280,7 +280,7 @@ void PDFactory::setupTransforms(unsigned int n) {
     str << "Plan creation failed for inverse transform of size: " << n;
     if (has_wisdom) str << std::endl << "Your wisdom file may not have"
 			<< " that size";
-    throw affineExcept("PDFactory", "setupTransforms", str.str(), 3);
+    throw affineExcept("PDFactory", "setupTransforms", str.str());
   }
 
   currfftlen = n;
@@ -298,7 +298,7 @@ unsigned int PDFactory::computeR(const numberCounts& model,
 
   if (!rvars_allocated)
     throw affineExcept("PDFactory", "computeR",
-		       "R variables must have been previously allocated", 1);
+		       "R variables must have been previously allocated");
   if (!interpvars_allocated) allocateInterp();
 
   // What beams are we using?
@@ -306,7 +306,7 @@ unsigned int PDFactory::computeR(const numberCounts& model,
   bool has_neg = bm.hasNeg();
   if ( !(has_pos || has_neg))
     throw affineExcept("PDFactory", "computeR",
-		       "Beam has neither positive nor negative bits", 2);
+		       "Beam has neither positive nor negative bits");
 
   //Set min/max interpolation is filled in for; the lower
   // limit is tricky.  For now controlled by user
@@ -441,7 +441,7 @@ void PDFactory::getMeanVarFromR() {
 
   if (!rvars_allocated)
     throw affineExcept("PDFactory", "getMeanVarFromR",
-		       "R variables not allocated", 1);
+		       "R variables not allocated");
 
   unsigned int n = currfftlen;
   // mn = \int x R dx.
@@ -489,14 +489,11 @@ bool PDFactory::initPD(unsigned int n, double sigma,
 		       const beam& bm) {
 
   if (n == 0)
-    throw affineExcept("PDFactory", "initPD",
-		       "Invalid (non-positive) n", 1);  
+    throw affineExcept("PDFactory", "initPD", "Invalid (non-positive) n");  
   if (sigma < 0.0)
-    throw affineExcept("PDFactory", "initPD",
-		       "Invalid (negative) sigma1", 2);
+    throw affineExcept("PDFactory", "initPD", "Invalid (negative) sigma1");
   if (maxflux <= 0.0)
-    throw affineExcept("PDFactory", "initPD",
-		       "Invalid (non-positive) maxflux", 4);
+    throw affineExcept("PDFactory", "initPD", "Invalid (non-positive) maxflux");
 
   initialized = false;
 
@@ -584,7 +581,7 @@ bool PDFactory::initPD(unsigned int n, double sigma,
 	   << " sigma value: " << sigma 
 	   << " and contam value: " << contam << std::endl;
 	errstr << "For model: " << model;
-	throw affineExcept("PDFactory", "initPD", errstr.str(), 5);
+	throw affineExcept("PDFactory", "initPD", errstr.str());
       }
       maxidx = static_cast< unsigned int>(topflux / dflux);
       if (maxidx > n) {
@@ -593,7 +590,7 @@ bool PDFactory::initPD(unsigned int n, double sigma,
 	   << " sigma value: " << sigma 
 	   << " and contam value: " << contam << std::endl;
 	errstr << "For model: " << model;
-	throw affineExcept("PDFactory", "initPD", errstr.str(), 6);
+	throw affineExcept("PDFactory", "initPD", errstr.str());
       }
       if (maxidx == 0) {
 	std::stringstream errstr;
@@ -602,7 +599,7 @@ bool PDFactory::initPD(unsigned int n, double sigma,
 	   << " and contam value: " << contam << std::endl;
 	errstr << "For model: " << model;
 	throw affineExcept("PDFactory", "initPD", 
-			   errstr.str(), 7);
+			   errstr.str());
       }
       // Apply the padding
       if (maxidx <= max_fill_idx)
@@ -652,15 +649,14 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog,
   // for output
 
   if (! initialized )
-    throw affineExcept("PDFactory", "getPD",
-		       "Must call initPD first", 1);
+    throw affineExcept("PDFactory", "getPD", "Must call initPD first");
   if (sigma > max_sigma) {
     std::stringstream errstr("");
     errstr << "Sigma value " << sigma
 	   << " larger than maximum prepared value " << max_sigma
 	   << std::endl;
     errstr << "initPD should have been called with at least " << sigma;
-    throw affineExcept("PDFactory", "getPD", errstr.str(), 2);
+    throw affineExcept("PDFactory", "getPD", errstr.str());
   }
 
   //Output array from 2D FFT is n/2+1
@@ -778,7 +774,7 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog,
     std::stringstream str;
     str << "Un-shift amounts not finite: " << tmn << " " << std::endl;
     str << "At length: " << n << " with noise: " << sigma;
-    throw affineExcept("PDFactory", "getPD", str.str(), 3);
+    throw affineExcept("PDFactory", "getPD", str.str());
   }
   if (verbose) {
     std::cerr << " Expected mean: " << shift+mn 

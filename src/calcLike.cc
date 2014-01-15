@@ -98,13 +98,13 @@ void calcLikeSingle::readDataFromFile(const std::string& datafile,
   unsigned int nd = data[0].getN();
   if (nd == 0)
     throw affineExcept("calcLikeSingle", "readDataFromFile",
-		       "No unmasked pixels in data", 1);
+		       "No unmasked pixels in data");
   if (BINDATA) data[0].applyBinning(NBINS);
   
   maxflux = data[0].getMax();
   if (std::isnan(maxflux) || std::isinf(maxflux))
     throw affineExcept("calcLikeSingle", "readDataFromFile",
-		       "Problem with maxflux", 2);
+		       "Problem with maxflux");
 
   // We can't set the likelihood offset unless sigma base is set.
   like_offset[0] = 0.0;
@@ -125,7 +125,7 @@ readDataFromFiles(const std::vector<std::string>& datafiles,
   unsigned int n = datafiles.size();
   if (n == 0)
     throw affineExcept("calcLikeSingle", "readDataFromFile",
-		       "No data sets", 1);
+		       "No data sets");
   resize(n);
 
   for (unsigned int i = 0; i < n; ++i) {
@@ -136,7 +136,7 @@ readDataFromFiles(const std::vector<std::string>& datafiles,
       errstr << "No unmasked pixels in data file: "
 	     << datafiles[i];
       throw affineExcept("calcLikeSingle", "readDataFromFile",
-			 errstr.str(), 3);
+			 errstr.str());
     }
     if (BINDATA) data[i].applyBinning(NBINS);
 
@@ -149,12 +149,12 @@ readDataFromFiles(const std::vector<std::string>& datafiles,
   maxflux = data[0].getMax();
   if (std::isnan(maxflux) || std::isinf(maxflux))
     throw affineExcept("calcLikeSingle", "readDataFromFile",
-		       "Problem with maxflux", 4);
+		       "Problem with maxflux");
   for (unsigned int i = 1; i < n; ++i) {
     cmaxflux = data[i].getMax();
     if (std::isnan(cmaxflux) || std::isinf(cmaxflux))
       throw affineExcept("calcLikeSingle", "readDataFromFile",
-			 "Problem with maxflux", 5);
+			 "Problem with maxflux");
     if (cmaxflux > maxflux) maxflux=cmaxflux;
   }
 
@@ -198,8 +198,7 @@ void calcLikeSingle::setLikeNorm(const std::vector<double>& lnorm) {
   unsigned int n = lnorm.size();
   if (n != ndatasets)
     throw affineExcept("calcLikeSingle", "setLikeNorm",
-		       "like_norm vector not same size as number of data sets",
-		       1);
+		       "like_norm vector not same size as number of data sets");
   if (n == 0) return;
   for (unsigned int i = 0; i < ndatasets; ++i)
     like_norm[i] = lnorm[i];
@@ -213,8 +212,7 @@ void calcLikeSingle::setLikeNorm(unsigned int n,
 				 const double* const lnorm) {
   if (n != ndatasets)
     throw affineExcept("calcLikeSingle", "setLikeNorm",
-		       "like_norm array not same size as number of data sets",
-		       1);
+		       "like_norm array not same size as number of data sets");
   if (n == 0) return;
   for (unsigned int i = 0; i < ndatasets; ++i)
     like_norm[i] = lnorm[i];
@@ -228,7 +226,7 @@ void calcLikeSingle::setSigmaBase(const std::vector<double>& s) {
   unsigned int n = s.size();
   if (n != ndatasets)
     throw affineExcept("calcLikeSingle", "setSigmaBase",
-		       "sigma vectors not same size as number of data sets", 1);
+		       "sigma vectors not same size as number of data sets");
   if (n == 0) return;
   for (unsigned int i = 0; i < ndatasets; ++i)
     sigma_base[i] = s[i];
@@ -258,7 +256,7 @@ void calcLikeSingle::setSigmaBase(const std::vector<double>& s) {
 void calcLikeSingle::setSigmaBase(unsigned int n, const double* const s) {
   if (n != ndatasets)
     throw affineExcept("calcLikeSingle", "setSigmaBase",
-		       "sigma arrays not same size as number of data sets", 1);
+		       "sigma arrays not same size as number of data sets");
   if (n == 0) return;
   for (unsigned int i = 0; i < ndatasets; ++i)
     sigma_base[i] = s[i];
@@ -303,10 +301,10 @@ calcLikeSingle::getLogLike(const numberCounts& model, bool& pars_invalid,
 
   if (!data_read)
     throw affineExcept("calcLikeSingle", "getNegLogLike",
-		       "Data not read", 1);
+		       "Data not read");
   if (!has_beam)
     throw affineExcept("calcLikeSingle", "getNegLogLike",
-		       "Beam not read", 2);
+		       "Beam not read");
 
   //Maximum noise value with multiplier 
   double max_sigma = maxsigma_base * sigmult;
@@ -506,16 +504,16 @@ void calcLike::readDataFromFiles(const std::vector<std::string>& datafiles,
   unsigned int ndat = datafiles.size();
   if (ndat == 0)
     throw affineExcept("calcLike", "readDataFromFiles",
-		       "No datafiles", 1);
+		       "No datafiles");
   if (ndat != beamfiles.size())
     throw affineExcept("calcLike", "readDataFromFiles",
-		       "datafiles and beamfiles not same length", 2);
+		       "datafiles and beamfiles not same length");
   if (ndat != sigmas.size())
     throw affineExcept("calcLike", "readDataFromFiles",
-		       "datafiles and sigma not same length", 3);
+		       "datafiles and sigma not same length");
   if (ndat != like_norms.size())
     throw affineExcept("calcLike", "readDataFromFiles",
-		       "datafiles and like_norm not same length", 4);
+		       "datafiles and like_norm not same length");
   
   //Use a map.  Could also use a multi-map, but meh
   std::map< std::string, beam_group > grpmap;
@@ -648,14 +646,14 @@ double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
   if (nbeamsets == 0) return std::numeric_limits<double>::quiet_NaN();
   unsigned int npar = p.getNParams();
   if (npar < 2) throw affineExcept("calcLike", "getLogLike",
-				   "Not enough elements in params", 1);
+				   "Not enough elements in params");
   unsigned int nknots = model.getNKnots();
   if (nknots == 0)
     throw affineExcept("calcLike", "getLogLike",
-		       "Model knot positions not loaded", 2);
+		       "Model knot positions not loaded");
   if (nknots > (npar-1))
     throw affineExcept("calcLike", "getLogLike",
-		       "Not enough elements in paramSet", 3);
+		       "Not enough elements in paramSet");
 
   //Set the model
   model.setParams(p);
@@ -702,8 +700,7 @@ void calcLike::writeToHDF5Handle(hid_t objid) const {
   hid_t mems_id, att_id;
 
   if (H5Iget_ref(objid) < 0)
-    throw affineExcept("calcLike", "writeToHDF5",
-		       "Input handle is not valid", 1);
+    throw affineExcept("calcLike", "writeToHDF5", "Input handle is not valid");
 
   // FFTSIZE
   adims = 1;

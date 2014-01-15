@@ -158,7 +158,7 @@ TEST(beam2DTest, Read) {
     "Beam had wrong neg-pos effective area in band1";
   EXPECT_FLOAT_EQ(0.0, bm.getEffectiveAreaSign1(3)) <<
     "Beam had wrong neg-neg effective area in band1";
-  EXPECT_NEAR(0.97798554, bm.getMax1(0), 1e-5) <<
+  EXPECT_NEAR(0.97798554, bm.getMinMax1(0).second, 1e-5) <<
     "Beam had unexpected maximum pixel value in band1";
 
   //Beam2 tests
@@ -172,7 +172,7 @@ TEST(beam2DTest, Read) {
     "Beam had wrong neg-pos effective area in band2";
   EXPECT_FLOAT_EQ(0.0, bm.getEffectiveAreaSign2(3)) <<
     "Beam had wrong neg-neg effective area in band2";
-  EXPECT_NEAR(0.98850347, bm.getMax2(0), 1e-5) <<
+  EXPECT_NEAR(0.98850347, bm.getMinMax1(0).second, 1e-5) <<
     "Beam had unexpected maximum pixel value in band 2";
 }
 
@@ -208,7 +208,7 @@ TEST(beam2DTest, CopyConstructor) {
     "Beam had wrong neg-pos effective area in band1";
   EXPECT_FLOAT_EQ(bm.getEffectiveAreaSign1(3), bm2.getEffectiveAreaSign1(3)) <<
     "Beam had wrong neg-neg effective area in band1";
-  EXPECT_FLOAT_EQ(bm.getMax1(0), bm2.getMax1(0)) <<
+  EXPECT_FLOAT_EQ(bm.getMinMax1(0).second, bm2.getMinMax1(0).second) <<
     "Beam had unexpected maximum pixel value in band1";
 
   //Beam2 tests
@@ -222,7 +222,9 @@ TEST(beam2DTest, CopyConstructor) {
     "Beam had wrong neg-pos effective area in band2";
   EXPECT_FLOAT_EQ(bm.getEffectiveAreaSign2(3), bm2.getEffectiveAreaSign2(3)) <<
     "Beam had wrong neg-neg effective area in band2";
-  EXPECT_FLOAT_EQ(bm.getMax2(0), bm2.getMax2(0)) <<
+  EXPECT_FLOAT_EQ(bm.getMinMax2(0).first, bm2.getMinMax2(0).first) <<
+    "Beam had unexpected minimum pixel value in band 2";
+  EXPECT_FLOAT_EQ(bm.getMinMax2(0).second, bm2.getMinMax2(0).second) <<
     "Beam had unexpected maximum pixel value in band 2";
 }
 
@@ -807,8 +809,8 @@ TEST(model2DTest, getRHist) {
   ASSERT_TRUE(model.isValid()) << "Model should be valid";
 
   doublebeam bm("testdata/band1_beam.fits", "testdata/band2_beam.fits",
-		true, 0.2);
-  ASSERT_TRUE(bm.hasWeights(0)) << "Beam should have weights after binning";
+		true, 150);
+  ASSERT_TRUE(bm.isHistogrammed(0)) << "Beam should be histogrammed";
 
   const unsigned int ntest = 4;
   const double fluxdens1[ntest] = {0.003, 0.011, 0.011, 0.03};

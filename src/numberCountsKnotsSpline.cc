@@ -264,7 +264,7 @@ void numberCountsKnotsSpline::setKnotPositions(unsigned int n,
 void numberCountsKnotsSpline::setParams(const paramSet& F) {
   if (nknots > F.getNParams())
     throw affineExcept("numberCountsKnotsSpline", "setKnots",
-		       "Number of knot values different than expected", 1);
+		       "Number of knot values different than expected");
   for (unsigned int i = 0; i < nknots; ++i)
     logknotvals[i] = pofd_mcmc::logfac * static_cast<double>(F[i]);
   gsl_spline_init(splinelog, logknots, logknotvals,
@@ -592,8 +592,8 @@ double numberCountsKnotsSpline::getR(double fluxdensity, const beam& bm,
   default :
     std::stringstream errstr;
     errstr << "Unknown R beam specification: " << rt;
-    throw affineExcept("numberCountsKnotsSpline","getR",
-		       errstr.str(),1);
+    throw affineExcept("numberCountsKnotsSpline", "getR",
+		       errstr.str());
   }
   return std::numeric_limits<double>::quiet_NaN();
 }
@@ -626,7 +626,7 @@ void numberCountsKnotsSpline::getR(unsigned int n,const double* const flux,
     std::stringstream errstr;
     errstr << "Unknown R beam specification: " << rt;
     throw affineExcept("numberCountsKnotsSpline", "getR",
-		       errstr.str(), 1);
+		       errstr.str());
   }
   return;
 }
@@ -640,7 +640,7 @@ void numberCountsKnotsSpline::writeToHDF5Handle(hid_t objid) const {
 
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("numberCountsKnotsSpline", "writeToHDF5Handle",
-		       "Input handle is not valid", 1);
+		       "Input handle is not valid");
 
   // Name of model
   const char modeltype[] = "numberCountsKnots";

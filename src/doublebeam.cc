@@ -115,8 +115,7 @@ void doublebeam::readFiles(const std::string& filename1,
     errstr << "Error opening input file: " << filename1;
     fits_report_error(stderr,status);
     fits_close_file(fptr,&status);
-    throw affineExcept("doublebeam", "readFiles",
-		       errstr.str(), 1);
+    throw affineExcept("doublebeam", "readFiles", errstr.str());
   }
 
   fits_get_hdrspace(fptr, &nkeys, NULL, &status);
@@ -125,7 +124,7 @@ void doublebeam::readFiles(const std::string& filename1,
     errstr << "Error getting header space for: " << filename1;
     fits_report_error(stderr, status);
     fits_close_file(fptr, &status);
-    throw affineExcept("doublebeam", "readFiles", errstr.str(), 2);
+    throw affineExcept("doublebeam", "readFiles", errstr.str());
   }
 
   //Get the pixel scale.  We will check later to make sure the other beam
@@ -144,8 +143,7 @@ void doublebeam::readFiles(const std::string& filename1,
 	     << filename1;
       fits_report_error(stderr, status);
       fits_close_file(fptr, &status);
-      throw affineExcept("doublebeam", "readFiles",
-			 errstr.str(), 3);
+      throw affineExcept("doublebeam", "readFiles", errstr.str());
     }
   }
 
@@ -158,8 +156,7 @@ void doublebeam::readFiles(const std::string& filename1,
     std::stringstream errstr("");
     errstr << "ERROR: input DOUBLEBEAM is not 2D";
     fits_close_file(fptr, &status);
-    throw affineExcept("doublebeam", "readFiles",
-		       errstr.str(), 4);
+    throw affineExcept("doublebeam", "readFiles", errstr.str());
   }
 
   unsigned int n = naxes[0] * naxes[1];
@@ -178,8 +175,7 @@ void doublebeam::readFiles(const std::string& filename1,
   if (status) {
     fits_report_error(stderr, status);
     delete[] rpixarr1;
-    throw affineExcept("doublebeam","readFiles",
-		       "Error closing file", 5);
+    throw affineExcept("doublebeam", "readFiles", "Error closing file");
   } 
 
   //Read the second file
@@ -191,8 +187,7 @@ void doublebeam::readFiles(const std::string& filename1,
     delete[] rpixarr1;
     std::stringstream errstr("");
     errstr << "Error opening input file: " << filename2;
-    throw affineExcept("doublebeam", "readFiles",
-		       errstr.str(), 6);
+    throw affineExcept("doublebeam", "readFiles", errstr.str());
   }
   fits_get_hdrspace(fptr, &nkeys, NULL, &status);
   if (status) {
@@ -201,8 +196,7 @@ void doublebeam::readFiles(const std::string& filename1,
     delete[] rpixarr1;
     std::stringstream errstr("");
     errstr << "Error getting header space for: " << filename2;
-    throw affineExcept("doublebeam", "readFiles",
-		       errstr.str(), 7);
+    throw affineExcept("doublebeam", "readFiles", errstr.str());
   }
   double pixsize2; // Make sure it's the same as band 1
   fits_read_key(fptr, TDOUBLE, const_cast<char*>("PIXSIZE"),
@@ -218,8 +212,7 @@ void doublebeam::readFiles(const std::string& filename1,
       std::stringstream errstr("");
       errstr << "Unable to find pixel scale information in "
 	     << filename2;
-      throw affineExcept("doublebeam", "readFiles",
-			 errstr.str(), 8);
+      throw affineExcept("doublebeam", "readFiles", errstr.str());
     }
   }
 
@@ -229,8 +222,7 @@ void doublebeam::readFiles(const std::string& filename1,
     std::stringstream errstr("");
     errstr << "Pixel scale in " << filename2 << " doesn't match that of "
 	   << filename1 << ": " << pixsize1 << " vs " << pixsize2;
-    throw affineExcept("doublebeam", "readFiles",
-		       errstr.str(), 9);
+    throw affineExcept("doublebeam", "readFiles", errstr.str());
   }
 
   int naxis2;
@@ -242,8 +234,7 @@ void doublebeam::readFiles(const std::string& filename1,
     delete[] rpixarr1;
     std::stringstream errstr("");
     errstr << "ERROR: input DOUBLEBEAM is not 2D in " << filename2;
-    throw affineExcept("doublebeam", "readFiles",
-		       errstr.str(), 10);
+    throw affineExcept("doublebeam", "readFiles", errstr.str());
   }
 
   if (naxes2[0] != naxes[0]) {
@@ -252,8 +243,7 @@ void doublebeam::readFiles(const std::string& filename1,
     std::stringstream errstr("");
     errstr << "Dimension 1 extent for " << filename2 << " doesn't match "
 	      << "that of " << filename1;
-    throw affineExcept("doublebeam", "readFiles",
-		       errstr.str(), 11);
+    throw affineExcept("doublebeam", "readFiles", errstr.str());
   }
   if (naxes2[1] != naxes[1]) {
     fits_close_file(fptr, &status);
@@ -261,8 +251,7 @@ void doublebeam::readFiles(const std::string& filename1,
     std::stringstream errstr("");
     errstr << "Dimension 2 extent for " << filename2 << " doesn't match "
 	      << "that of " << filename1;
-    throw affineExcept("doublebeam", "readFiles",
-		       errstr.str(), 12);
+    throw affineExcept("doublebeam", "readFiles", errstr.str());
   }
   double* rpixarr2 = new double[n]; // Another temp reading array
   for (unsigned int i = 1; i <= static_cast<unsigned int>(naxes[1]); ++i) {
@@ -277,8 +266,7 @@ void doublebeam::readFiles(const std::string& filename1,
     delete[] rpixarr1; delete[] rpixarr2;
     std::stringstream errstr("");
     errstr << "Error closing DOUBLEBEAM file " << filename2;
-    throw affineExcept("doublebeam", "readFiles",
-		       errstr.str(), 13);
+    throw affineExcept("doublebeam", "readFiles", errstr.str());
   } 
 
   // Ok, finally all read!  So push into the beam arrays
@@ -304,11 +292,10 @@ void doublebeam::setBeams(unsigned int n, const double* const beam1,
   cleanup();
 
   if (n == 0)
-    throw affineExcept("doublebeam", "setBeams", "Invalid (zero) n", 1);
+    throw affineExcept("doublebeam", "setBeams", "Invalid (zero) n");
 
   if (MINVAL < 0.0)
-    throw affineExcept("doublebeam", "setBeams", 
-		       "Invalid (negative) MINVAL", 2);
+    throw affineExcept("doublebeam", "setBeams", "Invalid (negative) MINVAL");
 
   minval = MINVAL;
 
@@ -341,8 +328,7 @@ void doublebeam::setBeams(unsigned int n, const double* const beam1,
   unsigned int totpix = npix[0];
   for (unsigned int i = 1; i < 4; ++i) totpix += npix[i];
   if (totpix == 0)
-    throw affineExcept("doublebeam", "setBeams",
-		       "No acceptable values found", 3);
+    throw affineExcept("doublebeam", "setBeams", "No acceptable values found");
 
   // Now set the beam pieces
   unsigned int idx, curr_n;
@@ -402,17 +388,17 @@ void doublebeam::setBeams(unsigned int n, const double* const beam1,
 
   if (PIXSIZE <= 0.0)
     throw affineExcept("doublebeam", "setBeams",
-		       "Invalid (non-positive) pixel size", 4);
+		       "Invalid (non-positive) pixel size");
   pixsize = PIXSIZE;
 }
 
 void doublebeam::makeHistogram(unsigned int NBINS) {
   if (!hasData())
     throw affineExcept("doublebeam", "makeHistogram",
-		       "Trying to histogram empty beam", 1);
+		       "Trying to histogram empty beam");
   if (NBINS == 0)
     throw affineExcept("doublebeam", "makeHistogram",
-		       "Invalid (zero) NBINS", 2);
+		       "Invalid (zero) NBINS");
   nbins = NBINS;
 
   // Clean out any old values
@@ -550,7 +536,7 @@ double doublebeam::getEffectiveArea2() const {
 */
 double doublebeam::getEffectiveAreaSign1(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getEffectiveAreaSign1",
-				   "Invalid index", 1);
+				   "Invalid index");
   
   if (!hassign[idx]) return std::numeric_limits<double>::quiet_NaN();
   double convfac = pixsize / 3600.0;
@@ -564,7 +550,7 @@ double doublebeam::getEffectiveAreaSign1(unsigned int idx) const {
 */
 double doublebeam::getEffectiveAreaSign2(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getEffectiveAreaSign2",
-				   "Invalid index", 1);
+				   "Invalid index");
   
   if (!hassign[idx]) return std::numeric_limits<double>::quiet_NaN();
   double convfac = pixsize / 3600.0;
@@ -578,7 +564,7 @@ double doublebeam::getEffectiveAreaSign2(unsigned int idx) const {
 */
 double doublebeam::getEffectiveAreaSqSign1(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getEffectiveAreaSqSign1",
-				   "Invalid index", 1);
+				   "Invalid index");
   
   if (!hassign[idx]) return std::numeric_limits<double>::quiet_NaN();
   double convfac = pixsize / 3600.0;
@@ -592,7 +578,7 @@ double doublebeam::getEffectiveAreaSqSign1(unsigned int idx) const {
 */
 double doublebeam::getEffectiveAreaSqSign2(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getEffectiveAreaSqSign2",
-				   "Invalid index", 1);
+				   "Invalid index");
   
   if (!hassign[idx]) return std::numeric_limits<double>::quiet_NaN();
   double convfac = pixsize / 3600.0;
@@ -613,7 +599,7 @@ unsigned int doublebeam::getTotalNPix() const {
 */
 std::pair<double, double> doublebeam::getMinMax1(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getMinMax1",
-				   "Invalid index", 1);
+				   "Invalid index");
   if (!hassign[idx])
     return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
 			  std::numeric_limits<double>::quiet_NaN());
@@ -635,7 +621,7 @@ std::pair<double, double> doublebeam::getMinMax1(unsigned int idx) const {
 */
 std::pair<double, double> doublebeam::getMinMax2(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getMinMax2",
-				   "Invalid index", 1);
+				   "Invalid index");
   if (!hassign[idx])
     return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
 			  std::numeric_limits<double>::quiet_NaN());

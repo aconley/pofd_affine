@@ -15,19 +15,19 @@
 //Yes, this is a bit complicated and error prone, but such is life
 static struct option long_options[] = {
   {"help", no_argument, 0, 'h'},
-  {"double",no_argument,0,'d'},
-  {"version",no_argument,0,'V'}, //After this, not parsed here
-  {"logspace",no_argument,0,'l'},
-  {"minflux",required_argument,0,'m'},
-  {"maxflux",required_argument,0,'M'},
-  {"nflux",required_argument,0,'n'},
-  {"verbose",no_argument,0,'v'},
-  {"minflux1",required_argument,0,'1'},
-  {"minflux2",required_argument,0,'2'},
-  {"maxflux1",required_argument,0,'3'},
-  {"maxflux2",required_argument,0,'4'},
-  {"nflux1",required_argument,0,'5'},
-  {"nflux2",required_argument,0,'6'},
+  {"double", no_argument, 0, 'd'},
+  {"version", no_argument, 0, 'V'}, //After this, not parsed here
+  {"logspace", no_argument, 0, 'l'},
+  {"minflux", required_argument, 0, 'm'},
+  {"maxflux", required_argument, 0, 'M'},
+  {"nflux", required_argument, 0, 'n'},
+  {"verbose", no_argument, 0, 'v'},
+  {"minflux1", required_argument, 0, '1'},
+  {"minflux2", required_argument, 0, '2'},
+  {"maxflux1", required_argument, 0, '3'},
+  {"maxflux2", required_argument, 0, '4'},
+  {"nflux1", required_argument, 0, '5'},
+  {"nflux2", required_argument, 0, '6'},
   {0,0,0,0}
 };
 char optstring[] = "hdVlm:M:n:v1:2:3:4:5:6:"; 
@@ -107,8 +107,8 @@ int getNSingle( int argc, char** argv ) {
       if (! has_user_minflux)
 	minflux = model.getKnotPos(0); //Sorted inside model
       if (minflux <= 0.0)
-	throw affineExcept("pofd_affine_getdNdS","getNSingle",
-			   "Minflux must be positive if using logspace",1);
+	throw affineExcept("pofd_affine_getdNdS", "getNSingle",
+			   "Minflux must be positive if using logspace");
     }
 
     //Get maximum flux if not set, use to compute dflux

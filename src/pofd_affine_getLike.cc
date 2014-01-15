@@ -24,13 +24,13 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
 
     //Make sure we got some data
     if (spec_info.datafiles.size() == 0) 
-      throw affineExcept("pofd_affine_getLike","getLikeSingle",
-			 "No datafiles loaded",1);
+      throw affineExcept("pofd_affine_getLike", "getLikeSingle",
+			 "No datafiles loaded");
 
     unsigned int nknots = model_info.getNKnots();
     if (nknots == 0)
-      throw affineExcept("pofd_affine_getLike","getLikeSingle",
-			 "No info read in",2);
+      throw affineExcept("pofd_affine_getLike", "getLikeSingle",
+			 "No info read in");
 
     calcLike likeSet(spec_info.fftsize, spec_info.ninterp, 
 		     spec_info.edge_fix, spec_info.bin_data, 
@@ -110,14 +110,14 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
     
     //Make sure we got some data
     if (spec_info.datafiles1.size() == 0) 
-      throw affineExcept("pofd_affine_getLike","getLikeDouble",
-			 "No datafiles loaded",1);
+      throw affineExcept("pofd_affine_getLike", "getLikeDouble",
+			 "No datafiles loaded");
     
 
     unsigned int ntot = model_info.getNTot();
     if (ntot == 0)
-      throw affineExcept("pofd_affine_getLike","getLikeDouble",
-			 "No info read in",2);
+      throw affineExcept("pofd_affine_getLike", "getLikeDouble",
+			 "No info read in");
 
 
     calcLikeDouble likeSet(spec_info.fftsize, spec_info.nedge, 

@@ -47,8 +47,8 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
     logknots = new double[NKNOTS]; 
     logknotvals = new double[NKNOTS];
     if (NKNOTS <= 2)
-      throw affineExcept("numberCountsDoubleLogNormal","constructor",
-			 "nknots must be > 2",1);
+      throw affineExcept("numberCountsDoubleLogNormal", "constructor",
+			 "nknots must be > 2");
     splinelog = gsl_spline_alloc(gsl_interp_cspline,
 				 static_cast<size_t>(NKNOTS));
     for (unsigned int i = 0; i < NKNOTS; ++i)
@@ -495,8 +495,8 @@ setKnotPositions(const std::vector<float>& S) {
   setNKnots(n); //Also invalidates everything
   for (unsigned int i = 0; i < nknots; ++i)
     if (S[i] <= 0.0)
-      throw affineExcept("numberCountsDoubleLogNormal","setKnotPositions",
-			 "Non-positive knot positions not allowed",1);
+      throw affineExcept("numberCountsDoubleLogNormal", "setKnotPositions",
+			 "Non-positive knot positions not allowed");
   // Knot positions -must- increase, the GSL requires
   for (unsigned int i = 1; i < nknots; ++i)
     if (S[i] <= S[i-1]) {
@@ -504,7 +504,7 @@ setKnotPositions(const std::vector<float>& S) {
       errstr << "Knot positions not monotonically increasing: S[" << i-1 
 	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
       throw affineExcept("numberCountsDoubleLogNormal", "setKnotPositions",
-			 errstr.str(), 2);
+			 errstr.str());
     }
   for (unsigned int i = 0; i < nknots; ++i)
     knots[i] = static_cast<double>(S[i]);
@@ -522,8 +522,8 @@ setKnotPositions(const std::vector<double>& S) {
   setNKnots(n); //Also invalidates everything
   for (unsigned int i = 0; i < nknots; ++i)
     if (S[i] <= 0.0)
-      throw affineExcept("numberCountsDoubleLogNormal","setKnotPositions",
-			 "Non-positive knot positions not allowed",1);
+      throw affineExcept("numberCountsDoubleLogNormal", "setKnotPositions",
+			 "Non-positive knot positions not allowed");
   // Knot positions -must- increase, the GSL requires
   for (unsigned int i = 1; i < nknots; ++i)
     if (S[i] <= S[i-1]) {
@@ -531,7 +531,7 @@ setKnotPositions(const std::vector<double>& S) {
       errstr << "Knot positions not monotonically increasing: S[" << i-1 
 	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
       throw affineExcept("numberCountsDoubleLogNormal", "setKnotPositions",
-			 errstr.str(), 2);
+			 errstr.str());
     }
   for (unsigned int i = 0; i < nknots; ++i)
     knots[i] = S[i];
@@ -550,14 +550,14 @@ void numberCountsDoubleLogNormal::setKnotPositions(unsigned int n,
   for (unsigned int i = 0; i < nknots; ++i)
     if (S[i] <= 0.0)
       throw affineExcept("numberCountsDoubleLogNormal","setKnotPositions",
-			 "Non-positive knot positions not allowed",1);
+			 "Non-positive knot positions not allowed");
   for (unsigned int i = 1; i < nknots; ++i)
     if (S[i] <= S[i-1]) {
       std::stringstream errstr;
       errstr << "Knot positions not monotonically increasing: S[" << i-1 
 	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
       throw affineExcept("numberCountsDoubleLogNormal", "setKnotPositions",
-			 errstr.str(), 2);
+			 errstr.str());
     }
   for (unsigned int i = 0; i < nknots; ++i)
     knots[i] = static_cast<double>(S[i]);
@@ -575,15 +575,15 @@ void numberCountsDoubleLogNormal::setKnotPositions(unsigned int n,
   setNKnots(n); //Also Invalidates everything
   for (unsigned int i = 0; i < nknots; ++i)
     if (S[i] <= 0.0)
-      throw affineExcept("numberCountsDoubleLogNormal","setKnotPositions",
-			 "Non-positive knot positions not allowed",1);
+      throw affineExcept("numberCountsDoubleLogNormal", "setKnotPositions",
+			 "Non-positive knot positions not allowed");
   for (unsigned int i = 1; i < nknots; ++i)
     if (S[i] <= S[i-1]) {
       std::stringstream errstr;
       errstr << "Knot positions not monotonically increasing: S[" << i-1 
 	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
       throw affineExcept("numberCountsDoubleLogNormal", "setKnotPositions",
-			 errstr.str(), 2);
+			 errstr.str());
     }
   for (unsigned int i = 0; i < nknots; ++i)
     knots[i] = S[i];
@@ -613,14 +613,14 @@ setSigmaPositions(const std::vector<float>& S) {
   for (unsigned int i = 0; i < n; ++i)
     if (S[i] <= 0.0)
       throw affineExcept("numberCountsDoubleLogNormal", "setSigmaPositions",
-			 "Non-positive sigma knot positions not allowed", 1);
+			 "Non-positive sigma knot positions not allowed");
   for (unsigned int i = 1; i < nsigmaknots; ++i)
     if (S[i] <= S[i-1]) {
       std::stringstream errstr;
       errstr << "Sigma positions not monotonically increasing: S[" << i-1 
 	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
       throw affineExcept("numberCountsDoubleLogNormal", "setSigmaPositions",
-			 errstr.str(), 2);
+			 errstr.str());
     }
   for (unsigned int i = 0; i < n; ++i)
     sigmaknots[i] = static_cast<double>(S[i]);
@@ -638,14 +638,14 @@ setSigmaPositions(const std::vector<double>& S) {
   for (unsigned int i = 0; i < n; ++i)
     if (S[i] <= 0.0)
       throw affineExcept("numberCountsDoubleLogNormal", "setSigmaPositions",
-			 "Non-positive sigma knot positions not allowed", 1);
+			 "Non-positive sigma knot positions not allowed");
   for (unsigned int i = 1; i < nsigmaknots; ++i)
     if (S[i] <= S[i-1]) {
       std::stringstream errstr;
       errstr << "Sigma positions not monotonically increasing: S[" << i-1 
 	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
       throw affineExcept("numberCountsDoubleLogNormal", "setSigmaPositions",
-			 errstr.str(), 2);
+			 errstr.str());
     }
   for (unsigned int i = 0; i < n; ++i)
     sigmaknots[i] = S[i];
@@ -662,14 +662,14 @@ void numberCountsDoubleLogNormal::setSigmaPositions(unsigned int n,
   for (unsigned int i = 0; i < n; ++i)
     if (S[i] <= 0.0)
       throw affineExcept("numberCountsDoubleLogNormal", "setKnots",
-			 "Non-positive sigma knot positions not allowed", 1);
+			 "Non-positive sigma knot positions not allowed");
   for (unsigned int i = 1; i < nsigmaknots; ++i)
     if (S[i] <= S[i-1]) {
       std::stringstream errstr;
       errstr << "Sigma positions not monotonically increasing: S[" << i-1 
 	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
       throw affineExcept("numberCountsDoubleLogNormal", "setSigmaPositions",
-			 errstr.str(), 2);
+			 errstr.str());
     }
   for (unsigned int i = 0; i < n; ++i)
     sigmaknots[i] = static_cast<double>(S[i]);
@@ -686,14 +686,14 @@ void numberCountsDoubleLogNormal::setSigmaPositions(unsigned int n,
   for (unsigned int i = 0; i < n; ++i)
     if (S[i] <= 0.0)
       throw affineExcept("numberCountsDoubleLogNormal", "setKnots",
-			 "Non-positive sigma knot positions not allowed", 1);
+			 "Non-positive sigma knot positions not allowed");
   for (unsigned int i = 1; i < nsigmaknots; ++i)
     if (S[i] <= S[i-1]) {
       std::stringstream errstr;
       errstr << "Sigma positions not monotonically increasing: S[" << i-1 
 	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
       throw affineExcept("numberCountsDoubleLogNormal", "setSigmaPositions",
-			 errstr.str(), 2);
+			 errstr.str());
     }
   for (unsigned int i = 0; i < n; ++i)
     sigmaknots[i] = S[i];
@@ -721,14 +721,14 @@ setOffsetPositions(const std::vector<float>& S) {
   for (unsigned int i = 0; i < n; ++i)
     if (S[i] <= 0.0)
       throw affineExcept("numberCountsDoubleLogNormal", "setOffsetPositions",
-			 "Non-positive offset knot positions not allowed", 1);
+			 "Non-positive offset knot positions not allowed");
   for (unsigned int i = 1; i < noffsetknots; ++i)
     if (S[i] <= S[i-1]) {
       std::stringstream errstr;
       errstr << "Offset positions not monotonically increasing: S[" << i-1 
 	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
       throw affineExcept("numberCountsDoubleLogNormal", "setOffsetPositions",
-			 errstr.str(), 2);
+			 errstr.str());
     }
   for (unsigned int i = 0; i < n; ++i)
     offsetknots[i] = static_cast<double>(S[i]);
@@ -745,14 +745,14 @@ setOffsetPositions(const std::vector<double>& S) {
   for (unsigned int i = 0; i < n; ++i)
     if (S[i] <= 0.0)
       throw affineExcept("numberCountsDoubleLogNormal", "setOffsetPositions",
-			 "Non-positive offset knot positions not allowed", 1);
+			 "Non-positive offset knot positions not allowed");
   for (unsigned int i = 1; i < noffsetknots; ++i)
     if (S[i] <= S[i-1]) {
       std::stringstream errstr;
       errstr << "Offset positions not monotonically increasing: S[" << i-1 
 	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
       throw affineExcept("numberCountsDoubleLogNormal", "setOffsetPositions",
-			 errstr.str(), 2);
+			 errstr.str());
     }
   for (unsigned int i = 0; i < n; ++i)
     offsetknots[i] = S[i];
@@ -779,15 +779,15 @@ void numberCountsDoubleLogNormal::setOffsetPositions(unsigned int n,
   setNOffsets(n);
   for (unsigned int i = 0; i < n; ++i)
     if (S[i] <= 0.0)
-      throw affineExcept("numberCountsDoubleLogNormal","setKnots",
-			 "Non-positive offset knot positions not allowed",1);
+      throw affineExcept("numberCountsDoubleLogNormal", "setKnots",
+			 "Non-positive offset knot positions not allowed");
   for (unsigned int i = 1; i < noffsetknots; ++i)
     if (S[i] <= S[i-1]) {
       std::stringstream errstr;
       errstr << "Offset positions not monotonically increasing: S[" << i-1 
 	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
       throw affineExcept("numberCountsDoubleLogNormal", "setOffsetPositions",
-			 errstr.str(), 2);
+			 errstr.str());
     }
   for (unsigned int i = 0; i < n; ++i)
     offsetknots[i] = static_cast<double>(S[i]);
@@ -803,15 +803,15 @@ void numberCountsDoubleLogNormal::setOffsetPositions(unsigned int n,
   setNOffsets(n);
   for (unsigned int i = 0; i < n; ++i)
     if (S[i] <= 0.0)
-      throw affineExcept("numberCountsDoubleLogNormal","setKnots",
-			 "Non-positive offset knot positions not allowed",1);
+      throw affineExcept("numberCountsDoubleLogNormal", "setKnots",
+			 "Non-positive offset knot positions not allowed");
   for (unsigned int i = 1; i < noffsetknots; ++i)
     if (S[i] <= S[i-1]) {
       std::stringstream errstr;
       errstr << "Offset positions not monotonically increasing: S[" << i-1 
 	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
       throw affineExcept("numberCountsDoubleLogNormal", "setOffsetPositions",
-			 errstr.str(), 2);
+			 errstr.str());
     }
   for (unsigned int i = 0; i < n; ++i)
     offsetknots[i] = S[i];
@@ -828,13 +828,13 @@ getPositions(std::vector<double>& K, std::vector<double>& S,
 	     std::vector<double>& O) const {
   if (!knotpos_loaded) 
     throw affineExcept("numberCountsDoubleLogNormal", "getPositions",
-		       "Knot positions not set", 1);
+		       "Knot positions not set");
   if (!sigmapos_loaded) 
     throw affineExcept("numberCountsDoubleLogNormal", "getPositions",
-		       "Sigma knot positions not set", 2);
+		       "Sigma knot positions not set");
   if (!offsetpos_loaded) 
     throw affineExcept("numberCountsDoubleLogNormal", "getPositions",
-		       "Offset knot positions not set", 3);
+		       "Offset knot positions not set");
 
   K.resize(nknots);
   if (nknots > 0)
@@ -916,7 +916,7 @@ void numberCountsDoubleLogNormal::getParams(paramSet& F) const {
   unsigned int nneeded = nknots + nsigmaknots + noffsetknots;
   if (F.getNParams() < nneeded)
     throw affineExcept("numberCountsDoubleLogNormal", "getKnots",
-		       "Not enough space in output variable", 1);
+		       "Not enough space in output variable");
   if (knotvals_loaded && offsetvals_loaded && sigmavals_loaded) {
     //External storage is base 10 (and float)
     for (unsigned int i = 0; i < nknots; ++i)
@@ -938,11 +938,11 @@ void numberCountsDoubleLogNormal::getParams(paramSet& F) const {
 void numberCountsDoubleLogNormal::setParams(const paramSet& F) {
   unsigned int nneeded = nknots + nsigmaknots + noffsetknots;
   if (nneeded > F.getNParams())
-    throw affineExcept("numberCountsDoubleLogNormal","setKnots",
-		       "Not enough parameters present to set",1);
+    throw affineExcept("numberCountsDoubleLogNormal", "setKnots",
+		       "Not enough parameters present to set");
   if (!(knotpos_loaded && sigmapos_loaded && offsetpos_loaded))
-    throw affineExcept("numberCountsDoubleLogNormal","setKnots",
-		       "Some positions not set", 2);
+    throw affineExcept("numberCountsDoubleLogNormal", "setKnots",
+		       "Some positions not set");
 
   // Internal storage is log2 and double, inputs are log10 float
   for (unsigned int i = 0; i < nknots; ++i)
@@ -951,7 +951,7 @@ void numberCountsDoubleLogNormal::setParams(const paramSet& F) {
     gsl_spline_init(splinelog, logknots, logknotvals,
 		    static_cast<size_t>(nknots));
   else throw affineExcept("numberCountsDoubleLogNormal", "setParams",
-			  "Need at least 3 knots", 3);
+			  "Need at least 3 knots");
   knotvals_loaded = true;
   checkKnotsValid();
 
@@ -1153,8 +1153,8 @@ double numberCountsDoubleLogNormal::getMinFlux(unsigned int band) const {
   if (nknots == 0) return std::numeric_limits<double>::quiet_NaN();
   if (band == 0) return std::numeric_limits<double>::min();
   else if (band == 1) return std::numeric_limits<double>::min();
-  else throw affineExcept("numberCountsDoubleLogNormal","getMinFlux",
-			  "Invalid band (must be 0 or 1)",1);
+  else throw affineExcept("numberCountsDoubleLogNormal", "getMinFlux",
+			  "Invalid band (must be 0 or 1)");
   return std::numeric_limits<double>::quiet_NaN();
 }
 
@@ -1178,8 +1178,8 @@ double numberCountsDoubleLogNormal::getMaxFlux(unsigned int band) const {
     double mn = exp(mu + 0.5 * sg2);
     double var = exp(2 * mu + sg2)*(exp(sg2) - 1.0);
     return kv * (mn + sigmult * sqrt(var));
-  } else throw affineExcept("numberCountsDoubleLogNormal","getMaxFlux",
-			    "Invalid band (must be 0 or 1)",1);
+  } else throw affineExcept("numberCountsDoubleLogNormal", "getMaxFlux",
+			    "Invalid band (must be 0 or 1)");
 }
 
 /*!
@@ -1284,7 +1284,7 @@ getFluxPerArea(unsigned int band) const {
   if (band == 0) return splineInt(1.0, 0.0);
   else if (band == 1) return splineInt(0.0, 1.0);
   else throw affineExcept("numberCountsDoubleLogNormal",
-			  "getFluxPerArea","Band must be 0 or 1",1);
+			  "getFluxPerArea", "Band must be 0 or 1");
 }
 
 /*!
@@ -1297,7 +1297,7 @@ getFluxSqPerArea(unsigned int band) const {
   if (band == 0) return splineInt(2.0, 0.0);
   else if (band == 1) return splineInt(0.0, 2.0);
   else throw affineExcept("numberCountsDoubleLogNormal",
-			  "getFluxSqPerArea","Band must be 0 or 1",1);
+			  "getFluxSqPerArea", "Band must be 0 or 1");
 }
 
 /*!
@@ -1506,7 +1506,7 @@ double numberCountsDoubleLogNormal::getR(double f1, double f2,
     break;
   default :
     throw affineExcept("numberCountsDoubleLogNormal", "getR",
-		       "Invalid bmtype", 1);
+		       "Invalid bmtype");
     break;
   }
 
@@ -1589,8 +1589,8 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
     }
     break;
   default :
-    throw affineExcept("numberCountsDoubleLogNormal","getR",
-		       "Invalid bmtype",1);
+    throw affineExcept("numberCountsDoubleLogNormal", "getR",
+		       "Invalid bmtype");
     break;
   }
 
@@ -1745,7 +1745,7 @@ void numberCountsDoubleLogNormal::writeToHDF5Handle(hid_t objid) const {
 
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("numberCountsDoubleLogNormal", "writeToHDF5Handle",
-		       "Input handle is not valid", 1);
+		       "Input handle is not valid");
 
   // Name of model
   const char modeltype[] = "numberCountsDoubleLogNormal";
@@ -2027,26 +2027,26 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
     initfs.close();
     std::stringstream errmsg;
     errmsg << "Unable to open file:" << flname << std::endl;
-    throw affineExcept("initFileDoubleLogNormal","readFile",errmsg.str(),1);
+    throw affineExcept("initFileDoubleLogNormal", "readFile", errmsg.str());
   }
 
   //Read in number
   initfs >> nk >> ns >> no;
   if (nk < 2) {
     initfs.close();
-    throw affineExcept("initFileDoubleLogNormal","readFile",
-		       "Need at least 2 band 1 knots",2);
+    throw affineExcept("initFileDoubleLogNormal", "readFile",
+		       "Need at least 2 band 1 knots");
   }
   if (ns < 1) {
     initfs.close();
-    throw affineExcept("initFileDoubleLogNormal","readFile",
-		       "Need at least one sigma color model knot",3);
+    throw affineExcept("initFileDoubleLogNormal", "readFile",
+		       "Need at least one sigma color model knot");
 
   }
   if (no < 1) {
     initfs.close();
-    throw affineExcept("initFileDoubleLogNormal","readFile",
-		       "Need at least one offset color model knot",4);
+    throw affineExcept("initFileDoubleLogNormal", "readFile",
+		       "Need at least one offset color model knot");
   }
   nknots = sigmaidx = nk; //These could be combined, but meh
   nsigmas = ns;
@@ -2110,8 +2110,7 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
     std::stringstream errstr;
     errstr << "Expected " << ntot << " values, got: " 
 	   << wvec1.size();
-    throw affineExcept("initFileDoubleLogNormal","readFile",
-		       errstr.str(),5);
+    throw affineExcept("initFileDoubleLogNormal", "readFile", errstr.str());
   }
 
   //Copy into vectors
@@ -2156,7 +2155,7 @@ void initFileDoubleLogNormal::checkLimitsDontCross() const {
       errstr << " Lower limit: " << lowlim[i] 
 	     << " Upper limit: " << uplim[i];
       throw affineExcept("initFileDoubleLogNormal", "checkLimitsDontCross", 
-			 errstr.str(), 1);
+			 errstr.str());
     }
     if ((range[i] > 0.) && (uplim[i] == lowlim[i])) {
       std::stringstream errstr;
@@ -2165,7 +2164,7 @@ void initFileDoubleLogNormal::checkLimitsDontCross() const {
       errstr << " Lower limit: " << lowlim[i] << " Upper limit: " << uplim[i]
 	     << " range: " << range[i];
       throw affineExcept("initFileDoubleLogNormal", "checkLimitsDontCross", 
-			 errstr.str(), 7);
+			 errstr.str());
     }
   }
 }
@@ -2189,7 +2188,7 @@ void initFileDoubleLogNormal::checkRange() const {
 	       << knotval[i] << std::endl << " lies below lower limit "
 	       << lowlim[i];
 	throw affineExcept("initFileDoubleLogNormal", "checkRange", 
-			   errstr.str(), 1);
+			   errstr.str());
       }
       if (has_upper_limits && has_uplim[i] && (knotval[i] > uplim[i])) {
 	std::stringstream errstr;
@@ -2197,7 +2196,7 @@ void initFileDoubleLogNormal::checkRange() const {
 	       << knotval[i] << std::endl << " lies above upper limit "
 	       << uplim[i];
 	throw affineExcept("initFileDoubleLogNormal", "checkRange", 
-			   errstr.str(), 2);
+			   errstr.str());
       }
     }
 }
@@ -2209,12 +2208,12 @@ void initFileDoubleLogNormal::checkRange() const {
 std::pair<double, double> 
 initFileDoubleLogNormal::getKnot(unsigned int idx) const {
   if (nknots == 0)
-    throw affineExcept("initFileDoubleLogNormal","getKnot",
-		       "No knot information read in",1);
+    throw affineExcept("initFileDoubleLogNormal", "getKnot",
+		       "No knot information read in");
   if (idx >= nknots)
-    throw affineExcept("initFileDoubleLogNormal","getKnot",
-		       "Invalid knot index",2);
-  return std::make_pair(knotpos[idx],knotval[idx]);
+    throw affineExcept("initFileDoubleLogNormal", "getKnot",
+		       "Invalid knot index");
+  return std::make_pair(knotpos[idx], knotval[idx]);
 }
 
 /*!
@@ -2224,12 +2223,12 @@ initFileDoubleLogNormal::getKnot(unsigned int idx) const {
 std::pair<double, double> 
 initFileDoubleLogNormal::getSigma(unsigned int idx) const {
   if (nsigmas == 0)
-    throw affineExcept("initFileDoubleLogNormal","getSigma",
-		       "No sigma information read in",1);
+    throw affineExcept("initFileDoubleLogNormal", "getSigma",
+		       "No sigma information read in");
   if (idx >= nsigmas)
-    throw affineExcept("initFileDoubleLogNormal","getSigma",
-		       "Invalid sigma index",2);
-  return std::make_pair(knotpos[idx+sigmaidx],knotval[idx+sigmaidx]);
+    throw affineExcept("initFileDoubleLogNormal", "getSigma",
+		       "Invalid sigma index");
+  return std::make_pair(knotpos[idx+sigmaidx], knotval[idx+sigmaidx]);
 }
 
 /*!
@@ -2239,12 +2238,12 @@ initFileDoubleLogNormal::getSigma(unsigned int idx) const {
 std::pair<double, double> 
 initFileDoubleLogNormal::getOffset(unsigned int idx) const {
   if (noffsets == 0)
-    throw affineExcept("initFileDoubleLogNormal","getOffset",
-		       "No offset information read in",1);
+    throw affineExcept("initFileDoubleLogNormal", "getOffset",
+		       "No offset information read in");
   if (idx >= noffsets)
-    throw affineExcept("initFileDoubleLogNormal","getOffset",
-		       "Invalid offset index",2);
-  return std::make_pair(knotpos[idx+offsetidx],knotval[idx+offsetidx]);
+    throw affineExcept("initFileDoubleLogNormal", "getOffset",
+		       "Invalid offset index");
+  return std::make_pair(knotpos[idx+offsetidx], knotval[idx+offsetidx]);
 }
 
 
@@ -2259,8 +2258,8 @@ void
 initFileDoubleLogNormal::getModelPositions(numberCountsDoubleLogNormal& model) 
   const {
   if (nknots + nsigmas + noffsets == 0)
-    throw affineExcept("initFileDoubleLogNormal","getModelPositions",
-		       "No knot information read in",1);
+    throw affineExcept("initFileDoubleLogNormal", "getModelPositions",
+		       "No knot information read in");
   model.setKnotPositions(nknots, knotpos);
   model.setSigmaPositions(nsigmas, knotpos+sigmaidx);
   model.setOffsetPositions(noffsets, knotpos+offsetidx);
@@ -2271,8 +2270,8 @@ initFileDoubleLogNormal::getModelPositions(numberCountsDoubleLogNormal& model)
 */
 void initFileDoubleLogNormal::getKnotPos(std::vector<double>& kp) const {
   if (nknots == 0)
-    throw affineExcept("initFileDoubleLogNormal","getKnotPos",
-		       "No knot information read in",1);
+    throw affineExcept("initFileDoubleLogNormal", "getKnotPos",
+		       "No knot information read in");
   kp.resize(nknots);
   for (unsigned int i = 0; i < nknots; ++i)
     kp[i] = knotpos[i];
@@ -2284,8 +2283,8 @@ void initFileDoubleLogNormal::getKnotPos(std::vector<double>& kp) const {
 */
 void initFileDoubleLogNormal::getKnotVals(std::vector<double>& kv) const {
   if (nknots == 0)
-    throw affineExcept("initFileDoubleLogNormal","getKnotVals",
-		       "No knot information read in",1);
+    throw affineExcept("initFileDoubleLogNormal", "getKnotVals",
+		       "No knot information read in");
   kv.resize(nknots);
   for (unsigned int i = 0; i < nknots; ++i)
     kv[i] = knotval[i];
@@ -2296,8 +2295,8 @@ void initFileDoubleLogNormal::getKnotVals(std::vector<double>& kv) const {
 */
 void initFileDoubleLogNormal::getSigmaPos(std::vector<double>& kp) const {
   if (nsigmas == 0)
-    throw affineExcept("initFileDoubleLogNormal","getSigmaPos",
-		       "No sigma information read in",1);
+    throw affineExcept("initFileDoubleLogNormal", "getSigmaPos",
+		       "No sigma information read in");
   kp.resize(nsigmas);
   for (unsigned int i = 0; i < nsigmas; ++i)
     kp[i] = knotpos[i+sigmaidx];
@@ -2308,8 +2307,8 @@ void initFileDoubleLogNormal::getSigmaPos(std::vector<double>& kp) const {
 */
 void initFileDoubleLogNormal::getSigmaVals(std::vector<double>& kv) const {
   if (nsigmas == 0)
-    throw affineExcept("initFileDoubleLogNormal","getSigmaVals",
-		       "No sigma information read in",1);
+    throw affineExcept("initFileDoubleLogNormal", "getSigmaVals",
+		       "No sigma information read in");
   kv.resize(nsigmas);
   for (unsigned int i = 0; i < nsigmas; ++i)
     kv[i] = knotval[i+sigmaidx];
@@ -2320,8 +2319,8 @@ void initFileDoubleLogNormal::getSigmaVals(std::vector<double>& kv) const {
 */
 void initFileDoubleLogNormal::getOffsetPos(std::vector<double>& kp) const {
   if (noffsets == 0)
-    throw affineExcept("initFileDoubleLogNormal","getOffsetPos",
-		       "No offset information read in",1);
+    throw affineExcept("initFileDoubleLogNormal", "getOffsetPos",
+		       "No offset information read in");
   kp.resize(noffsets);
   for (unsigned int i = 0; i < noffsets; ++i)
     kp[i] = knotpos[i+offsetidx];
@@ -2332,8 +2331,8 @@ void initFileDoubleLogNormal::getOffsetPos(std::vector<double>& kp) const {
 */
 void initFileDoubleLogNormal::getOffsetVals(std::vector<double>& kv) const {
   if (noffsets == 0)
-    throw affineExcept("initFileDoubleLogNormal","getOffsetVals",
-		       "No offset information read in",1);
+    throw affineExcept("initFileDoubleLogNormal", "getOffsetVals",
+		       "No offset information read in");
   kv.resize(noffsets);
   for (unsigned int i = 0; i < noffsets; ++i)
     kv[i] = knotval[i+offsetidx];
@@ -2346,11 +2345,11 @@ void initFileDoubleLogNormal::getOffsetVals(std::vector<double>& kv) const {
 */
 void initFileDoubleLogNormal::getParams(paramSet& p) const {
   if (nknots == 0)
-    throw affineExcept("initFileDoubleLogNormal","getParams",
-		       "No information loaded",1);
+    throw affineExcept("initFileDoubleLogNormal", "getParams",
+		       "No information loaded");
   if (p.getNParams() < nknots+noffsets+nsigmas)
-    throw affineExcept("initFileDoubleLogNormal","getParams",
-		       "Not enough space in provided paramSet",2);
+    throw affineExcept("initFileDoubleLogNormal", "getParams",
+		       "Not enough space in provided paramSet");
   for (unsigned int i = 0; i < nknots+nsigmas+noffsets; ++i)
     p[i] = knotval[i];
 }
@@ -2386,18 +2385,18 @@ generateRandomKnotValues(ran& rangen, paramSet& pnew,
   unsigned int ntot = nknots + noffsets + nsigmas;
   if (ntot == 0)
     throw affineExcept("initFileDoubleLogNormal", "generateRandomKnotValues",
-		       "No knot information read in", 1);
+		       "No knot information read in");
     
   //Make sure p is big enough; don't resize, complain
   // Note that setting the sigma multipliers is not handled here,
   // so we don't test for those slots
   if (pnew.getNParams() < ntot)
     throw affineExcept("initFileDoubleLogNormal", "generateRandomKnotValues",
-		       "Not enough space in provided paramSet", 2);
+		       "Not enough space in provided paramSet");
 
   if (pcen.getNParams() < ntot)
     throw affineExcept("initFileDoubleLogNormal", "generateRandomKnotValues",
-		       "Not enough params in central param Set", 3);
+		       "Not enough params in central param Set");
 
   //Deal with simple case -- everything fixed
   //So just return pcen -- but check it first
@@ -2409,7 +2408,7 @@ generateRandomKnotValues(ran& rangen, paramSet& pnew,
 	  errstr << "For parameter " << i << " user provided central value "
 		 << pcen[i] << " is below lower limit " << lowlim[i];
 	  throw affineExcept("initFileKnots", "generateRandomKnotValues",
-			     errstr.str(), 4);
+			     errstr.str());
 	}
     if (has_upper_limits)
       for (unsigned int i = 0; i < ntot; ++i)
@@ -2418,7 +2417,7 @@ generateRandomKnotValues(ran& rangen, paramSet& pnew,
 	  errstr << "For parameter " << i << " user provided central value "
 		 << pcen[i] << " is above upper limit " << uplim[i];
 	  throw affineExcept("initFileKnots", "generateRandomKnotValues",
-			     errstr.str(), 5);
+			     errstr.str());
 	}
     for (unsigned int i = 0; i < ntot; ++i)
       pnew[i] = pcen[i];
@@ -2446,8 +2445,7 @@ generateRandomKnotValues(ran& rangen, paramSet& pnew,
 		 << i << " with lowlim: " << lowlim[i] << " central: " 
 		 << pcen[i] << " range: " << range[i];
 	  throw affineExcept("initFileDoubleLogNormal", 
-			     "generateRandomKnotValues",
-			     errstr.str(), 6);
+			     "generateRandomKnotValues", errstr.str());
 	}
 	if (has_uplim[i] && (uplim[i] < pcen[i] - range[i])) {
 	  std::stringstream errstr;
@@ -2456,8 +2454,7 @@ generateRandomKnotValues(ran& rangen, paramSet& pnew,
 		 << i << " with uplim: " << uplim[i] << " central: " 
 		 << pcen[i] << " range: " << range[i];
 	  throw affineExcept("initFileDoubleLogNormal",
-			     "generateRandomKnotValues",
-			     errstr.str(), 7);
+			     "generateRandomKnotValues", errstr.str());
 	}
 
 	if (has_lowlim[i] && has_uplim[i]) {
@@ -2476,8 +2473,7 @@ generateRandomKnotValues(ran& rangen, paramSet& pnew,
 		errstr << "Failed to generate acceptable value for param "
 		       << i << " after " << iters << " attempts";
 		throw affineExcept("initFileDoubleLogNormal",
-				   "generateRandomKnotValues",
-				   errstr.str(), 8);
+				   "generateRandomKnotValues", errstr.str());
 	      }
 	      trialval = rangen.flt() * range[i] + (pcen[i] - 0.5 * range[i]);
 	      if ((trialval >= lowlim[i]) && (trialval <= uplim[i])) 
@@ -2496,8 +2492,7 @@ generateRandomKnotValues(ran& rangen, paramSet& pnew,
 	      errstr << "Failed to generate acceptable value for param "
 		     << i << " after " << iters << " attempts";
 	      throw affineExcept("initFileDoubleLogNormal",
-				 "generateRandomKnotValues",
-				 errstr.str(), 9);
+				 "generateRandomKnotValues", errstr.str());
 	    }
 	    trialval = rangen.flt() * range[i] + (pcen[i] - 0.5 * range[i]);
 	    if (trialval >= lowlim[i]) goodval = true;
@@ -2514,8 +2509,7 @@ generateRandomKnotValues(ran& rangen, paramSet& pnew,
 	      errstr << "Failed to generate acceptable value for param "
 		     << i << " after " << iters << " attempts";
 	      throw affineExcept("initFileDoubleLogNormal",
-				 "generateRandomKnotValues",
-				 errstr.str(), 10);
+				 "generateRandomKnotValues", errstr.str());
 	    }
 	    trialval = rangen.flt() * range[i] + (pcen[i] - 0.5 * range[i]);
 	    if (trialval <= uplim[i]) goodval = true;
@@ -2534,8 +2528,7 @@ generateRandomKnotValues(ran& rangen, paramSet& pnew,
 		 << pcen[i] << " is below lower limit " << lowlim[i]
 		 << " and range is 0.";
 	  throw affineExcept("initFileDoubleLogNormal", 
-			     "generateRandomKnotValues",
-			     errstr.str(), 4);
+			     "generateRandomKnotValues", errstr.str());
 	}
 	if (has_uplim[i] && (pcen[i] > uplim[i])) {
 	  std::stringstream errstr;
@@ -2543,8 +2536,7 @@ generateRandomKnotValues(ran& rangen, paramSet& pnew,
 		 << pcen[i] << " is above upper limit " << uplim[i]
 		 << " and range is 0.";
 	  throw affineExcept("initFileDoubleLogNormal", 
-			     "generateRandomKnotValues",
-			     errstr.str(), 5);
+			     "generateRandomKnotValues", errstr.str());
 	}
 	pnew[i] = pcen[i];
       }
@@ -2563,7 +2555,7 @@ generateRandomKnotValues(ran& rangen, paramSet& pnew,
 double initFileDoubleLogNormal::getKnotRange(unsigned int idx) const {
   if (idx >= nknots+nsigmas+noffsets)
     throw affineExcept("initFileDoubleLogNormal",
-		       "getKnotSigma","Invalid knot index",1);
+		       "getKnotSigma", "Invalid knot index");
   if (!has_range) return std::numeric_limits<double>::quiet_NaN();
   return range[idx];
 }
@@ -2578,8 +2570,8 @@ double initFileDoubleLogNormal::getKnotRange(unsigned int idx) const {
 */
 bool initFileDoubleLogNormal::isKnotFixed(unsigned int idx) const {
   if (idx >= nknots+nsigmas+noffsets)
-    throw affineExcept("initFileDoubleLogNormal","isKnotFixed",
-		       "Invalid knot index",1);
+    throw affineExcept("initFileDoubleLogNormal", "isKnotFixed",
+		       "Invalid knot index");
   if (!has_range) return false;
   if (range[idx] == 0) return true;
   return false;
@@ -2592,8 +2584,8 @@ bool initFileDoubleLogNormal::isKnotFixed(unsigned int idx) const {
 bool initFileDoubleLogNormal::knotHasLowerLimit(unsigned int idx) const {
   if (!has_lower_limits) return false;
   if (idx >= nknots+nsigmas+noffsets)
-    throw affineExcept("initFileDoubleLogNormal","knotHasLowerLimit",
-		       "Invalid knot index",1);
+    throw affineExcept("initFileDoubleLogNormal", "knotHasLowerLimit",
+		       "Invalid knot index");
   return has_lowlim[idx];
 }
 
@@ -2604,8 +2596,8 @@ bool initFileDoubleLogNormal::knotHasLowerLimit(unsigned int idx) const {
 double initFileDoubleLogNormal::getLowerLimit(unsigned int idx) const {
   if (!has_lower_limits) return std::numeric_limits<double>::quiet_NaN();
   if (idx >= nknots+nsigmas+noffsets)
-    throw affineExcept("initFileDoubleLogNormal","getLowerLimit",
-		       "Invalid knot index",1);
+    throw affineExcept("initFileDoubleLogNormal", "getLowerLimit",
+		       "Invalid knot index");
   if (!has_lowlim[idx]) return std::numeric_limits<double>::quiet_NaN();
   return lowlim[idx];
 }
@@ -2617,8 +2609,8 @@ double initFileDoubleLogNormal::getLowerLimit(unsigned int idx) const {
 bool initFileDoubleLogNormal::knotHasUpperLimit(unsigned int idx) const {
   if (!has_upper_limits) return false;
   if (idx >= nknots+nsigmas+noffsets)
-    throw affineExcept("initFileDoubleLogNormal","knotHasUpperLimit",
-		       "Invalid knot index",1);
+    throw affineExcept("initFileDoubleLogNormal", "knotHasUpperLimit",
+		       "Invalid knot index");
   return has_uplim[idx];
 }
 
@@ -2630,8 +2622,8 @@ bool initFileDoubleLogNormal::knotHasUpperLimit(unsigned int idx) const {
 double initFileDoubleLogNormal::getUpperLimit(unsigned int idx) const {
   if (!has_upper_limits) return std::numeric_limits<double>::quiet_NaN();
   if (idx >= nknots+nsigmas+noffsets)
-    throw affineExcept("initFileDoubleLogNormal","getUpperLimit",
-		       "Invalid knot index",1);
+    throw affineExcept("initFileDoubleLogNormal", "getUpperLimit",
+		       "Invalid knot index");
   if (!has_uplim[idx]) return std::numeric_limits<double>::quiet_NaN();
   return uplim[idx];
 }
@@ -2644,8 +2636,8 @@ bool initFileDoubleLogNormal::isValid(const paramSet& p) const {
   if (! (has_lower_limits || has_upper_limits)) return true;
   unsigned int ntot = nknots + nsigmas + noffsets;
   if (p.getNParams() < ntot)
-    throw affineExcept("initFileDoubleLogNormal","isValid",
-		       "Not enough params in paramSet to test validity",1);
+    throw affineExcept("initFileDoubleLogNormal", "isValid",
+		       "Not enough params in paramSet to test validity");
   double val;
   for (unsigned int i = 0; i < ntot; ++i) {
     val = p[i];
@@ -2664,7 +2656,7 @@ void initFileDoubleLogNormal::writeToHDF5Handle(hid_t objid) const {
 
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("initFileDoubleLogNormal", "writeToHDF5Handle",
-		       "Input handle is not valid", 1);
+		       "Input handle is not valid");
 
   // Has range, limits, etc.
   adims = 1;

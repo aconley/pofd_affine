@@ -167,8 +167,8 @@ double PDDouble::getIntegral() const {
 */
 void PDDouble::normalize() {
   if ((n1 == 0) || (n2 == 0))
-    throw affineExcept("PDDouble","normalize",
-		       "No information present to normalize",1);
+    throw affineExcept("PDDouble", "normalize",
+		       "No information present to normalize");
   //Note, because of the 0.5 edge pieces we don't just use
   // getTotal
   double tot = getIntegral();
@@ -223,8 +223,7 @@ void PDDouble::edgeFix(bool donorm) {
   if (n1 < 3 || n2 < 3) return; //No point
 
   if (logflat)
-    throw affineExcept("PDDouble","edgeFix",
-		     "Not supported for logged PDs",1);
+    throw affineExcept("PDDouble", "edgeFix", "Not supported for logged PDs");
 
   //Get mean and vars
   double mn1, mn2, var1, var2;
@@ -243,7 +242,7 @@ void PDDouble::edgeFix(bool donorm) {
     if (std::isinf(var1)) errstr << std::endl << "Var 1 is Inf";
     if (std::isnan(var2)) errstr << std::endl << "Var 2 is NaN";
     if (std::isinf(var2)) errstr << std::endl << "Var 2 is Inf";
-    throw affineExcept("PDDouble","edgeFix", errstr.str(), 2);
+    throw affineExcept("PDDouble", "edgeFix", errstr.str());
   }
   
   double istdev1 = 1.0 / sqrt(var1);
@@ -659,7 +658,7 @@ PDDouble& PDDouble::operator=(const PDDouble& other) {
   if (sz > 0) {
     if (pd_ == NULL)
       throw affineExcept("PDDouble", "operator=", 
-			 "Internal storage not initialized", 1);
+			 "Internal storage not initialized");
     for (unsigned int i = 0; i < sz; ++i)
       pd_[i] = other.pd_[i];
   }
@@ -690,7 +689,7 @@ void PDDouble::fill(unsigned int N1, double MINFLUX1, double DFLUX1,
   if (sz > 0) {
     if (pd_ == NULL)
       throw affineExcept("PDDouble", "operator=", 
-			 "Internal storage not initialized", 1);
+			 "Internal storage not initialized");
     for (unsigned int i = 0; i < sz; ++i)
       pd_[i] = PD[i];
   }
@@ -784,8 +783,8 @@ int PDDouble::writeToFits(const std::string& outputfile) const {
 
   if (status) {
     fits_report_error(stderr,status);
-    throw affineExcept("PDDouble","writeToFits",
-		       "Error creating FITS output file",1);
+    throw affineExcept("PDDouble", "writeToFits",
+		       "Error creating FITS output file");
   }
 
   long axissize[2];
@@ -854,8 +853,7 @@ int PDDouble::writeToFits(const std::string& outputfile) const {
 
   if (status) {
     fits_report_error(stderr,status);
-    throw affineExcept("PDDouble","writeToFits",
-		       "Error doing FITS write",2);
+    throw affineExcept("PDDouble", "writeToFits", "Error doing FITS write");
   }
   return status;
 }
@@ -868,11 +866,11 @@ int PDDouble::writeToFits(const std::string& outputfile) const {
   will result if the P(D) is stored in log form or not.
 */
 double PDDouble::getLogLike(const fitsDataDouble& data) const {
-  if (pd_ == NULL) throw affineExcept("PDDouble","getLogLike",
-				      "pd not filled before likelihood calc",1);
+  if (pd_ == NULL) throw affineExcept("PDDouble", "getLogLike",
+				      "pd not filled before likelihood calc");
   unsigned int ndata = data.getN();
-  if (ndata == 0) throw affineExcept("PDDouble","getLogLike",
-				     "No data present",2);
+  if (ndata == 0) throw affineExcept("PDDouble", "getLogLike",
+				     "No data present");
 
   if (data.isBinned()) return getLogLikeBinned(data);
   else return getLogLikeUnbinned(data);
@@ -996,8 +994,7 @@ double PDDouble::getLogLikeUnbinned(const fitsDataDouble& data) const {
 */
 double PDDouble::getLogLikeBinned(const fitsDataDouble& data) const {
   if (!data.isBinned())
-    throw affineExcept("PDDouble","getLogLikeBinned",
-		       "Data is not binned",1);
+    throw affineExcept("PDDouble", "getLogLikeBinned", "Data is not binned");
 
   std::pair<unsigned int,unsigned int> nbins = data.getNBins();
   unsigned int nbins1 = nbins.first;

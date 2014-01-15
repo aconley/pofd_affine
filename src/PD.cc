@@ -128,8 +128,8 @@ double PD::getIntegral() const {
 */
 void PD::normalize() {
   if (n == 0)
-    throw affineExcept("PD","normalize",
-		       "No information present to normalize",1);
+    throw affineExcept("PD", "normalize", 
+		       "No information present to normalize");
   double tot = getIntegral();
   unsigned int sz = n;
   if (logflat) {
@@ -182,8 +182,7 @@ void PD::edgeFix(bool donorm) {
   if (n < 3) return; //No point
 
   if (logflat)
-    throw affineExcept("PD", "edgeFix",
-		       "Not supported for logged PDs", 1);
+    throw affineExcept("PD", "edgeFix", "Not supported for logged PDs");
 
   //Get mean and vars
   double mn, var;
@@ -196,7 +195,7 @@ void PD::edgeFix(bool donorm) {
     if (std::isinf(mn)) errstr << std::endl<< "Mean is Inf";
     if (std::isnan(var)) errstr << std::endl << "Var is NaN";
     if (std::isinf(var)) errstr << std::endl << "Var is Inf";
-    throw affineExcept("PD", "edgeFix", errstr.str(), 2);
+    throw affineExcept("PD", "edgeFix", errstr.str());
   }
   double istdev = 1.0 / sqrt(var);
 
@@ -409,8 +408,7 @@ int PD::writeToFits(const std::string& outputfile) const {
 
   if (status) {
     fits_report_error(stderr,status);
-    throw affineExcept("PD","writeToFits",
-		       "Error creating FITS output file",1);
+    throw affineExcept("PD", "writeToFits", "Error creating FITS output file");
   }
 
   long axissize[1];
@@ -444,7 +442,7 @@ int PD::writeToFits(const std::string& outputfile) const {
 
   if (status) {
     fits_report_error(stderr, status);
-    throw affineExcept("PD", "writeToFits", "Error doing FITS write", 2);
+    throw affineExcept("PD", "writeToFits", "Error doing FITS write");
   }
   return status;
 }
@@ -454,11 +452,11 @@ int PD::writeToFits(const std::string& outputfile) const {
   \returns Log likelihood
 */
 double PD::getLogLike(const fitsData& data) const {
-  if (pd_ == NULL) throw affineExcept("PD","getLogLike",
-				      "pd not filled before likelihood calc",1);
+  if (pd_ == NULL) throw affineExcept("PD", "getLogLike",
+				      "pd not filled before likelihood calc");
   unsigned int ndata = data.getN();
-  if (ndata == 0) throw affineExcept("PD","getLogLike",
-				   "No data present",2);
+  if (ndata == 0) throw affineExcept("PD", "getLogLike",
+				     "No data present");
 
   if (data.isBinned()) return getLogLikeBinned(data);
   else return getLogLikeUnbinned(data);
@@ -474,8 +472,7 @@ double PD::getLogLike(const fitsData& data) const {
 double PD::getLogLikeBinned(const fitsData& data) const {
 
   if (!data.isBinned())
-    throw affineExcept("PD","getLogLikeBinned",
-                     "Data is not binned",1);
+    throw affineExcept("PD", "getLogLikeBinned", "Data is not binned");
 
   //Quantities for edge test
   double maxflux = minflux + static_cast<double>(n-1)*dflux;

@@ -29,7 +29,7 @@ beam::beam() {
   poshistval = neghistval = NULL;
   
   if (minval < 0.0)
-    throw affineExcept("beam", "beam", "Invalid (non-positive) minval", 1);
+    throw affineExcept("beam", "beam", "Invalid (non-positive) minval");
 }
 
 /*!
@@ -54,7 +54,7 @@ beam::beam(const std::string& filename, bool histogram,
   poshistval = neghistval = NULL;
 
   if (minval < 0.0)
-    throw affineExcept("beam", "beam", "Invalid (non-positive) minval", 1);
+    throw affineExcept("beam", "beam", "Invalid (non-positive) minval");
 
   readFile(filename, MINVAL);
   if (histogram) makeHistogram(NBINS);
@@ -220,14 +220,14 @@ void beam::readFile(const std::string& filename, double MINVAL) {
     fits_close_file(fptr, &status);
     std::stringstream errstr;
     errstr << "Error opening input file: " << filename << std::endl;
-    throw affineExcept("beam", "readFile", errstr.str(), 1);
+    throw affineExcept("beam", "readFile", errstr.str());
   }
   if (status) {
     fits_report_error(stderr, status);
     fits_close_file(fptr, &status);
     std::stringstream errstr;
     errstr << "Error opening input file: " << filename << std::endl;
-    throw affineExcept("beam", "readFile", errstr.str(), 1);
+    throw affineExcept("beam", "readFile", errstr.str());
   }
 
   fits_get_hdrspace(fptr,&nkeys,NULL,&status);
@@ -236,7 +236,7 @@ void beam::readFile(const std::string& filename, double MINVAL) {
     fits_close_file(fptr, &status);
     std::stringstream errstr;
     errstr << "Error getting header space for: " << filename;
-    throw affineExcept("beam", "readFile", errstr.str(), 2);
+    throw affineExcept("beam", "readFile", errstr.str());
   }
 
   //Get the pixel scale
@@ -254,7 +254,7 @@ void beam::readFile(const std::string& filename, double MINVAL) {
       std::stringstream errstr;
       errstr << "Unable to find pixel scale information in "
 	     << filename;
-      throw affineExcept("beam", "readFile", errstr.str(), 3);
+      throw affineExcept("beam", "readFile", errstr.str());
     }
   }
 
@@ -265,7 +265,7 @@ void beam::readFile(const std::string& filename, double MINVAL) {
   fits_get_img_size(fptr, 2, naxes, &status);
   if (status || naxis != 2) {
     fits_close_file(fptr, &status);
-    throw affineExcept("beam", "readFile", "Input BEAM is not 2D", 4);
+    throw affineExcept("beam", "readFile", "Input BEAM is not 2D");
   }
 
   unsigned int n = naxes[0] * naxes[1];
@@ -284,7 +284,7 @@ void beam::readFile(const std::string& filename, double MINVAL) {
   if (status) {
     fits_report_error(stderr,status);
     delete[] pixarr;
-    throw affineExcept("beam", "readFile", "Error closing beam file", 5);
+    throw affineExcept("beam", "readFile", "Error closing beam file");
   } 
 
   //Now, sort in to positive and negative
@@ -296,8 +296,7 @@ void beam::readFile(const std::string& filename, double MINVAL) {
   }
 
   if ((npos == 0) && (hasneg == 0))
-    throw affineExcept("beam","readFile",
-		       "Beam file has only zero values",1);
+    throw affineExcept("beam", "readFile", "Beam file has only zero values");
 
   //Get pos and abs(neg) into arrays -- don't store values closer to 0
   // then minval
@@ -372,7 +371,7 @@ void beam::readFile(const std::string& filename, double MINVAL) {
 void beam::makeHistogram(unsigned int NBINS) {
   if (NBINS == 0)
     throw affineExcept("beam", "makeHistogram",
-		       "Invalid (non-positive) nbins", 1);
+		       "Invalid (non-positive) nbins");
   nbins = NBINS;
 
   // Clean up hist values

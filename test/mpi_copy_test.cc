@@ -505,28 +505,23 @@ void slave() {
     unsigned int n;
     MPI_Recv(&n, 1, MPI_UNSIGNED, 0, SENDUIVAL, MPI_COMM_WORLD, &Info);
     if (n != bm.getNPos())
-      throw affineExcept("test_copy","slave", "beam has wrong Npos",
-			 34);
+      throw affineExcept("test_copy", "slave", "beam has wrong Npos");
     MPI_Recv(&n, 1, MPI_UNSIGNED, 0, SENDUIVAL, MPI_COMM_WORLD, &Info);
     if (n != bm.getNNeg())
-      throw affineExcept("test_copy","slave", "beam has wrong Nneg",
-			 35);
+      throw affineExcept("test_copy", "slave", "beam has wrong Nneg");
     MPI_Recv(&n, 1, MPI_UNSIGNED, 0, SENDUIVAL, MPI_COMM_WORLD, &Info);
     if (n != bm.getNHistPos())
-      throw affineExcept("test_copy","slave", "beam has wrong NHistPos",
-			 35);
+      throw affineExcept("test_copy", "slave", "beam has wrong NHistPos");
     double val;
     MPI_Recv(&val, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
     double diff = (bm.getEffectiveArea() - val)/val;
     if (fabs(diff) > 1e-5)
-      throw affineExcept("test_copy","slave", "beam has wrong Eff area",
-			 36);
+      throw affineExcept("test_copy", "slave", "beam has wrong Eff area");
 
     MPI_Recv(&val, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
     diff = (bm.getPixSize() - val)/val;
     if (fabs(diff) > 1e-5)
-      throw affineExcept("test_copy","slave", "beam has wrong pixel size",
-			 37);      
+      throw affineExcept("test_copy", "slave", "beam has wrong pixel size");
 
     MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
@@ -573,24 +568,20 @@ void slave() {
     unsigned int n;
     MPI_Recv(&n, 1, MPI_UNSIGNED, 0, SENDUIVAL, MPI_COMM_WORLD, &Info);
     if (n != data.getN())
-      throw affineExcept("test_copy","slave", "fitsData had wrong data size",
-			 23);
+      throw affineExcept("test_copy", "slave", "fitsData had wrong data size");
     double val;
     MPI_Recv(&val, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
     double diff = (data.getMean() - val); //Mean close to zero
     if (fabs(diff) > 1e-5)
-      throw affineExcept("test_copy","slave", "fitsData had wrong mean",
-			 24);
+      throw affineExcept("test_copy", "slave", "fitsData had wrong mean");
     MPI_Recv(&val, 1, MPI_DOUBLE, 0 ,SENDDBLVAL, MPI_COMM_WORLD, &Info);
     diff = (data.getMin() - val)/val;
     if (fabs(diff) > 1e-5)
-      throw affineExcept("test_copy","slave", "fitsData had wrong min",
-			 25);
+      throw affineExcept("test_copy", "slave", "fitsData had wrong min");
     MPI_Recv(&val, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
     diff = (data.getMax() - val)/val;
     if (fabs(diff) > 1e-5)
-      throw affineExcept("test_copy","slave", "fitsData had wrong max",
-			 26);
+      throw affineExcept("test_copy", "slave", "fitsData had wrong max");
 
     MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
@@ -618,41 +609,37 @@ void slave() {
     unsigned int n;
     MPI_Recv(&n, 1, MPI_UNSIGNED, 0, SENDUIVAL, MPI_COMM_WORLD, &Info);
     if (n != data.getN())
-      throw affineExcept("test_copy","slave", 
-			 "fitsDataDouble had wrong data size", 27);
+      throw affineExcept("test_copy", "slave", 
+			 "fitsDataDouble had wrong data size");
     std::pair<double,double> pr;
     MPI_Recv(&pr.first, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
     MPI_Recv(&pr.second, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
     double diff = (data.getMean().first - pr.first); //Mean close to zero
     if (fabs(diff) > 1e-5)
-      throw affineExcept("test_copy","slave", 
-			 "fitsDataDouble had wrong mean1", 28);
+      throw affineExcept("test_copy", "slave", 
+			 "fitsDataDouble had wrong mean1");
     diff = (data.getMean().second - pr.second);
     if (fabs(diff) > 1e-5)
-      throw affineExcept("test_copy","slave", 
-			 "fitsDataDouble had wrong mean2", 29);
+      throw affineExcept("test_copy", "slave", 
+			 "fitsDataDouble had wrong mean2");
 
     MPI_Recv(&pr.first, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
     MPI_Recv(&pr.second, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
     diff = (data.getMin().first - pr.first)/pr.first;
     if (fabs(diff) > 1e-5)
-      throw affineExcept("test_copy","slave", "fitsData had wrong min1",
-			 30);
+      throw affineExcept("test_copy", "slave", "fitsData had wrong min1");
     diff = (data.getMin().second - pr.second)/pr.second;
     if (fabs(diff) > 1e-5)
-      throw affineExcept("test_copy","slave", "fitsData had wrong min2",
-			 31);
+      throw affineExcept("test_copy", "slave", "fitsData had wrong min2");
 
     MPI_Recv(&pr.first, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
     MPI_Recv(&pr.second, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
     diff = (data.getMax().first - pr.first)/pr.first;
     if (fabs(diff) > 1e-5)
-      throw affineExcept("test_copy","slave", "fitsData had wrong max1",
-			 32);
+      throw affineExcept("test_copy", "slave", "fitsData had wrong max1");
     diff = (data.getMax().second - pr.second)/pr.second;
     if (fabs(diff) > 1e-5)
-      throw affineExcept("test_copy","slave", "fitsData had wrong max2",
-			 33);
+      throw affineExcept("test_copy", "slave", "fitsData had wrong max2");
 
     MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
@@ -675,8 +662,7 @@ void slave() {
     paramSet pars;
     pars.recieveCopy(MPI_COMM_WORLD, 0);
     if (pars.getNParams() != 9)
-      throw affineExcept("test_copy","slave", "paramSet should have 9 params",
-			 1);
+      throw affineExcept("test_copy", "slave", "paramSet should have 9 params");
     MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
@@ -699,22 +685,22 @@ void slave() {
     proposedStep pr(0);
     pr.recieveCopy(MPI_COMM_WORLD, 0);
     if (pr.oldStep.getNParams() != 5)
-      throw affineExcept("test_copy","slave", 
-			 "proposedStep.oldStep should have 5 params",1);
+      throw affineExcept("test_copy", "slave",
+			 "proposedStep.oldStep should have 5 params");
     if (pr.newStep.getNParams() != 5)
-      throw affineExcept("test_copy","slave", 
-			 "proposedStep.newStep should have 5 params",2);
+      throw affineExcept("test_copy", "slave", 
+			 "proposedStep.newStep should have 5 params");
     if (pr.update_idx != 3)
-      throw affineExcept("test_copy","slave", 
-			 "proposedStep.update_idx should have 3 params", 3);
+      throw affineExcept("test_copy", "slave", 
+			 "proposedStep.update_idx should have 3 params");
     double diff = fabs((pr.oldLogLike - 5.0)/5.0);
     if (fabs(diff) > 1e-5)
-      throw affineExcept("test_copy","slave", 
-			 "proposedStep.oldLogLike should be 5.0", 4);
+      throw affineExcept("test_copy", "slave", 
+			 "proposedStep.oldLogLike should be 5.0");
     diff = fabs((pr.newLogLike - 2.0)/2.0);
     if (fabs(diff) > 1e-5)
-      throw affineExcept("test_copy","slave", 
-			 "proposedStep.newLogLike should be 5.0", 5);
+      throw affineExcept("test_copy", "slave", 
+			 "proposedStep.newLogLike should be 5.0");
 
     MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
@@ -742,29 +728,29 @@ void slave() {
     model.recieveCopy(MPI_COMM_WORLD, 0);
     MPI_Recv(&nkval, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
     if (model.getNKnots() != 3)
-      throw affineExcept("test_copy","slave", 
-			 "numberCountsKnotsSpline.getNKnots() should be 3", 6);
+      throw affineExcept("test_copy", "slave", 
+			 "numberCountsKnotsSpline.getNKnots() should be 3");
     std::vector<double> kposvc;
     model.getKnotPositions(kposvc);
     double dist = (kposvc[0] - kpos[0]) * (kposvc[0] - kpos[0]) +
       (kposvc[1] - kpos[1]) * (kposvc[1] - kpos[1]) +
       (kposvc[2] - kpos[2]) * (kposvc[2] - kpos[2]);
     if (dist > 1e-5)
-      throw affineExcept("test_copy","slave", 
-			 "numberCountsKnotsSpline knot positions are off", 21);
+      throw affineExcept("test_copy", "slave", 
+			 "numberCountsKnotsSpline knot positions are off");
     paramSet p(3);
     model.getParams(p);
     dist = (p[0] - kval[0]) * (p[0] - kval[0]) +
       (p[1] - kval[1]) * (p[1] - kval[1]) +
       (p[2] - kval[2]) * (p[2] - kval[2]);
     if (dist > 1e-5)
-      throw affineExcept("test_copy","slave", 
-			 "numberCountsKnotsSpline knot values are off", 22);
+      throw affineExcept("test_copy", "slave", 
+			 "numberCountsKnotsSpline knot values are off");
       
     nkval_this = model.getNumberCounts(0.2);
     if (fabs((nkval_this - nkval)/nkval) > 1e-4)
-      throw affineExcept("test_copy","slave", 
-			 "numberCountsKnotsSpline number counts are off", 34);
+      throw affineExcept("test_copy", "slave", 
+			 "numberCountsKnotsSpline number counts are off");
     MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
@@ -804,17 +790,14 @@ void slave() {
     numberCountsDoubleLogNormal model;
     model.recieveCopy(MPI_COMM_WORLD, 0);
     if (model.getNKnots() != 8)
-      throw affineExcept("test_copy","slave", 
-			 "numberCountsDoubleLogNormal.getNKnots() should be 8",
-			 7);
+      throw affineExcept("test_copy", "slave", 
+			 "numberCountsDoubleLogNormal.getNKnots() should be 8");
     if (model.getNSigmas() != 4)
-      throw affineExcept("test_copy","slave", 
-			 "numberCountsDoubleLogNormal.getNSigmas() should be 4",
-			 8);
+      throw affineExcept("test_copy", "slave", 
+			 "numberCountsDoubleLogNormal.getNSigmas() should be 4");
     if (model.getNOffsets() != 3)
-      throw affineExcept("test_copy","slave", 
-			 "numberCountsDoubleLogNormal.getNOffsets() should be 3",
-			 9);
+      throw affineExcept("test_copy", "slave", 
+			 "numberCountsDoubleLogNormal.getNOffsets() should be 3");
     MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
@@ -854,8 +837,8 @@ void slave() {
     PDFactory pfactory;
     pfactory.recieveCopy(MPI_COMM_WORLD, 0);
     if (pfactory.getNInterp() != 100)
-      throw affineExcept("test_copy","slave", 
-			 "PDFactory.getNInterp() should be 100", 10);
+      throw affineExcept("test_copy", "slave", 
+			 "PDFactory.getNInterp() should be 100");
     MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
@@ -877,8 +860,8 @@ void slave() {
     PDFactoryDouble pfactory;
     pfactory.recieveCopy(MPI_COMM_WORLD, 0);
     if (pfactory.getNEdge() != 110)
-      throw affineExcept("test_copy","slave", 
-			 "PDFactoryDouble.getNEdge() should be 110", 11);
+      throw affineExcept("test_copy", "slave", 
+			 "PDFactoryDouble.getNEdge() should be 110");
     MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
@@ -899,8 +882,8 @@ void slave() {
     calcLikeSingle like;
     like.recieveCopy(MPI_COMM_WORLD, 0);
     if (like.getNInterp() != 50)
-      throw affineExcept("test_copy","slave", 
-			 "calcLikeSingle.getNInterp() should be 50", 12);
+      throw affineExcept("test_copy", "slave", 
+			 "calcLikeSingle.getNInterp() should be 50");
     MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
@@ -921,17 +904,17 @@ void slave() {
     calcLike like;
     like.recieveCopy(MPI_COMM_WORLD, 0);
     if (like.getFFTSize() != 2048)
-      throw affineExcept("test_copy","slave", 
-			 "calcLike.getFFTSize() should be 2048", 13);
+      throw affineExcept("test_copy", "slave", 
+			 "calcLike.getFFTSize() should be 2048");
     if (like.getNInterp() != 130) {
       std::stringstream errstr;
       errstr << "calcLike.getNInterp() should be 130 but is "
 	     << like.getNInterp();
-      throw affineExcept("test_copy","slave", errstr.str(), 14);
+      throw affineExcept("test_copy", "slave", errstr.str());
     }
     if (like.getEdgeFix())
-      throw affineExcept("test_copy","slave", 
-			 "calcLike.getEdgeFix() should be false", 15);
+      throw affineExcept("test_copy", "slave", 
+			 "calcLike.getEdgeFix() should be false");
     MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
@@ -952,8 +935,8 @@ void slave() {
     calcLikeDoubleSingle like;
     like.recieveCopy(MPI_COMM_WORLD, 0);
     if (like.getNEdge() != 12)
-      throw affineExcept("test_copy","slave", 
-			 "calcLikeDoubleSingle.getNEdge() should be 12", 16);
+      throw affineExcept("test_copy", "slave", 
+			 "calcLikeDoubleSingle.getNEdge() should be 12");
     MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
@@ -974,17 +957,17 @@ void slave() {
     calcLikeDouble like;
     like.recieveCopy(MPI_COMM_WORLD, 0);
     if (like.getFFTSize() != 4096)
-      throw affineExcept("test_copy","slave", 
-			 "calcLikeDouble.getFFTSize() should be 4096", 17);
+      throw affineExcept("test_copy", "slave", 
+			 "calcLikeDouble.getFFTSize() should be 4096");
     if (like.getNEdge() != 104)
-      throw affineExcept("test_copy","slave", 
-			 "calcLike.getNEdge() should be 104", 18);
+      throw affineExcept("test_copy", "slave", 
+			 "calcLike.getNEdge() should be 104");
     if (like.getEdgeFix())
-      throw affineExcept("test_copy","slave", 
-			 "calcLikeDouble.getEdgeFix() should be false", 19);
+      throw affineExcept("test_copy", "slave", 
+			 "calcLikeDouble.getEdgeFix() should be false");
     if (like.getEdgeInteg())
-      throw affineExcept("test_copy","slave", 
-			 "calcLikeDouble.getEdgeInteg() should be false", 20);
+      throw affineExcept("test_copy", "slave", 
+			 "calcLikeDouble.getEdgeInteg() should be false");
     MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;

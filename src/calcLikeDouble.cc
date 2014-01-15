@@ -111,17 +111,17 @@ void calcLikeDoubleSingle::readDataFromFile(const std::string& datafile1,
   unsigned int nd = data[0].getN();
   if (nd == 0)
     throw affineExcept("calcLikeDoubleSingle", "readDataFromFile",
-		       "No unmasked pixels in data", 1);
+		       "No unmasked pixels in data");
   if (BINDATA) data[0].applyBinning(NBINS, NBINS);
   
   std::pair<double,double> pr = data[0].getMax();
   maxflux1 = pr.first; maxflux2 = pr.second;
   if (std::isnan(maxflux1) || std::isinf(maxflux1))
     throw affineExcept("calcLikeDoubleSingle", "readDataFromFile",
-		       "Problem with maxflux, band 1", 2);
+		       "Problem with maxflux, band 1");
   if (std::isnan(maxflux2) || std::isinf(maxflux2))
     throw affineExcept("calcLikeDoubleSingle", "readDataFromFile",
-		       "Problem with maxflux, band 2", 3);
+		       "Problem with maxflux, band 2");
 
   // Can't be computed yet
   like_offset[0] = 0.0;
@@ -145,10 +145,10 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
   unsigned int n = datafiles1.size();
   if (n == 0)
     throw affineExcept("calcLikeDoubleSingle", "readDataFromFiles",
-		       "No data sets", 1);
+		       "No data sets");
   if (datafiles2.size() != n)
     throw affineExcept("calcLikeDoubleSingle", "readDataFromFiles",
-		       "Different number of datafiles in each band", 2);
+		       "Different number of datafiles in each band");
   resize(n);
 
   for (unsigned int i = 0; i < n; ++i) {
@@ -159,7 +159,7 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
       errstr << "No unmasked pixels in data files: "
 	     << datafiles1[i] << " " << datafiles2[i];
       throw affineExcept("calcLikeDoubleSingle", "readDataFromFiles",
-			 errstr.str(), 3);
+			 errstr.str());
     }
     if (BINDATA) data[i].applyBinning(NBINS, NBINS);
 
@@ -173,18 +173,18 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
   maxflux1 = pr.first; maxflux2 = pr.second;
   if (std::isnan(maxflux1) || std::isinf(maxflux1))
     throw affineExcept("calcLikeDoubleSingle", "readDataFromFiles",
-		       "Problem with maxflux, band 1", 4);
+		       "Problem with maxflux, band 1");
   if (std::isnan(maxflux2) || std::isinf(maxflux2))
     throw affineExcept("calcLikeDoubleSingle", "readDataFromFiles",
-		       "Problem with maxflux, band 2", 5);
+		       "Problem with maxflux, band 2");
   for (unsigned int i = 1; i < n; ++i) {
     pr = data[i].getMax();
     if (std::isnan(pr.first) || std::isinf(pr.first))
       throw affineExcept("calcLikeDoubleSingle", "readDataFromFiles",
-			 "Problem with maxflux, band 1", 6);
+			 "Problem with maxflux, band 1");
     if (std::isnan(pr.second) || std::isinf(pr.second))
       throw affineExcept("calcLikeDoubleSingle", "readDataFromFiles",
-			 "Problem with maxflux, band 2", 7);
+			 "Problem with maxflux, band 2");
     if (pr.first > maxflux1) maxflux1 = pr.first;
     if (pr.second > maxflux2) maxflux2 = pr.second;
   }
@@ -234,8 +234,7 @@ void calcLikeDoubleSingle::setLikeNorm(const std::vector<double>& lnorm) {
   unsigned int n = lnorm.size();
   if (n != ndatasets)
     throw affineExcept("calcLikeDoubleSingle", "setLikeNorm",
-		       "like_norm vector not same size as number of data sets",
-		       1);
+		       "like_norm vector not same size as number of data sets");
   if (n == 0) return;
   for (unsigned int i = 0; i < ndatasets; ++i)
     like_norm[i] = lnorm[i];
@@ -249,8 +248,7 @@ void calcLikeDoubleSingle::setLikeNorm(unsigned int n,
 				       const double* const lnorm) {
   if (n != ndatasets)
     throw affineExcept("calcLikeDoubleSingle", "setLikeNorm",
-		       "like_norm array not same size as number of data sets",
-		       1);
+		       "like_norm array not same size as number of data sets");
   if (n == 0) return;
   for (unsigned int i = 0; i < ndatasets; ++i)
     like_norm[i] = lnorm[i];
@@ -264,7 +262,7 @@ void calcLikeDoubleSingle::setSigmaBase1(const std::vector<double>& s) {
   unsigned int n = s.size();
   if (n != ndatasets)
     throw affineExcept("calcLikeDoubleSingle", "setSigmaBase1",
-		       "sigma vectors not same size as number of data sets", 1);
+		       "sigma vectors not same size as number of data sets");
   if (n == 0) return;
   for (unsigned int i = 0; i < ndatasets; ++i)
     sigma_base1[i] = s[i];
@@ -294,7 +292,7 @@ void calcLikeDoubleSingle::setSigmaBase2(const std::vector<double>& s) {
   unsigned int n = s.size();
   if (n != ndatasets)
     throw affineExcept("calcLikeDoubleSingle", "setSigmaBase2",
-		       "sigma vectors not same size as number of data sets", 1);
+		       "sigma vectors not same size as number of data sets");
   if (n == 0) return;
   for (unsigned int i = 0; i < ndatasets; ++i)
     sigma_base2[i] = s[i];
@@ -323,7 +321,7 @@ void calcLikeDoubleSingle::setSigmaBase2(const std::vector<double>& s) {
 void calcLikeDoubleSingle::setSigmaBase1(unsigned int n,const double* const s) {
   if (n != ndatasets)
     throw affineExcept("calcLikeDoubleSingle", "setSigmaBase1",
-		       "sigma arrays not same size as number of data sets", 1);
+		       "sigma arrays not same size as number of data sets");
   if (n == 0) return;
   for (unsigned int i = 0; i < ndatasets; ++i)
     sigma_base1[i] = s[i];
@@ -351,7 +349,7 @@ void calcLikeDoubleSingle::setSigmaBase1(unsigned int n,const double* const s) {
 void calcLikeDoubleSingle::setSigmaBase2(unsigned int n,const double* const s) {
   if (n != ndatasets)
     throw affineExcept("calcLikeDoubleSingle", "setSigmaBase2",
-		       "sigma arrays not same size as number of data sets", 1);
+		       "sigma arrays not same size as number of data sets");
   if (n == 0) return;
   for (unsigned int i = 0; i < ndatasets; ++i)
     sigma_base2[i] = s[i];
@@ -397,10 +395,10 @@ calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
 
   if (!data_read)
     throw affineExcept("calcLikeDoubleSingle", "getNegLogLike",
-		       "Data not read", 1);
+		       "Data not read");
   if (!has_beam)
     throw affineExcept("calcLikeDoubleSingle", "getNegLogLike",
-		       "Beam not read", 2);
+		       "Beam not read");
 
   //Maximum noise value with multiplier 
   double max_sigma1 = maxsigma_base1 * sigmult1;
@@ -635,25 +633,25 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
   unsigned int ndat = datafiles1.size();
   if (ndat != datafiles2.size())
     throw affineExcept("calcLikeDouble", "readDataFromFiles",
-		       "Datafiles1 and datafile2 not same length", 1);
+		       "Datafiles1 and datafile2 not same length");
   if (ndat == 0)
     throw affineExcept("calcLikeDouble", "readDataFromFiles",
-		       "No datafiles", 2);
+		       "No datafiles");
   if (ndat != beamfiles1.size())
     throw affineExcept("calcLikeDouble", "readDataFromFiles",
-		       "datafiles and beamfiles1 not same length", 3);
+		       "datafiles and beamfiles1 not same length");
   if (ndat != beamfiles2.size())
     throw affineExcept("calcLikeDouble", "readDataFromFiles",
-		       "datafiles and beamfiles2 not same length", 4);
+		       "datafiles and beamfiles2 not same length");
   if (ndat != sigmas1.size())
     throw affineExcept("calcLikeDouble", "readDataFromFiles",
-		       "datafiles and sigmas1 not same length", 5);
+		       "datafiles and sigmas1 not same length");
   if (ndat != sigmas2.size())
     throw affineExcept("calcLikeDouble", "readDataFromFiles",
-		       "datafiles and sigmas2 not same length", 6);
+		       "datafiles and sigmas2 not same length");
   if (ndat != like_norms.size())
     throw affineExcept("calcLikeDouble", "readDataFromFiles",
-		       "datafiles and like_norm not same length", 7);
+		       "datafiles and like_norm not same length");
   
   //Use a map.  Could also use a multi-map, but meh
   //Key will be the combination of both beam file names
@@ -818,7 +816,7 @@ double calcLikeDouble::getLogLike(const paramSet& p, bool& pars_invalid) const {
   unsigned int nmodelpars = model.getNParams();
   if (npar < (nmodelpars+2)) //+2 for the sigma multiplier in each band
     throw affineExcept("calcLikeDouble", "getLogLike",
-		       "Not enough elements in params", 1);
+		       "Not enough elements in params");
 
   //Set the model
   model.setParams(p);
@@ -876,7 +874,7 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
 
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("calcLikeDouble", "writeToHDF5",
-		       "Input handle is not valid", 1);
+		       "Input handle is not valid");
 
   // FFTSIZE
   adims = 1;
