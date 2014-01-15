@@ -2,45 +2,33 @@
 #define __affineExcept__
 
 #include <string>
-#include <iostream>
-
+#include <ostream>
+#include <exception>
 /*! 
   \brief Exception class for mcmc_affine
+
+  Adds class/method fields to except
 */
 
-class affineExcept {
-
+class affineExcept : public std::exception {
+ private:
   void init(const std::string&, const std::string&,
-	    const std::string&, int err);  //!< Initializer
+	    const std::string&);  //!< Initializer
 
- public:
-  bool classset; //!< Is errclass set
-  bool methodset; //!< Is errmethod set
-  bool strset; //!< Is errstr set
-  bool errset; //!< Is errnum set
   std::string errclass;          //!< Class throwing the exception
   std::string errmethod;         //!< Method throwing the exception
   std::string errstr;            //!< Error string (user consumption)
-  int errnum;                    //!< Error code (class or method specific)
 
+ public:
   // Constructors
-
-  affineExcept(); //!< Basic constructor
   explicit affineExcept(const std::string& errstr); //!< Just with errstring
-  explicit affineExcept(const std::string& errstr, 
-			int errnum); //!< Errstring and number
   /*! \brief Class, method, error string*/
   explicit affineExcept(const std::string& errclass, 
 			const std::string& errmethod,
 			const std::string& errstr); 
-  /*! \brief Full constructor */
-  explicit affineExcept(const std::string& errclass, 
-			const std::string& errmethod,
-			const std::string& errstr, 
-			int errnum);
+  ~affineExcept() throw() {}
 
-  std::string what() const; //!< Explain error
-
+  const char* what() const throw();
 };
 
 std::ostream& operator<<(std::ostream& os, const affineExcept& ex);//!< Output operator for affineExcept

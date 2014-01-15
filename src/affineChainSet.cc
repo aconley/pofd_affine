@@ -84,11 +84,11 @@ void affineStepChunk::fillFromLastStep(const affineStepChunk& other)
   unsigned int sz;
   sz = other.nwalkers * other.niters * other.nparams;
   if (sz == 0)
-    throw affineExcept("affineStepChunk","fillFromLastStep",
-		       "Other chunk has zero size",1);
+    throw affineExcept("affineStepChunk", "fillFromLastStep",
+		       "Other chunk has zero size");
   if (other.getMinNSteps() < 1)
-    throw affineExcept("affineStepChunk","fillFromLastStep",
-		       "Other chunk doesn't have steps for all walkers",2);
+    throw affineExcept("affineStepChunk", "fillFromLastStep",
+		       "Other chunk doesn't have steps for all walkers");
   //Resize as needed
   if (nwalkers != other.nwalkers || nparams != other.nparams || niters != 1) {
     clear();
@@ -454,9 +454,9 @@ void affineChainSet::clear() {
 */
 void affineChainSet::clearPreserveLast() throw (affineExcept) {
   if (steps.size() == 0)
-    throw affineExcept("affineChainSet","clearPreserveLast",
-		       "No previous entries to preserve",1);
-  affineStepChunk *newchunk = new affineStepChunk(nwalkers,1,nparams);
+    throw affineExcept("affineChainSet", "clearPreserveLast",
+		       "No previous entries to preserve");
+  affineStepChunk *newchunk = new affineStepChunk(nwalkers, 1, nparams);
   newchunk->fillFromLastStep(*steps.back());
   for (unsigned int i = 0; i < steps.size(); ++i)
     if (steps[i] != NULL) delete steps[i];
@@ -475,7 +475,7 @@ void affineChainSet::setNWalkers(unsigned int n) throw (affineExcept) {
 
   if (n == 0)
     throw affineExcept("affineChainSet", "setNWalkers",
-		       "n must be positive", 1);
+		       "n must be positive");
 
   //We have to delete all previous steps
   clear();
@@ -494,7 +494,7 @@ void affineChainSet::setNParams(unsigned int n) throw (affineExcept) {
 
   if (n == 0)
     throw affineExcept("affineChainSet", "setNParams",
-		       "n must be positive", 1);
+		       "n must be positive");
 
   //We have to delete all previous steps
   clear();
@@ -538,10 +538,10 @@ void affineChainSet::getLastStep(unsigned int walker_idx,
   int nchunks = static_cast<int>(steps.size());
   if (nchunks == 0) 
     throw affineExcept("affineChainSet", "getLastStep",
-		       "No steps taken",1);
+		       "No steps taken");
   if (walker_idx >= nwalkers)
     throw affineExcept("affineChainSet", "getLastStep",
-		       "Walker index invalid", 2);
+		       "Walker index invalid");
 
   if (par.getNParams() != nparams)
     par.setNParams(nparams);
@@ -564,7 +564,7 @@ void affineChainSet::getLastStep(unsigned int walker_idx,
   }
   if (!succ)
     throw affineExcept("affineChainSet", "getLastStep",
-		       "Error getting last step",3);
+		       "Error getting last step");
 }
 
 /*!
@@ -580,10 +580,10 @@ void affineChainSet::replaceLastStep(unsigned int walker_idx,
   int nchunks = static_cast<int>(steps.size());
   if (nchunks == 0) 
     throw affineExcept("affineChainSet", "replaceLastStep",
-		       "No steps taken",1);
+		       "No steps taken");
   if (walker_idx >= nwalkers)
     throw affineExcept("affineChainSet", "replaceLastStep",
-		       "Walker index invalid", 2);
+		       "Walker index invalid");
 
   bool succ;
   unsigned int csteps;
@@ -600,7 +600,7 @@ void affineChainSet::replaceLastStep(unsigned int walker_idx,
   }
   if (!succ)
     throw affineExcept("affineChainSet", "replaceLastStep",
-		       "Error replacing last step", 3);
+		       "Error replacing last step");
 }
 
 /*!
@@ -619,11 +619,11 @@ void affineChainSet::getStep(unsigned int chunkidx,
   const throw (affineExcept) {
   if (chunkidx >= steps.size()) 
     throw affineExcept("affineChainSet", "getStep",
-		       "Chunk idx invalid", 1);
+		       "Chunk idx invalid");
   bool succ = steps[chunkidx]->getStep(walker_idx, iter_idx, par, lglike);
   if (!succ)
     throw affineExcept("affineChainSet", "getStep",
-		       "Error getting specified step", 2);
+		       "Error getting specified step");
 }
 
 /*!
@@ -653,11 +653,11 @@ affineChainSet& affineChainSet::operator+=(const affineChainSet& other)
   throw (affineExcept) {
   //Now things like the number of params and walkers have to be the same
   if (nwalkers != other.nwalkers)
-    throw affineExcept("affineChainSet","operator+=",
-		       "nwalkers doesn't match",1);
+    throw affineExcept("affineChainSet", "operator+=",
+		       "nwalkers doesn't match");
   if (nparams != other.nparams)
-    throw affineExcept("affineChainSet","operator+=",
-		       "nparams doesn't match",2);
+    throw affineExcept("affineChainSet", "operator+=",
+		       "nparams doesn't match");
 
   unsigned int nchunk1 = steps.size();
   unsigned int nchunk2 = other.steps.size();
@@ -694,8 +694,8 @@ unsigned int affineChainSet::getNIters(unsigned int walker) const
   throw (affineExcept) {
   unsigned int ntotiter = 0;
  if (walker >= nwalkers) 
-     throw affineExcept("affineChainSet","getNIters",
-			"Specified walker exceeds number available",1);
+     throw affineExcept("affineChainSet", "getNIters",
+			"Specified walker exceeds number available");
  unsigned int firststep = 0;
  if (skipfirst) firststep = 1;
  for (unsigned int i = firststep; i < steps.size(); ++i)
@@ -789,11 +789,11 @@ void affineChainSet::getParamVector(unsigned int walkeridx,
 				    std::vector<float>& pvec) const 
   throw (affineExcept) {
   if (walkeridx >= nwalkers) 
-    throw affineExcept("affineChainSet","getParamVector",
-		       "Specified walkeridx exceeds number available",1);
+    throw affineExcept("affineChainSet", "getParamVector",
+		       "Specified walkeridx exceeds number available");
   if (paramidx >= nparams) 
-    throw affineExcept("affineChainSet","getParamVector",
-		       "Specified paramidx exceeds number available",2);
+    throw affineExcept("affineChainSet", "getParamVector",
+		       "Specified paramidx exceeds number available");
   
   unsigned int sz = getNIters(walkeridx);
   pvec.resize(sz);
@@ -826,8 +826,8 @@ void affineChainSet::getAverageParamVector(unsigned int paramidx,
 					   std::vector<float>& pvec) const 
   throw (affineExcept) {
   if (paramidx >= nparams) 
-    throw affineExcept("affineChainSet","getAverageParamVector",
-		       "Specified paramidx exceeds number available",1);
+    throw affineExcept("affineChainSet", "getAverageParamVector",
+		       "Specified paramidx exceeds number available");
   
   pvec.resize(getMinNIters());
 
@@ -962,8 +962,8 @@ double affineChainSet::getAcor(unsigned int paramidx, double& mean,
 			       double& sigma, bool& succ) 
   const throw (affineExcept) {
   if (paramidx >= nparams) 
-    throw affineExcept("affineChainSet","getAcor",
-		       "Specified paramidx exceeds number available",1);
+    throw affineExcept("affineChainSet", "getAcor",
+		       "Specified paramidx exceeds number available");
 
   double tau;
   sigma = std::numeric_limits<double>::quiet_NaN();
@@ -1013,8 +1013,8 @@ bool affineChainSet::getAcorVector(std::vector<float>& tau,
   const 
   throw (affineExcept) {
   if (param_state.size() < nparams)
-    throw affineExcept("affineChainSet","getAcorVector",
-		       "param_state is shorter than number of params",1);
+    throw affineExcept("affineChainSet", "getAcorVector",
+		       "param_state is shorter than number of params");
   double mn, sigma; //Throw away
   tau.resize(nparams);
   bool succ, indiv_succ;
@@ -1037,8 +1037,8 @@ bool affineChainSet::getAcorVector(std::vector<float>& tau,
 float affineChainSet::getParamMean(unsigned int paridx) const 
   throw (affineExcept) {
   if (paridx >= nparams)
-    throw affineExcept("affineChainSet","getParamMean",
-		       "Invalid parameter index",1);
+    throw affineExcept("affineChainSet", "getParamMean",
+		       "Invalid parameter index");
   double mean = 0; //Do computation internally in double
   unsigned int chunksz, nciters, ncpars, ctr = 0;
   const affineStepChunk* chunkptr;
@@ -1079,7 +1079,7 @@ void affineChainSet::getParamStats(unsigned int paridx, float& mean,
   throw (affineExcept) {
   if (paridx >= nparams)
     throw affineExcept("affineChainSet", "getParamStats",
-		       "Invalid parameter index", 1);
+		       "Invalid parameter index");
 
   mean = std::numeric_limits<float>::quiet_NaN();
   var = std::numeric_limits<float>::quiet_NaN();
@@ -1124,7 +1124,7 @@ void affineChainSet::getParamStats(unsigned int paridx, float& mean,
   }
   if (ctr != sz) 
     throw affineExcept("affineChainSet", "getParamStats",
-		       "Didn't get the number of expected steps",2);
+		       "Didn't get the number of expected steps");
 
   double norm = 1.0 / static_cast<double>(sz);
   imean *= norm;
@@ -1148,10 +1148,10 @@ void affineChainSet::getParamStats(unsigned int paridx, float& mean,
   //Compute limits
   if (conflevel < 0)
     throw affineExcept("affineChainSet", "getParamStats",
-		       "Invalid (negative) conf level",3 );
+		       "Invalid (negative) conf level");
   if (conflevel > 1)
     throw affineExcept("affineChainSet", "getParamStats",
-		       "Invalid (>1) conf level", 4);
+		       "Invalid (>1) conf level");
 
   std::sort(pvec.begin(), pvec.end());
   //Now do the lower limit, rounding to get that index
@@ -1261,7 +1261,7 @@ void affineChainSet::writeToFile(const std::string& outfile) const
   if (! ofs) {
     ofs.close();
     throw affineExcept("affineChainSet","writeToFile",
-		       "Failed to open file",1);
+		       "Failed to open file");
   }
   unsigned int startidx = 0;
   if (skipfirst) startidx = 1;
@@ -1286,7 +1286,7 @@ void affineChainSet::writeToHDF5(const std::string& filename) const {
   if (H5Iget_ref(file_id) < 0) {
     H5Fclose(file_id);
     throw affineExcept("affineChainSet", "writeToHDF5",
-		       "Failed to open HDF5 file to write", 1);
+		       "Failed to open HDF5 file to write");
   }
 
   // Write
@@ -1316,14 +1316,13 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
       std::stringstream errstr;
       errstr << "Walker " << i << " has different number of steps ("
 	     << nc << ") than first walker (" << nit << ")";
-      throw affineExcept("affineChainSet", "writeToHDF5", 
-			 errstr.str(), 1);
+      throw affineExcept("affineChainSet", "writeToHDF5", errstr.str());
     }
   }
 
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("affineChainSet", "writeToHDF5Handle",
-		       "Input handle is not valid", 2);
+		       "Input handle is not valid");
 
   // Two datasets to write -- the steps (nwalkers * nsteps * nparams)
   //  and the likelihoods (nwalkers * nsteps).  

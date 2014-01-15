@@ -56,8 +56,7 @@ multiGauss::multiGauss(const std::string& filename, unsigned int NWALKERS,
   //Read in file
   std::ifstream ifs(filename.c_str());
   if (!ifs)
-    throw affineExcept("multiGauss","multiGauss",
-		       "Couldn't open input file",1);
+    throw affineExcept("multiGauss", "multiGauss", "Couldn't open input file");
   for (unsigned int i = 0; i < NPARAMS*NPARAMS; ++i)
     ifs >> invCovMatrix[i];
   ifs.close();
@@ -107,11 +106,11 @@ void multiGauss::generateInitialPosition(const paramSet& p) {
   unsigned int npar = p.getNParams();
   if (npar != getNParams())
     throw affineExcept("multiGauss", "generateInitialPosition",
-		       "Wrong number of params in p", 1);
+		       "Wrong number of params in p");
 
   if (!areParamsValid(p))
     throw affineExcept("multiGauss", "generateInitialPosition",
-		       "Initial position seed is invalid", 2);
+		       "Initial position seed is invalid");
 
   paramSet p2(npar);
   unsigned int nwalk = getNWalkers();
@@ -123,7 +122,7 @@ void multiGauss::generateInitialPosition(const paramSet& p) {
     while (!is_valid) {
       if (iter > maxiters)
 	throw affineExcept("multiGauss", "generateInitialPosition",
-			   "Unable to generate initial position", 2);
+			   "Unable to generate initial position");
       for (unsigned int j = 0; j < npar; ++j)
 	p2[j] = rangen.doub() - 0.5 + p[j];
       is_valid = areParamsValid(p2);

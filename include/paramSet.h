@@ -9,6 +9,7 @@
 #include<stdexcept>
 
 #include<mpi.h>
+#include "../include/affineExcept.h"
 
 /*!
   \brief Class for holding parameter values of the model
@@ -40,9 +41,9 @@ class paramSet {
   float& at(unsigned int) throw(std::range_error); //!< Element access with range check
 
   /*! \brief Set parameter values from vector */
-  void setParamValues(const std::vector<float>&);
+  void setParamValues(const std::vector<float>&) throw(affineExcept);
   /*! \brief Set parameter values from c array */
-  void setParamValues(unsigned int, const float* const);
+  void setParamValues(unsigned int, const float* const) throw(affineExcept);
   /*! \brief Set particular parameter value */
   void setParamValue(unsigned int i, float val) { paramvals[i]=val; }
   /*! \brief Copy from other paramSet */
@@ -50,7 +51,7 @@ class paramSet {
   /*! \brief Are parameter sets equal */
   bool operator==(const paramSet&) const;
   /*! \brief Get distance (euclidean) between two sets of parameters */
-  float getDist(const paramSet&) const;
+  float getDist(const paramSet&) const throw(affineExcept);
 
   //Input
   void readFromStream(std::istream& is);  //!< Read parameters from stream

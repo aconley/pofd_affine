@@ -99,8 +99,8 @@ template< class Item > void affineQueue<Item>::push(const Item& item)
   
   //Note this also checks for zero cap
   if (nelem >= cap) 
-    throw affineExcept("affineQueue","push",
-		       "No room to add another element",1);  
+    throw affineExcept("affineQueue", "push", 
+		       "No room to add another element");
   data[tail] = item;
   tail += 1;
   if (tail == cap) tail = 0;
@@ -112,11 +112,9 @@ template< class Item > void affineQueue<Item>::push(const Item& item)
 
   Throws an exception if the queue is empty.
 */
-template< class Item > Item affineQueue<Item>::pop()
-  throw (affineExcept) {
+template< class Item > Item affineQueue<Item>::pop() throw (affineExcept) {
   if (nelem == 0) 
-    throw affineExcept("affineQueue","pop",
-		       "Queue is empty",1);
+    throw affineExcept("affineQueue", "pop", "Queue is empty");
   unsigned int oldhead = head;
   head += 1;
   if (head == cap) head = 0; //Wrap
