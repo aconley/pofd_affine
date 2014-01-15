@@ -56,8 +56,7 @@ void polyFit::readFile(const std::string& datafile) {
   if (!ifs) {
     std::stringstream errstr;
     errstr << "Couldn't open input file: " << datafile;
-    throw affineExcept("polyFit","readFile",
-		       errstr.str(),1);
+    throw affineExcept("polyFit", "readFile", errstr.str());
   }
 
   unsigned int nentries = 0;
@@ -113,7 +112,7 @@ void polyFit::generateInitialPosition(const paramSet& p) {
   unsigned int npar = p.getNParams();
   if (npar != getNParams())
     throw affineExcept("polyFit", "generateInitialPosition",
-		       "Wrong number of params in p", 1);
+		       "Wrong number of params in p");
 
   paramSet p2(npar);
   unsigned int nwalk = getNWalkers();

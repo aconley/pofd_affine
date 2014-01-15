@@ -137,11 +137,11 @@ bool paramSet::operator==(const paramSet& other) const {
   \param[in] other paramSet to compute distance with respect to
   \returns Square root of the sum of the differences
 */
-float paramSet::getDist(const paramSet& other) const {
+float paramSet::getDist(const paramSet& other) const throw (affineExcept) {
   if (this == &other) return 0.0;
   if (other.nparams != nparams)
-    throw affineExcept("paramSet","getDist",
-		       "Input paramSets don't have the same size",1);
+    throw affineExcept("paramSet", "getDist",
+		       "Input paramSets don't have the same size");
   if (nparams == 0) return 0.0; //ambigouous case
   float val, distsq;
   val = paramvals[0] - other.paramvals[0];
@@ -180,10 +180,11 @@ float& paramSet::at(unsigned int i) throw(std::range_error) {
 
   Doesn't allow for resizing, doesn't change noise values
 */
-void paramSet::setParamValues(const std::vector<float>& vec) {
+void paramSet::setParamValues(const std::vector<float>& vec) 
+  throw (affineExcept) {
   if (vec.size() != nparams)
-    throw affineExcept("paramSet","setParamValues",
-		     "Input vector wrong length",1);
+    throw affineExcept("paramSet", "setParamValues",
+		     "Input vector wrong length");
   for (unsigned int i = 0; i < nparams; ++i)
     paramvals[i]=vec[i];
 }
@@ -195,10 +196,11 @@ void paramSet::setParamValues(const std::vector<float>& vec) {
 
   Doesn't allow for resizing
 */
-void paramSet::setParamValues(unsigned int N, const float* const VAL) {
+void paramSet::setParamValues(unsigned int N, const float* const VAL) 
+  throw(affineExcept) {
   if (N != nparams)
-    throw affineExcept("paramSet","setParamValues",
-		       "Input array wrong length",1);
+    throw affineExcept("paramSet", "setParamValues", 
+		       "Input array wrong length");
   for (unsigned int i = 0; i < nparams; ++i)
     paramvals[i]=VAL[i];
 }

@@ -79,20 +79,20 @@ int main(int argc, char** argv) {
       testEnsemble ensemble(250,4,1000);
       
       if (ensemble.getNWalkers() != 250)
-	throw affineExcept("ensemble_test","main",
-			   "ensemble should have 250 walkers",23);
+	throw affineExcept("ensemble_test", "main",
+			   "ensemble should have 250 walkers");
       if (ensemble.getNParams() != 4)
-	throw affineExcept("ensemble_test","main",
-			   "ensemble should have 4 params",24);
+	throw affineExcept("ensemble_test", "main",
+			   "ensemble should have 4 params");
       if (ensemble.getNChunks() != 0)
-	throw affineExcept("ensemble_test","main",
-			   "ensemble should not have any chunks",24);
+	throw affineExcept("ensemble_test", "main",
+			   "ensemble should not have any chunks");
       
       //Initialize
       ensemble.initChains();
       if (ensemble.getNChunks() != 1)
-	throw affineExcept("ensemble_test","main",
-			   "ensemble should now have one chunk",25);
+	throw affineExcept("ensemble_test", "main",
+			   "ensemble should now have one chunk");
       
       //Test the random number generator
       const unsigned int nsamples = 10000000;
@@ -125,7 +125,7 @@ int main(int argc, char** argv) {
 	std::stringstream errstr;
 	errstr << "generateZ failed first moment test -- expected "
 	       << target << " got " << mom1 << std::endl;
-	throw affineExcept("ensemble_test","main",errstr.str(),26);
+	throw affineExcept("ensemble_test", "main", errstr.str());
       }
       
       target = prefac*( std::pow(a,2.5)-std::pow(a,-2.5) )/2.5;
@@ -133,8 +133,7 @@ int main(int argc, char** argv) {
 	std::stringstream errstr;
 	errstr << "generateZ failed second moment test -- expected "
 	       << target << " got " << mom2 << std::endl;
-	throw affineExcept("ensemble_test","main",
-			   errstr.str(),27);
+	throw affineExcept("ensemble_test", "main", errstr.str());
       }
       
       target = prefac*( std::pow(a,3.5)-std::pow(a,-3.5) )/3.5;
@@ -142,8 +141,7 @@ int main(int argc, char** argv) {
 	std::stringstream errstr;
 	errstr << "generateZ failed third moment test -- expected "
 	       << target << " got " << mom3 << std::endl;
-	throw affineExcept("ensemble_test","main",
-			   errstr.str(),28);
+	throw affineExcept("ensemble_test", "main", errstr.str());
       }
 
       target = prefac*( std::pow(a,4.5)-std::pow(a,-4.5) )/4.5;
@@ -151,8 +149,7 @@ int main(int argc, char** argv) {
 	std::stringstream errstr;
 	errstr << "generateZ failed fourth moment test -- expected "
 	       << target << " got " << mom4 << std::endl;
-	throw affineExcept("ensemble_test","main",
-			   errstr.str(),29);
+	throw affineExcept("ensemble_test", "main", errstr.str());
       }
 
       target = prefac*( std::pow(a,5.5)-std::pow(a,-5.5) )/5.5;
@@ -160,8 +157,7 @@ int main(int argc, char** argv) {
 	std::stringstream errstr;
 	errstr << "generateZ failed fifth moment test -- expected "
 	       << target << " got " << mom5 << std::endl;
-	throw affineExcept("ensemble_test","main",
-			   errstr.str(),30);
+	throw affineExcept("ensemble_test", "main", errstr.str());
       }
       
       //Resizing tests
@@ -169,40 +165,40 @@ int main(int argc, char** argv) {
       if (tens.getNSteps() != 4) {
 	std::stringstream errstr;
 	errstr << "Nsteps should be 4, but is: " << tens.getNSteps();
-	throw affineExcept("ensemble_test", "main", errstr.str(), 31);
+	throw affineExcept("ensemble_test", "main", errstr.str());
       }
 
       tens.setNWalkers(100);
       if (tens.getNWalkers() != 100) {
 	std::stringstream errstr;
 	errstr << "Nwalkers should be 100, but is: " << tens.getNWalkers();
-	throw affineExcept("ensemble_test", "main", errstr.str(), 32);
+	throw affineExcept("ensemble_test", "main", errstr.str());
       }
       if (tens.getNParams() != 2) {
 	std::stringstream errstr;
 	errstr << "Nparams should be 2, but is: " << tens.getNParams();
-	throw affineExcept("ensemble_test", "main", errstr.str(), 33);
+	throw affineExcept("ensemble_test", "main", errstr.str());
       }
       if (tens.getNSteps() != 10) {
 	std::stringstream errstr;
 	errstr << "Nsteps should be 10, but is: " << tens.getNSteps();
-	throw affineExcept("ensemble_test", "main", errstr.str(), 34);
+	throw affineExcept("ensemble_test", "main", errstr.str());
       }
 
       //Add some steps, resize again, make sure they go away
       tens.initChains();
       if (tens.getNChunks() != 1)
-	throw affineExcept("ensemble_test","main",
-			   "ensemble should now have one chunk",35);
+	throw affineExcept("ensemble_test", "main",
+			   "ensemble should now have one chunk");
       tens.setNParams(4);
       if (tens.getNParams() != 4) {
 	std::stringstream errstr;
 	errstr << "Nparams should be 4, but is: " << tens.getNParams();
-	throw affineExcept("ensemble_test", "main", errstr.str(), 36);
+	throw affineExcept("ensemble_test", "main", errstr.str());
       }
       if (tens.getNChunks() != 0)
 	throw affineExcept("ensemble_test", "main",
-			   "After change in nparams, nchunks should be 0", 37);
+			   "After change in nparams, nchunks should be 0");
 
       std::cout << "All ensemble tests passed" << std::endl;
       

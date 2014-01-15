@@ -53,7 +53,7 @@ affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
   if (nproc < 2)
     throw affineExcept("affineEnsemble", "affineEnsemble",
-		       "Must have at least 2 nodes", 1);
+		       "Must have at least 2 nodes");
 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   if (rank == 0) {
@@ -124,7 +124,7 @@ void affineEnsemble::setNWalkers(unsigned int n) {
   if (nwalkers == n) return;
   if (n == 0)
     throw affineExcept("affineEnsemble", "setNWalkers",
-		       "n must be positive", 1);
+		       "n must be positive");
 
   chains.setNWalkers(n);
   
@@ -151,7 +151,7 @@ void affineEnsemble::setNParams(unsigned int n) {
   if (nparams == n) return;
   if (n == 0)
     throw affineExcept("affineEnsemble", "setNParams",
-		       "n must be positive", 1);
+		       "n must be positive");
 
   has_initStep = false;
   initStep.setNParams(n);
@@ -270,7 +270,7 @@ bool affineEnsemble::isParamIgnoredAcor(unsigned int idx) const {
 */
 void affineEnsemble::setParamName(unsigned int idx, const std::string& parnm) {
   if (idx >= nparams) throw affineExcept("affineEnsemble", "setParamName",
-					 "Invalid index", 1);
+					 "Invalid index");
   has_any_names = true;
   has_name[idx] = true;
   parnames[idx] = parnm;
@@ -281,7 +281,7 @@ void affineEnsemble::setParamName(unsigned int idx, const std::string& parnm) {
 */
 void affineEnsemble::unsetParamName(unsigned int idx) {
   if (idx >= nparams) throw affineExcept("affineEnsemble", "unsetParamName",
-					 "Invalid index", 1);
+					 "Invalid index");
   if (!has_name[idx]) return; //Wasn't set anyways
   has_name[idx] = false;
   has_any_names = has_name[idx];
@@ -295,7 +295,7 @@ void affineEnsemble::unsetParamName(unsigned int idx) {
 */
 std::string affineEnsemble::getParamName(unsigned int idx) const {
   if (idx >= nparams) throw affineExcept("affineEnsemble", "getParamName",
-					 "Invalid index", 1);
+					 "Invalid index");
   if (!has_name[idx]) return std::string();
   return parnames[idx];
 }
@@ -307,7 +307,7 @@ bool affineEnsemble::computeAcor() const {
   if (rank != 0) return false;
   if (!isValid())
     throw affineExcept("affineEnsemble", "computeAcor",
-		       "Sampler not in valid state", 1);
+		       "Sampler not in valid state");
   
   if (acor.size() < nparams) acor.resize(nparams);
   bool success;
@@ -325,7 +325,7 @@ bool affineEnsemble::computeAcor() const {
 */
 bool affineEnsemble::getAcor(std::vector<float>& retval) const {
   if (rank != 0) 
-    throw affineExcept("affineEnsemble", "getAcor", "Don't call on slave", 1);
+    throw affineExcept("affineEnsemble", "getAcor", "Don't call on slave");
   bool success;
   if (!acor_set) success = computeAcor(); else success=true;
   if (!success) return success;
@@ -341,10 +341,10 @@ bool affineEnsemble::getAcor(std::vector<float>& retval) const {
 bool affineEnsemble::hasOneStepBeenAccepted() const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "hasOneStepBeenAccepted", 
-		       "Don't call on slave", 1);
+		       "Don't call on slave");
   if (!isValid())
     throw affineExcept("affineEnsemble", "hasOneStepBeenAccepted",
-		       "Sampler not in valid state", 2);
+		       "Sampler not in valid state");
   for (unsigned int i = 0; i < nwalkers; ++i)
     if (naccept[i] > 0) return true;
   return false;
@@ -356,10 +356,10 @@ bool affineEnsemble::hasOneStepBeenAccepted() const {
 void affineEnsemble::getAcceptanceFrac(std::vector<float>& retval) const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "getAcceptanceFrac",
-		       "Don't call on slave", 1);
+		       "Don't call on slave");
   if (!isValid())
     throw affineExcept("affineEnsemble", "computeAcceptanceFrac",
-		       "Sampler not in valid state", 2);
+		       "Sampler not in valid state");
   
   retval.resize(nwalkers);
   for (unsigned int i = 0; i < nwalkers; ++i) {
@@ -404,10 +404,10 @@ void affineEnsemble::printStatistics(float conflevel,
 				     std::ostream& os) const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "printStatistics",
-		       "Don't call on slave", 1);
+		       "Don't call on slave");
   if (!isValid())
     throw affineExcept("affineEnsemble", "printStatistics",
-		       "Sampler not in valid state", 2);
+		       "Sampler not in valid state");
   std::string parname;
   float mn, var, low, up;
   for (unsigned int i = 0; i < nparams; ++i) {
@@ -475,7 +475,7 @@ void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
   if (rank == 0) {
     if (!isValid())
       throw affineExcept("affineEnsemble", "doSteps",
-			 "Calling with invalid model setup", 1);
+			 "Calling with invalid model setup");
     int jnk;
 
     // Make sure our previous likelihood is valid
@@ -509,7 +509,7 @@ void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
       // but catching bugs in the acceptance is worth the (small) risk
       if (!hasOneStepBeenAccepted())
 	throw affineExcept("affineEnsemble", "doSteps",
-			   "Failed to accept any initial steps", 2);
+			   "Failed to accept any initial steps");
 
       // Get best step, regenerate from that
       paramSet p(nparams);
@@ -558,11 +558,11 @@ void affineEnsemble::masterSample() {
 
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "masterSample", 
-		       "Don't call on slave", 1);
+		       "Don't call on slave");
 
   if (!isValid())
     throw affineExcept("affineEnsemble", "masterSample",
-		       "Calling with invalid model setup", 2);
+		       "Calling with invalid model setup");
   
   //Make sure we have valid likelihoods
   calcLastLikelihood();
@@ -593,7 +593,7 @@ void affineEnsemble::masterSample() {
     // but catching bugs in the acceptance is worth the (small) risk
     if (!hasOneStepBeenAccepted())
       throw affineExcept("affineEnsemble", "masterSample",
-			 "Failed to accept any initial steps", 3);
+			 "Failed to accept any initial steps");
     
     // Get best step, regenerate from that
     paramSet p(nparams);
@@ -640,7 +640,7 @@ void affineEnsemble::masterSample() {
   // This would be a definite problem
   if (!hasOneStepBeenAccepted())
     throw affineExcept("affineEnsemble", "masterSample",
-		       "Failed to accept any steps from main loop", 4);
+		       "Failed to accept any steps from main loop");
   
   //Tell slaves we are done
   int jnk, nproc;
@@ -655,14 +655,13 @@ void affineEnsemble::masterSample() {
 float affineEnsemble::getMaxAcor() const {
   if (!acor_set) 
     throw affineExcept("affineEnsemble", "getMaxAcor",
-		       "Called without acor available", 1);
+		       "Called without acor available");
   float maxval;
   unsigned int start_idx;
   for (start_idx = 0; start_idx < nparams; ++start_idx)
     if ((param_state[start_idx] & mcmc_affine::ACIGNORE) == 0) break;
   if (start_idx == nparams)
-    throw affineExcept("affineEnsemble", "getMaxAcor",
-		       "All params ignored", 2);
+    throw affineExcept("affineEnsemble", "getMaxAcor", "All params ignored");
   maxval = acor[start_idx];
   for (unsigned int i = start_idx+1; i < nparams; ++i)
     if (((param_state[i] & mcmc_affine::ACIGNORE) == 0) && 
@@ -687,7 +686,7 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
   const unsigned int max_burn_iters = 30;
 
   if (rank != 0) 
-    throw affineExcept("affineEnsemble", "doBurnIn", "Don't call on slave", 1);
+    throw affineExcept("affineEnsemble", "doBurnIn", "Don't call on slave");
 
   if (verbosity >= 1) {
     if (verbosity >= 2)
@@ -711,7 +710,7 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
   // This would be a problem
   if (!hasOneStepBeenAccepted())
     throw affineExcept("affineEnsemble", "doBurnIn",
-		       "Failed to accept any steps from initial burn in", 2);
+		       "Failed to accept any steps from initial burn in");
 
   if (fixed_burn) {
     if (verbosity >= 1) {
@@ -766,7 +765,7 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
       // We were completely unable to get the autocorrelation length
       if (!acor_success)
 	throw affineExcept("affineEnsemble", "doBurnIn",
-			   "Can't compute acor; increase min_burn", 1);
+			   "Can't compute acor; increase min_burn");
     }
   
     //Okay, we have an acor estimate of some sort, even though
@@ -792,7 +791,7 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
     while (!burned_in) {
       if (nburn_iters > max_burn_iters)
 	throw affineExcept("affineEnsemble", "doBurnIn",
-			   "Failed to converge in burn in", 2);
+			   "Failed to converge in burn in");
 
       //Figure out how many more steps to do.  Do half of the number
       // estimated
@@ -847,7 +846,7 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
       }
       if (!acor_success)
 	throw affineExcept("affineEnsemble", "doBurnIn",
-			   "Can't compute acor; increase min_burn", 2);
+			   "Can't compute acor; increase min_burn");
       
       // Ok, we have an acor.  Now check to see if we have enough!
       max_acor = getMaxAcor();
@@ -894,7 +893,7 @@ void affineEnsemble::calcLastLikelihood() {
 
   if (rank != 0)
     throw affineExcept("affineEnsemble", "calcLastLikelihood",
-		       "Should only be called from master node", 1);
+		       "Should only be called from master node");
 
   MPI_Status Info;
   bool parrej;
@@ -958,7 +957,7 @@ void affineEnsemble::calcLastLikelihood() {
       for (int i = 1; i < nproc; ++i)
 	MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
       throw affineExcept("affineEnsemble", "calcLastLikelihood",
-			 "Problem encountered in slave", 1);
+			 "Problem encountered in slave");
     } else if (this_tag == mcmc_affine::SENDINGRESULT) {
       //Slave finished a computation, is sending us the result
       // First, find out if the parameter set was rejected
@@ -976,7 +975,7 @@ void affineEnsemble::calcLastLikelihood() {
 	       << std::endl << " Walker: " << pstep.update_idx << std::endl
 	       << pstep.newStep;
 	throw affineExcept("affineEnsemble", "calcLastLikelihood",
-			   errstr.str(), 2);
+			   errstr.str());
       }
       
       // Update likelihood
@@ -1071,18 +1070,18 @@ void affineEnsemble::generateNewStep(unsigned int idx1, unsigned int idx2,
 	       << " also not valid" << std::endl;
 	errstr << " " << prstep.oldStep;
 	throw affineExcept("affineEnsemble", "generateNewStep",
-			   errstr.str(), 1);
+			   errstr.str());
       }
       if (!areParamsValid(params_tmp)) {
 	errstr << "Unable to generate new step; input step from idx2 was"
 	       << " also not valid" << std::endl;
 	errstr << " " << params_tmp;
 	throw affineExcept("affineEnsemble", "generateNewStep",
-			   errstr.str(), 2);
+			   errstr.str());
       }
       errstr << "Unable to generate new step after " << maxiters << " tries";
       throw affineExcept("affineEnsemble", "generateNewStep",
-			 errstr.str(), 3);
+			 errstr.str());
     }
 
     // Try a new one
@@ -1113,13 +1112,12 @@ void affineEnsemble::doMasterStep(double temp) throw (affineExcept) {
   //Fill in queue
   if (rank != 0)
     throw affineExcept("affineEnsemble", "doMasterStep",
-		       "Should only be called from master node", 1);
+		       "Should only be called from master node");
   if (!stepqueue.empty())
     throw affineExcept("affineEnsemble", "doMasterStep",
-		       "step queue should be empty at start", 2);
+		       "step queue should be empty at start");
   if (temp <= 0)
-    throw affineExcept("affineEnsemble", "doMasterStep",
-		       "Invalid temperature", 3);
+    throw affineExcept("affineEnsemble", "doMasterStep", "Invalid temperature");
 
   unsigned int minidx, maxidx;
   std::pair<unsigned int, unsigned int> pr;
@@ -1228,7 +1226,7 @@ void affineEnsemble::emptyMasterQueue(double temp) throw (affineExcept) {
       for (int i = 1; i < nproc; ++i)
 	MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
       throw affineExcept("affineEnsemble", "emptyMasterQueue",
-			 "Problem encountered in slave", 1);
+			 "Problem encountered in slave");
     } else if (this_tag == mcmc_affine::SENDINGRESULT) {
       //Slave finished a computation, is sending us the result
       //Note we wait for a REQUESTPOINT to actually add it to the
@@ -1258,7 +1256,7 @@ void affineEnsemble::emptyMasterQueue(double temp) throw (affineExcept) {
 	  for (int i = 1; i < nproc; ++i)
 	    MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
 	  throw affineExcept("affineEnsemble", "emptyMasterQueue",
-			     "Invalid likelihood", 2);
+			     "Invalid likelihood");
 	}
 
 	//Decide whether to accept the step or reject it, add to
@@ -1316,8 +1314,7 @@ void affineEnsemble::emptyMasterQueue(double temp) throw (affineExcept) {
       //Tell slaves to stop
       for (int i = 1; i < nproc; ++i)
 	MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
-      throw affineExcept("affineEnsemble", "emptyMasterQueue",
-			 sstream.str(), 3);
+      throw affineExcept("affineEnsemble", "emptyMasterQueue", sstream.str());
     }
   }
 
@@ -1327,7 +1324,7 @@ void affineEnsemble::slaveSample() {
   //This one just sits here and computes likelihoods
   if (rank == 0)
     throw affineExcept("affineEnsemble", "slaveSample",
-		       "Should not be called from master node", 1);
+		       "Should not be called from master node");
   
   int jnk;
   MPI_Status Info;
@@ -1426,7 +1423,7 @@ void affineEnsemble::writeToStream(std::ostream& os) const {
 void affineEnsemble::writeToFile(const std::string& filename) const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "writeToFile",
-		       "Should only be called from master node", 1);  
+		       "Should only be called from master node");  
   chains.writeToFile(filename);
 }
 
@@ -1436,10 +1433,10 @@ void affineEnsemble::writeToFile(const std::string& filename) const {
 void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "writeToHDF5Handle",
-		       "Should only be called from master node", 1);  
+		       "Should only be called from master node");  
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("affineEnsemble", "writeToHDF5Handle",
-		       "Input handle is not valid", 2);
+		       "Input handle is not valid");
 
   // Write some attributes
   hsize_t adims;
@@ -1576,7 +1573,7 @@ void affineEnsemble::writeToHDF5(const std::string& filename) const {
 
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "writeToHDF5",
-		       "Should only be called from master node", 1);  
+		       "Should only be called from master node");  
 
   // Create
   hid_t file_id;
@@ -1586,7 +1583,7 @@ void affineEnsemble::writeToHDF5(const std::string& filename) const {
   if (H5Iget_ref(file_id) < 0) {
     H5Fclose(file_id);
     throw affineExcept("affineEnsemble", "writeToHDF5",
-		       "Failed to open HDF5 file to write", 2);
+		       "Failed to open HDF5 file to write");
   }
 
   //Write
