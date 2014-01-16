@@ -538,7 +538,7 @@ double doublebeam::getEffectiveAreaSign1(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getEffectiveAreaSign1",
 				   "Invalid index");
   
-  if (!hassign[idx]) return std::numeric_limits<double>::quiet_NaN();
+  if (!hassign[idx]) return 0.0;
   double convfac = pixsize / 3600.0;
   double area = tot1[idx] * convfac * convfac;
   return area;
@@ -552,7 +552,7 @@ double doublebeam::getEffectiveAreaSign2(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getEffectiveAreaSign2",
 				   "Invalid index");
   
-  if (!hassign[idx]) return std::numeric_limits<double>::quiet_NaN();
+  if (!hassign[idx]) return 0.0;
   double convfac = pixsize / 3600.0;
   double area = tot2[idx] * convfac * convfac;
   return area;
@@ -566,7 +566,7 @@ double doublebeam::getEffectiveAreaSqSign1(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getEffectiveAreaSqSign1",
 				   "Invalid index");
   
-  if (!hassign[idx]) return std::numeric_limits<double>::quiet_NaN();
+  if (!hassign[idx]) return 0.0;
   double convfac = pixsize / 3600.0;
   double area = totsq1[idx] * convfac * convfac;
   return area;
@@ -580,7 +580,7 @@ double doublebeam::getEffectiveAreaSqSign2(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getEffectiveAreaSqSign2",
 				   "Invalid index");
   
-  if (!hassign[idx]) return std::numeric_limits<double>::quiet_NaN();
+  if (!hassign[idx]) return 0.0;
   double convfac = pixsize / 3600.0;
   double area = totsq2[idx] * convfac * convfac;
   return area;
@@ -600,9 +600,7 @@ unsigned int doublebeam::getTotalNPix() const {
 std::pair<double, double> doublebeam::getMinMax1(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getMinMax1",
 				   "Invalid index");
-  if (!hassign[idx])
-    return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
-			  std::numeric_limits<double>::quiet_NaN());
+  if (!hassign[idx]) return std::make_pair(0, 0);
 
   double *p1 = pixarr1[idx];
   double minval, maxval, val;
@@ -622,9 +620,7 @@ std::pair<double, double> doublebeam::getMinMax1(unsigned int idx) const {
 std::pair<double, double> doublebeam::getMinMax2(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getMinMax2",
 				   "Invalid index");
-  if (!hassign[idx])
-    return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
-			  std::numeric_limits<double>::quiet_NaN());
+  if (!hassign[idx]) return std::make_pair(0, 0);
 
   double *p2 = pixarr2[idx];
   double minval, maxval, val;

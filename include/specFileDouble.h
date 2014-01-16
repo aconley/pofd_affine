@@ -112,7 +112,6 @@ struct specFileDouble {
   bool edge_fix; //!< Apply edge fix to P(D)
   double minbeamval; //!< Minimum beam value used
   bool beam_histogram; //!< Do beam histogramming
-  double hist_logstep; //!< Size of Beam histogram log step
   unsigned int nbeamhist; //!< Number of beam histogram bins
   bool fit_sigma1; //!< Do fit to sigma in band 1
   bool fit_sigma2; //!< Do fit to sigma in band 2

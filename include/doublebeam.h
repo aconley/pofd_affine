@@ -60,7 +60,7 @@ class doublebeam {
 
  public :
   doublebeam(); //!< Default constructor
-  doublebeam(const std::string&, const std::string&, bool histogram=false,
+  doublebeam(const std::string&, const std::string&, bool histogram=false, 
 	     unsigned int NBINS=150, double MINVAL=1e-6); //!< Reads beam from files
   ~doublebeam() { cleanup(); } //!< Destructor
 

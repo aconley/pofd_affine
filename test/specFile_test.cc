@@ -185,8 +185,8 @@ TEST(specFile2DTest, ReadCheck) {
   EXPECT_EQ(spec_info.exp_conf2, 0.006) <<
     "Expected non-zero expected confusion noise, band 2";
 
-  EXPECT_EQ(spec_info.hist_logstep, 0.2) <<
-    "Unexpected beam histogram log step";
+  EXPECT_EQ(spec_info.nbeamhist, 150) <<
+    "Unexpected number of beam histogram bins";
 
   EXPECT_FALSE(spec_info.has_cfirbprior1) << "Expected no band 1 cfirb prior";
   ASSERT_TRUE(spec_info.has_cfirbprior2) << 

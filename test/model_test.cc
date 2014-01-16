@@ -134,7 +134,7 @@ TEST(beam1DTest, Histogram) {
 // doublebeam
 TEST(beam2DTest, Read) {
   doublebeam bm("testdata/band1_beam.fits",
-		"testdata/band2_beam.fits");
+		"testdata/band2_beam.fits", false, 120, 0.0);
   
   EXPECT_TRUE(bm.hasSign(0)) << "Beam should have pos-pos pixels";
   EXPECT_FALSE(bm.hasSign(1)) << "Beam should not have pos-neg pixels";
@@ -147,10 +147,23 @@ TEST(beam2DTest, Read) {
   EXPECT_EQ(0U, bm.getNPix(3)) << "Beam had wrong number of neg-neg pixels";
   EXPECT_NEAR(4.0, bm.getPixSize(), 0.0001) << "Wrong pixel size";
 
+  // Re read with standard minval
+  bm.readFiles("testdata/band1_beam.fits", "testdata/band2_beam.fits", 1e-6);
+  EXPECT_TRUE(bm.hasSign(0)) << "Beam should have pos-pos pixels";
+  EXPECT_FALSE(bm.hasSign(1)) << "Beam should not have pos-neg pixels";
+  EXPECT_FALSE(bm.hasSign(2)) << "Beam should not have neg-pos pixels";
+  EXPECT_FALSE(bm.hasSign(3)) << "Beam should not have neg-neg";
+  EXPECT_EQ(325U, bm.getTotalNPix()) << "Wrong number of total pixels in beam";
+  EXPECT_EQ(325U, bm.getNPix(0)) << "Beam had wrong number of pos-pos pixels";
+  EXPECT_EQ(0U, bm.getNPix(1)) << "Beam had wrong number of pos-neg pixels";
+  EXPECT_EQ(0U, bm.getNPix(2)) << "Beam had wrong number of neg-pos pixels";
+  EXPECT_EQ(0U, bm.getNPix(3)) << "Beam had wrong number of neg-neg pixels";
+  EXPECT_NEAR(4.0, bm.getPixSize(), 0.0001) << "Wrong pixel size";
+
   //Beam1 tests
-  EXPECT_NEAR(2.8327253e-5, bm.getEffectiveArea1(), 1e-8) <<
+  EXPECT_NEAR(2.8327225e-5, bm.getEffectiveArea1(), 1e-8) <<
     "Beam had wrong effective area in band1";
-  EXPECT_NEAR(2.8327253e-5, bm.getEffectiveAreaSign1(0), 1e-8) <<
+  EXPECT_NEAR(2.8327225e-5, bm.getEffectiveAreaSign1(0), 1e-8) <<
     "Beam had wrong pos-pos effective area in band1";
   EXPECT_FLOAT_EQ(0.0, bm.getEffectiveAreaSign1(1)) <<
     "Beam had wrong pos-neg effective area in band1";
@@ -162,9 +175,9 @@ TEST(beam2DTest, Read) {
     "Beam had unexpected maximum pixel value in band1";
 
   //Beam2 tests
-  EXPECT_NEAR(5.4643351e-5, bm.getEffectiveArea2(), 1e-8) <<
+  EXPECT_NEAR(5.4604548e-5, bm.getEffectiveArea2(), 1e-8) <<
     "Beam had wrong effective area in band2";
-  EXPECT_NEAR(5.4643351e-5, bm.getEffectiveAreaSign2(0), 1e-8) <<
+  EXPECT_NEAR(5.4604548e-5, bm.getEffectiveAreaSign2(0), 1e-8) <<
     "Beam had wrong pos-pos effective area in band2";
   EXPECT_FLOAT_EQ(0.0, bm.getEffectiveAreaSign2(1)) <<
     "Beam had wrong pos-neg effective area in band2";
@@ -172,59 +185,7 @@ TEST(beam2DTest, Read) {
     "Beam had wrong neg-pos effective area in band2";
   EXPECT_FLOAT_EQ(0.0, bm.getEffectiveAreaSign2(3)) <<
     "Beam had wrong neg-neg effective area in band2";
-  EXPECT_NEAR(0.98850347, bm.getMinMax1(0).second, 1e-5) <<
-    "Beam had unexpected maximum pixel value in band 2";
-}
-
-TEST(beam2DTest, CopyConstructor) {
-  doublebeam bm("testdata/band1_beam.fits",
-		"testdata/band2_beam.fits");
-  doublebeam bm2(bm);
-  
-  EXPECT_TRUE(bm2.hasSign(0)) << "Beam should have pos-pos pixels";
-  EXPECT_FALSE(bm2.hasSign(1)) << "Beam should not have pos-neg pixels";
-  EXPECT_FALSE(bm2.hasSign(2)) << "Beam should not have neg-pos pixels";
-  EXPECT_FALSE(bm2.hasSign(3)) << "Beam should not have neg-neg";
-  EXPECT_EQ(bm.getTotalNPix(), bm2.getTotalNPix()) << 
-    "Wrong number of total pixels in beam";
-  EXPECT_EQ(bm.getNPix(0), bm2.getNPix(0)) << 
-    "Beam had wrong number of pos-pos pixels";
-  EXPECT_EQ(bm.getNPix(1), bm2.getNPix(1)) << 
-    "Beam had wrong number of pos-neg pixels";
-  EXPECT_EQ(bm.getNPix(2), bm2.getNPix(2)) << 
-    "Beam had wrong number of neg-pos pixels";
-  EXPECT_EQ(bm.getNPix(3), bm2.getNPix(3)) << 
-    "Beam had wrong number of neg-neg pixels";
-  EXPECT_FLOAT_EQ(bm.getPixSize(), bm2.getPixSize()) << "Wrong pixel size";
-
-  //Beam1 tests
-  EXPECT_FLOAT_EQ(bm.getEffectiveArea1(), bm2.getEffectiveArea1()) <<
-    "Beam had wrong effective area in band1";
-  EXPECT_FLOAT_EQ(bm.getEffectiveAreaSign1(0), bm2.getEffectiveAreaSign1(0)) <<
-    "Beam had wrong pos-pos effective area in band1";
-  EXPECT_FLOAT_EQ(bm.getEffectiveAreaSign1(1), bm2.getEffectiveAreaSign1(1)) <<
-    "Beam had wrong pos-neg effective area in band1";
-  EXPECT_FLOAT_EQ(bm.getEffectiveAreaSign1(2), bm2.getEffectiveAreaSign1(2)) <<
-    "Beam had wrong neg-pos effective area in band1";
-  EXPECT_FLOAT_EQ(bm.getEffectiveAreaSign1(3), bm2.getEffectiveAreaSign1(3)) <<
-    "Beam had wrong neg-neg effective area in band1";
-  EXPECT_FLOAT_EQ(bm.getMinMax1(0).second, bm2.getMinMax1(0).second) <<
-    "Beam had unexpected maximum pixel value in band1";
-
-  //Beam2 tests
-  EXPECT_FLOAT_EQ(bm.getEffectiveArea2(), bm2.getEffectiveArea2()) <<
-    "Beam had wrong effective area in band2";
-  EXPECT_FLOAT_EQ(bm.getEffectiveAreaSign2(0), bm2.getEffectiveAreaSign2(0)) <<
-    "Beam had wrong pos-pos effective area in band2";
-  EXPECT_FLOAT_EQ(bm.getEffectiveAreaSign2(1), bm2.getEffectiveAreaSign2(1)) <<
-    "Beam had wrong pos-neg effective area in band2";
-  EXPECT_FLOAT_EQ(bm.getEffectiveAreaSign2(2), bm2.getEffectiveAreaSign2(2)) <<
-    "Beam had wrong neg-pos effective area in band2";
-  EXPECT_FLOAT_EQ(bm.getEffectiveAreaSign2(3), bm2.getEffectiveAreaSign2(3)) <<
-    "Beam had wrong neg-neg effective area in band2";
-  EXPECT_FLOAT_EQ(bm.getMinMax2(0).first, bm2.getMinMax2(0).first) <<
-    "Beam had unexpected minimum pixel value in band 2";
-  EXPECT_FLOAT_EQ(bm.getMinMax2(0).second, bm2.getMinMax2(0).second) <<
+  EXPECT_NEAR(0.98850347, bm.getMinMax2(0).second, 1e-5) <<
     "Beam had unexpected maximum pixel value in band 2";
 }
 
@@ -827,6 +788,7 @@ TEST(model2DTest, getRHist) {
       " got: " << rval << " for " << fluxdens1[i] << " " << fluxdens2[i];
   }
 
+  // Array version
   const unsigned int ntest_1 = 3;
   const unsigned int ntest_2 = 2;
   const double fluxdens1_2d[ntest_1] = {0.003, 0.011, 0.02};
