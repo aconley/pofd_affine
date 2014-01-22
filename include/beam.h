@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <limits>
 
+#include "../include/global_settings.h"
 #include "../include/utility.h"
 
 /*!
@@ -108,14 +109,9 @@ class beam {
   const double* const getPosHist() const { return poshistval; }
   const double* const getNegHist() const { return neghistval; }
   
-  double getMinPos() const; //!< Minimum positive pixel
-  double getMaxPos() const; //!< Maximum positive pixel
-  double getMinAbsNeg() const; //!< Minimum absolute value negative pixel
-  double getMaxAbsNeg() const; //!< Maximum absolute value negative pixel
+  dblpair getMinMaxPos() const; //!< Min and max positive beam value
+  dblpair getMinMaxNeg() const; //!< Min and max negative beam |value|
   
-  std::pair<double,double> getRangePos() const; //!< Get range of positive pixels
-  std::pair<double,double> getRangeNeg() const; //!< Get range of negative pixels
-
   /*! \brief Returns positive pixel values raised to some power */
   void powerPos(double, double*) const;
   /*! \brief Returns negative pixel values raised to some power */

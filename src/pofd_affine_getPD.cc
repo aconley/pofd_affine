@@ -16,33 +16,34 @@
 //See pofd_affine_getdNdS comment to explain why I do this as a global
 static struct option long_options[] = {
   {"help", no_argument, 0, 'h'},
-  {"double",no_argument,0,'d'},
-  {"version",no_argument,0,'V'}, //Below here not parsed in main routine
+  {"double", no_argument, 0, 'd'},
+  {"version", no_argument, 0, 'V'}, //Below here not parsed in main routine
   {"fits", no_argument, 0, 'f'},
+  {"hdf5", no_argument, 0, '8'},
   {"histogram", no_argument, 0, 'H'},
   {"log", no_argument, 0, 'l'},
-  {"maxflux",required_argument,0,'2'},
+  {"maxflux", required_argument, 0, '2'},
   {"nofixedge", no_argument, 0, 'F'},
   {"nflux", required_argument, 0, 'n'},
-  {"ninterp",required_argument,0,'N'},
-  {"sigmanoise",required_argument,0,'s'},
-  {"verbose",no_argument,0,'v'},
-  {"wisdom",required_argument,0,'w'},
-  {"maxflux1",required_argument,0,'3'},
-  {"maxflux2",required_argument,0,'4'},
-  {"nedge",required_argument,0,'5'},
-  {"sigma1",required_argument,0,'6'},
-  {"sigma2",required_argument,0,'7'},
-  {0,0,0,0}
+  {"ninterp", required_argument, 0, 'N'},
+  {"sigmanoise", required_argument, 0, 's'},
+  {"verbose", no_argument, 0, 'v'},
+  {"wisdom", required_argument, 0, 'w'},
+  {"maxflux1", required_argument, 0, '3'},
+  {"maxflux2", required_argument, 0, '4'},
+  {"nedge", required_argument, 0, '5'},
+  {"sigma1", required_argument, 0, '6'},
+  {"sigma2", required_argument, 0, '7'},
+  {0, 0, 0, 0}
 };
-char optstring[] = "hdVfFHl2:n:N:s:vw:3:4:5:6:7:";
+char optstring[] = "hdVfFH8l2:n:N:s:vw:3:4:5:6:7:";
 
 int getPDSingle(int argc, char **argv) {
 
   double sigma_noise; //Noise
   unsigned int nflux, ninterp;
   bool has_wisdom, has_user_maxflux, fixEdge, getLog;
-  bool histogram, verbose, write_to_fits;
+  bool histogram, verbose, write_to_fits, write_as_hdf5;
   double maxflux;
   std::string wisdom_file;
   
@@ -60,6 +61,7 @@ int getPDSingle(int argc, char **argv) {
   verbose             = false;
   histogram           = false;
   write_to_fits       = false;
+  write_as_hdf5       = false;
   fixEdge             = true;
   getLog              = false;
 
@@ -74,6 +76,9 @@ int getPDSingle(int argc, char **argv) {
       break;
     case 'F':
       fixEdge = false;
+      break;
+    case '8':
+      write_as_hdf5 = true;
       break;
     case 'H' :
       histogram = true;
@@ -137,6 +142,8 @@ int getPDSingle(int argc, char **argv) {
     std::cerr << "Invalid noise level: must be >= 0.0" << std::endl;
     return 1;
   }
+  if (write_as_hdf5 && write_to_fits)
+    std::cout << "WARNING: will only write as HDF5, not as FITS" << std::endl;
 
   //Actual PD computation
   try {
@@ -186,7 +193,7 @@ int getPDSingle(int argc, char **argv) {
       if (getLog)
 	printf("  Getting Log_2 P(D)\n");
       if (fixEdge)
-	printf("  Applying edge fix.\n");
+	printf("  Applying edge fix\n");
     }
 
     //Get P(D)
@@ -204,7 +211,9 @@ int getPDSingle(int argc, char **argv) {
     //Write it
     if (verbose) std::cout << "Writing P(D) to file " << outputfile 
 			   << std::endl;
-    if (write_to_fits) {
+    if (write_as_hdf5) {
+      pd.writeToHDF5(outputfile);
+    } else if (write_to_fits) {
       pd.writeToFits(outputfile);
     } else {
       std::ofstream ofs(outputfile.c_str());
@@ -233,7 +242,7 @@ int getPDDouble(int argc, char** argv) {
 
   double sigma1, sigma2; //Noise
   unsigned int nflux, nedge;
-  bool has_wisdom, has_user_maxflux1, has_user_maxflux2;
+  bool has_wisdom, has_user_maxflux1, has_user_maxflux2, write_as_hdf5;
   bool histogram, verbose, write_to_fits, fixEdge, getLog, doedge;
   double maxflux1, maxflux2;
   std::string wisdom_file;
@@ -254,6 +263,7 @@ int getPDDouble(int argc, char** argv) {
   verbose             = false;
   histogram           = false;
   write_to_fits       = false;
+  write_as_hdf5       = false;
   nedge               = 256;
   fixEdge             = true;
   getLog              = false;
@@ -270,6 +280,9 @@ int getPDDouble(int argc, char** argv) {
       break;
     case 'F':
       fixEdge = false;
+      break;
+    case '8':
+      write_as_hdf5 = true;
       break;
     case 'H' :
       histogram = true;
@@ -333,6 +346,8 @@ int getPDDouble(int argc, char** argv) {
     std::cerr << "Invalid noise level in band 2: must be >= 0.0" << std::endl;
     return 1;
   }
+  if (write_as_hdf5 && write_to_fits)
+    std::cout << "WARNING: will only write as HDF5, not as FITS" << std::endl;
   if (nedge == 0) doedge = false;
 
   //Actual PD computation
@@ -419,7 +434,9 @@ int getPDDouble(int argc, char** argv) {
     //Write it
     if (verbose) std::cout << "Writing P(D) to file " << outputfile 
 			   << std::endl;
-    if (write_to_fits) {
+    if (write_as_hdf5) {
+      pd.writeToHDF5(outputfile);
+    } else if (write_to_fits) {
       pd.writeToFits(outputfile);
     } else {
       std::ofstream ofs(outputfile.c_str());
@@ -535,6 +552,9 @@ int main( int argc, char** argv ) {
       std::cerr << "\t\tWrite the output as a FITS file." << std::endl;
       std::cerr << "\t-F, --nofixedge" << std::endl;
       std::cerr << "\t\tDon't apply edge fix up." << std::endl;
+      std::cerr << "\t--hdf5" << std::endl;
+      std::cerr << "\t\tWrite as HDF5 instead of FITS or text."
+		<< std::endl;
       std::cerr << "\t-H, --histogram" << std::endl;
       std::cerr << "\t\tUse beam histogramming." << std::endl;
       std::cerr << "\t-l, --log" << std::endl;

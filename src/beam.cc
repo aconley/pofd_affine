@@ -1,9 +1,9 @@
 //beam.cc
 
-#include <limits>
-#include <iostream>
-#include <cmath>
-#include <sstream>
+#include<limits>
+#include<iostream>
+#include<cmath>
+#include<sstream>
 
 #include<fitsio.h>
 
@@ -460,63 +460,23 @@ void beam::makeHistogram(unsigned int NBINS) {
 }
 
 /*!
-  \returns Minimum value of positive beam
+  \returns Minimum and maximum value of positive beam
 */
-double beam::getMinPos() const {
-  if (! haspos) return std::numeric_limits<double>::quiet_NaN();
-  return pospixarr[0];
+dblpair beam::getMinMaxPos() const {
+  if (!haspos) 
+    return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
+			  std::numeric_limits<double>::quiet_NaN());
+  return std::make_pair(pospixarr[0], pospixarr[npos-1]);
 }
 
 /*!
-  \returns Maximum value of positive beam
+  \returns Minimum and maximum absolute value of negative beam
 */
-double beam::getMaxPos() const {
-  if (! haspos) return std::numeric_limits<double>::quiet_NaN();
-  return pospixarr[npos-1];
-}
-
-/*!
-  \returns Minimum absolute value of negative beam
-*/
-double beam::getMinAbsNeg() const {
-  if (! hasneg) return std::numeric_limits<double>::quiet_NaN();
-  return negpixarr[0];
-}
-
-/*!
-  \returns Maximum absolute value of negative beam
-*/
-double beam::getMaxAbsNeg() const {
-  if (! hasneg) return std::numeric_limits<double>::quiet_NaN();
-  return negpixarr[nneg-1];
-}
-
-/*!
-  \returns Range of positive beam values as a pair in min, max order.  
-    NaN if no positive beam
-*/
-std::pair<double,double> beam::getRangePos() const {
-  if (!haspos) {
-    double val = std::numeric_limits<double>::quiet_NaN();
-    return std::pair< double, double > (val, val);
-  }
-  double lowval = *std::min_element(pospixarr, pospixarr + npos);
-  double highval = *std::max_element(pospixarr, pospixarr + npos);
-  return std::pair<double, double>(lowval, highval);
-}
-
-/*!
-  \returns Range of negative beam values as a pair in min, max order.  
-    NaN if no negative beam
-*/
-std::pair<double,double> beam::getRangeNeg() const {
-  if (!hasneg) {
-    double val = std::numeric_limits<double>::quiet_NaN();
-    return std::pair< double, double > (val, val);
-  }
-  double lowval = *std::min_element(negpixarr, negpixarr + nneg);
-  double highval = *std::max_element(negpixarr, negpixarr + nneg);
-  return std::pair<double, double>(lowval, highval);
+dblpair beam::getMinMaxNeg() const {
+  if (!hasneg) 
+    return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
+			  std::numeric_limits<double>::quiet_NaN());
+  return std::make_pair(negpixarr[0], negpixarr[nneg-1]);
 }
 
 /*!

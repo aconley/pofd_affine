@@ -17,6 +17,7 @@ const unsigned int doublebeam::histothresh = 15;
 // Note we don't set nbins or minval here.  Why not?
 // Because these only really make sense when reading or histogramming
 doublebeam::doublebeam() {
+  double nan = std::numeric_limits<double>::quiet_NaN();
   for (unsigned int i = 0; i < 4; ++i) hassign[i] = false;
   for (unsigned int i = 0; i < 4; ++i) npix[i] = 0;
   for (unsigned int i = 0; i < 4; ++i) pixarr1[i] = NULL;
@@ -28,10 +29,14 @@ doublebeam::doublebeam() {
   for (unsigned int i = 0; i < 4; ++i) binweights[i] = NULL;
   for (unsigned int i = 0; i < 4; ++i) binvals1[i] = NULL;
   for (unsigned int i = 0; i < 4; ++i) binvals2[i] = NULL;
-  for (unsigned int i = 0; i < 4; ++i) tot1[i] = 0.0;
-  for (unsigned int i = 0; i < 4; ++i) tot2[i] = 0.0;
-  for (unsigned int i = 0; i < 4; ++i) totsq1[i] = 0.0;
-  for (unsigned int i = 0; i < 4; ++i) totsq2[i] = 0.0;
+  for (unsigned int i = 0; i < 4; ++i) tot1[i] = nan;
+  for (unsigned int i = 0; i < 4; ++i) tot2[i] = nan;
+  for (unsigned int i = 0; i < 4; ++i) totsq1[i] = nan;
+  for (unsigned int i = 0; i < 4; ++i) totsq2[i] = nan;
+  for (unsigned int i = 0; i < 4; ++i) minbm1[i] = nan;
+  for (unsigned int i = 0; i < 4; ++i) maxbm1[i] = nan;
+  for (unsigned int i = 0; i < 4; ++i) minbm2[i] = nan;
+  for (unsigned int i = 0; i < 4; ++i) maxbm2[i] = nan;
 }
 
 /*!
@@ -45,6 +50,7 @@ doublebeam::doublebeam(const std::string& filename1,
 		       const std::string& filename2,
 		       bool histogram, unsigned int NBINS,
 		       double MINVAL) {
+  double nan = std::numeric_limits<double>::quiet_NaN();
   for (unsigned int i = 0; i < 4; ++i) hassign[i] = false;
   for (unsigned int i = 0; i < 4; ++i) npix[i] = 0;
   for (unsigned int i = 0; i < 4; ++i) pixarr1[i] = NULL;
@@ -56,16 +62,21 @@ doublebeam::doublebeam(const std::string& filename1,
   for (unsigned int i = 0; i < 4; ++i) binweights[i] = NULL;
   for (unsigned int i = 0; i < 4; ++i) binvals1[i] = NULL;
   for (unsigned int i = 0; i < 4; ++i) binvals2[i] = NULL;
-  for (unsigned int i = 0; i < 4; ++i) tot1[i] = 0.0;
-  for (unsigned int i = 0; i < 4; ++i) tot2[i] = 0.0;
-  for (unsigned int i = 0; i < 4; ++i) totsq1[i] = 0.0;
-  for (unsigned int i = 0; i < 4; ++i) totsq2[i] = 0.0;
+  for (unsigned int i = 0; i < 4; ++i) tot1[i] = nan;
+  for (unsigned int i = 0; i < 4; ++i) tot2[i] = nan;
+  for (unsigned int i = 0; i < 4; ++i) totsq1[i] = nan;
+  for (unsigned int i = 0; i < 4; ++i) totsq2[i] = nan;
+  for (unsigned int i = 0; i < 4; ++i) minbm1[i] = nan;
+  for (unsigned int i = 0; i < 4; ++i) maxbm1[i] = nan;
+  for (unsigned int i = 0; i < 4; ++i) minbm2[i] = nan;
+  for (unsigned int i = 0; i < 4; ++i) maxbm2[i] = nan;
 
   readFiles(filename1, filename2, MINVAL);
   if (histogram) makeHistogram(NBINS);
 }
 
 void doublebeam::cleanup() {
+  double nan = std::numeric_limits<double>::quiet_NaN();
   for (unsigned int i = 0; i < 4; ++i) {
     hassign[i] = false;
     npix[i] = 0;
@@ -78,7 +89,8 @@ void doublebeam::cleanup() {
     if (binweights[i] != NULL) { delete[] binweights[i]; binweights[i] = NULL; }
     if (binvals1[i] != NULL) { delete[] binvals1[i]; binvals1[i] = NULL; }
     if (binvals2[i] != NULL) { delete[] binvals2[i]; binvals2[i] = NULL; }
-    tot1[i] = tot2[i] = totsq1[i] = totsq2[i] = 0.0;
+    tot1[i] = tot2[i] = totsq1[i] = totsq2[i] = nan;
+    minbm1[i] = maxbm1[i] = minbm2[i] = maxbm2[i] = nan;
   }
 }
 
@@ -386,6 +398,31 @@ void doublebeam::setBeams(unsigned int n, const double* const beam1,
 
   delete[] component;
 
+  // Find the min/max values for each component
+  double curr_min, curr_max;
+  for (unsigned int i = 0; i < 4; ++i) 
+    if (hassign[i]) {
+      curr_n = npix[i];
+      p1 = pixarr1[i];
+      curr_min = curr_max = p1[0];
+      for (unsigned int j = 1; j < curr_n; ++j) {
+	val = p1[j];
+	if (val > curr_max) curr_max = val;
+	else if (val < curr_min) curr_min = val;
+      }
+      minbm1[i] = curr_min;
+      maxbm1[i] = curr_max;
+      p2 = pixarr2[i];
+      curr_min = curr_max = p2[0];
+      for (unsigned int j = 1; j < curr_n; ++j) {
+	val = p2[j];
+	if (val > curr_max) curr_max = val;
+	else if (val < curr_min) curr_min = val;
+      }
+      minbm2[i] = curr_min;
+      maxbm2[i] = curr_max;
+    } // min/max bm[12] already NaNed by cleanup
+
   if (PIXSIZE <= 0.0)
     throw affineExcept("doublebeam", "setBeams",
 		       "Invalid (non-positive) pixel size");
@@ -597,40 +634,26 @@ unsigned int doublebeam::getTotalNPix() const {
   \param[in] idx Sign component (pp, pn, np, nn)
   \returns Minimum and maximum values for band 1 beam in this sign component
 */
-std::pair<double, double> doublebeam::getMinMax1(unsigned int idx) const {
+dblpair doublebeam::getMinMax1(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getMinMax1",
 				   "Invalid index");
-  if (!hassign[idx]) return std::make_pair(0, 0);
-
-  double *p1 = pixarr1[idx];
-  double minval, maxval, val;
-  minval = minval = p1[0];
-  for (unsigned int i = 1; i < npix[idx]; ++i) {
-    val = p1[i];
-    if (val < minval) minval = val;
-    if (val > maxval) maxval = val;
-  }
-  return std::make_pair(minval, maxval);
+  if (!hassign[idx]) 
+    return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
+			  std::numeric_limits<double>::quiet_NaN());
+  return std::make_pair(minbm1[idx], maxbm1[idx]);
 }
 
 /*!
   \param[in] idx Sign component (pp, pn, np, nn)
   \returns Minimum and maximum values for band 2 beam in this sign component
 */
-std::pair<double, double> doublebeam::getMinMax2(unsigned int idx) const {
+dblpair doublebeam::getMinMax2(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getMinMax2",
 				   "Invalid index");
-  if (!hassign[idx]) return std::make_pair(0, 0);
-
-  double *p2 = pixarr2[idx];
-  double minval, maxval, val;
-  minval = minval = p2[0];
-  for (unsigned int i = 1; i < npix[idx]; ++i) {
-    val = p2[i];
-    if (val < minval) minval = val;
-    if (val > maxval) maxval = val;
-  }
-  return std::make_pair(minval, maxval);
+  if (!hassign[idx]) 
+    return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
+			  std::numeric_limits<double>::quiet_NaN());
+  return std::make_pair(minbm2[idx], maxbm2[idx]);
 }
 
 /*!
@@ -646,6 +669,14 @@ void doublebeam::sendSelf(MPI_Comm comm, int dest) const {
   // Send raw beam
   MPI_Send(const_cast<bool*>(hassign), 4, MPI::BOOL, dest,
 	   pofd_mcmc::DOUBLEBEAMSENDHASSIGN, comm);
+  MPI_Send(const_cast<double*>(minbm1), 4, MPI_UNSIGNED, dest,
+	   pofd_mcmc::DOUBLEBEAMSENDMIN1, comm);
+  MPI_Send(const_cast<double*>(maxbm1), 4, MPI_UNSIGNED, dest,
+	   pofd_mcmc::DOUBLEBEAMSENDMAX1, comm);
+  MPI_Send(const_cast<double*>(minbm2), 4, MPI_UNSIGNED, dest,
+	   pofd_mcmc::DOUBLEBEAMSENDMIN2, comm);
+  MPI_Send(const_cast<double*>(maxbm2), 4, MPI_UNSIGNED, dest,
+	   pofd_mcmc::DOUBLEBEAMSENDMAX2, comm);
   MPI_Send(const_cast<unsigned int*>(npix), 4, MPI_UNSIGNED, dest,
 	   pofd_mcmc::DOUBLEBEAMSENDNPIX, comm);
   for (unsigned int i = 0; i < 4; ++i)
@@ -703,6 +734,14 @@ void doublebeam::recieveCopy(MPI_Comm comm, int src) {
 	   comm, &Info);
 
   MPI_Recv(hassign, 4, MPI::BOOL, src, pofd_mcmc::DOUBLEBEAMSENDHASSIGN, 
+	   comm, &Info);
+  MPI_Recv(minbm1, 4, MPI_UNSIGNED, src, pofd_mcmc::DOUBLEBEAMSENDMIN1, 
+	   comm, &Info);
+  MPI_Recv(maxbm1, 4, MPI_UNSIGNED, src, pofd_mcmc::DOUBLEBEAMSENDMAX1, 
+	   comm, &Info);
+  MPI_Recv(minbm2, 4, MPI_UNSIGNED, src, pofd_mcmc::DOUBLEBEAMSENDMIN2, 
+	   comm, &Info);
+  MPI_Recv(maxbm2, 4, MPI_UNSIGNED, src, pofd_mcmc::DOUBLEBEAMSENDMAX2, 
 	   comm, &Info);
   MPI_Recv(npix, 4, MPI_UNSIGNED, src, pofd_mcmc::DOUBLEBEAMSENDNPIX, 
 	   comm, &Info);

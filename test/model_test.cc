@@ -38,7 +38,7 @@ TEST(beam1DTest, Read) {
     "Didn't get expected beam area in pixels";
   EXPECT_NEAR(1.3852891e-5, bm.getEffectiveAreaSq(), 1e-8) <<
     "Beam^2 had wrong effective area";
-  EXPECT_NEAR(0.97798554, bm.getMaxPos(), 1e-5) <<
+  EXPECT_NEAR(0.97798554, bm.getMinMaxPos().second, 1e-5) <<
     "Beam had unexpected maximum pixel value";
 }
 
@@ -63,7 +63,9 @@ TEST(beam1DTest, CopyConstructor) {
     "Didn't get expected beam area in pixels";
   EXPECT_FLOAT_EQ(bm.getEffectiveAreaSq(), bm2.getEffectiveAreaSq()) <<
     "Beam^2 had wrong effective area";
-  EXPECT_FLOAT_EQ(bm.getMaxPos(), bm2.getMaxPos()) <<
+  EXPECT_FLOAT_EQ(bm.getMinMaxPos().first, bm2.getMinMaxPos().first) <<
+    "Beam had unexpected minimum pixel value";
+  EXPECT_FLOAT_EQ(bm.getMinMaxPos().second, bm2.getMinMaxPos().second) <<
     "Beam had unexpected maximum pixel value";
 }
 
@@ -89,7 +91,9 @@ TEST(beam1DTest, Equals) {
     "Didn't get expected beam area in pixels";
   EXPECT_FLOAT_EQ(bm.getEffectiveAreaSq(), bm2.getEffectiveAreaSq()) <<
     "Beam^2 had wrong effective area";
-  EXPECT_FLOAT_EQ(bm.getMaxPos(), bm2.getMaxPos()) <<
+  EXPECT_FLOAT_EQ(bm.getMinMaxPos().first, bm2.getMinMaxPos().first) <<
+    "Beam had unexpected minimum pixel value";
+  EXPECT_FLOAT_EQ(bm.getMinMaxPos().second, bm2.getMinMaxPos().second) <<
     "Beam had unexpected maximum pixel value";
 }
 
@@ -113,7 +117,7 @@ TEST(beam1DTest, Histogram) {
     "Didn't get expected beam area in pixels";
   EXPECT_NEAR(1.3852891e-5, bm.getEffectiveAreaSq(), 1e-8) <<
     "Beam^2 had wrong effective area";
-  EXPECT_NEAR(0.97798554, bm.getMaxPos(), 1e-5) <<
+  EXPECT_NEAR(0.97798554, bm.getMinMaxPos().second, 1e-5) <<
     "Beam had unexpected maximum pixel value";
 
   //Check histogram

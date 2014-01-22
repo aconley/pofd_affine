@@ -321,7 +321,7 @@ unsigned int PDFactory::computeR(const numberCounts& model,
   unsigned int n = currfftlen;
   if (has_pos) {
     double mininterpflux = modelmin * subedgemult;
-    double maxinterpflux = modelmax * bm.getMaxPos();
+    double maxinterpflux = modelmax * bm.getMinMaxPos().second;
     //R[maxinterpflux] = 0.0, which we don't want to include in our
     // log/log interpolation, so step it back slightly
     double dinterp = 0.001 * (maxinterpflux - mininterpflux) * ininterpm1;
@@ -376,7 +376,7 @@ unsigned int PDFactory::computeR(const numberCounts& model,
   if (has_neg) {
     //And now, we do basically the same thing for the negative beam
     double mininterpflux = modelmin * subedgemult;
-    double maxinterpflux = modelmax * bm.getMinAbsNeg();
+    double maxinterpflux = modelmax * bm.getMinMaxNeg().second;
     double dinterp = 0.001*(maxinterpflux-mininterpflux)*ininterpm1;
     maxinterpflux -= dinterp;
     double dinterpflux = (log2(maxinterpflux/mininterpflux))*ininterpm1;

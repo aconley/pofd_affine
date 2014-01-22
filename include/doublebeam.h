@@ -11,6 +11,7 @@
 #include<utility>
 
 #include "../include/utility.h"
+#include "../include/global_settings.h"
 
 /*!
   \brief Represents PSF parameters for 2 beams.  
@@ -53,8 +54,12 @@ class doublebeam {
   double tot2[4]; //!< Sum of pp,pn,np,nn elements, beam 2
   double totsq1[4]; //!< Sum of pp,pn,np,nn squared elements, beam 1
   double totsq2[4]; //!< Sum of pp,pn,np,nn squared elements, beam 2
+  double minbm1[4]; //!< Minimum value of beam1
+  double maxbm1[4]; //!< Maximum value of beam1
+  double minbm2[4]; //!< Minimum value of beam2
+  double maxbm2[4]; //!< Maximum value of beam2
 
-  double minval; //!< Minimum absolute value kept
+  double minval; //!< Minimum absolute value kept for all components
 
   void cleanup(); //!< Frees internal structures
 
@@ -93,9 +98,9 @@ class doublebeam {
   double getPixSize() const { return pixsize; }
 
   /*! \brief Get max values for pp,pn,np,nn pieces of beam 1*/
-  std::pair<double, double> getMinMax1(unsigned int) const;
+  dblpair getMinMax1(unsigned int) const;
   /*! \brief Get max values for pp,pn,np,nn pieces of beam 2*/
-  std::pair<double, double> getMinMax2(unsigned int) const;
+  dblpair getMinMax2(unsigned int) const;
 
   // Direct access to inverse pixel array.  Bad style, but important
   // for efficiency reasons
