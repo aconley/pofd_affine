@@ -61,7 +61,7 @@ class numberCountsKnots : public numberCounts {
   double getKnotPos(unsigned int i) const { return knots[i]; }
 
   /*! \brief Get knot position and log value */
-  std::pair<double,double> getLogKnot(unsigned int i) const {
+  dblpair getLogKnot(unsigned int i) const {
     return std::pair<double,double>(knots[i], logknotvals[i]); }
 
   virtual bool isValid() const; //!< Are model parameters valid
@@ -113,7 +113,7 @@ class initFileKnots {
   ~initFileKnots(); //!< Destructor
 
   unsigned int getNKnots() const { return nknots; } //!< Get number of knots
-  std::pair<double,double> getKnot(unsigned int idx) const; //!< Get knot pos and value
+  dblpair getKnot(unsigned int idx) const; //!< Get knot pos and value
 
   void readFile(const std::string&, bool=false, bool=false); //!< Read file
 

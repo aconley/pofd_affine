@@ -6,8 +6,9 @@
 #include<string>
 #include<fstream>
 
-#include "hdf5.h"
+#include<hdf5.h>
 
+#include "../include/global_settings.h"
 #include "../include/beam.h"
 #include "../include/paramSet.h"
 
@@ -22,9 +23,6 @@
 // not any internal state data.
 class numberCounts {
  public:
-  /*! \brief For user to request what R they want */
-  enum rtype { BEAMPOS=1, BEAMNEG=2, BEAMBOTH=3 }; 
-  
   numberCounts() {}; //!< Constructor
   virtual ~numberCounts() {}; //!< Destructor
 
@@ -49,11 +47,11 @@ class numberCounts {
   virtual double getNumberCounts(double) const = 0; 
 
   /*! \brief Get number of source responses, single value version */
-  virtual double getR(double,const beam&, rtype=BEAMBOTH) const = 0;
+  virtual double getR(double,const beam&) const = 0;
   
   /*! \brief Get number of source responses, array version*/
   virtual void getR(unsigned int n,const double* const,
-		    const beam&,double*, rtype=BEAMBOTH) const = 0;
+		    const beam&,double*) const = 0;
 
   virtual void writeToHDF5Handle(hid_t objid) const=0; //!< Output to HDF5
   virtual bool writeToStream(std::ostream& os) const=0; //!< Output to stream

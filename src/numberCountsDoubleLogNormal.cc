@@ -6,11 +6,23 @@
 #include "../include/global_settings.h"
 #include "../include/affineExcept.h"
 
+// Determines sign component of fluxes (pp, pn, np, nn)
+inline unsigned int signComp(double x1, double x2) {
+  if (x1 >= 0) {
+    if (x2 >= 0) return 0;
+    else return 1;
+  } else {
+    if (x2 >= 0) return 2;
+    else return 3;
+  }
+}
+
 //Function to pass to GSL integrator
 /*! \brief Evaluates flux1^power1 * exp(const1*mu + const2*sigma^2) dN/dS1 */
 static double evalPowfNDoubleLogNormal(double, void*); 
 
-const unsigned int numberCountsDoubleLogNormal::nvarr = 17; //!< Number of elements in varr
+/*! \brief Number of elements in varr (lots of model params!) */
+const unsigned int numberCountsDoubleLogNormal::nvarr = 17; 
 
 numberCountsDoubleLogNormal::numberCountsDoubleLogNormal() : 
   nknots(0), knots(NULL), logknots(NULL), logknotvals(NULL), splinelog(NULL), 
@@ -18,9 +30,14 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal() :
   noffsetknots(0), offsetknots(NULL), offsetvals(NULL), offsetinterp(NULL),
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
-  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
-  nRWork(0), RWorkValid(NULL), RWork1(NULL), RWork2(NULL), RWork3(NULL) {
+  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false) {
   
+  nRWork = 0;
+  RWorkValid[0] = RWorkValid[1] = NULL;
+  RWork1[0] = RWork1[1] = NULL;
+  RWork2[0] = RWork2[1] = NULL;
+  RWork3[0] = RWork3[1] = NULL;
+
   acc = gsl_interp_accel_alloc();
   accsigma = gsl_interp_accel_alloc();
   accoffset = gsl_interp_accel_alloc();
@@ -39,8 +56,13 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
   nknots(NKNOTS), nsigmaknots(NSIGMA), noffsetknots(NOFFSET), 
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
-  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
-  nRWork(0), RWorkValid(NULL), RWork1(NULL), RWork2(NULL), RWork3(NULL) {
+  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false) {
+
+  nRWork = 0;
+  RWorkValid[0] = RWorkValid[1] = NULL;
+  RWork1[0] = RWork1[1] = NULL;
+  RWork2[0] = RWork2[1] = NULL;
+  RWork3[0] = RWork3[1] = NULL;
 
   if (NKNOTS > 0) {
     knots = new double[NKNOTS];
@@ -112,8 +134,13 @@ numberCountsDoubleLogNormal(const std::vector<float>& KNOTS,
 			    const std::vector<float>& OFFSETS) :
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
-  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
-  nRWork(0), RWorkValid(NULL), RWork1(NULL), RWork2(NULL), RWork3(NULL) {
+  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false) {
+
+  nRWork = 0;
+  RWorkValid[0] = RWorkValid[1] = NULL;
+  RWork1[0] = RWork1[1] = NULL;
+  RWork2[0] = RWork2[1] = NULL;
+  RWork3[0] = RWork3[1] = NULL;
 
   knots = 0; knots = logknots = logknotvals = NULL; 
   splinelog = NULL; 
@@ -143,8 +170,13 @@ numberCountsDoubleLogNormal(const std::vector<double>& KNOTS,
 			    const std::vector<double>& OFFSETS) :
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
-  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
-  nRWork(0), RWorkValid(NULL), RWork1(NULL), RWork2(NULL), RWork3(NULL) {
+  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false) {
+
+  nRWork = 0;
+  RWorkValid[0] = RWorkValid[1] = NULL;
+  RWork1[0] = RWork1[1] = NULL;
+  RWork2[0] = RWork2[1] = NULL;
+  RWork3[0] = RWork3[1] = NULL;
 
   knots = 0; knots = logknots = logknotvals = NULL; 
   splinelog = NULL; 
@@ -177,8 +209,13 @@ numberCountsDoubleLogNormal(unsigned int nk, const float* const K,
 			    unsigned int no, const float* const O) :
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
-  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
-  nRWork(0), RWorkValid(NULL), RWork1(NULL), RWork2(NULL), RWork3(NULL) {
+  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false) {
+
+  nRWork = 0;
+  RWorkValid[0] = RWorkValid[1] = NULL;
+  RWork1[0] = RWork1[1] = NULL;
+  RWork2[0] = RWork2[1] = NULL;
+  RWork3[0] = RWork3[1] = NULL;
 
   knots = 0; knots = logknots = logknotvals = NULL; splinelog = NULL;
   setKnotPositions(nk,K);
@@ -210,8 +247,13 @@ numberCountsDoubleLogNormal(unsigned int nk, const double* const K,
 			    unsigned int no, const double* const O) :
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
-  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
-  nRWork(0), RWorkValid(NULL), RWork1(NULL), RWork2(NULL), RWork3(NULL) {
+  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false) {
+
+  nRWork = 0;
+  RWorkValid[0] = RWorkValid[1] = NULL;
+  RWork1[0] = RWork1[1] = NULL;
+  RWork2[0] = RWork2[1] = NULL;
+  RWork3[0] = RWork3[1] = NULL;
 
   knots = 0; knots = logknots = logknotvals = NULL; splinelog = NULL;
   setKnotPositions(nk,K);
@@ -242,8 +284,10 @@ numberCountsDoubleLogNormal(const numberCountsDoubleLogNormal& other) {
   splinelog = NULL;
   sigmainterp = offsetinterp = NULL;
   nRWork = 0;
-  RWorkValid = NULL;
-  RWork1 = RWork2 = RWork3 = NULL;
+  RWorkValid[0] = RWorkValid[1] = NULL;
+  RWork1[0] = RWork1[1] = NULL;
+  RWork2[0] = RWork2[1] = NULL;
+  RWork3[0] = RWork3[1] = NULL;
   knots_valid = sigmas_valid = offsets_valid = false;
   knotpos_loaded = sigmapos_loaded = offsetpos_loaded = false;
   knotvals_loaded = sigmavals_loaded = offsetvals_loaded = false;
@@ -325,10 +369,12 @@ numberCountsDoubleLogNormal::~numberCountsDoubleLogNormal() {
   gsl_integration_workspace_free(gsl_work);
   delete[] varr;
 
-  if (RWork1 != NULL) delete[] RWork1;
-  if (RWork2 != NULL) delete[] RWork2;
-  if (RWork3 != NULL) delete[] RWork3;
-  if (RWorkValid != NULL) delete[] RWorkValid;
+  for (unsigned int i = 0; i < 2; ++i) {
+    if (RWorkValid[i] != NULL) delete[] RWorkValid[i];
+    if (RWork1[i] != NULL) delete[] RWork1[i];
+    if (RWork2[i] != NULL) delete[] RWork2[i];
+    if (RWork3[i] != NULL) delete[] RWork3[i];
+  }
 }
 
 /*!
@@ -884,18 +930,25 @@ setPositions(const std::vector<double>& K, const std::vector<double>& S,
 */
 void numberCountsDoubleLogNormal::setRWorkSize(unsigned int sz) const {
   if (sz <= nRWork) return;
-  if (RWork1 != NULL) delete[] RWork1;
-  if (RWork2 != NULL) delete[] RWork2;
-  if (RWork3 != NULL) delete[] RWork3;
-  if (RWorkValid != NULL) delete[] RWorkValid;
+
+  for (unsigned int i = 0; i < 2; ++i) {
+    if (RWorkValid[i] != NULL) delete[] RWorkValid[i];
+    if (RWork1[i] != NULL) delete[] RWork1[i];
+    if (RWork2[i] != NULL) delete[] RWork2[i];
+    if (RWork3[i] != NULL) delete[] RWork3[i];
+  }
   if (sz > 0) {
-    RWork1 = new double[sz];
-    RWork2 = new double[sz];
-    RWork3 = new double[sz];
-    RWorkValid = new bool[sz];
+    for (unsigned int i = 0; i < 2; ++i) {
+      if (RWorkValid[i] != NULL) RWorkValid[i] = new bool[sz];
+      if (RWork1[i] != NULL) RWork1[i] = new double[sz];
+      if (RWork2[i] != NULL) RWork2[i] = new double[sz];
+      if (RWork3[i] != NULL) RWork3[i] = new double[sz];
+    }
   } else {
-    RWork1 = RWork2 = RWork3 = NULL;
-    RWorkValid = NULL;
+    for (unsigned int i = 0; i < 2; ++i) {
+      RWorkValid[i] = NULL;
+      RWork1[i] = RWork2[i] = RWork3[i] = NULL;
+    }
   }
   nRWork = sz;
 }
@@ -975,7 +1028,7 @@ void numberCountsDoubleLogNormal::setParams(const paramSet& F) {
 
 
 /*!
-  This is an expensive check, so we use this by storing
+  This isn't a free thing to check, so we use this by storing
   the results whenever the knots are set rather than every
   time we call the model.
 */
@@ -995,7 +1048,7 @@ void numberCountsDoubleLogNormal::checkKnotsValid() const {
 }
 
 /*!
-  This is an expensive check, so we use this by storing
+  This isn't a free thing to check, so we use this by storing
   the results whenever the sigmas are set rather than every
   time we call the model.
 */
@@ -1017,7 +1070,7 @@ void numberCountsDoubleLogNormal::checkSigmasValid() const {
 /*!
   \returns True if a valid set of offset knots has been loaded
   
-  This is an expensive check, so we use this by storing
+  This isn't a free thing to check, so we use this by storing
   the results whenever the offsets are set rather than every time
   we do anything.
 */
@@ -1038,7 +1091,7 @@ void numberCountsDoubleLogNormal::checkOffsetsValid() const {
 
 /*!
   \returns True if the model parameters are valid
- */
+*/
 bool numberCountsDoubleLogNormal::isValid() const {
   if (!(knots_valid && sigmas_valid && offsets_valid)) return false;
   return true;
@@ -1113,7 +1166,7 @@ getNumberCountsInner(double f1, double f2) const {
   if (f1 < knots[0] || f1 >= knots[nknots-1] || f2 <= 0.0) 
     return 0.0; //Out of range
 
-  //This is the n_1 bit
+  //This is the n_1 bit.  Not zero because of the above check.
   double cnts = exp2(gsl_spline_eval(splinelog, log2(f1), acc)); 
 
   //Counts in band 2, Log Normal in f2/f1, multiply them onto n_1
@@ -1144,42 +1197,37 @@ double numberCountsDoubleLogNormal::getNumberCounts(double f1, double f2)
 }
 
 /*
-  \param[in] band Which band to select; 0 for band 1, 1 for band 2
-  \returns The minimum flux supported by the model.
+  \returns The minimum flux supported by the model in each band as a pair
 
   Fluxes must be positive, so return smallest non-zero double value.
  */
-double numberCountsDoubleLogNormal::getMinFlux(unsigned int band) const {
-  if (nknots == 0) return std::numeric_limits<double>::quiet_NaN();
-  if (band == 0) return std::numeric_limits<double>::min();
-  else if (band == 1) return std::numeric_limits<double>::min();
-  else throw affineExcept("numberCountsDoubleLogNormal", "getMinFlux",
-			  "Invalid band (must be 0 or 1)");
-  return std::numeric_limits<double>::quiet_NaN();
+dblpair numberCountsDoubleLogNormal::getMinFlux() const {
+  if (nknots == 0) 
+    return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
+			  std::numeric_limits<double>::quiet_NaN());
+  return std::make_pair(std::numeric_limits<double>::min(),
+			std::numeric_limits<double>::min());
 }
 
 /*
-  \param[in] band Which band to select; 0 for band 1, 1 for band 2
-  \returns The maximum flux supported by the model
+  \returns The maximum flux supported by the model in each band
 
   This is not entirely defined for band 2, so return a value a few sigma
   above the top value.  It is well defined for band 1.
  */
-double numberCountsDoubleLogNormal::getMaxFlux(unsigned int band) const {
-  const double sigmult = 4.0; //Number of sigma above
-  if (nknots == 0) return std::numeric_limits<double>::quiet_NaN();
-  if (band == 0) return knots[nknots-1];
-  else if (band == 1) {
-    double kv = knots[nknots-1];
-    //Get the expectation and variance in S2/S1 at the top S1 knot
-    double sg = getSigmaInner(kv);
-    double mu = getOffsetInner(kv);
-    double sg2 = sg * sg;
-    double mn = exp(mu + 0.5 * sg2);
-    double var = exp(2 * mu + sg2)*(exp(sg2) - 1.0);
-    return kv * (mn + sigmult * sqrt(var));
-  } else throw affineExcept("numberCountsDoubleLogNormal", "getMaxFlux",
-			    "Invalid band (must be 0 or 1)");
+dblpair numberCountsDoubleLogNormal::getMaxFlux() const {
+  const double sigmult = 3.0; //Number of sigma above
+  if (nknots == 0)     
+    return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
+			  std::numeric_limits<double>::quiet_NaN());
+  double kv = knots[nknots - 1];
+  //Get the expectation and variance in S2/S1 at the top S1 knot
+  double sg = getSigmaInner(kv);
+  double mu = getOffsetInner(kv);
+  double sg2 = sg * sg;
+  double mn = exp(mu + 0.5 * sg2);
+  double var = exp(2 * mu + sg2) * (exp(sg2) - 1.0);
+  return std::make_pair(kv, kv * (mn + sigmult * sqrt(var)));
 }
 
 /*!
@@ -1314,39 +1362,49 @@ getFluxPowerPerArea(double p1, double p2) const {
   \param[in] f1   Flux 1
   \param[in] f2   Flux 2
   \param[in] bm   Beam
-  \param[in] sgn  Sign index [pp,pn,np,nn]
-  \returns R but without the pixel area factor
-
-  Does not check inputs for validity, and does not include area prefactor
+  \returns R 
 */
-double numberCountsDoubleLogNormal::getRInternal(double f1, double f2,
-						 const doublebeam& bm, 
-						 unsigned int sgn) const {
-  double ieta1, ieta2, retval;
-  const double* iparr1;
-  const double* iparr2;
-  unsigned int npsf = bm.getNPix(sgn);
+double numberCountsDoubleLogNormal::getR(double f1, double f2,
+					 const doublebeam& bm) const {
+  
+  // Validity
+  if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
+  if (!bm.hasData()) return std::numeric_limits<double>::quiet_NaN();
+
+  // Quick returns
+  if ((f1 == 0) || (f2 == 0)) return 0.0;
+  unsigned int sgn = signComp(f1, f2); // Figure out which sign component
+  if (!bm.hasSign(sgn)) return 0.0; 
+
+  double ieta1, ieta2, retval, af1, af2;
   retval = 0.0;
+  af1 = fabs(f1);
+  af2 = fabs(f2);
   if (bm.isHistogrammed(sgn)) {
+    unsigned int npsf = bm.getNHist(sgn);
     const double* warr = bm.getBinWeights(sgn);
-    iparr1 = bm.getBinVals1(sgn);
-    iparr2 = bm.getBinVals2(sgn);
+    const double* iparr1 = bm.getBinVals1(sgn);
+    const double* iparr2 = bm.getBinVals2(sgn);
     for (unsigned int i = 0; i < npsf; ++i) {
       ieta1 = iparr1[i];
       ieta2 = iparr2[i];
       retval += warr[i] * ieta1 * ieta2 * 
-	getNumberCountsInner(f1 * ieta1, f2 * ieta2);
+	getNumberCountsInner(af1 * ieta1, af2 * ieta2);
     } 
   } else {
-    iparr1 = bm.getInvPixArr1(sgn);
-    iparr2 = bm.getInvPixArr2(sgn);
+    unsigned int npsf = bm.getNPix(sgn);
+    const double* iparr1 = bm.getInvPixArr1(sgn);
+    const double* iparr2 = bm.getInvPixArr2(sgn);
     for (unsigned int i = 0; i < npsf; ++i) {
       ieta1 = iparr1[i];
       ieta2 = iparr2[i];
-      retval += ieta1 * ieta2 * getNumberCountsInner(f1 * ieta1, f2 * ieta2);
+      retval += ieta1 * ieta2 * getNumberCountsInner(af1 * ieta1, af2 * ieta2);
     } 
   }
-  return retval;
+
+  double prefac;
+  prefac = bm.getPixSize() / 3600.0;  //To sq deg
+  return prefac * prefac * retval;
 }
 
 /*!
@@ -1355,251 +1413,158 @@ double numberCountsDoubleLogNormal::getRInternal(double f1, double f2,
   \param[in] n2   Number of fluxes, band 2
   \param[in] f2   Flux 2, length n2
   \param[in] bm   Beam
-  \param[in] sgn  Sign index [pp,pn,np,nn] 0-3
-  \param[out] R   R value is added to this, dimension n1*n2.  
+  \param[out] R   R value, dimension n1*n2 pre-allocated by caller.
                   Does not include pixel area factor
 
-  It is up to the caller to initialize R (to zeros, for example)
   Does not check inputs for validity, and does not include area prefactor.
 */
-void numberCountsDoubleLogNormal::
-getRInternal(unsigned int n1, const double* const f1,
-	     unsigned int n2, const double* const f2,
-	     const doublebeam& bm, unsigned int sgn,
-	     double* R) const {
+void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
+				       unsigned int n2, const double* const f2,
+				       const doublebeam& bm, double* R) const {
+
+  // Quick return
+  if ((!isValid()) || (!bm.hasData()) || (n1 == 0) || (n2 == 0)) {
+    for (unsigned int i = 0; i < n1 * n2; ++i)
+      R[i] = std::numeric_limits<double>::quiet_NaN();
+    return;
+  }
 
   double minknot = knots[0];
   double maxknot = knots[nknots-1];
 
-  unsigned int npsf = bm.getNPix(sgn);
-  setRWorkSize(npsf);
+  unsigned int maxnpsf = bm.getMaxNPix();
+  setRWorkSize(maxnpsf);
 
-  const double normfac = 1.0/sqrt(2*M_PI);
-  double *rowptr;
-  const double *iparr1;
-  const double *iparr2;
-  double ieta1, workval, f1val, f1prod, f2val, f2prod, isigma, tfac, if2;
+  // This computation is done in a much more optimized way than
+  //  the scalar version above.  As a result it is much more complicated.
+  // First, we are going to load all the beam components into local
+  //  arrays to avoid function call overhead in the inner loop.
+  bool hassign[4];
+  for (unsigned int i = 0; i < 4; ++i) hassign[i] = bm.hasSign(i);
+  bool ishist[4];
+  for (unsigned int i = 0; i < 4; ++i) ishist[i] = bm.isHistogrammed(i);
+  unsigned int npsf[4];
+  for (unsigned int i = 0; i < 4; ++i)
+    npsf[i] = ishist[i] ? bm.getNHist(i) : bm.getNPix(i);
+  const double *wtptr[4];
+  for (unsigned int i = 0; i < 4; ++i) 
+    wtptr[i] = ishist[i] ? bm.getBinWeights(i) : NULL;
+  const double* ibmptr1[4];
+  for (unsigned int i = 0; i < 4; ++i)
+    ibmptr1[i] = ishist[i] ? bm.getBinVals1(i) : bm.getInvPixArr1(i);
+  const double* ibmptr2[4];
+  for (unsigned int i = 0; i < 4; ++i)
+    ibmptr2[i] = ishist[i] ? bm.getBinVals2(i) : bm.getInvPixArr2(i);
+  // If abs(f1) is bigger than this, R is zero for this component
+  double maxf1[4];
+  for (unsigned int i = 0; i < 4; ++i)
+    maxf1[i] = hassign[i] ? maxknot / bm.getMinMax1(i).second : 0.0;
 
-  if (bm.isHistogrammed(sgn)) {
-    const double* warr = bm.getBinWeights(sgn);
-    iparr1 = bm.getBinVals1(sgn);
-    iparr2 = bm.getBinVals2(sgn);
-    for (unsigned int i = 0; i < n1; ++i) {
-      rowptr = R + i * n2;
-      f1val = f1[i];
-      if (f1val > 0.0)
-	for (unsigned int j = 0; j < npsf; ++j) {
-	  ieta1 = iparr1[j];
-	  f1prod = f1val * ieta1;
-	  if (f1prod >= minknot && f1prod < maxknot) {
-	    RWork1[j] = log(f1prod) + getOffsetInner(f1prod);
-	    isigma = 1.0 / getSigmaInner(f1prod);
-	    RWork3[j] = -0.5 * isigma * isigma;
-	    RWork2[j] = warr[j] * normfac * ieta1 * isigma *
-	      exp2(gsl_spline_eval(splinelog, log2(f1prod), acc));
-	    RWorkValid[j] = true;
-	  } else RWorkValid[j] = false;
-	  //Now loop over flux 2 values
-	  for (unsigned int j = 0; j < n2; ++j) {
-	    f2val = f2[j];
-	    workval = 0;
-	    if (f2val > 0) {
-	      if2 = 1.0 / f2val;
-	      for (unsigned int k = 0; k < npsf; ++k)
-		if (RWorkValid[k]) {
-		  f2prod = f2val * iparr2[k];
-		  tfac = log(f2prod) - RWork1[k];
-		  workval += RWork2[k] * if2 * exp(tfac * tfac * RWork3[k]);
-		}
-	    }
-	    rowptr[j] += workval;
-	  }
-	}
-    }
-  } else {
-    // No histogram
-    iparr1 = bm.getInvPixArr1(sgn);
-    iparr2 = bm.getInvPixArr2(sgn);
-    for (unsigned int i = 0; i < n1; ++i) {
-      rowptr = R + i * n2;
-      f1val = f1[i];
-      if (f1val >= 0.0)
-	for (unsigned int j = 0; j < npsf; ++j) {
-	  ieta1 = iparr1[j];
-	  f1prod = f1val * ieta1;
-	  if (f1prod >= minknot && f1prod < maxknot) {
-	    RWork1[j] = log(f1prod) + getOffsetInner(f1prod);
-	    isigma = 1.0 / getSigmaInner(f1prod);
-	    RWork3[j] = -0.5 * isigma * isigma;
-	    RWork2[j] = normfac * ieta1 * isigma *
-	      exp2(gsl_spline_eval(splinelog, log2(f1prod), acc));
-	    RWorkValid[j] = true;
-	  } else RWorkValid[j] = false;
-	}
-	//Now loop over flux 2 values
-	for (unsigned int j = 0; j < n2; ++j) {
-	  f2val = f2[j];
-	  workval = 0;
-	  if (f2val > 0) {
-	    if2 = 1.0/f2val;
-	    for (unsigned int k = 0; k < npsf; ++k)
-	      if (RWorkValid[k]) {
-		f2prod = f2val * iparr2[k];
-		tfac = log(f2prod) - RWork1[k];
-		workval += RWork2[k] * if2 * exp(tfac * tfac * RWork3[k]);
-	      }
-	  }
-	  rowptr[j] += workval;
-	}
-    }
-  }
-}
-
-
-// Pure brute force
-/*
-  \param[in] fluxdensity  Position to get R at
-  \param[in] params Parameters
-  \param[in] beam Beam
-  \param[in] bmtype What type of R value to get (pos-pos, pos-neg, neg-pos,
-                   neg-neg or the sum of all types that are present)
-  \returns R value, including the beam pixel size area factor  
-*/
-double numberCountsDoubleLogNormal::getR(double f1, double f2, 
-					 const doublebeam& bm,
-					 const rtype bmtype) const {
-
-  if (!isValid())
-    return std::numeric_limits<double>::quiet_NaN();
-
-  if ((f1 <= 0.0) || (f2 <= 0.0)) return 0.0;
-
-  double Rval;
-
-  switch (bmtype) {
-  case BEAMPOS :
-    if (! bm.hasSign(0))
-      return std::numeric_limits<double>::quiet_NaN();
-    Rval = getRInternal(f1, f2, bm, 0);
-    break;
-  case BEAMPOSNEG :
-    if (! bm.hasSign(1))
-      return std::numeric_limits<double>::quiet_NaN();
-    Rval = getRInternal(f1, f2, bm, 1);
-    break;
-  case BEAMNEGPOS :
-    if (! bm.hasSign(2))
-      return std::numeric_limits<double>::quiet_NaN();
-    Rval = getRInternal(f1, f2, bm, 2);
-    break;
-  case BEAMNEG :
-    if (! bm.hasSign(3))
-      return std::numeric_limits<double>::quiet_NaN();
-    Rval = getRInternal(f1, f2, bm, 3);
-    break;
-  case BEAMALL :
-    Rval = 0.0;
-    for (unsigned int i = 0; i < 4; ++i) {
-      if (bm.hasSign(i))
-	Rval += getRInternal(f1, f2, bm, i);
-    }
-    break;
-  default :
-    throw affineExcept("numberCountsDoubleLogNormal", "getR",
-		       "Invalid bmtype");
-    break;
-  }
-
-  double prefac;
-  prefac = bm.getPixSize() / 3600.0;  //To sq deg
-  
-  return prefac * prefac * Rval;
-
-}
-
-/*!
-  Array version.
-
-  \param[in]  n1 Number of fluxes along dimension 1
-  \param[in]  f1 Fluxes along dimension 1
-  \param[in]  n2 Number of fluxes along dimension 2
-  \param[in]  f2 Fluxes along dimension 2
-  \param[in]  bm Holds beam information
-  \param[out] vals Row major array (n1 x n2) giving values of R, including
-                    the beam pixel size prefactor
-  \param[in]  bmtype What type of R value to get (pos-pos, pos-neg, neg-pos,
-                   neg-neg or the sum of all types)
-
-  This does zero out vals, but it is up to the caller to allocate memory
-  for it.
-*/ 
-void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
-				       unsigned int n2, const double* const f2, 
-				       const doublebeam& bm, double* vals,
-				       const rtype bmtype) 
-  const {
-
-  if ((!isValid()) || (n1 == 0) || (n2 == 0)) {
-    for (unsigned int i = 0; i < n1*n2; ++i)
-	vals[i] = std::numeric_limits<double>::quiet_NaN();
-    return;
-  }
-
-  //Zero out R
-  for (unsigned int i = 0; i < n1*n2; ++i)
-    vals[i] = 0.0;
-
-  //Compute R
-  switch (bmtype) {
-  case BEAMPOS :
-    if (! bm.hasSign(0)) {
-      for (unsigned int i = 0; i < n1*n2; ++i)
-	vals[i] = std::numeric_limits<double>::quiet_NaN();
-      return;
-    }
-    getRInternal(n1, f1, n2, f2, bm, 0, vals);
-    break;
-  case BEAMPOSNEG :
-    if (! bm.hasSign(1)) {
-      for (unsigned int i = 0; i < n1*n2; ++i)
-	vals[i] = std::numeric_limits<double>::quiet_NaN();
-      return;
-    }
-    getRInternal(n1, f1, n2, f2, bm, 1, vals);
-    break;
-  case BEAMNEGPOS :
-   if (! bm.hasSign(2)) {
-      for (unsigned int i = 0; i < n1*n2; ++i)
-	vals[i] = std::numeric_limits<double>::quiet_NaN();
-      return;
-    }
-    getRInternal(n1, f1, n2, f2, bm, 2, vals);
-    break;
-  case BEAMNEG :
-   if (! bm.hasSign(2)) {
-      for (unsigned int i = 0; i < n1*n2; ++i)
-	vals[i] = std::numeric_limits<double>::quiet_NaN();
-      return;
-    }
-    getRInternal(n1, f1, n2, f2, bm, 3, vals);
-    break;
-  case BEAMALL :
-    for (unsigned int k = 0; k < 4; ++k) {
-      if (bm.hasSign(k)) getRInternal(n1, f1, n2, f2, bm, k, vals);
-    }
-    break;
-  default :
-    throw affineExcept("numberCountsDoubleLogNormal", "getR",
-		       "Invalid bmtype");
-    break;
-  }
-
-  //Put in prefac
+  // Pixel area factor
   double prefac;
   prefac = bm.getPixSize() / 3600.0;  //To sq deg
   prefac = prefac * prefac;
-  for (unsigned int i = 0; i < n1*n2; ++i)
-    vals[i] *= prefac;
+
+  // Main computation
+  // The basic framework for speeding this up is that many of the
+  //  components of the model depend only on the flux / beam in the
+  //  first band.  Thus, as we loop over the 2D grid of fluxes in ij, 
+  //  for each i we try to precompute as many of the pieces used in
+  //  the j loop as possible by storing them in the RWork arrays.
+  //  However, there is a complication -- for each sign of f1, there
+  //  are potentially two beam pieces.  For example, for f1 > 0, we
+  //  have to compute both the parts from the pp and pn beam.
+  //  In principle, this means that there may be some wasted effort here
+  //  if, in fact, there are no f2 < 0 (pn) components in the fluxes.
+  //  Rather than checking that, however, in practice this should be extremely
+  //  rare because if the pn beam component is present, we are going to
+  //  want to explore f2 < 0 space to compute the P(D).
+  //   RWork1 will hold log(f1/eta1) + offset(f1/eta1)
+  //   RWork2 = normfac * n1(f1/eta1) / eta1 * sigma1(f1/eta1), 
+  //      possibly multiplied by the wts if the beam is histogrammed
+  //   RWork3 = -0.5 / sigma(f1/eta1)^2
+  //  We only test for out of range (R always 0) on the first flux density
+  //   because the model doesn't actually terminate sharply in the other band
+  const double normfac = 1.0 / sqrt(2 * M_PI);
+  bool *cRV; // Pointer to current RWorkValid
+  double *cR1, *cR2, *cR3; // Same, but RWork1, RWork2, RWork3
+  double *rowptr; // Row pointer into output (R)
+  const double *wptr; // Weights 
+  const double *iparr1; // Inverse beam 1
+  const double *iparr2; // Inverse beam 2
+  unsigned int sgn1, sgnoff, sgn; // Sign index for this component
+  unsigned int curr_n; // Number of beam elements for current component
+  double f1val, f2val, f1prod, f2prod, ieta1, workval, isigma, tfac, if2;
+
+  bool hasNegX1 = hassign[2] || hassign[3]; // Any neg x1 beam components
+  std::memset(R, 0, n1 * n2 * sizeof(double));
+
+  for (unsigned int i = 0; i < n1; ++i) { // Loop over flux1
+    f1val = f1[i];
+    if ((f1val == 0) || (f1val < 0 && !hasNegX1)) continue; // R will be zero
+    rowptr = R + i * n2;
+    if (f1val > 0) sgn1 = 0; else { sgn1 = 2; f1val = fabs(f1val); }
+    for (unsigned int k = 0; k < 2; ++k) { // Loop over two sign bits
+      sgn = sgn1 + k;
+      cRV = RWorkValid[k];
+      if (hassign[sgn] && f1val < maxf1[sgn]) {
+	curr_n = npsf[sgn];
+	iparr1 = ibmptr1[sgn];
+	cR1 = RWork1[k];
+	cR2 = RWork2[k];
+	cR3 = RWork3[k];
+	for (unsigned int j = 0; j < curr_n; ++j) {
+	  ieta1 = iparr1[j];
+	  f1prod = f1val * ieta1;
+	  if (f1prod >= minknot && f1prod < maxknot) {
+	    cR1[j] = log(f1prod) + getOffsetInner(f1prod);
+	    isigma = 1.0 / getSigmaInner(f1prod);
+	    cR3[j] = -0.5 * isigma * isigma;
+	    cR2[j] = normfac * ieta1 * isigma *
+	      exp2(gsl_spline_eval(splinelog, log2(f1prod), acc));
+	    cRV[j] = true;
+	  } else cRV[j] = false;
+	}
+	if (ishist[sgn]) { // Add on beam weights
+	  wptr = wtptr[sgn];
+	  for (unsigned int j = 0; j < curr_n; ++j)
+	    cR2[j] *= wptr[j];
+	}
+      } else std::memset(cRV, 0, maxnpsf * sizeof(bool)); // Necessary?
+    }
+
+    //Now loop over flux 2 values
+    for (unsigned int j = 0; j < n2; ++j) {
+      f2val = f2[j];
+      if (f2val == 0) continue; // R will be zero
+      // sgn will be pp, pn, np, nn component
+      if (f2val > 0) {
+	sgn = sgn1; 
+	sgnoff = 0;
+      } else {
+	sgn = sgn1 + 1; 
+	sgnoff = 1;
+	f2val = fabs(f2val);
+      }
+      if (hassign[sgn]) {
+	workval = 0;
+	curr_n = npsf[sgn];
+	iparr2 = ibmptr2[sgn];
+	if2 = 1.0 / f2val;
+	cRV = RWorkValid[sgnoff];
+	cR1 = RWork1[sgnoff];
+	cR2 = RWork2[sgnoff];
+	cR3 = RWork3[sgnoff];
+	for (unsigned int k = 0; k < curr_n; ++k)
+	  if (cRV[k]) {
+	    f2prod = f2val * iparr2[k];
+	    tfac = log(f2prod) - cR1[k]; 
+	    workval += cR2[k] * if2 * exp(tfac * tfac * cR3[k]);
+	  }
+	rowptr[j] = prefac * workval;
+      } // Recall that R was zeroed
+    }
+  }
 }
 
 /*!

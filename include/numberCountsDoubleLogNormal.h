@@ -8,6 +8,7 @@
 #include<gsl/gsl_interp.h>
 #include<gsl/gsl_integration.h>
 
+#include "../include/global_settings.h"
 #include "../include/numberCountsDouble.h"
 #include "../include/ran.h"
 
@@ -95,10 +96,10 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   //Workspace
   gsl_integration_workspace *gsl_work; //!< Integration workspace for QAG
   mutable unsigned int nRWork; //!< Number of elements in R working arrays
-  mutable bool* RWorkValid; //!< Valid entries in R working array
-  mutable double* RWork1; //!< R working array 1
-  mutable double* RWork2; //!< R working array 2
-  mutable double* RWork3; //!< R working array 3
+  mutable bool* RWorkValid[2]; //!< Valid entries in R working array
+  mutable double* RWork1[2]; //!< R working array 1, comp 0
+  mutable double* RWork2[2]; //!< R working array 2, comp 0
+  mutable double* RWork3[2]; //!< R working array 3, comp 0
   void setRWorkSize(unsigned int) const; //!< Controls R working arrays
 
   //Convenience functions for spline computations without input checking
@@ -110,12 +111,6 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   double splineInt(double alpha, double beta) const;
   static const unsigned int nvarr; //!< Number of elements in varr
   void **varr; //!< Internal evil casting array for splineInt
-
-  //Internal R computation
-  double getRInternal(double,double,const doublebeam&,unsigned int) const;
-  void getRInternal(unsigned int, const double* const, 
-		    unsigned int, const double* const,
-		    const doublebeam&,unsigned int, double*) const;
 
   bool isValidLoaded() const; //!< Are loaded values valid?
 
@@ -205,37 +200,36 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   void setParams(const paramSet&); //!< Set parameters
  
   /*! \brief Evaluates Sigma */
-   double getSigma(double) const;
+  double getSigma(double) const;
   /*! \brief Evaluates Offset */
-   double getOffset(double) const;
-
+  double getOffset(double) const;
+  
   /*! \brief Evaluates number counts model */
-   double getNumberCounts(double, double) const;
-
+  double getNumberCounts(double, double) const;
+  
   /*! \brief Minimum flux model is defined for */
-   double getMinFlux(unsigned int) const;
-
+  dblpair getMinFlux() const;
+  
   /*! \brief Maxium flux model is defined for */
-   double getMaxFlux(unsigned int) const;
-
-   double getNS() const; //!< Total number of sources per area
-   double getFluxPerArea(unsigned int) const; //!< Flux per unit area (sq deg)
-   double getFluxSqPerArea(unsigned int) const; //!< Flux^2 per unit area (sq deg)
-   double getFluxPowerPerArea(double p1, double p2) const; //!< Integral of s1 to some power and s2 to some power over number counts
-
-   //Routines for getting R
-   /*! \brief Get R value at single flux1,flux2 value */
-   double getR(double, double, const doublebeam&, rtype=BEAMALL) const;
-   /*! \brief Gets R values, array version */
-   void getR(unsigned int n1,const double* const, unsigned int n2,
-	     const double* const, const doublebeam&, double*, 
-	     rtype=BEAMALL) const;
-
-   void writeToHDF5Handle(hid_t) const; //!< Write to HDF5 handle
-   bool writeToStream(std::ostream& os) const; //<! Output to stream
-
-   void sendSelf(MPI_Comm, int dest) const; //!< Send self
-   void recieveCopy(MPI_Comm, int src); //!< Recieve
+  dblpair getMaxFlux() const;
+  
+  double getNS() const; //!< Total number of sources per area
+  double getFluxPerArea(unsigned int) const; //!< Flux per unit area (sq deg)
+  double getFluxSqPerArea(unsigned int) const; //!< Flux^2 per unit area (sq deg)
+  double getFluxPowerPerArea(double p1, double p2) const; //!< Integral of s1 to some power and s2 to some power over number counts
+  
+  //Routines for getting R
+  /*! \brief Get R value at single flux1,flux2 value */
+  double getR(double, double, const doublebeam&) const;
+  /*! \brief Gets R values, array version */
+  void getR(unsigned int n1, const double* const, unsigned int n2,
+	    const double* const, const doublebeam&, double*) const;
+  
+  void writeToHDF5Handle(hid_t) const; //!< Write to HDF5 handle
+  bool writeToStream(std::ostream& os) const; //<! Output to stream
+  
+  void sendSelf(MPI_Comm, int dest) const; //!< Send self
+  void recieveCopy(MPI_Comm, int src); //!< Recieve
 };
 
 //////////////////////////////

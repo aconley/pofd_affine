@@ -1,6 +1,7 @@
 #include<iostream>
 
 #include<getopt.h>
+#include<hdf5.h>
 
 #include "../include/global_settings.h"
 #include "../include/beam.h"
@@ -17,15 +18,14 @@
 //Yes, this is a bit complicated and error prone, but such is life
 static struct option long_options[] = {
   {"help", no_argument, 0, 'h'},
-  {"double",no_argument,0,'d'},
-  {"verbose",no_argument,0,'v'},
-  {"version",no_argument,0,'V'}, //Below here, not parsed in main routine
-  {"histogram",no_argument,0,'H'},
-  {"negonly",no_argument,0,'n'},
-  {"posonly",no_argument,0,'p'},
-  {0,0,0,0}
+  {"double",no_argument, 0, 'd'},
+  {"verbose",no_argument, 0, 'v'},
+  {"version",no_argument, 0, 'V'}, //Below here, not parsed in main routine
+  {"hdf5", no_argument, 0, '1'},
+  {"histogram",no_argument, 0, 'H'},
+  {0, 0, 0, 0}
 };
-char optstring[] = "dhHnpvV";
+char optstring[] = "dh1HvV";
 
 //One-D version
 int getRSingle( int argc, char** argv ) {
@@ -33,14 +33,13 @@ int getRSingle( int argc, char** argv ) {
   std::string initfile; //Init file (having model we want)
   std::string outfile; //File to write to
   std::string psffile; //Beam file
-  bool histogram, posonly, negonly, verbose; 
+  bool histogram, verbose, write_as_hdf5; 
   double minflux, maxflux;
   unsigned int nflux;
 
-  histogram = false;
-  posonly   = false;
-  negonly   = false;
-  verbose   = false;
+  histogram     = false;
+  verbose       = false;
+  write_as_hdf5 = false;
 
   int c;
   int option_index = 0;
@@ -48,37 +47,38 @@ int getRSingle( int argc, char** argv ) {
   while ((c = getopt_long(argc,argv,optstring,long_options,
 			  &option_index)) != -1) 
     switch(c) {
+    case '1':
+      write_as_hdf5 = true;
+      break;
     case 'H' :
       histogram = true;
-      break;
-    case 'n' :
-      negonly = true;
-      break;
-    case 'p' :
-      posonly = true;
       break;
     case 'v' :
       verbose = true;
       break;
     }
 
-  if (optind >= argc-5 ) {
+  if (optind >= argc - 5) {
     std::cerr << "Required arguments missing" << std::endl;
     return 1;
   }
-  minflux = atof( argv[optind] );
-  maxflux = atof( argv[optind+1] );
-  nflux = static_cast<unsigned int>( atoi(argv[optind+2]) );
-  initfile = std::string( argv[optind+3] );
-  psffile = std::string( argv[optind+4] );
-  outfile = std::string( argv[optind+5] );
+  minflux = atof(argv[optind]);
+  maxflux = atof(argv[optind + 1]);
+  nflux = static_cast<unsigned int>(atoi(argv[optind + 2]));
+  initfile = std::string(argv[optind + 3]);
+  psffile = std::string(argv[optind + 4]);
+  outfile = std::string(argv[optind + 5]);
 
   if (posonly && negonly) {
     std::cerr << "Can't set both posonly and negonly" << std::endl;
     return 1;
   }
-
-  double dflux = (maxflux-minflux)/static_cast<double>(nflux-1);
+  
+  double dflux;
+  if (nflux > 1)
+    dflux = (maxflux - minflux)/ static_cast<double>(nflux - 1);
+  else
+    dflux = 1.0;
 
   double *fluxes = NULL;
   double *R = NULL;
@@ -93,12 +93,6 @@ int getRSingle( int argc, char** argv ) {
     model_info.getParams(pars);
     model.setParams(pars);
 
-    numberCounts::rtype rt = numberCounts::BEAMBOTH;
-    if (posonly)
-      rt = numberCounts::BEAMPOS;
-    else if (negonly) 
-      rt = numberCounts::BEAMNEG;
-    
     if (verbose) {
       std::cout << "Flux per area: " << model.getFluxPerArea()
 		<< std::endl;
@@ -110,22 +104,71 @@ int getRSingle( int argc, char** argv ) {
     }
     fluxes = new double[nflux];
     for (unsigned int i = 0; i < nflux; ++i)
-      fluxes[i] = minflux + static_cast<double>(i)*dflux;
+      fluxes[i] = minflux + static_cast<double>(i) * dflux;
 
     R = new double[nflux];
-    model.getR(nflux, fluxes, bm, R, rt);
+    model.getR(nflux, fluxes, bm, R);
     
-    FILE *fp;
-    fp = fopen( outfile.c_str(),"w");
-    if (!fp) {
-      std::cerr << "Failed to open output file" << std::endl;
-      return 128;
+    if (write_as_hdf5) {
+      if (verbose) std::cout << "Writing to: " << outfile 
+			     << " as HDF5" << std::endl;
+      hid_t file_id;
+      file_id = H5Fcreate(outfile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
+			  H5P_DEFAULT);
+      if (H5Iget_ref(file_id) < 0) {
+	H5Fclose(file_id);
+	throw affineExcept("pofd_affine_getR", "pofd_affine_getR",
+			   "Failed to open HDF5 file to write");
+      }
+      hsize_t adims;
+      hid_t mems_id, att_id, group_id, dat_id;
+      
+      // Properties
+      adims = 1;
+      mems_id = H5Screate_simple(1, &adims, NULL);
+      att_id = H5Acreate2(file_id, "dflux", H5T_NATIVE_DOUBLE,
+			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
+      H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux);
+      H5Aclose(att_id);
+      H5Sclose(mems_id);
+
+      // Model
+      groupid = H5Gcreate(objid, "Model", H5P_DEFAULT, H5P_DEFAULT, 
+			  H5P_DEFAULT);
+      model.writeToHDF5Handle(groupid);
+      H5Gclose(groupid);
+
+      // Rflux
+      adims = nflux;
+      mems_id = H5Screate_simple(1, &adims, NULL);
+      dat_id = H5Dcreate2(file_id, "Flux", H5T_NATIVE_DOUBLE,
+			  mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
+	       H5P_DEFAULT, fluxes);
+      H5Dclose(dat_id);
+
+      dat_id = H5Dcreate2(file_id, "R", H5T_NATIVE_DOUBLE, mems_id,
+			  H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
+	       H5P_DEFAULT, R);
+      H5Dclose(dat_id);
+      H5Sclose(mems_id);
+
+      H5Fclose(file_id);
+    } else {
+      // Text file
+      if (verbose) std::cout << "Writing to: " << outfile << std::endl;
+      FILE *fp;
+      fp = fopen(outfile.c_str(), "w");
+      if (!fp) {
+	std::cerr << "Failed to open output file" << std::endl;
+	return 128;
+      }
+      fprintf(fp, "#%-11s   %-12s\n", "Flux", "R");
+      for (unsigned int i = 0; i < nflux; ++i) 
+	fprintf(fp, "%12.6e   %15.9e\n", fluxes[i], R[i]);
+      fclose(fp);
     }
-    fprintf(fp,"#%-11s   %-12s\n","Flux","R");
-    for (unsigned int i = 0; i < nflux; ++i) 
-      fprintf(fp,"%12.6e   %15.9e\n",fluxes[i],R[i]);
-    fclose(fp);
-    
     delete[] fluxes;
     delete[] R; 
   } catch (const affineExcept& ex) {
@@ -147,13 +190,14 @@ int getRDouble(int argc, char** argv) {
   std::string initfile; //Init file (having model we want)
   std::string outfile; //File to write to
   std::string psffile1, psffile2; //Beam file
-  bool histogram, posonly, verbose;
+  bool histogram, verbose, write_as_hdf5;
   double minflux1, maxflux1, minflux2, maxflux2;
   unsigned int nflux1, nflux2;
 
-  histogram = false;
-  posonly   = false;
-  verbose   = false;
+  histogram     = false;
+  posonly       = false;
+  verbose       = false;
+  write_as_hdf5 = false;
 
   int c;
   int option_index = 0;
@@ -161,31 +205,31 @@ int getRDouble(int argc, char** argv) {
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
 			    &option_index ) ) != -1 ) 
     switch(c) {
+    case '1':
+      write_as_hdf5 = true;
+      break;
     case 'H' :
       histogram = true;
-      break;
-    case 'p' :
-      posonly = true;
       break;
     case 'v' :
       verbose = true;
       break;
     }
 
-  if (optind >= argc-9 ) {
+  if (optind >= argc - 9) {
     std::cerr << "Required arguments missing" << std::endl;
     return 1;
   }
-  minflux1 = atof( argv[optind] );
-  maxflux1 = atof( argv[optind+1] );
-  nflux1   = static_cast<unsigned int>( atoi(argv[optind+2]) );
-  minflux2 = atof( argv[optind+3] );
-  maxflux2 = atof( argv[optind+4] );
-  nflux2   = static_cast<unsigned int>( atoi(argv[optind+5]) );
-  initfile = std::string( argv[optind+6] );
-  psffile1 = std::string( argv[optind+7] );
-  psffile2 = std::string( argv[optind+8] );
-  outfile  = std::string( argv[optind+9] );
+  minflux1 = atof(argv[optind]);
+  maxflux1 = atof(argv[optind + 1]);
+  nflux1   = static_cast<unsigned int>(atoi(argv[optind + 2]));
+  minflux2 = atof(argv[optind + 3]);
+  maxflux2 = atof(argv[optind + 4]);
+  nflux2   = static_cast<unsigned int>(atoi(argv[optind + 5]));
+  initfile = std::string(argv[optind + 6]);
+  psffile1 = std::string(argv[optind + 7]);
+  psffile2 = std::string(argv[optind + 8]);
+  outfile  = std::string(argv[optind + 9]);
 
   if (nflux1 == 0) {
     std::cerr << "Invalid (non-positive) nflux1" << std::endl;
@@ -196,24 +240,15 @@ int getRDouble(int argc, char** argv) {
     return 1;
   }
   double dflux1, dflux2;
-  if (maxflux1 < minflux1) {
-    double tmp = minflux1;
-    minflux1 = maxflux1; 
-    maxflux1=tmp;
-  }
+  if (maxflux1 < minflux1) std::swap(minflux1, maxflux1);
   if (nflux1 > 1) 
-    dflux1 = (maxflux1-minflux1)/static_cast<double>(nflux1-1);
+    dflux1 = (maxflux1 - minflux1) / static_cast<double>(nflux1 - 1);
   else
-    dflux1 = maxflux1-minflux1;
-  if (maxflux2 < minflux2) {
-    double tmp = minflux2;
-    minflux2 = maxflux2; 
-    maxflux2=tmp;
-  }
-  if (nflux2 > 1) 
-    dflux2 = (maxflux2-minflux2)/static_cast<double>(nflux2-1);
+    dflux1 = maxflux1 - minflux1;
+  if (maxflux2 < minflux2) std::swap(minflux2, maxflux2);
+    dflux2 = (maxflux2 - minflux2) / static_cast<double>(nflux2 - 1);
   else
-    dflux2 = maxflux2-minflux2;
+    dflux2 = maxflux2 - minflux2;
   
   //Main computation
   double *fluxes1, *fluxes2, *R;
@@ -224,54 +259,113 @@ int getRDouble(int argc, char** argv) {
     numberCountsDoubleLogNormal model;
     model_info.getModelPositions(model);
 
-    doublebeam bm( psffile1, psffile2, histogram );
+    doublebeam bm(psffile1, psffile2, histogram);
     paramSet pars(model_info.getNTot());
     model_info.getParams(pars);
     model.setParams(pars);
 
-    numberCountsDouble::rtype rt; 
-    if (posonly)
-      rt = numberCountsDouble::BEAMPOS;
-    else
-      rt = numberCountsDouble::BEAMALL;
-    
     if (verbose) {
-      std::cout << "Flux per area, band 1: " 
-		<< model.getFluxPerArea(0)
+      std::cout << "Flux per area, band 1: " << model.getFluxPerArea(0)
 		<< std::endl;
       std::cout << "Beam area, band 1: " << bm.getEffectiveArea1() << std::endl;
-      std::cout << "Flux per area, band 2: " 
-		<< model.getFluxPerArea(1)
+      std::cout << "Flux per area, band 2: " << model.getFluxPerArea(1)
 		<< std::endl;
       std::cout << "Beam area, band 2: " << bm.getEffectiveArea2() << std::endl;
     }
 
     fluxes1 = new double[nflux1];
     for (unsigned int i = 0; i < nflux1; ++i)
-      fluxes1[i] = minflux1 + static_cast<double>(i)*dflux1;
+      fluxes1[i] = minflux1 + static_cast<double>(i) * dflux1;
     fluxes2 = new double[nflux2];
     for (unsigned int i = 0; i < nflux2; ++i)
-      fluxes2[i] = minflux2 + static_cast<double>(i)*dflux2;
+      fluxes2[i] = minflux2 + static_cast<double>(i) * dflux2;
 
-    R = new double[nflux1*nflux2];
-    model.getR(nflux1,fluxes1,nflux2,fluxes2,bm,R,rt);
+    R = new double[nflux1 * nflux2];
+    model.getR(nflux1, fluxes1, nflux2, fluxes2, bm, R);
     
-    FILE *fp;
-    fp = fopen( outfile.c_str(),"w");
-    if (!fp) {
-      std::cerr << "Failed to open output file" << std::endl;
-      return 128;
+    if (write_as_hdf5) {
+      if (verbose) std::cout << "Writing to: " << outfile 
+			     << " as HDF5" << std::endl;
+      hid_t file_id;
+      file_id = H5Fcreate(outfile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
+			  H5P_DEFAULT);
+      if (H5Iget_ref(file_id) < 0) {
+	H5Fclose(file_id);
+	throw affineExcept("pofd_affine_getR", "pofd_affine_getR",
+			   "Failed to open HDF5 file to write");
+      }
+      hsize_t adims;
+      hid_t mems_id, att_id, dat_id;
+      
+      // Properties
+      adims = 1;
+      mems_id = H5Screate_simple(1, &adims, NULL);
+      att_id = H5Acreate2(file_id, "dflux1", H5T_NATIVE_DOUBLE,
+			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
+      H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux1);
+      H5Aclose(att_id);
+      att_id = H5Acreate2(file_id, "dflux2", H5T_NATIVE_DOUBLE,
+			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
+      H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux2);
+      H5Aclose(att_id);
+      H5Sclose(mems_id);
+
+      // Model
+      groupid = H5Gcreate(objid, "Model", H5P_DEFAULT, H5P_DEFAULT, 
+			  H5P_DEFAULT);
+      model.writeToHDF5Handle(groupid);
+      H5Gclose(groupid);
+
+      // Fluxes
+      adims = nflux1;
+      mems_id = H5Screate_simple(1, &adims, NULL);
+      dat_id = H5Dcreate2(file_id, "Flux1", H5T_NATIVE_DOUBLE,
+			  mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
+	       H5P_DEFAULT, fluxes1);
+      H5Dclose(dat_id);
+      H5Sclose(mems_id);
+      adims = nflux2;
+      mems_id = H5Screate_simple(1, &adims, NULL);
+      dat_id = H5Dcreate2(file_id, "Flux2", H5T_NATIVE_DOUBLE,
+			  mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
+	       H5P_DEFAULT, fluxes2);
+      H5Dclose(dat_id);
+      H5Sclose(mems_id);
+      
+      // R, which is 2D
+      hsize_t dims_steps[2] = {nflux1, nflux2};
+      mems_id = H5Screate_simple(2, dims_steps, NULL);
+      dat_id = H5Dcreate2(file_id, "R", H5T_NATIVE_DOUBLE, mems_id,
+			  H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
+	       H5P_DEFAULT, R);			  
+      H5Dclose(dat_id);
+      H5Sclose(mems_id);
+
+      H5Fclose(file_id);
+    } else {
+      // Text file
+      if (verbose) std::cout << "Writing to: " << outfile << std::endl;
+
+      FILE *fp;
+      fp = fopen( outfile.c_str(),"w");
+      if (!fp) {
+	std::cerr << "Failed to open output file" << std::endl;
+	return 128;
+      }
+      fprintf(fp, "#%4u %4u\n", nflux1, nflux2);
+      fprintf(fp, "#minflux1: %12.6e dflux1: %12.6e\n", minflux1, dflux1);
+      fprintf(fp, "#minflux2: %12.6e dflux2: %12.6e\n", minflux2, dflux2);
+      for (unsigned int i = 0; i < nflux1; ++i) {
+	for (unsigned int j = 0; j < nflux2-1; ++j)
+	  fprintf(fp, "%13.7e ", R[nflux2*i+j]);
+	fprintf(fp, "%13.7e\n", R[nflux2*i+nflux2-1]);
+      }
+      fclose(fp);
     }
-    fprintf(fp,"#%4u %4u\n",nflux1,nflux2);
-    fprintf(fp,"#minflux1: %12.6e dflux1: %12.6e\n",minflux1,dflux1);
-    fprintf(fp,"#minflux2: %12.6e dflux2: %12.6e\n",minflux2,dflux2);
-    for (unsigned int i = 0; i < nflux1; ++i) {
-      for (unsigned int j = 0; j < nflux2-1; ++j)
-        fprintf(fp,"%13.7e ",R[nflux2*i+j]);
-      fprintf(fp,"%13.7e\n",R[nflux2*i+nflux2-1]);
-    }
-    fclose(fp);
-    
+
     delete[] fluxes1;
     delete[] fluxes2;
     delete[] R; 

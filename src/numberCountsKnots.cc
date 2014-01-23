@@ -622,7 +622,7 @@ void initFileKnots::checkRange() const {
   \param[in] idx Knot index
   \returns A pair of the knot position and central value
 */
-std::pair<double,double> initFileKnots::getKnot(unsigned int idx) const {
+dblpair initFileKnots::getKnot(unsigned int idx) const {
   if (nknots == 0)
     throw affineExcept("initFileKnots", "getKnot",
 		       "No knot information read in");

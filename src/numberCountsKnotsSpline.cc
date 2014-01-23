@@ -6,7 +6,7 @@
 #include "../include/affineExcept.h"
 
 //Function to pass to GSL integrator
-static double evalPowfNKnotsSpline(double,void*); //!< Evaluates f^pow dN/dS
+static double evalPowfNKnotsSpline(double, void*); //!< Evaluates f^pow dN/dS
 
 numberCountsKnotsSpline::numberCountsKnotsSpline() : numberCountsKnots() {
   logknots = NULL;
@@ -341,23 +341,30 @@ double numberCountsKnotsSpline::getFluxSqPerArea() const {
   return splineInt(2);
 }
   
-// Pure brute force
+// Pure brute force R computation
 /*
   \params[in] fluxdensity  Position to get R at
   \params[in] params Parameters
   \params[in] beam Beam
-  \returns R(fluxdensity) for the positive beam
+  \returns R(fluxdensity)
 */
-double numberCountsKnotsSpline::getRPos(double fluxdensity,
-					const beam& bm) const {
+double numberCountsKnotsSpline::getR(double fluxdensity, const beam& bm) const {
 
   if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
-  if (!bm.hasPos()) return std::numeric_limits<double>::quiet_NaN();
 
-  if (fluxdensity <= 0.0) return 0.0;
+  // Quick return
+  if (fluxdensity > 0 && !bm.hasPos()) return 0.0;
+  else if (fluxdensity < 0 && !bm.hasNeg()) return 0.0;
+  else if (fluxdensity == 0) return 0.0;
+
   double minknot = knots[0];
   double maxknot = knots[nknots - 1];
-  if (fluxdensity > maxknot) return 0.0; //Since max(beam) = 1
+
+  // Find range where R is nonzero, if we are outside it easy
+  if ((fluxdensity >= 0.0) &&
+      (fluxdensity > maxknot / bm.getMinMaxPos().second)) return 0.0;
+  if ((fluxdensity <= 0.0) &&
+      (fluxdensity < -maxknot / bm.getMinMaxNeg().second)) return 0.0;
 
   double prefac;
   prefac = bm.getPixSize() / 3600.0;  //To sq deg
@@ -365,46 +372,68 @@ double numberCountsKnotsSpline::getRPos(double fluxdensity,
   
   double currarg, ieta, retval;
   retval = 0.0;
-  if (bm.isPosHist()) {
-    // Histogrammed beam
-    unsigned int nposhist = bm.getNHistPos();
-    const double* warr = bm.getPosHistWeights();
-    const double *ipixarr = bm.getPosHist();
-    for (unsigned int i = 0; i < nposhist; ++i) {
-      ieta = ipixarr[i];
-      currarg = fluxdensity * ieta;
-      if (currarg < minknot || currarg >= maxknot) continue;
-      retval += warr[i] *
-	exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
-    } 
-  } else {
-    // Raw beam
-    unsigned int npsf = bm.getNPos();
-    const double *ipixarr = bm.getPosInvPixArr();
-    for (unsigned int i = 0; i < npsf; ++i) {
-      ieta = ipixarr[i];
-      currarg = fluxdensity * ieta;
-      if (currarg < minknot || currarg >= maxknot) continue;
-      retval += exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
-    } 
+  if (fluxdensity > 0) { // Note that R(0) = 0, so we just test > <
+    if (bm.isPosHist()) {
+      // Histogrammed beam
+      unsigned int nposhist = bm.getNHistPos();
+      const double* warr = bm.getPosHistWeights();
+      const double *ipixarr = bm.getPosHist();
+      for (unsigned int i = 0; i < nposhist; ++i) {
+	ieta = ipixarr[i];
+	currarg = fluxdensity * ieta;
+	if (currarg < minknot || currarg >= maxknot) continue;
+	retval += warr[i] * ieta * 
+	  exp2(gsl_spline_eval(splinelog, log2(currarg), acc));
+      }
+    } else {
+      // Raw beam
+      unsigned int npsf = bm.getNPos();
+      const double *ipixarr = bm.getPosInvPixArr();
+      for (unsigned int i = 0; i < npsf; ++i) {
+	ieta = ipixarr[i];
+	currarg = fluxdensity * ieta;
+	if (currarg < minknot || currarg >= maxknot) continue;
+	retval += exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
+      }
+    }
+  } else if (fluxdensity < 0) {
+    if (bm.isNegHist()) {
+      unsigned int nneghist = bm.getNHistNeg();
+      const double* warr = bm.getNegHistWeights();
+      const double *ipixarr = bm.getNegHist();
+      for (unsigned int i = 0; i < nneghist; ++i) {
+	ieta = ipixarr[i];
+	currarg = - fluxdensity * ieta; // Note the -
+	if (currarg < minknot || currarg >= maxknot) continue;
+	retval += warr[i] * ieta * 
+	  exp2(gsl_spline_eval(splinelog, log2(currarg), acc));
+      }
+    } else {
+      unsigned int npsf = bm.getNNeg();
+      const double *ipixarr = bm.getNegInvPixArr();
+      for (unsigned int i = 0; i < npsf; ++i) {
+	ieta = ipixarr[i];
+	currarg = - fluxdensity * ieta;
+	if (currarg < minknot || currarg >= maxknot) continue;
+	retval += exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
+      }
+    }
   }
 
   return prefac * retval;
 }
 
 /*!
-  \param[in] n Number of elements to get R for (length of flux)
-  \param[in] flux Fluxes to get R for
+  \param[in] n    Number of elements to get R for (length of flux and R)
+  \param[in] flux Fluxes to get R for.  Note we don't assume these are monotonic
   \param[in] bm   Beam
-  \param[inout] R Values of R from the positive beam are added onto this 
-                 (len n)
-
-  Note you need to zero your input array first if you just want R+
+  \param[inout]   R Computed value of R.  Must be pre-allocated to length n
+                   (or more) by caller.  Only the first n values are set.
 */
-void numberCountsKnotsSpline::getRPos(unsigned int n, const double* const flux,
-				      const beam& bm, double* R) const {
+void numberCountsKnotsSpline::getR(unsigned int n, const double* const flux,
+				   const beam& bm, double* R) const {
   if (n == 0) return;
-  if ((!isValid()) || (!bm.hasPos())) {
+  if (!isValid()) {
     for (unsigned int i = 0; i < n; ++i)
       R[i] = std::numeric_limits<double>::quiet_NaN();
     return;
@@ -417,218 +446,84 @@ void numberCountsKnotsSpline::getRPos(unsigned int n, const double* const flux,
   prefac = bm.getPixSize() / 3600.0;  //To sq deg
   prefac = prefac * prefac;
 
-  
-  double currarg, ieta, workval, fluxdensity;
-  if (bm.isPosHist()) { 
-    //Binned beam
-    unsigned int nposhist = bm.getNHistPos();
-    const double* warr = bm.getPosHistWeights();
-    const double *ipixarr = bm.getPosHist();
-    for (unsigned int j = 0; j < n; ++j) {
-      fluxdensity = flux[j];
-      if (fluxdensity <= 0.0) continue; // out of range
-      workval = 0.0;
-      for (unsigned int i = 0; i < nposhist; ++i) {
-	ieta = ipixarr[i];
-	currarg = fluxdensity * ieta;
-	if (currarg < minknot || currarg >= maxknot) continue;
-	workval += warr[i] *
-	  exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
-      } 
-      R[j] += prefac * workval;
-    }
-  } else {
-    //Unbinned beam
-    unsigned int npsf = bm.getNPos();
-    const double *ipixarr = bm.getPosInvPixArr();
-    for (unsigned int j = 0; j < n; ++j) {
-      fluxdensity = flux[j];
-      if (fluxdensity <= 0.0) continue;
-      workval = 0.0;
-      for (unsigned int i = 0; i < npsf; ++i) {
-	ieta = ipixarr[i];
-	currarg = fluxdensity * ieta;
-	if (currarg < minknot || currarg >= maxknot) continue;
-	workval += exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
-      } 
-      R[j] += prefac * workval;
-    }
+  // Precalculate and store local refs to all the arrays we may need
+  unsigned int npos = 0, nneg = 0;
+  bool haspos = bm.hasPos();
+  bool hasneg = bm.hasNeg();
+  bool poshist = false, neghist = false;
+  const double* wtptr_pos = NULL;
+  const double* wtptr_neg = NULL;
+  const double* ibmptr_pos = NULL;
+  const double* ibmptr_neg = NULL;
+  double maxfpos = 0, minfneg = 0;
+  if (haspos) {
+    poshist = bm.isPosHist();
+    npos = poshist ? bm.getNHistPos() : bm.getNPos();
+    if (poshist) wtptr_pos = bm.getPosHistWeights();
+    ibmptr_pos = poshist ? bm.getPosHist() : bm.getPosInvPixArr();
+    // Positive flux densities greater than this always make 0 contribution
+    maxfpos = maxknot / bm.getMinMaxPos().second; 
   }
-}
-
-/*
-  \params[in] fluxdensity  Position to get R at
-  \params[in] params Parameters
-  \params[in] bm Beam
-  \returns R(fluxdensity) for the negative beam
-*/
-double numberCountsKnotsSpline::getRNeg(double fluxdensity,
-					const beam& bm) const {
-
-  if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
-  if (!bm.hasNeg()) return std::numeric_limits<double>::quiet_NaN();
-
-  if (fluxdensity <= 0.0) return 0.0;
-  double minknot = knots[0];
-  double maxknot = knots[nknots-1];
-  if (fluxdensity > maxknot) return 0.0; //Since max(beam) = 1
-
-  double prefac;
-  prefac = bm.getPixSize() / 3600.0;  //To sq deg
-  prefac = prefac * prefac;
-
-  double currarg, ieta, retval;
-  retval = 0.0;
-  if (bm.isNegHist()) {
-    // Histogrammed negative beam
-    unsigned int nneghist = bm.getNHistNeg();
-    const double* warr = bm.getNegHistWeights();
-    const double *ipixarr = bm.getNegHist();
-    for (unsigned int i = 0; i < nneghist; ++i) {
-      ieta = ipixarr[i];
-      currarg = fluxdensity * ieta;
-      if (currarg < minknot || currarg >= maxknot) continue;
-      retval += warr[i] *
-	exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
-    } 
-  } else {
-    // Raw beam
-    unsigned int npsf = bm.getNNeg();
-    const double *ipixarr = bm.getNegInvPixArr();
-    for (unsigned int i = 0; i < npsf; ++i) {
-      ieta = ipixarr[i];
-      currarg = fluxdensity * ieta;
-      if (currarg < minknot || currarg >= maxknot) continue;
-      retval += exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
-    } 
-  }
-  return prefac*retval;
-}
-
-/*!
-  \param[in] n Number of elements to get R for (length of flux)
-  \param[in] flux Fluxes to get R for
-  \param[in] bm   Beam
-  \param[in,out] R Values of R from the negative beam are added onto this 
-          (len n)
-*/
-void numberCountsKnotsSpline::getRNeg(unsigned int n, const double* const flux,
-				      const beam& bm, double* R) const {
-  if (n == 0) return;
-  if ((!isValid()) || (!bm.hasNeg())) {
-    for (unsigned int i = 0; i < n; ++i)
-      R[i] = std::numeric_limits<double>::quiet_NaN();
-    return;
+  if (hasneg) {
+    neghist = bm.isNegHist();
+    nneg = neghist ? bm.getNHistNeg() : bm.getNNeg();
+    if (neghist) wtptr_neg = bm.getNegHistWeights();
+    ibmptr_neg = neghist ? bm.getNegHist() : bm.getNegInvPixArr();
+    // Negative flux densities less than this always make 0 contribution
+    minfneg = - maxknot / bm.getMinMaxNeg().second; 
   }
 
-  double minknot = knots[0];
-  double maxknot = knots[nknots-1];
-
-  double prefac;
-  prefac = bm.getPixSize() / 3600.0;  //To sq deg
-  prefac = prefac * prefac;
-
-  double currarg, ieta, workval, fluxdensity;
-  if (bm.isNegHist()) {
-    // Histogrammed beam
-    unsigned int nneghist = bm.getNHistNeg();
-    const double* warr = bm.getNegHistWeights();
-    const double *ipixarr = bm.getNegHist();
-    for (unsigned int j = 0; j < n; ++j) {
-      fluxdensity = flux[j];
-      if (fluxdensity <= 0.0) continue;
-      workval = 0.0;
-      for (unsigned int i = 0; i < nneghist; ++i) {
-	ieta = ipixarr[i];
-	currarg = fluxdensity * ieta;
-	if (currarg < minknot || currarg >= maxknot) continue;
-	workval += warr[i] *
-	  exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
-      } 
-      R[j] += prefac*workval;
-    }
-  } else {
-    // Raw beam
-    unsigned int npsf = bm.getNPos();
-    const double *ipixarr = bm.getPosInvPixArr();
-    for (unsigned int j = 0; j < n; ++j) {
-      fluxdensity = flux[j];
-      if (fluxdensity <= 0.0) continue;
-      workval = 0.0;
-      for (unsigned int i = 0; i < npsf; ++i) {
-	ieta = ipixarr[i];
+  double currarg, ieta, workval, fluxdensity, cts;
+  for (unsigned int i = 0; i < n; ++i) {
+    fluxdensity = flux[i];
+    workval = 0.0;
+    // Again -- R[0] = 0, so we can just test > < 
+    // There is a three part test here -- first on the sign of the
+    //  fluxdensity, then if the corresponding beam is available,
+    //  and then, if those are satisfied, if this fluxdensity is
+    //  outside the range where the contribution is non-zero
+    if (fluxdensity > 0 && haspos && fluxdensity <= maxfpos) { 
+      if (poshist) {
+	for (unsigned int j = 0; j < npos; ++j) {
+	  ieta = ibmptr_pos[j];
 	  currarg = fluxdensity * ieta;
-	if (currarg < minknot || currarg >= maxknot) continue;
-	workval += exp2(gsl_spline_eval(splinelog, log2(currarg), acc)) * ieta;
-      } 
-      R[j] += prefac*workval;
+	  if (currarg < minknot || currarg >= maxknot) continue;
+	  cts = exp2(gsl_spline_eval(splinelog, log2(currarg), acc));
+	  if (cts > 0) workval += wtptr_pos[j] * cts * ieta;
+	}
+      } else {
+	for (unsigned int j = 0; j < npos; ++j) {
+	  ieta = ibmptr_pos[j];
+	  currarg = fluxdensity * ieta;
+	  if (currarg < minknot || currarg >= maxknot) continue;
+	  cts = exp2(gsl_spline_eval(splinelog, log2(currarg), acc));
+	  if (cts > 0) workval += cts * ieta;
+	}
+      }
+    } else if (hasneg && fluxdensity < 0 && fluxdensity >= minfneg) {
+      // Note the order is flopped on the first two tests because
+      //  not having the negative beam is a common case, which is not
+      //  true for not having a positive beam.  
+      if (neghist) {
+	for (unsigned int j = 0; j < nneg; ++j) {
+	  ieta = ibmptr_neg[j];
+	  currarg = - fluxdensity * ieta; // Note the - sign
+	  if (currarg < minknot || currarg >= maxknot) continue;
+	  cts = exp2(gsl_spline_eval(splinelog, log2(currarg), acc));
+	  if (cts > 0) workval += wtptr_neg[j] * cts * ieta;
+	}
+      } else {
+	for (unsigned int j = 0; j < nneg; ++j) {
+	  ieta = ibmptr_neg[j];
+	  currarg = - fluxdensity * ieta;
+	  if (currarg < minknot || currarg >= maxknot) continue;
+	  cts = exp2(gsl_spline_eval(splinelog, log2(currarg), acc));
+	  if (cts > 0) workval += cts * ieta;
+	}
+      }
     }
+    R[i] = prefac * workval;
   }
-}
-
-/*
-  \param[in] fluxdensity  Position to get R at
-  \param[in] params Parameters
-  \param[in] bm Beam
-  \param[in] rt Controls whether one gets the positive, negative, or sum
-       of both
-  \returns R evaluated at fluxdensity
-*/
-double numberCountsKnotsSpline::getR(double fluxdensity, const beam& bm,
-				     rtype rt) const {
-  switch (rt) {
-  case BEAMBOTH :
-    if (bm.hasPos()) {
-      if (bm.hasNeg()) return getRPos(fluxdensity,bm)+getRNeg(fluxdensity,bm);
-      else return getRPos(fluxdensity,bm);
-    }
-    break;
-  case BEAMPOS :
-    return getRPos(fluxdensity,bm);
-    break;
-  case BEAMNEG :
-    return getRNeg(fluxdensity,bm);
-    break;
-  default :
-    std::stringstream errstr;
-    errstr << "Unknown R beam specification: " << rt;
-    throw affineExcept("numberCountsKnotsSpline", "getR",
-		       errstr.str());
-  }
-  return std::numeric_limits<double>::quiet_NaN();
-}
-
-/*!
-  \param[in] n Number of elements to get R for (length of flux)
-  \param[in] flux Fluxes to get R for
-  \param[in] bm Beam
-  \param[in,out] R Values of R from the negative beam are added onto 
-                 this (len n)
-  \param[in] rt Type of R desired (pos, neg, sum of both)
-*/
-void numberCountsKnotsSpline::getR(unsigned int n,const double* const flux,
-				   const beam& bm,double* R, rtype rt) const {
-  if (n == 0) return;
-  for (unsigned int i = 0; i < n; ++i) R[i] = 0.0;
-
-  switch (rt) {
-  case BEAMBOTH :
-    if (bm.hasPos()) getRPos(n,flux,bm,R);
-    if (bm.hasNeg()) getRNeg(n,flux,bm,R);
-    break;
-  case BEAMPOS :
-    getRPos(n,flux,bm,R);
-    break;
-  case BEAMNEG :
-    getRNeg(n,flux,bm,R);
-    break;
-  default :
-    std::stringstream errstr;
-    errstr << "Unknown R beam specification: " << rt;
-    throw affineExcept("numberCountsKnotsSpline", "getR",
-		       errstr.str());
-  }
-  return;
 }
 
 /*!

@@ -32,18 +32,6 @@ class numberCountsKnotsSpline : public numberCountsKnots {
   double splineInt(double power) const; 
   void **varr; //!< Internal evil casting array for integration
 
-  //Internal pos/neg parts
-  /*! \brief Get R for positive beam, single flux version */
-  double getRPos(double,const beam&) const;
-  /*! \brief Get R for positive beam, array of fluxes version */
-  void getRPos(unsigned int n,const double* const,
-	       const beam&,double*) const;
-  /*! \brief Get R for negative beam, single flux version */
-  double getRNeg(double,const beam&) const;
-  /*! \brief Get R for negative beam, array of fluxes version */
-  void getRNeg(unsigned int n,const double* const,
-	       const beam&,double*) const;
-
  public :
   numberCountsKnotsSpline(); //!< Default
   explicit numberCountsKnotsSpline(unsigned int); //!< Constructor with number of knots
@@ -71,10 +59,10 @@ class numberCountsKnotsSpline : public numberCountsKnots {
   double getFluxSqPerArea() const; //!< Flux squared per unit area (sq deg)
   
   /*! \brief Get R at single flux value */
-  double getR(double,const beam&, rtype=BEAMPOS) const;
+  double getR(double, const beam&) const;
   /*! \brief Get R, array version */
-  void getR(unsigned int n,const double* const,
-	    const beam&,double*, rtype=BEAMPOS) const;
+  void getR(unsigned int n, const double* const,
+	    const beam&, double*) const;
 
   void writeToHDF5Handle(hid_t) const; //!< Write to HDF5 handle
 

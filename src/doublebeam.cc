@@ -623,6 +623,13 @@ double doublebeam::getEffectiveAreaSqSign2(unsigned int idx) const {
   return area;
 }
 
+unsigned int doublebeam::getMaxNPix() const {
+  unsigned int n = 0;
+  for (unsigned int i = 0; i < 4; ++i)
+    if (hassign[i] && npix[i] > n) n = npix[i];
+  return n;
+}
+
 unsigned int doublebeam::getTotalNPix() const {
   unsigned int n = 0;
   for (unsigned int i = 0; i < 4; ++i)

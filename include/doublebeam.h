@@ -93,6 +93,7 @@ class doublebeam {
   
   bool hasSign(unsigned int i) const { return hassign[i]; } //!< Does beam have given sign component?
   unsigned int getNPix(unsigned int i) const { return npix[i]; } //!< Number of pixels in pp, pn, np, nn beams
+  unsigned int getMaxNPix() const; //!< Largest number of pix
   unsigned int getTotalNPix() const; //!< Total number of pix
   double getMinval() const { return minval; }
   double getPixSize() const { return pixsize; }
