@@ -85,7 +85,6 @@ bool pofdMCMC::initChainsMaster() {
   //Initialize likelihood information -- priors, data, etc.
   likeSet.setKnotPositions(ifile);
   likeSet.setFFTSize(spec_info.fftsize);
-  if (spec_info.edge_fix) likeSet.setEdgeFix(); else likeSet.unSetEdgeFix();
   likeSet.setNInterp(spec_info.ninterp);
   if (spec_info.bin_data) likeSet.setBinData(); else likeSet.unSetBinData();
   likeSet.setNBins(spec_info.nbins);
@@ -106,6 +105,13 @@ bool pofdMCMC::initChainsMaster() {
 			    spec_info.ignore_mask, spec_info.mean_sub, 
 			    spec_info.minbeamval, spec_info.beam_histogram, 
 			    spec_info.nbeamhist, spec_info.exp_conf);
+
+  // Set up R init ranges using initial model 
+  paramSet p(npar); // Generated parameter
+  ifile.getParams(p); // Get central values from initialization file
+  p[npar - 1] = 1.0; // Sigma mult
+  ifile.getParams(p); // Sets to central (initial) values
+  likeSet.setRRanges(p);
 
   // Verbosity
   setVerbosity(spec_info.verbosity);
@@ -174,11 +180,8 @@ bool pofdMCMC::initChainsMaster() {
   // Generate initial positions
   if (verbosity >= 3)
     std::cout << "Setting up initial parameters" << std::endl;
-  paramSet p(npar); // Generated parameter
-  ifile.getParams(p); // Get central values from initialization file
-  p[npar - 1] = 1.0; // Sigma mult
   has_initStep = true; //Store initial position
-  initStep = p;
+  initStep = p; // Recall -- previously set to initial position
   generateInitialPosition(p);
 
   is_init = true;

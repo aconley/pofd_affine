@@ -22,19 +22,23 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
     //Data files, evaulation specifications
     specFile spec_info(specfile);
 
-    //Make sure we got some data
-    if (spec_info.datafiles.size() == 0) 
-      throw affineExcept("pofd_affine_getLike", "getLikeSingle",
-			 "No datafiles loaded");
-
+    //Set up model parameters
     unsigned int nknots = model_info.getNKnots();
     if (nknots == 0)
       throw affineExcept("pofd_affine_getLike", "getLikeSingle",
 			 "No info read in");
 
+    paramSet pars(nknots + 1);
+    model_info.getParams(pars);
+    pars[nknots] = 1.0;
+
+    //Make sure we got some data
+    if (spec_info.datafiles.size() == 0) 
+      throw affineExcept("pofd_affine_getLike", "getLikeSingle",
+			 "No datafiles loaded");
+
     calcLike likeSet(spec_info.fftsize, spec_info.ninterp, 
-		     spec_info.edge_fix, spec_info.bin_data, 
-		     spec_info.nbins);
+		     spec_info.bin_data, spec_info.nbins);
 
     //Read data
     if (spec_info.verbosity >= 2)
@@ -46,6 +50,8 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
 			      spec_info.nbeamhist, spec_info.exp_conf);
     
     if (spec_info.has_wisdom_file) likeSet.addWisdom(spec_info.wisdom_file);
+
+    likeSet.setRRanges(pars);
 
     //Set prior -- ignore sigmult prior, since we aren't really fitting
     if (spec_info.has_cfirbprior)
@@ -70,13 +76,8 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
       }
     }
   
-    //Set up model parameters
-    likeSet.setKnotPositions(model_info);
-    paramSet pars(nknots + 1);
-    model_info.getParams(pars);
-    pars[nknots] = 1.0;
-
     //And, get that likelihood
+    likeSet.setKnotPositions(model_info);
     bool pars_rejected;
     double LogLike = likeSet.getLogLike(pars, pars_rejected);
     if (pars_rejected) {
@@ -108,21 +109,25 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
     //data, likelihood params
     specFileDouble spec_info(specfile);
     
-    //Make sure we got some data
-    if (spec_info.datafiles1.size() == 0) 
-      throw affineExcept("pofd_affine_getLike", "getLikeDouble",
-			 "No datafiles loaded");
-    
-
+    //Set up model
     unsigned int ntot = model_info.getNTot();
     if (ntot == 0)
       throw affineExcept("pofd_affine_getLike", "getLikeDouble",
 			 "No info read in");
 
+    paramSet pars(ntot + 2);
+    model_info.getParams(pars);
+    pars[ntot] = 1.0;
+    pars[ntot+1] = 1.0;
 
+    //Make sure we got some data
+    if (spec_info.datafiles1.size() == 0) 
+      throw affineExcept("pofd_affine_getLike", "getLikeDouble",
+			 "No datafiles loaded");
+    
     calcLikeDouble likeSet(spec_info.fftsize, spec_info.nedge, 
-			   spec_info.edge_fix, spec_info.edge_set,
-			   spec_info.bin_data, spec_info.nbins);
+			   spec_info.edge_set, spec_info.bin_data, 
+			   spec_info.nbins);
 
     //Read data
     likeSet.readDataFromFiles(spec_info.datafiles1, spec_info.datafiles2, 
@@ -134,6 +139,8 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
 			      spec_info.exp_conf1, spec_info.exp_conf2);
 
     if (spec_info.has_wisdom_file) likeSet.addWisdom(spec_info.wisdom_file);
+
+    likeSet.setRRanges(pars);
 
     //Set prior -- ignore sigmult prior, since we aren't really fitting
     if (spec_info.has_cfirbprior1)
@@ -171,14 +178,8 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
       }
     }
 
-    //Set up model
-    likeSet.setPositions(model_info);
-    paramSet pars(ntot + 2);
-    model_info.getParams(pars);
-    pars[ntot] = 1.0;
-    pars[ntot+1] = 1.0;
-
     //Get likelihood
+    likeSet.setPositions(model_info);
     bool pars_rejected;
     double LogLike = likeSet.getLogLike(pars, pars_rejected);
     if (pars_rejected) {

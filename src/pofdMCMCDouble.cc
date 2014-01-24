@@ -100,7 +100,6 @@ bool pofdMCMCDouble::initChainsMaster() {
   //Initialize likelihood information -- priors, data, etc.
   likeSet.setPositions(ifile);
   likeSet.setFFTSize(spec_info.fftsize);
-  if (spec_info.edge_fix) likeSet.setEdgeFix(); else likeSet.unSetEdgeFix();
   if (spec_info.edge_set) {
     likeSet.setEdgeInteg();
     likeSet.setNEdge(spec_info.nedge);
@@ -133,6 +132,14 @@ bool pofdMCMCDouble::initChainsMaster() {
 			    spec_info.mean_sub, spec_info.minbeamval, 
 			    spec_info.beam_histogram, spec_info.nbeamhist, 
 			    spec_info.exp_conf1, spec_info.exp_conf2);
+
+  // Set up R init ranges using initial model 
+  paramSet p(npar); //Generated parameter
+  ifile.getParams(p); //Get central values from initialization file
+  p[npar - 2] = 1.0; // Sigma mult, band 1
+  p[npar - 1] = 1.0; // Sigma mult, band 2
+  ifile.getParams(p); // Sets to central (initial) values
+  likeSet.setRRanges(p);
 
   // Verbosity
   setVerbosity(spec_info.verbosity);
@@ -193,7 +200,6 @@ bool pofdMCMCDouble::initChainsMaster() {
   if (verbosity >= 2)
     std::cout << "All slave nodes initialized" << std::endl;
 
-
   //We can free all the data storage, since master doesn't need
   // any of it
   likeSet.freeData();
@@ -201,12 +207,8 @@ bool pofdMCMCDouble::initChainsMaster() {
   // Generate initial positions
   if (verbosity >= 3)
     std::cout << "Setting up initial parameters" << std::endl;
-  paramSet p(npar); //Generated parameter
-  ifile.getParams(p); //Get central values from initialization file
   has_initStep = true; //Store initial position
-  p[npar - 2] = 1.0; // Sigma mult, band 1
-  p[npar - 1] = 1.0; // Sigma mult, band 2
-  initStep = p;
+  initStep = p; // Recall -- p previously set to initial position
   generateInitialPosition(p);
 
   is_init = true;

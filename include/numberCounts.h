@@ -35,6 +35,9 @@ class numberCounts {
   /*! \brief Maxium flux model is defined for */
   virtual double getMaxFlux() const = 0;
 
+  /*! \brief Get range over which R is expected to be nonzero */
+  virtual dblpair getRRange(const beam&) const throw(affineExcept) = 0;
+
   /*! \brief Return the number of sources per unit area */
   virtual double getNS() const = 0; 
 
@@ -47,11 +50,11 @@ class numberCounts {
   virtual double getNumberCounts(double) const = 0; 
 
   /*! \brief Get number of source responses, single value version */
-  virtual double getR(double,const beam&) const = 0;
+  virtual double getR(double, const beam&) const = 0;
   
   /*! \brief Get number of source responses, array version*/
-  virtual void getR(unsigned int n,const double* const,
-		    const beam&,double*) const = 0;
+  virtual void getR(unsigned int n, const double* const,
+		    const beam&, double*) const = 0;
 
   virtual void writeToHDF5Handle(hid_t objid) const=0; //!< Output to HDF5
   virtual bool writeToStream(std::ostream& os) const=0; //!< Output to stream

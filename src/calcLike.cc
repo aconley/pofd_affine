@@ -8,15 +8,16 @@
 
 const double calcLikeSingle::bad_like = 1e25;
 const double calcLikeSingle::flux_safety = 1.1;
+const double NaN = std::numeric_limits<double>::quiet_NaN();
 
 /*!
   \param[in] NINTERP Number of interpolation points in R evaluation
 */
 calcLikeSingle::calcLikeSingle(unsigned int NINTERP) :
-  data_read(false), ndatasets(0), data(NULL), maxflux(0.0), 
-  pdfac(NINTERP), sigma_base(NULL), maxsigma_base(0.0),
-  exp_conf(0.0), like_norm(NULL), like_offset(NULL), has_beam(false), 
-  verbose(false) {}
+  data_read(false), ndatasets(0), data(NULL), minDataFlux(NaN),
+  maxDataFlux(NaN), pdfac(NINTERP), minRFlux(NaN), maxRFlux(NaN), 
+  sigma_base(NULL), maxsigma_base(NaN), exp_conf(0.0), like_norm(NULL), 
+  like_offset(NULL), has_beam(false), verbose(false) {}
 
 calcLikeSingle::~calcLikeSingle() {
   if (data != NULL) delete[] data;
@@ -29,13 +30,13 @@ void calcLikeSingle::free() {
   if (data != NULL) { delete[] data; data = NULL; }
   ndatasets = 0;
   data_read = false;
-  maxflux = std::numeric_limits<double>::quiet_NaN();
+  minDataFlux = maxDataFlux = minRFlux = maxRFlux = NaN;
 
   pd.strict_resize(0);
   pdfac.free();
   
   if (sigma_base != NULL) { delete[] sigma_base; sigma_base = NULL; }
-  maxsigma_base = std::numeric_limits<double>::quiet_NaN();
+  maxsigma_base = NaN;
   exp_conf = 0.0;
 
   if (like_norm != NULL) { delete[] like_norm; like_norm = NULL; }
@@ -61,12 +62,9 @@ void calcLikeSingle::resize(unsigned int n) {
     sigma_base  = new double[n];
     like_offset = new double[n];
     like_norm   = new double[n];
-    for (unsigned int i = 0; i < n; ++i)
-      sigma_base[i] = std::numeric_limits<double>::quiet_NaN();
-    for (unsigned int i = 0; i < n; ++i)
-      like_offset[i] = std::numeric_limits<double>::quiet_NaN();
-    for (unsigned int i = 0; i < n; ++i)
-      like_norm[i] = 1.0;
+    for (unsigned int i = 0; i < n; ++i) sigma_base[i] = NaN;
+    for (unsigned int i = 0; i < n; ++i) like_offset[i] = NaN;
+    for (unsigned int i = 0; i < n; ++i) like_norm[i] = 1.0;
   } else {
     data        = NULL;
     sigma_base  = NULL;
@@ -75,8 +73,8 @@ void calcLikeSingle::resize(unsigned int n) {
   }
   
   data_read = false;
-  maxflux   = std::numeric_limits<double>::quiet_NaN();
-  maxsigma_base = 0.0;
+  minDataFlux = maxDataFlux = minRFlux = maxRFlux = NaN;
+  maxsigma_base = NaN;
   ndatasets = n;
 }
 
@@ -101,14 +99,19 @@ void calcLikeSingle::readDataFromFile(const std::string& datafile,
 		       "No unmasked pixels in data");
   if (BINDATA) data[0].applyBinning(NBINS);
   
-  maxflux = data[0].getMax();
-  if (std::isnan(maxflux) || std::isinf(maxflux))
+  dblpair minmax = data[0].getMinMax();
+  minDataFlux = minmax.first;
+  maxDataFlux = minmax.second;
+  if (std::isnan(minDataFlux) || std::isinf(minDataFlux) ||
+      std::isnan(maxDataFlux) || std::isinf(maxDataFlux))
     throw affineExcept("calcLikeSingle", "readDataFromFile",
-		       "Problem with maxflux");
+		       "Invalid data range encountered in data file");
 
   // We can't set the likelihood offset unless sigma base is set.
   like_offset[0] = 0.0;
   data_read = true;
+
+  minRFlux = maxRFlux = NaN; // We will need to recompute
 }
 
 /*!
@@ -145,19 +148,32 @@ readDataFromFiles(const std::vector<std::string>& datafiles,
   }
 
   //Determine maximum flux (with safety factor) for all this data
-  double cmaxflux;
-  maxflux = data[0].getMax();
-  if (std::isnan(maxflux) || std::isinf(maxflux))
-    throw affineExcept("calcLikeSingle", "readDataFromFile",
-		       "Problem with maxflux");
+  dblpair minmax;
+  double cminflux, cmaxflux;
+  minmax = data[0].getMinMax();
+  minDataFlux = minmax.first;
+  maxDataFlux = minmax.second;
+  if (std::isnan(minDataFlux) || std::isinf(minDataFlux) || 
+      std::isnan(maxDataFlux) || std::isinf(maxDataFlux)) {
+    std::stringstream errstr;
+    errstr << "Problem with data range in " << datafiles[0];
+    throw affineExcept("calcLikeSingle", "readDataFromFile", errstr.str());
+  }
   for (unsigned int i = 1; i < n; ++i) {
-    cmaxflux = data[i].getMax();
-    if (std::isnan(cmaxflux) || std::isinf(cmaxflux))
-      throw affineExcept("calcLikeSingle", "readDataFromFile",
-			 "Problem with maxflux");
-    if (cmaxflux > maxflux) maxflux=cmaxflux;
+    minmax = data[i].getMinMax();
+    cminflux = minmax.first;
+    cmaxflux = minmax.second;
+    if (std::isnan(cminflux) || std::isinf(cminflux) ||
+	std::isnan(cmaxflux) || std::isinf(cmaxflux)) {
+      std::stringstream errstr;
+      errstr << "Problem with data range in " << datafiles[i];
+      throw affineExcept("calcLikeSingle", "readDataFromFile", errstr.str());
+    }
+    if (cminflux < minDataFlux) minDataFlux = cminflux;
+    if (cmaxflux > maxDataFlux) maxDataFlux = cmaxflux;
   }
 
+  minRFlux = maxRFlux = NaN; // We will need to recompute
   data_read = true;
 }
 
@@ -278,6 +294,38 @@ void calcLikeSingle::setSigmaBase(unsigned int n, const double* const s) {
   }
 }
 
+/*!
+  \param[in] model Model to set min/max R range from 
+
+  You must also have loaded in data, set maxsigma_base, read the beam, etc.
+  This should not be called during a fit, only before the fit, because
+  moving the R ranges around causes numerical jitter in the likelihoods.
+*/
+void calcLikeSingle::setRRange(const numberCounts& model) { 
+  if (std::isnan(maxsigma_base))
+    throw affineExcept("calcLikeSingle", "setRRange", "Sigma base not yet set");
+  if (!has_beam)
+    throw affineExcept("calcLikeSingle", "setRRange", "Beam not loaded");
+  if (!data_read)
+    throw affineExcept("calcLikeSingle", "setRRange", "Data not loaded");
+
+  // First get the raw range where R is non-zero
+  // model validity, beam validity checked in getRRange
+  dblpair rawrange = model.getRRange(bm);
+
+  // Now try to estimate sigma.  Ideally the user has helped us out here
+  // by setting exp_conf to something non-zero
+  double sigma = sqrt(exp_conf * exp_conf + maxsigma_base * maxsigma_base);
+  
+  // Add some padding to the top of the r range
+  minRFlux = rawrange.first;
+  maxRFlux = rawrange.second + pofd_mcmc::n_zero_pad * sigma;
+  
+  // Make sure this actually covers the data
+  if (minDataFlux < minRFlux && bm.hasNeg()) minRFlux = minDataFlux;
+  if (maxDataFlux > maxRFlux && bm.hasPos()) maxRFlux = maxDataFlux;
+}
+
 /*
   \param[in] model   Model parameters must already be set
   \param[out] pars_invalid Set to true if parameters are determined to 
@@ -294,10 +342,8 @@ void calcLikeSingle::setSigmaBase(unsigned int n, const double* const s) {
   be set in model.  The last model parameter is the sigma multiplier,
   the previous ones are the values of the number counts at the knots
 */
-double 
-calcLikeSingle::getLogLike(const numberCounts& model, bool& pars_invalid,
-			   double sigmult, unsigned int fftsize, 
-			   bool edgefix) const {
+double calcLikeSingle::getLogLike(const numberCounts& model, bool& pars_invalid,
+				  double sigmult, unsigned int fftsize) const {
 
   if (!data_read)
     throw affineExcept("calcLikeSingle", "getNegLogLike",
@@ -311,15 +357,11 @@ calcLikeSingle::getLogLike(const numberCounts& model, bool& pars_invalid,
   if (max_sigma < 0.0) return calcLikeSingle::bad_like;
 
   // Initialize P(D)
-  // We have to decide what maxflux to ask for.  This will
-  // be the larger of the data maximum flux or the
-  // highest knot plus some padding.  This assumes that
-  // model.getMaxFlux doesn't change
-  double modelmax = model.getMaxFlux() + 2 * maxsigma_base;
-  double maxRflux = maxflux > modelmax ? maxflux : modelmax;
-  maxRflux *= calcLikeSingle::flux_safety;
-  pars_invalid = ! pdfac.initPD(fftsize, max_sigma, maxRflux, model, bm);
-
+  // Use the pre-set min/maxR range. 
+  if (std::isnan(minRFlux) || std::isnan(maxRFlux))
+    throw affineExcept("calcLikeSingle", "getNegLogLike",
+		       "R range not set");
+  pars_invalid = ! pdfac.initPD(fftsize, minRFlux, maxRFlux, model, bm);
   if (pars_invalid) return 0.0; // No point in continuing
 
   //Compute likelihood of each bit of data
@@ -327,7 +369,7 @@ calcLikeSingle::getLogLike(const numberCounts& model, bool& pars_invalid,
   LogLike = 0.0;
   for (unsigned int i = 0; i < ndatasets; ++i) {
     // Get PD for this particuar set of sigmas
-    pdfac.getPD(sigmult * sigma_base[i], pd, true, edgefix);
+    pdfac.getPD(sigmult * sigma_base[i], pd, true);
 
     // Get log like
     curr_LogLike = pd.getLogLike(data[i]);
@@ -372,8 +414,14 @@ void calcLikeSingle::sendSelf(MPI_Comm comm, int dest) const {
 	     pofd_mcmc::CLSENDLIKEOFFSET, comm);
     MPI_Send(like_norm, ndatasets, MPI_DOUBLE, dest,
 	     pofd_mcmc::CLSENDLIKENORM, comm);
-    MPI_Send(const_cast<double*>(&maxflux), 1, MPI_DOUBLE, dest,
-	     pofd_mcmc::CLSENDMAXFLUX, comm);
+    MPI_Send(const_cast<double*>(&minDataFlux), 1, MPI_DOUBLE, dest,
+	     pofd_mcmc::CLSENDMINDATAFLUX, comm);
+    MPI_Send(const_cast<double*>(&maxDataFlux), 1, MPI_DOUBLE, dest,
+	     pofd_mcmc::CLSENDMAXDATAFLUX, comm);
+    MPI_Send(const_cast<double*>(&minRFlux), 1, MPI_DOUBLE, dest,
+	     pofd_mcmc::CLSENDMINRFLUX, comm);
+    MPI_Send(const_cast<double*>(&maxRFlux), 1, MPI_DOUBLE, dest,
+	     pofd_mcmc::CLSENDMAXRFLUX, comm);
   }
 
   //Beam
@@ -415,10 +463,19 @@ void calcLikeSingle::recieveCopy(MPI_Comm comm, int src) {
 	     pofd_mcmc::CLSENDLIKEOFFSET, comm, &Info);
     MPI_Recv(like_norm, newn, MPI_DOUBLE, src, pofd_mcmc::CLSENDLIKENORM,
 	     comm, &Info);
-    MPI_Recv(&maxflux, 1, MPI_DOUBLE, src, pofd_mcmc::CLSENDMAXFLUX,
+    MPI_Recv(&minDataFlux, 1, MPI_DOUBLE, src, pofd_mcmc::CLSENDMINDATAFLUX,
+	     comm, &Info);
+    MPI_Recv(&maxDataFlux, 1, MPI_DOUBLE, src, pofd_mcmc::CLSENDMAXDATAFLUX,
+	     comm, &Info);
+    MPI_Recv(&minRFlux, 1, MPI_DOUBLE, src, pofd_mcmc::CLSENDMINRFLUX,
+	     comm, &Info);
+    MPI_Recv(&maxRFlux, 1, MPI_DOUBLE, src, pofd_mcmc::CLSENDMAXRFLUX,
 	     comm, &Info);
     data_read = true;
-  } 
+  } else {
+    minDataFlux = maxDataFlux = minRFlux = maxRFlux = NaN;
+    maxsigma_base = NaN;
+  }
 
   //Beam
   bool hsbm;
@@ -439,13 +496,12 @@ void calcLikeSingle::recieveCopy(MPI_Comm comm, int src) {
 /*!
   \param[in] FFTSIZE Number of elements in FFT
   \param[in] NINTERP Number of interpolation elements in R calculation
-  \param[in] EDGEFIX Apply edge fix
   \param[in] BINNED Bin data
   \param[in] NBINS Number of data bins, if binning
 */
 calcLike::calcLike(unsigned int FFTSIZE, unsigned int NINTERP, 
-		   bool EDGEFIX, bool BINNED, unsigned int NBINS):
-  fftsize(FFTSIZE), ninterp(NINTERP), edgeFix(EDGEFIX), bin_data(BINNED),
+		   bool BINNED, unsigned int NBINS):
+  fftsize(FFTSIZE), ninterp(NINTERP), bin_data(BINNED),
   nbins(NBINS), has_cfirb_prior(false), cfirb_prior_mean(0.0),
   cfirb_prior_sigma(0.0), has_sigma_prior(false), sigma_prior_width(0.0),
   verbose(false) {
@@ -622,6 +678,14 @@ void calcLike::setNBins(unsigned int nbns) {
   nbins = nbns;
 }
 
+/*!
+  \param[in] p Model parameters to use
+*/
+void calcLike::setRRanges(const paramSet& p) {
+  model.setParams(p);
+  for (unsigned int i = 0; i < nbeamsets; ++i)
+    beamsets[i].setRRange(model);
+}
 
 /*!
   \param[in] mn Mean value of CFIRB prior
@@ -643,7 +707,7 @@ void calcLike::setCFIRBPrior(double mn, double sg) {
 double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
   const double half_log_2pi = 0.918938517570495605469;
 
-  if (nbeamsets == 0) return std::numeric_limits<double>::quiet_NaN();
+  if (nbeamsets == 0) return NaN;
   unsigned int npar = p.getNParams();
   if (npar < 2) throw affineExcept("calcLike", "getLogLike",
 				   "Not enough elements in params");
@@ -666,7 +730,7 @@ double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
   bool pinvalid;
   for (unsigned int i = 0; i < nbeamsets; ++i) {
     LogLike += beamsets[i].getLogLike(model, pinvalid, sigmult, 
-				      fftsize, edgeFix);
+				      fftsize);
     pars_invalid &= pinvalid;
   }
 
@@ -782,8 +846,6 @@ void calcLike::sendSelf(MPI_Comm comm, int dest) const {
 	   dest, pofd_mcmc::CLSENDFFTSIZE, comm);
   MPI_Send(const_cast<unsigned int*>(&ninterp), 1, MPI_UNSIGNED, dest,
 	   pofd_mcmc::CLSENDNINTERP, comm);
-  MPI_Send(const_cast<bool*>(&edgeFix), 1, MPI::BOOL, dest,
-	   pofd_mcmc::CLSENDEDGEFIX, comm);
 
   //Data
   MPI_Send(const_cast<unsigned int*>(&nbeamsets), 1, MPI_UNSIGNED, dest,
@@ -833,8 +895,6 @@ void calcLike::recieveCopy(MPI_Comm comm, int src) {
   MPI_Recv(&fftsize, 1, MPI_UNSIGNED, src, pofd_mcmc::CLSENDFFTSIZE,
 	   comm, &Info);
   MPI_Recv(&ninterp, 1, MPI_UNSIGNED, src, pofd_mcmc::CLSENDNINTERP,
-	   comm, &Info);
-  MPI_Recv(&edgeFix, 1, MPI::BOOL, src, pofd_mcmc::CLSENDEDGEFIX,
 	   comm, &Info);
 
   //Data

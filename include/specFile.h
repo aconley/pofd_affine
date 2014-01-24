@@ -37,8 +37,6 @@
                   Sets fft transform length (def: 131072)
    ninterp=     value
                   Number of R interpolation points (def: 1024)
-   edge_fix=    bool
-                  Apply edge fix to P(D).  On by default.		  
    minbeamval=  value
                   Minimum beam value used.  Everything with an absolute
 		  value <= than this is ignored.  This can be zero if you
@@ -94,7 +92,6 @@ struct specFile {
   bool ignore_mask; //!< Ignore mask info in input files
   unsigned int fftsize; //!< Length of fft
   unsigned int ninterp; //!< Size of R interpolation
-  bool edge_fix; //!< Apply edge fix to P(D)
   double minbeamval; //!< Minimum beam value used
   bool beam_histogram; //!< Do beam histogramming
   unsigned int nbeamhist; //!< Number of beam histogram bins

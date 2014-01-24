@@ -107,6 +107,10 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   double getOffsetInner(double) const; //!< Inner offset computation
   double getNumberCountsInner(double,double) const; //!< Inner number counts computation
 
+  /*! \brief Get range over which R is expected to be nonzero, unchecked version */
+  std::pair<dblpair, dblpair> getRRangeInternal(const doublebeam&) const 
+    throw(affineExcept);
+
   /*! \brief Integrate powers of fluxes over number counts */
   double splineInt(double alpha, double beta) const;
   static const unsigned int nvarr; //!< Number of elements in varr
@@ -213,6 +217,10 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   /*! \brief Maxium flux model is defined for */
   dblpair getMaxFlux() const;
   
+  /*! \brief Get range over which R is expected to be nonzero */
+  std::pair<dblpair, dblpair> getRRange(const doublebeam&) const 
+    throw(affineExcept);
+
   double getNS() const; //!< Total number of sources per area
   double getFluxPerArea(unsigned int) const; //!< Flux per unit area (sq deg)
   double getFluxSqPerArea(unsigned int) const; //!< Flux^2 per unit area (sq deg)

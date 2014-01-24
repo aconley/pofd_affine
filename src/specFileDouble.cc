@@ -32,7 +32,6 @@ void specFileDouble::init() {
   fftsize = 4096;
   edge_set = true;
   nedge = 256;
-  edge_fix = true;
   minbeamval = 1e-6;
   beam_histogram = true;
   nbeamhist = 150;
@@ -345,15 +344,6 @@ void specFileDouble::readFile(const std::string& flname) {
       }
       
       nedge = static_cast<unsigned int>(ival);
-
-    } else if (words[0] == "edge_fix") {
-      if (words.size() < 2) {
-	errstr << "edge_fix line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFileDouble", "readFile", errstr.str());
-      }
-
-      edge_fix = utility::string_true(words[1]);
 
     } else if (words[0] == "minbeamval") {
       if (words.size() < 2) {

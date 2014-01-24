@@ -32,6 +32,8 @@ class numberCountsKnots : public numberCounts {
 
   virtual void setNKnots(unsigned int n); //!< Sets number of knots
 
+  dblpair getRRangeInternal(const beam& bm) const throw(affineExcept); //!< Unchecked version of getRRange
+
  public:
   numberCountsKnots(); //!< Default constructor
   explicit numberCountsKnots(unsigned int); //!< Constructor with number of knots
@@ -68,6 +70,9 @@ class numberCountsKnots : public numberCounts {
 
   double getMaxFlux() const; //!< Maximum flux supported by model
   double getMinFlux() const; //!< Minimum flux supported by model
+
+  /*! \brief Get range over which R is expected to be nonzero */
+  dblpair getRRange(const beam&) const throw(affineExcept);
 
   virtual void writeToHDF5Handle(hid_t objid) const; //!< Output to HDF5
   virtual bool writeToStream(std::ostream& os) const; //<! Output to stream

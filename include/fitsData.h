@@ -6,6 +6,8 @@
 #include <string>
 #include <mpi.h>
 
+#include "../include/global_settings.h"
+
 /*!
   \brief Data class for holding 1-band data from a fits file.
   Supports binning.
@@ -52,7 +54,7 @@ class fitsData {
 
   double getMax() const; //!< Get maximum flux
   double getMin() const; //!< Get minimum flux
-  void getMinMax(double&, double&) const; //!< Get minima and maxima
+  dblpair getMinMax() const; //!< Get minima and maxima
   double getMean() const; //!< Get mean flux
 
   void sendSelf(MPI_Comm, int dest) const; //!< Send self

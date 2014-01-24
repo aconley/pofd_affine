@@ -34,11 +34,17 @@ class calcLikeDoubleSingle { //Odd name...
   bool data_read; //!< Have we read data?
   unsigned int ndatasets; //!< Number of data sets
   fitsDataDouble* data; //!< Actual data sets -- len ndatasets
-  double maxflux1; //!< Maximum flux across all data sets for initPD call, band1
-  double maxflux2; //!< Maximum flux across all data sets for initPD call, band2
+  double minDataFlux1; //!< Minimum flux density in actual data, band 1
+  double maxDataFlux1; //!< Maximum flux density in actual data, band 1
+  double minDataFlux2; //!< Minimum flux density in actual data, band 2
+  double maxDataFlux2; //!< Maximum flux density in actual data, band 2
 
   mutable PDDouble pd; //!< Holds PD; convenience variable
   mutable PDFactoryDouble pdfac; //!< Computes PD
+  double minRFlux1; //!< Minimum flux for initPD call, band 1
+  double maxRFlux1; //!< Maximum flux for initPD call, band 1
+  double minRFlux2; //!< Minimum flux for initPD call, band 2
+  double maxRFlux2; //!< Maximum flux for initPD call, band 2
 
   //Noise information
   double* sigma_base1; //!< Base value of sigma, len ndatasets, band 1
@@ -74,6 +80,8 @@ class calcLikeDoubleSingle { //Odd name...
 
   void setNEdge(unsigned int n) { pdfac.setNEdge(n); } //!< Set interpolation length
   unsigned int getNEdge() const { return pdfac.getNEdge(); } //!< Get interpolation length
+
+  void setRRange(const numberCountsDouble&); //!< Set range of R evaluations
 
   void applyBinning(unsigned int); //!< Bin data
   void removeBinning(); //!< Remove binning
@@ -120,14 +128,13 @@ class calcLikeDoubleSingle { //Odd name...
   void setExpConf2(double v) { exp_conf2 = v;} //!< Set expected confusion noise, band 1
   double getExpConf2() const { return exp_conf2;} //!< Get expected confusion noise, band 1
 
-
   unsigned int getNDataSets() const { return ndatasets; } //!< Number of data sets
   unsigned int getNData(unsigned int i) const { return data[i].getN(); } //!< Number of data points in given data set
 
   /*! \brief Returns \f$\log L\f$ over all data sets.  Model must be set */
   double getLogLike(const numberCountsDouble&, bool&, double sigmult1=1.0, 
 		    double sigmult2=1.0, unsigned int fftsize=4096, 
-		    bool edgefix=true, bool edgeinteg=true) const;
+		    bool edgeinteg=true) const;
 
   void writePDToStream( std::ostream& os) const; //!< Write out computed P(D)
 
@@ -168,7 +175,6 @@ class calcLikeDouble {
   unsigned int fftsize; //!< Size of FFT (on each dim)
   unsigned int nedge; //!< R edge size
   bool edgeInteg; //!< Do edge integration
-  bool edgeFix; //!< Apply edge fix
 
   //Data
   unsigned int nbeamsets; //!< Number of beam sets
@@ -196,8 +202,8 @@ class calcLikeDouble {
  public:
   /*! \brief Constructor */
   calcLikeDouble(unsigned int FFTSIZE=4096, unsigned int NEDGE=256, 
-		 bool EDGEFIX=true, bool EDGEINTEG=true,
-		 bool BINNED=false, unsigned int NBINS=1000);
+		 bool EDGEINTEG=true, bool BINNED=false, 
+		 unsigned int NBINS=1000);
   ~calcLikeDouble(); //!< Destructor 
 
   void freeData(); //!< Remove internal data
@@ -222,16 +228,13 @@ class calcLikeDouble {
 
   void setFFTSize(unsigned int val) { fftsize = val; } //!< Set FFT size
   unsigned int getFFTSize() const { return fftsize; } //!< Return current FFT size
-
-  void setEdgeFix() { edgeFix=true; } //!< Turn on edge fixing
-  void unSetEdgeFix() { edgeFix=false; } //!< Turn off edge fixing
-  bool getEdgeFix() const { return edgeFix; } //!< Are we using edge fixing?
-
   void setEdgeInteg() { edgeInteg=true; } //!< Turn on edge integration
   void unSetEdgeInteg() { edgeInteg=false; } //!< Turn off edge integration
   bool getEdgeInteg() const { return edgeInteg; } //!< Are we doing edge integration?
   void setNEdge(unsigned int); //!< Set edge integration size
   unsigned int getNEdge() const { return nedge; } //!< Get edge integration size
+
+  void setRRanges(const paramSet& p); //!< Set R ranges for all datasets
 
   void setBinData(); //!< Turn on binning of data
   void unSetBinData(); //!< Turn off binning of data

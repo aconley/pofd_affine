@@ -264,10 +264,10 @@ int getNDouble( int argc, char** argv ) {
     model.setParams(pars);
 
     //Get maximum flux if not set, use to compute dflux
-    if (! has_user_maxflux1 )
-      maxflux1 = model.getMaxFlux(0);
+    if (!has_user_maxflux1)
+      maxflux1 = model.getMaxFlux().first;
     if (! has_user_maxflux2 )
-      maxflux2 = model.getMaxFlux(1);
+      maxflux2 = model.getMaxFlux().second;
     double dflux1, dflux2;
     if (nflux1 > 1) 
       dflux1 = (maxflux1-minflux1)/static_cast<double>(nflux1-1);

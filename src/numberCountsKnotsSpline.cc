@@ -351,6 +351,9 @@ double numberCountsKnotsSpline::getFluxSqPerArea() const {
 double numberCountsKnotsSpline::getR(double fluxdensity, const beam& bm) const {
 
   if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
+  if (!bm.hasData()) 
+    throw affineExcept("numberCountsKnotsSpline", "getR",
+		       "Beam has no data");
 
   // Quick return
   if (fluxdensity > 0 && !bm.hasPos()) return 0.0;
@@ -361,10 +364,9 @@ double numberCountsKnotsSpline::getR(double fluxdensity, const beam& bm) const {
   double maxknot = knots[nknots - 1];
 
   // Find range where R is nonzero, if we are outside it easy
-  if ((fluxdensity >= 0.0) &&
-      (fluxdensity > maxknot / bm.getMinMaxPos().second)) return 0.0;
-  if ((fluxdensity <= 0.0) &&
-      (fluxdensity < -maxknot / bm.getMinMaxNeg().second)) return 0.0;
+  dblpair Rrange = getRRangeInternal(bm);
+  if (fluxdensity >= Rrange.second) return 0.0;
+  if (fluxdensity <= Rrange.first) return 0.0;
 
   double prefac;
   prefac = bm.getPixSize() / 3600.0;  //To sq deg
@@ -439,6 +441,9 @@ void numberCountsKnotsSpline::getR(unsigned int n, const double* const flux,
     return;
   }
 
+  // Find range where R is nonzero, if we are outside it easy
+  dblpair Rrange = getRRangeInternal(bm);
+
   double minknot = knots[0];
   double maxknot = knots[nknots-1];
 
@@ -455,22 +460,17 @@ void numberCountsKnotsSpline::getR(unsigned int n, const double* const flux,
   const double* wtptr_neg = NULL;
   const double* ibmptr_pos = NULL;
   const double* ibmptr_neg = NULL;
-  double maxfpos = 0, minfneg = 0;
   if (haspos) {
     poshist = bm.isPosHist();
     npos = poshist ? bm.getNHistPos() : bm.getNPos();
     if (poshist) wtptr_pos = bm.getPosHistWeights();
     ibmptr_pos = poshist ? bm.getPosHist() : bm.getPosInvPixArr();
-    // Positive flux densities greater than this always make 0 contribution
-    maxfpos = maxknot / bm.getMinMaxPos().second; 
   }
   if (hasneg) {
     neghist = bm.isNegHist();
     nneg = neghist ? bm.getNHistNeg() : bm.getNNeg();
     if (neghist) wtptr_neg = bm.getNegHistWeights();
     ibmptr_neg = neghist ? bm.getNegHist() : bm.getNegInvPixArr();
-    // Negative flux densities less than this always make 0 contribution
-    minfneg = - maxknot / bm.getMinMaxNeg().second; 
   }
 
   double currarg, ieta, workval, fluxdensity, cts;
@@ -482,7 +482,7 @@ void numberCountsKnotsSpline::getR(unsigned int n, const double* const flux,
     //  fluxdensity, then if the corresponding beam is available,
     //  and then, if those are satisfied, if this fluxdensity is
     //  outside the range where the contribution is non-zero
-    if (fluxdensity > 0 && haspos && fluxdensity <= maxfpos) { 
+    if (fluxdensity > 0 && haspos && fluxdensity <= Rrange.second) { 
       if (poshist) {
 	for (unsigned int j = 0; j < npos; ++j) {
 	  ieta = ibmptr_pos[j];
@@ -500,7 +500,7 @@ void numberCountsKnotsSpline::getR(unsigned int n, const double* const flux,
 	  if (cts > 0) workval += cts * ieta;
 	}
       }
-    } else if (hasneg && fluxdensity < 0 && fluxdensity >= minfneg) {
+    } else if (hasneg && fluxdensity < 0 && fluxdensity >= Rrange.first) {
       // Note the order is flopped on the first two tests because
       //  not having the negative beam is a common case, which is not
       //  true for not having a positive beam.  

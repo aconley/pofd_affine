@@ -295,7 +295,7 @@ void beam::readFile(const std::string& filename, double MINVAL) {
     if (pixarr[i] < negminval) nneg++;
   }
 
-  if ((npos == 0) && (hasneg == 0))
+  if ((npos == 0) && (nneg == 0))
     throw affineExcept("beam", "readFile", "Beam file has only zero values");
 
   //Get pos and abs(neg) into arrays -- don't store values closer to 0
@@ -309,7 +309,7 @@ void beam::readFile(const std::string& filename, double MINVAL) {
       if (pixarr[i] > minval) pospixarr[ctr++] = pixarr[i];
     }
     haspos = true;
-  }
+  } else haspos = false;
 
   if (nneg > 0) {
     ctr = 0;
@@ -319,7 +319,7 @@ void beam::readFile(const std::string& filename, double MINVAL) {
       if (pixarr[i] < negminval) negpixarr[ctr++] = fabs(pixarr[i]);
     }
     hasneg = true;
-  }
+  } else hasneg = false;
   delete[] pixarr;
 
   //Store pixels in sorted order

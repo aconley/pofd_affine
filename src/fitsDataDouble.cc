@@ -377,8 +377,8 @@ void fitsDataDouble::readData(const std::string& file1,
 /*!
   \returns Minimum values in each band.  NaN if no data read
 */
-std::pair<double,double> fitsDataDouble::getMin() const {
-  std::pair<double,double> retval;
+dblpair fitsDataDouble::getMin() const {
+  dblpair retval;
   if (n == 0) {
     retval.first  = std::numeric_limits<double>::quiet_NaN();
     retval.second = std::numeric_limits<double>::quiet_NaN();
@@ -411,8 +411,8 @@ std::pair<double,double> fitsDataDouble::getMin() const {
 /*!
   \returns Maximum values in each band.  NaN if no data read
 */
-std::pair<double,double> fitsDataDouble::getMax() const {
-  std::pair<double,double> retval;
+dblpair fitsDataDouble::getMax() const {
+  dblpair retval;
   if (n == 0) {
     retval.first  = std::numeric_limits<double>::quiet_NaN();
     retval.second = std::numeric_limits<double>::quiet_NaN();
@@ -443,46 +443,48 @@ std::pair<double,double> fitsDataDouble::getMax() const {
 }
 
 /*!
-  \param[out] min1 Minimum flux, band 1
-  \param[out] max1 Maximum flux, band 1
-  \param[out] min2 Minimum flux, band 2
-  \param[out] max2 Maximum flux, band 2
+  \returns A pair of min/max pairs.
 */
-void fitsDataDouble::getMinMax(double& min1, double& max1,
-			       double& min2, double& max2) const {
+std::pair<dblpair, dblpair>
+fitsDataDouble::getMinMax() const {
+  double min1, max1, min2, max2;
   if (n == 0) {
     min1 = max1 = min2 = max2 = std::numeric_limits<double>::quiet_NaN();
-    return;
+    return std::make_pair(std::make_pair(min1, max1),
+			  std::make_pair(min2, max2));
   }
   
   if (is_binned) {
     min1 = bincent01;
-    max1 = bincent01 + static_cast<double>(nbins1-1)*bindelta1;
+    max1 = bincent01 + static_cast<double>(nbins1 - 1) * bindelta1;
     min2 = bincent02;
-    max2 = bincent02 + static_cast<double>(nbins2-1)*bindelta2;
-    return;
+    max2 = bincent02 + static_cast<double>(nbins2 - 1) * bindelta2;
+    return std::make_pair(std::make_pair(min1, max1),
+			  std::make_pair(min2, max2));
   }
 
   double cval;
   min1 = max1 = data1[0];
   for (unsigned int i = 1; i < n; ++i) {
     cval = data1[i];
-    if (cval < min1) min1=cval;
-    if (cval > max1) max1=cval;
+    if (cval < min1) min1 = cval;
+    if (cval > max1) max1 = cval;
   }
   min2 = max2 = data2[0];
   for (unsigned int i = 1; i < n; ++i) {
     cval = data1[i];
-    if (cval < min2) min2=cval;
-    if (cval > max2) max2=cval;
+    if (cval < min2) min2 = cval;
+    if (cval > max2) max2 = cval;
   }
+  return std::make_pair(std::make_pair(min1, max1),
+			std::make_pair(min2, max2));
 }
 
 /*!
   \returns Mean values in each band.  NaN if no data read
 */
-std::pair<double,double> fitsDataDouble::getMean() const {
-  std::pair<double,double> retval;
+dblpair fitsDataDouble::getMean() const {
+  dblpair retval;
   if (n == 0) {
     retval.first  = std::numeric_limits<double>::quiet_NaN();
     retval.second = std::numeric_limits<double>::quiet_NaN();
@@ -501,8 +503,8 @@ std::pair<double,double> fitsDataDouble::getMean() const {
 /*!
   \returns Mean values in each band before subtraction.  NaN if no data read
 */
-std::pair<double,double> fitsDataDouble::meanSubtract() {
-  std::pair<double,double> mnval = getMean();
+dblpair fitsDataDouble::meanSubtract() {
+  dblpair mnval = getMean();
   if (n == 0) return mnval;
 
   double cmn = mnval.first;
@@ -537,38 +539,39 @@ void fitsDataDouble::applyBinning(unsigned int NBINS1, unsigned int NBINS2) {
   std::memset(binval, 0, nbins1 * nbins2 * sizeof(unsigned int));
 
   //First, we need the minimum and maximum
-  double minval1, maxval1, minval2, maxval2;
-  getMinMax(minval1,maxval1,minval2,maxval2);
-  if (std::isnan(minval1) || std::isnan(minval2) || 
-      std::isinf(minval1) || std::isinf(minval2) ||
-      std::isnan(maxval1) || std::isnan(maxval2) || 
-      std::isinf(maxval1) || std::isinf(maxval2) )
+  std::pair<dblpair, dblpair> minmax = getMinMax();
+  if (std::isnan(minmax.first.first) || std::isinf(minmax.first.first) ||
+      std::isnan(minmax.first.second) || std::isinf(minmax.first.second) ||
+      std::isnan(minmax.second.first) || std::isinf(minmax.second.first) ||
+      std::isnan(minmax.second.second) || std::isinf(minmax.second.second))
     throw affineExcept("fitsDataDouble", "applyBinning",
 		       "Non-valid min or max");
 
   //We want to put the max and min in the center of the top and
   // bottom bin (not at the edges -- a somewhat arbitrary choice)
-   bincent01 = minval1;
-   if (nbins1 == 1)
-     bindelta1 = 2*(maxval1-minval1);
-   else
-     bindelta1 = (maxval1-minval1)/static_cast<double>(nbins1-1);
-   bincent02 = minval2;
-   if (nbins2 == 1)
-     bindelta2 = 2*(maxval2-minval2);
-   else
-     bindelta2 = (maxval2-minval2)/static_cast<double>(nbins2-1);
+  bincent01 = minmax.first.first;
+  if (nbins1 == 1)
+    bindelta1 = 2 * (minmax.first.second - minmax.first.first);
+  else
+    bindelta1 = (minmax.first.second - minmax.first.first) /
+      static_cast<double>(nbins1 - 1);
+  bincent02 = minmax.second.first;
+  if (nbins2 == 1)
+    bindelta2 = 2 * (minmax.second.second - minmax.second.first);
+  else
+    bindelta2 = (minmax.second.second - minmax.second.first) /
+      static_cast<double>(nbins2-1);
 
-   //And... bin
-   double ibindelta1 = 1.0/bindelta1;
-   double ibindelta2 = 1.0/bindelta2;
-   unsigned int idx1, idx2;
-   for (unsigned int i = 0; i < n; ++i) {
-     idx1 = static_cast<unsigned int>((data1[i]-bincent01)*ibindelta1 + 0.5);
-     idx2 = static_cast<unsigned int>((data2[i]-bincent02)*ibindelta2 + 0.5);
-     binval[idx1*nbins2+idx2] += 1;
-   }
-   is_binned = true;
+  //And... bin
+  double ibindelta1 = 1.0 / bindelta1;
+  double ibindelta2 = 1.0 / bindelta2;
+  unsigned int idx1, idx2;
+  for (unsigned int i = 0; i < n; ++i) {
+    idx1 = static_cast<unsigned int>((data1[i]-bincent01)*ibindelta1 + 0.5);
+    idx2 = static_cast<unsigned int>((data2[i]-bincent02)*ibindelta2 + 0.5);
+    binval[idx1 * nbins2 + idx2] += 1;
+  }
+  is_binned = true;
 }
 
 void fitsDataDouble::removeBinning() {
@@ -590,7 +593,7 @@ std::pair<unsigned int, unsigned int> fitsDataDouble::getNBins() const {
   \returns Center of bottom bin in each band.  Does not imply that binning
   has been applied.
 */
-std::pair<double,double> fitsDataDouble::getBinCent0() const {
+dblpair fitsDataDouble::getBinCent0() const {
   return std::make_pair(bincent01, bincent02);
 }
 
@@ -598,7 +601,7 @@ std::pair<double,double> fitsDataDouble::getBinCent0() const {
   \returns Size of bins in each band.  Does not imply that binning
   has been applied.
 */
-std::pair<double,double> fitsDataDouble::getBinDelta() const {
+dblpair fitsDataDouble::getBinDelta() const {
   return std::make_pair(bindelta1, bindelta2);
 }
 

@@ -1231,6 +1231,57 @@ dblpair numberCountsDoubleLogNormal::getMaxFlux() const {
 }
 
 /*!
+  \param[in] bm Beam to compute range for
+  \returns A pair of min/max fluxes over which R is expected to be nonzero.
+
+  Doesn't check for model validity.  Not cleanly defined for the second band.
+  We also include flux=0, even though R is technically zero there.
+*/
+std::pair<dblpair, dblpair> 
+numberCountsDoubleLogNormal::getRRangeInternal(const doublebeam& bm) const 
+  throw(affineExcept) {
+  const double safetyfac = 1.01;
+
+  double minflux1, maxflux1, minflux2, maxflux2;
+  minflux1 = maxflux1 = minflux2 = maxflux2 = 0.0;
+  
+  dblpair maxf = getMaxFlux();
+  double cval;
+  if (bm.hasSign(0)) {
+    // pos/pos bit.  Affects maximum values in bands 1 and 2
+    cval = safetyfac * maxf.first * bm.getMinMax1(0).second;
+    if (cval > maxflux1) maxflux1 = cval;
+    cval = safetyfac * maxf.second * bm.getMinMax2(0).second;
+    if (cval > maxflux2) maxflux2 = cval;
+  }
+  if (bm.hasSign(1)) {
+    //pos/neg bit.  Affects maximum in band 1, minimum in band 2
+    cval = safetyfac * maxf.first * bm.getMinMax1(1).second;
+    if (cval > maxflux1) maxflux1 = cval;
+    cval = -safetyfac * maxf.second * bm.getMinMax2(1).second;
+    if (cval < minflux2) minflux2 = cval;
+  }
+  if (bm.hasSign(2)) {
+    //neg/pos bit.  Affects minimum in band 1, maximum in band 2
+    cval = -safetyfac * maxf.first * bm.getMinMax1(2).second;
+    if (cval < minflux1) minflux1 = cval;
+    cval = safetyfac * maxf.second * bm.getMinMax2(2).second;
+    if (cval > maxflux2) maxflux2 = cval;
+  }
+  if (bm.hasSign(3)) {
+    //neg/neg bit.  Affects minimum in bands 1 and 2
+    cval = -safetyfac * maxf.first * bm.getMinMax1(3).second;
+    if (cval < minflux1) minflux1 = cval;
+    cval = -safetyfac * maxf.second * bm.getMinMax2(3).second;
+    if (cval < minflux2) minflux2 = cval;
+  }
+
+  return std::make_pair(std::make_pair(minflux1, maxflux1),
+			std::make_pair(minflux2, maxflux2));
+}
+
+
+/*!
   Compute
   \f[
     \int dS_1 \int dS_2 \, S_1^{\alpha} S_2^{\beta} \frac{dN}{dS_1 dS_2} =
@@ -1312,6 +1363,29 @@ double numberCountsDoubleLogNormal::splineInt(double alpha, double beta) const {
   gsl_integration_qag(&F, minknot, maxknot, 0, 1e-5, 1000,
 		      GSL_INTEG_GAUSS41, gsl_work, &result, &error); 
   return result;
+}
+
+  
+/*!
+  \param[in] bm Beam to compute range for
+  \returns A pair of min/max fluxes over which R is expected to be nonzero.
+
+  We also include flux=0, even though R is technically zero there.
+  This is well defined in the first band, not as well in the second,
+  but this is still useful.
+*/
+std::pair<dblpair, dblpair> 
+numberCountsDoubleLogNormal::getRRange(const doublebeam& bm) const 
+  throw(affineExcept) {
+
+  if (!isValid())
+    throw affineExcept("numberCountsDoubleLogNormal", "getRRange",
+		       "Model is not valid");
+  if (!bm.hasData())
+    throw affineExcept("numberCountsDoubleLogNormal", "getRRange",
+		       "Beam is empty");
+
+  return getRRangeInternal(bm);
 }
 
 /*!

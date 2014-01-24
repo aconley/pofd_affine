@@ -13,6 +13,45 @@ const double PDFactoryDouble::lowEdgeRMult=1e-9; //!< How far to go down on edge
 const bool PDFactoryDouble::use_edge_log_x = true; //!< edge log x spacing
 const bool PDFactoryDouble::use_edge_log_y = false; //!< edge log y spacing
 
+
+// Helper function for RFlux setup.  After this is called
+//  rflux is filled with values from minflux_realized to maxflux 
+//  in steps of dflux with wrapping to negative values occuring at wrapidx.
+// That is, for all indices [0, wrapidx] the flux densities are positive,
+//  above that they are negative (which may be the empty set).
+void initRFluxInternal(unsigned int n, double minflux, double maxflux,
+		       double* const rflux, double& dflux, 
+		       double& minflux_realized, unsigned int& wrapidx) {
+  // Assume n > 1 (checked by initRFlux)
+  double inm1 = 1.0 / static_cast<double>(n - 1);
+  dflux = (maxflux - minflux) * inm1;
+  if (minflux >= 0.0) {
+    // Easy case
+    rflux[0] = minflux;
+    for (unsigned int i = 1; i < n; ++i)
+      rflux[i] = static_cast<double>(i) * dflux + minflux;
+    minflux_realized = minflux;
+    wrapidx = n - 1;
+  } else {
+    // Here the complication is that we would really like to have
+    // RFlux = 0 included in the array.  Also, we are wrapping 
+    // negative fluxes around to the top of the array.
+    // We do this by tweaking minflux slightly
+    dflux = maxflux / (n - floor(-minflux / dflux) - 2.0);
+    // Figure out what index we go up to with positive fills
+    wrapidx = static_cast<unsigned int>(maxflux / dflux);
+    rflux[0] = 0.0;
+    for (unsigned int i = 1; i <= wrapidx; ++i) // Pos Rflux
+      rflux[i] = static_cast<double>(i) * dflux;
+
+    // Figure out new minimum flux
+    double wrapval = - static_cast<double>(n) * dflux;
+    for (unsigned int i = wrapidx + 1; i < n; ++i) // Wrapped neg Rflux
+      rflux[i] = static_cast<double>(i) * dflux + wrapval;
+    minflux_realized = rflux[wrapidx + 1];
+  }
+}		       
+
 /*!
   \param[in] nedge Size of edge integrals
 */
@@ -51,7 +90,6 @@ PDFactoryDouble::~PDFactoryDouble() {
   \param[in] NEDGE Number of edge integral steps
 */
 void PDFactoryDouble::init(unsigned int NEDGE) {
-  currfftlen = 0;
   currsize = 0;
 
 #ifdef TIMING
@@ -60,6 +98,8 @@ void PDFactoryDouble::init(unsigned int NEDGE) {
 
   rvars_allocated = false;
   RFlux1 = RFlux2 = NULL;
+  RwrapIdx1 = RwrapIdx2 = 0;
+  rdflux = false;
   rvals = NULL;
   rtrans = NULL;
   pofd = NULL;
@@ -71,7 +111,6 @@ void PDFactoryDouble::init(unsigned int NEDGE) {
   REdgeFlux2 = NULL;
   REdgeWork  = NULL;
 
-
   dflux1 = dflux2 = 0.0;
 
   plan = plan_inv = NULL;
@@ -80,9 +119,9 @@ void PDFactoryDouble::init(unsigned int NEDGE) {
   has_wisdom = false;
   fftw_plan_style = FFTW_MEASURE;
 
-  max_sigma1 = max_sigma2 = std::numeric_limits<double>::quiet_NaN();
   mn1 = mn2 = var_noi1 = var_noi2 = sg1 = sg2 = 
     std::numeric_limits<double>::quiet_NaN();
+  rinitialized = false;
   initialized = false;
 }
 
@@ -132,36 +171,21 @@ void PDFactoryDouble::summarizeTime(unsigned int nindent) const {
 }
 #endif
 
-
 /*
   \param[in] NSIZE new size
-  \returns True if a resize was needed
-
-  Doesn't force resize if there is already enough room available
 */
-bool PDFactoryDouble::resize(unsigned int NSIZE) {
-  if (NSIZE > currsize) {
-    strict_resize(NSIZE);
-    return true;
-  } else return false;
-}
-
-/*!
-  \param[in] NSIZE new size (must be > 0)
-
-  Forces a resize
-*/
-//I don't check for 0 NSIZE because that should never happen
-// in practice, and it isn't worth the idiot-proofing
-// rtrans always gets nulled in here, then refilled when you
-//  call initPD
-void PDFactoryDouble::strict_resize(unsigned int NSIZE) {
+void PDFactoryDouble::resize(unsigned int NSIZE) {
   if (NSIZE == currsize) return;
   freeRvars();
   currsize = NSIZE;
+  if (plan != NULL) { fftw_destroy_plan(plan); plan = NULL; }
+  if (plan_inv != NULL) { fftw_destroy_plan(plan_inv); plan_inv = NULL; }  
+  rinitialized = false;
   initialized = false;
 }
 
+// Note this doesn't necessarily invalidate the plans, as long as
+// they are always called in array execute mode
 void PDFactoryDouble::allocateRvars() {
   if (rvars_allocated) return;
   if (currsize == 0)
@@ -169,7 +193,7 @@ void PDFactoryDouble::allocateRvars() {
 		       "Invalid (0) currsize");
   RFlux1 = (double*) fftw_malloc(sizeof(double) * currsize);
   RFlux2 = (double*) fftw_malloc(sizeof(double) * currsize);
-  unsigned int fsize = currsize*currsize;
+  unsigned int fsize = currsize * currsize;
   rvals = (double*) fftw_malloc(sizeof(double) * fsize);
   pofd  = (double*) fftw_malloc(sizeof(double) * fsize);
   fsize = currsize * (currsize / 2 + 1);
@@ -177,9 +201,11 @@ void PDFactoryDouble::allocateRvars() {
   pval = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * fsize);
 
   rvars_allocated = true;
+  rinitialized = false;
   initialized = false;
 }
 
+// Also doesn't necessarily invalidate the plans
 void PDFactoryDouble::freeRvars() {
   if (RFlux1 != NULL)     { fftw_free(RFlux1); RFlux1=NULL; }
   if (RFlux2 != NULL)     { fftw_free(RFlux2); RFlux2=NULL; }
@@ -188,9 +214,13 @@ void PDFactoryDouble::freeRvars() {
   if (pval != NULL)       { fftw_free(pval); pval = NULL; }
   if (pofd != NULL)       { fftw_free(pofd); pofd = NULL; }
   rvars_allocated = false;
+  rinitialized = false;
   initialized = false;
 }
 
+// Note this doesn't affect the initialization state for the 
+// R forward transform because the stuff done in the edge vars
+// is copied over before the transform
 void PDFactoryDouble::allocateEdgevars() {
   if (edgevars_allocated) return;
   if (nedge > 0) {
@@ -202,7 +232,6 @@ void PDFactoryDouble::allocateEdgevars() {
     REdgeWork = REdgeFlux1 = REdgeFlux2 = NULL;
     edgevars_allocated = false;
   }
-  initialized = false;
 }
 
 void PDFactoryDouble::freeEdgevars() {
@@ -210,7 +239,6 @@ void PDFactoryDouble::freeEdgevars() {
   if (REdgeFlux2 != NULL) { fftw_free(REdgeFlux2); REdgeFlux2 = NULL; }
   if (REdgeWork != NULL)  { fftw_free(REdgeWork); REdgeWork = NULL; }
   edgevars_allocated = false;
-  initialized = false;
 }
 
 /*!
@@ -249,227 +277,78 @@ void PDFactoryDouble::addWisdom(const std::string& filename) {
     fftw_destroy_plan(plan_inv);
     plan_inv = NULL;
   }
-
   initialized = false;
 }
 
 /*!
-  \param[in] n Number of elements in R
-  \param[out] mn1 Mean in band 1
-  \param[out] mn2 Mean in band 2
-  \param[out] var1 Variance in band 1
-  \param[out] var2 Variance in band 2
+  \param[in] n Number of elements
+  \param[in] minflux1 Minimum flux band 1 to target in R
+  \param[in] maxflux1 Maximum flux band 1 to use in R
+  \param[in] minflux2 Minimum flux band 2 to target in R
+  \param[in] maxflux2 Maximum flux band 2 to use in R
 
-  This assumes R, Rflux, etc. is set and doesn't check, so be careful
-  It also ignores the edges.  The instrument noise is not included
-  in the returned variances.
+  Sets up RFlux1 and Rflux2.  They may not quite get to minflux in
+  each band if negative, since we make small adjustments to make sure
+  flux = 0 is included.
 */
-void PDFactoryDouble::getRStats(unsigned int n, double& mn1, double& mn2,
-				double& var1, double& var2) const {
-
-  //  <x> = \int x R dx dy
-  //  <y> = \int y R dx dy
-  //  Var[x] = \int x^2 R dx dy
-  //  Var[y] = \int y^2 R dx dy
-
-  //Use trap rule for all computations
-  //Always move along j since array access is
-  // faster that way (rvals is row-major order)
-  //This is a simple calculation, somewhat tedious to write out
-  double cf1, cf2, crv;
-  register double tmp;
-  double *rowptr;
-
-  //i=0
-  cf1   = RFlux1[0];
-  cf2   = RFlux2[0];
-  crv   = rvals[0];
-  mn1   = 0.5*cf1*crv;
-  mn2   = 0.5*cf2*crv;
-  var1  = mn1*cf1;
-  var2  = mn2*cf2;
-  for (unsigned int j = 1; j < n-1; ++j) {
-    crv    = rvals[j];
-    cf2    = RFlux2[j];
-    tmp    = cf1*crv;
-    mn1   += tmp;
-    var1  += tmp*cf1;
-    tmp    = cf2*crv;
-    mn2   += tmp;
-    var2  += tmp*cf2;
-  }
-  cf2 = RFlux2[n-1];
-  crv = rvals[n-1];
-  tmp    = 0.5*cf1*crv;
-  mn1   += tmp;
-  var1  += tmp*cf1;
-  tmp    = 0.5*cf2*crv;
-  mn2   += tmp;
-  var2  += tmp*cf2;
-
-  //That was the i=0 case, which is the first step and hence must
-  // be multiplied by 0.5
-  mn1  *= 0.5;
-  mn2  *= 0.5;
-  var1 *= 0.5;
-  var2 *= 0.5;
-
-  //Now main body, multiplier is one
-  for (unsigned int i = 1; i < n-1; ++i) {
-    cf1 = RFlux1[i];
-    cf2 = RFlux2[0];
-    rowptr = rvals + i*n;
-    crv    = rowptr[0];
-    tmp    = 0.5*cf1*crv;
-    mn1   += tmp;
-    var1  += tmp*cf1;
-    tmp    = 0.5*cf2*crv;
-    mn2   += tmp;
-    var2  += tmp*cf2;
-    for (unsigned int j = 1; j < n-1; ++j) {
-      crv = rowptr[j];
-      cf2 = RFlux2[j];
-      tmp    = cf1*crv;
-      mn1   += tmp;
-      var1  += tmp*cf1;
-      tmp    = cf2*crv;
-      mn2   += tmp;
-      var2  += tmp*cf2;
-    }
-    cf2 = RFlux2[n-1];
-    crv = rowptr[n-1];
-    tmp    = 0.5*cf1*crv;
-    mn1   += tmp;
-    var1  += tmp*cf1;
-    tmp    = 0.5*cf2*crv;
-    mn2   += tmp;
-    var2  += tmp*cf2;
-  }
-
-  //i=n-1, 0.5 multiplier, store in tmp vars
-  double tmn1, tmn2, tvar1, tvar2;
-  cf1 = RFlux1[n-1];
-  cf2 = RFlux2[0];
-  rowptr = rvals + (n-1)*n;
-  crv    = rowptr[0];
-  tmn1   = 0.5*cf1*crv;
-  tvar1  = tmn1 * cf1;
-  tmn2   = 0.5*cf2*crv;
-  tvar2  = tmn2 * cf2;
-  for (unsigned int j = 1; j < n-1; ++j) {
-    crv     = rowptr[j];
-    cf2     = RFlux2[j];
-    tmp     = cf1*crv;
-    tmn1   += tmp;
-    tvar1  += tmp*cf1;
-    tmp     = cf2*crv;
-    tmn2   += tmp;
-    tvar2  += tmp*cf2;
-  }
-  cf2     = RFlux2[n-1];
-  crv     = rowptr[n-1];
-  tmp     = 0.5*cf1*crv;
-  tmn1   += tmp;
-  tvar1  += tmp*cf1;
-  tmp     = 0.5*cf2*crv;
-  tmn2   += tmp;
-  tvar2  += tmp*cf2;
-   
-  //Now apply the i = n-1 multiplier (0.5)
-  mn1 += 0.5*tmn1;
-  mn2 += 0.5*tmn2;
-  var1 += 0.5*tvar1;
-  var2 += 0.5*tvar2;
- 
-  //Grid size factor in integral
-  double fluxfac = dflux1*dflux2;
-  mn1   *= fluxfac;
-  mn2   *= fluxfac;
-  var1  *= fluxfac;
-  var2  *= fluxfac;
-  
-}
-
-/*!
-  \param[in] n Transform size
-*/
-void PDFactoryDouble::setupTransforms(unsigned int n) {
-
-  //The transform plan is that the forward transform
-  // takes rvals to rtrans.  We then do things to rtrans
-  // to turn it into pval, including shifting, adding noise,
-  // etc, and then transform from pval to pofd.
+void PDFactoryDouble::initRFlux(unsigned int n, double minflux1, 
+				double maxflux1, double minflux2,
+				double maxflux2) {
+  // Make sure there is room
+  resize(n);
 
   if (n == 0)
-    throw affineExcept("PDFactoryDouble", "setupTransforms",
-		       "Invalid (0) transform size");
-
-  // Make sure we have enough room
-  bool did_resize = resize(n);
-
-  //We need the R variables allocated so we can plan to them
-  if (!rvars_allocated) allocateRvars();
-
-  int intn = static_cast<int>(n);
-  if (did_resize || (currfftlen != n) || (plan == NULL) ) {
-    if (plan != NULL) fftw_destroy_plan(plan);
-    plan = fftw_plan_dft_r2c_2d(intn, intn, rvals, rtrans,
-				fftw_plan_style);
-  }
-  if (plan == NULL) {
-    std::stringstream str;
-    str << "Plan creation failed for forward transform of size: " << n;
-    if (has_wisdom) str << std::endl << "Your wisdom file may not have"
-			<< " that size";
-    throw affineExcept("PDFactoryDouble", "setupTransforms", str.str());
+    throw affineExcept("PDFactoryDouble", "initR", "Invalid (0) n");
+  if (n == 1) {
+    dflux1 = dflux2 = 0.1;
+    RFlux1[0] = minflux1;
+    RFlux2[0] = minflux2;
+    RwrapIdx1 = RwrapIdx2 = 1;
+    return;
   }
 
-  if (did_resize || (currfftlen != n) || (plan_inv == NULL) ) {
-    if (plan_inv != NULL) fftw_destroy_plan(plan_inv);
-    plan_inv = fftw_plan_dft_c2r_2d(intn, intn, pval, pofd,
-				    fftw_plan_style);
-  }
-  if (plan_inv == NULL) {
-    std::stringstream str;
-    str << "Plan creation failed for inverse transform of size: " << n;
-    if (has_wisdom) str << std::endl << "Your wisdom file may not have"
-			<< " that size";
-    throw affineExcept("PDFactoryDouble", "setupTransforms", str.str());
-  }
+  if (maxflux1 < minflux1) std::swap(minflux1, maxflux1);
+  if (maxflux2 < minflux2) std::swap(minflux2, maxflux2);
+  
+  double st;
+  initRFluxInternal(n, minflux1, maxflux1, RFlux1, dflux1, st, RwrapIdx1);
+  initRFluxInternal(n, minflux2, maxflux2, RFlux2, dflux2, st, RwrapIdx2);
 
-  currfftlen = n;
+  rinitialized = false;
+  initialized = false;
 }
 
+
 /*!
-  \param[in] maxflux1 Maximum flux in band 1
-  \param[in] maxflux2 Maximum flux in band 2
-  \param[in] model Number Counts model
-  \param[in] bm beams
-  \param[in] setEdge Compute edge components
+  \param[in] n Size of transforms
+  \param[in] n        Size of transform 
+  \param[in] minflux1 Minimum flux to use in R, band 1
+  \param[in] maxflux1 Maximum flux to use in R, band 1
+  \param[in] minflux2 Minimum flux to use in R, band 2
+  \param[in] maxflux2 Maximum flux to use in R, band 2
+  \param[in] model   number counts model to use for fill.  Params must be set
+  \param[in] bm      Histogrammed inverse beam
+  \param[in] setEdge Set the edge of R using edge integration
+  \param[in] muldflux Multiply R by dflux1 * dflux2
 
-  The R variables must have been previously allocated
+  dflux1, dflux2 is also set, are are RFlux1, RFlux2 and the edge vars
 */
-void PDFactoryDouble::computeR(double maxflux1, double maxflux2,
-			       const numberCountsDouble& model,
-			       const doublebeam& bm,
-			       bool setEdge) {
+void PDFactoryDouble::initR(unsigned int n, double minflux1,
+			    double maxflux1, double minflux2,
+			    double maxflux2, const numberCountsDouble& model,
+			    const doublebeam& bm, bool setEdge,
+			    bool muldflux) {
 
-  if (!rvars_allocated)
-    throw affineExcept("PDFactoryDouble", "computeR",
-		       "R variables must have been previously allocated");
+  // This version is much more complex than the 1D case because of the
+  // edge bits
+  if (!rvars_allocated) allocateRvars();
 
-  unsigned int n = currfftlen;
+  initRFlux(n, minflux1, maxflux1, minflux2, maxflux2);
 
-  //Now fill R.  Some setup is required first
 
-  //Fill in flux values for main and edge pieces
-  //Main bit
-  for (unsigned int i = 0; i < n; ++i)
-    RFlux1[i] = static_cast<double>(i) * dflux1;
-  for (unsigned int i = 0; i < n; ++i)
-    RFlux2[i] = static_cast<double>(i) * dflux2;
-
-  //Now fill in R.  The edges require special care.  This
+  //Now fill in R.  The edges require special care (the part between
+  // 0 and dflux in each dimension, which is the bottom edge of the
+  // R array even with wrapping).  This
   // first call will fill nonsense values into the lower edges, which
   // we will later overwrite
   double *rptr;  
@@ -477,7 +356,7 @@ void PDFactoryDouble::computeR(double maxflux1, double maxflux2,
 #ifdef TIMING
   std::clock_t starttime = std::clock();
 #endif
-  model.getR(n, RFlux1, n, RFlux2, bm, rvals, numberCountsDouble::BEAMALL);
+  model.getR(n, RFlux1, n, RFlux2, bm, rvals);
 #ifdef TIMING
   RTime += std::clock() - starttime;
 #endif
@@ -529,8 +408,7 @@ void PDFactoryDouble::computeR(double maxflux1, double maxflux2,
 #ifdef TIMING
     starttime = std::clock();
 #endif
-    model.getR(nedge, REdgeFlux1, nedge, REdgeFlux2, bm, REdgeWork,
-	       numberCountsDouble::BEAMALL);
+    model.getR(nedge, REdgeFlux1, nedge, REdgeFlux2, bm, REdgeWork);
 #ifdef TIMING
     RTime += std::clock() - starttime;
 #endif
@@ -577,8 +455,7 @@ void PDFactoryDouble::computeR(double maxflux1, double maxflux2,
 #ifdef TIMING
       starttime = std::clock();
 #endif
-      model.getR(nedge, REdgeFlux1, 1, &fixed_value, bm, REdgeWork,
-		 numberCountsDouble::BEAMALL);
+      model.getR(nedge, REdgeFlux1, 1, &fixed_value, bm, REdgeWork);
 #ifdef TIMING
       RTime += std::clock() - starttime;
 #endif
@@ -602,8 +479,7 @@ void PDFactoryDouble::computeR(double maxflux1, double maxflux2,
 #ifdef TIMING
       starttime = std::clock();
 #endif
-      model.getR(1, &fixed_value, nedge, REdgeFlux2, bm, REdgeWork,
-		 numberCountsDouble::BEAMALL);
+      model.getR(1, &fixed_value, nedge, REdgeFlux2, bm, REdgeWork);
 #ifdef TIMING
       RTime += std::clock() - starttime;
 #endif
@@ -621,17 +497,433 @@ void PDFactoryDouble::computeR(double maxflux1, double maxflux2,
     }
   } else {
     //Just set edges to zero
-    memset(rvals, 0, n * sizeof(double));
+    std::memset(rvals, 0, n * sizeof(double));
     for (unsigned int i = 1; i < n; ++i)
       rvals[i*n] = 0.0;
+  }
+
+  //Multiply R by dflux1 * dflux2
+  if (muldflux) {
+    double fluxfac = dflux1 * dflux2;
+    for (unsigned int i = 0; i < n * n; ++i)
+      rvals[i] *= fluxfac;
+    rdflux = true;
+  } else rdflux = false;
+  
+  initialized = false;
+  rinitialized = true;
+}
+
+/*!
+  Computes mean and variance of the P(D) using R along each dimension,
+  then stores them in the internal state.
+   
+  You must have called initR before calling this.
+*/
+void PDFactoryDouble::getRStats() {
+
+  if (!rinitialized)
+    throw affineExcept("PDFactoryDouble", "getRMoment",
+		       "R must be initialized before calling this");
+
+  // Recall that the formulae for the mean and central 2nd moment
+  // along each axis (not including instrumental noise) are
+  //  <x> = \int x R dx dy
+  //  <y> = \int y R dx dy
+  //  <(x - <x>)^2> = \int x^2 R dx dy
+  //  <(y - <y>)^2> = \int y^2 R dx dy
+  // We ignore wrapping issues, since the contributions should be negligible
+  //  there anyways, and that would signficantly increase the complexity
+  //  of the code.
+
+  // And... trap rule the integrals.
+  // Always move along j since array access is
+  //  faster that way (rvals is row-major order)
+  // This is a simple calculation, somewhat tedious to write out.
+
+  double cf1, cf2, cR, mean1, mean2, var1, var2, prod1, prod2;
+  double *rowptr;
+  
+  // First row, has a 0.5 factor
+  rowptr = rvals;
+  cf1 = RFlux1[0];
+  cR = 0.5 * rowptr[0]; // This handles the 0.5 factor
+  prod1 = 0.5 * cf1 * cR; // Extra 0.5 for first col
+  mean1 = prod1;
+  var1 = cf1 * prod1;
+  cf2 = RFlux2[0];
+  prod2 = 0.5 * cf2 * cR;
+  mean2 = prod2;
+  var2 = cf2 * prod2;
+  for (unsigned int j = 1; j < currsize-1; ++j) {
+    cR = 0.5 * rowptr[j]; // Still 0.5 for first row
+    prod1 = cf1 * cR;
+    mean1 += prod1;
+    var1 += cf1 * prod1;
+    cf2 = RFlux2[j];
+    prod2 = cf2 * cR;
+    mean2 += prod2;
+    var2 += cf2 * prod2;
+  }
+  cR = 0.5 * rowptr[currsize-1];
+  prod1 = 0.5 * cf1 * cR;
+  mean1 += prod1;
+  var1 += cf1 * prod1;
+  cf2 = RFlux2[currsize-1];
+  prod2 = 0.5 * cf2 * cR;
+  mean2 += prod2;
+  var2 += cf2 * prod2;
+
+  // Do middle rows
+  for (unsigned int i = 1; i < currsize-1; ++i) {
+    rowptr = rvals + i * currsize; 
+    cf1 = RFlux1[i];
+    cR = rowptr[0]; // No 0.5 any more -- we are in the middle
+    prod1 = 0.5 * cf1 * cR; // 0.5 for first col
+    mean1 += prod1;
+    var1 += cf1 * prod1;
+    cf2 = RFlux2[0];
+    prod2 = 0.5 * cf2 * cR;
+    mean2 += prod2;
+    var2 += cf2 * prod2;
+    for (unsigned int j = 1; j < currsize - 1; ++j) {
+      cR = rowptr[j];
+      prod1 = cf1 * cR;
+      mean1 += prod1;
+      var1 += cf1 * prod1;
+      cf2 = RFlux2[j];
+      prod2 = cf2 * cR;
+      mean2 += prod2;
+      var2 += cf2 * prod2;
+    }
+    cR = rowptr[currsize - 1];
+    prod1 = 0.5 * cf1 * cR;
+    mean1 += prod1;
+    var1 += cf1 * prod1;
+    cf2 = RFlux2[currsize - 1];
+    prod2 = 0.5 * cf2 * cR;
+    mean2 += prod2;
+    var2 += cf2 * prod2;
+  }
+
+  // And final row, has an extra 0.5 factor again
+  rowptr = rvals + (currsize - 1) * currsize;
+  cf1 = RFlux1[currsize - 1];
+  cR = 0.5 * rowptr[0]; 
+  prod1 = 0.5 * cf1 * cR;
+  mean1 += prod1;
+  var1 += cf1 * prod1;
+  cf2 = RFlux2[0];
+  prod2 = 0.5 * cf2 * cR;
+  mean2 += prod2;
+  var2 += cf2 * prod2;
+  for (unsigned int j = 1; j < currsize - 1; ++j) {
+    cR = 0.5 * rowptr[j];
+    prod1 = cf1 * cR;
+    mean1 += prod1;
+    var1 += cf1 * prod1;
+    cf2 = RFlux2[j];
+    prod2 = cf2 * cR;
+    mean2 += prod2;
+    var2 += cf2 * prod2;
+  }
+  cR = 0.5 * rowptr[currsize - 1];
+  prod1 = 0.5 * cf1 * cR;
+  mean1 += prod1;
+  var1 += cf1 * prod1;
+  cf2 = RFlux2[currsize - 1];
+  prod2 = 0.5 * cf2 * cR;
+  mean2 += prod2;
+  var2 += cf2 * prod2;
+
+  // Apply dflux factors if needed
+  if (!rdflux) {
+    double dfact = dflux1 * dflux2;
+    mean1 *= dfact;
+    mean2 *= dfact;
+    var1 *= dfact;
+    var2 *= dfact;
+  }
+
+  mn1 = mean1;
+  mn2 = mean2;
+  var_noi1 = var1;
+  var_noi2 = var2;
+}
+
+/*!
+  \param[in] n Transform size
+*/
+void PDFactoryDouble::setupTransforms(unsigned int n) {
+
+  //The transform plan is that the forward transform
+  // takes rvals to rtrans.  We then do things to rtrans
+  // to turn it into pval, including shifting, adding noise,
+  // etc, and then transform from pval to pofd.
+
+  if (n == 0)
+    throw affineExcept("PDFactoryDouble", "setupTransforms",
+		       "Invalid (0) transform size");
+
+  // Make sure we have enough room
+  resize(n);
+
+  //We need the R variables allocated so we can plan to them
+  if (!rvars_allocated) allocateRvars();
+
+  int intn = static_cast<int>(n);
+  if (plan == NULL) {
+    plan = fftw_plan_dft_r2c_2d(intn, intn, rvals, rtrans,
+				fftw_plan_style);
+  }
+  if (plan == NULL) {
+    std::stringstream str;
+    str << "Plan creation failed for forward transform of size: " << n;
+    if (has_wisdom) str << std::endl << "Your wisdom file may not have"
+			<< " that size";
+    throw affineExcept("PDFactoryDouble", "setupTransforms", str.str());
+  }
+  if (plan_inv != NULL) {
+    plan_inv = fftw_plan_dft_c2r_2d(intn, intn, pval, pofd,
+				    fftw_plan_style);
+    if (plan_inv == NULL) {
+      std::stringstream str;
+      str << "Plan creation failed for inverse transform of size: " << intn
+	  << " by " << intn;
+      if (has_wisdom) str << std::endl << "Your wisdom file may not have"
+			  << " that size";
+      throw affineExcept("PDFactoryDouble", "setupTransforms", str.str());
+    }
   }
 }
 
 /*!
+  \param[out] pd Holds P(D) on output, normalized, mean subtracted,
+                 and with positivity enforced.
+
+  This does the unwrapping of the internal P(D) into pd.
+*/
+// This should only ever be called by getPD, so we don't really
+// check the inputs
+void PDFactoryDouble::unwrapPD(PDDouble& pd) const {
+  // Our acceptance testing is a bit complicated.
+  // If the minimum point is more than nsig1 away from the expected mean (0)
+  //  then we just accept it.  If it is more than nsig2 away, we make sure
+  //  that the min/max ratio of the P(D) along that axis is more than
+  //  maxminratio.  If it is less than nsig2, we just flat out reject.
+  const double nsig1 = 4.0; 
+  const double nsig2 = 2.0;
+  const double maxminratio = 1e5;
+
+  //Enforce positivity
+#ifdef TIMING
+  starttime = std::clock();
+#endif
+  for (unsigned int idx = 0; idx < currsize * currsize; ++idx)
+    if (pofd[idx] < 0) pofd[idx] = 0.0;
+#ifdef TIMING
+  posTime += std::clock() - starttime;
+#endif
+
+  // Figure out the indices of the minimum in each dimension
+  // Rather than find the 2D index, which would be noisier, 
+  //  intergrate out each axis to find the minimum.
+  // Start from the top and move down -- if there is a tie for
+  //  some reason we prefer the index be high because that is more
+  //  likely to be right in practice
+  // Start with min along the first index.  We also find the max, but
+  // don't keep track of its index
+#ifdef TIMING
+  starttime = std::clock();
+#endif
+  int nm1 = static_cast<int>(currsize - 1);
+  int mdx = nm1; // Curr min index
+  double cval, minval, maxval, *rowptr; 
+  // Initialize minval to last col
+  rowptr = pofd + nm1 * currsize;
+  minval = 0.5 * rowptr[0];
+  for (unsigned int j = 1; j < currsize - 1; ++j) minval += rowptr[j];
+  minval += 0.5 * rowptr[currsize - 1];
+  maxval = minval;
+  // Now do others
+  for (int i = currsize - 2; i >= 0; --i) {
+    rowptr = pofd + i * currsize;
+    cval = 0.5 * rowptr[0];
+    for (unsigned int j = 1; j < currsize - 1; ++j) cval += rowptr[j];
+    cval += 0.5 * rowptr[currsize - 1];
+    if (cval < minval) {
+      minval = cval;
+      mdx = i;
+    } else if (cval > maxval) maxval = cval;
+  }
+  unsigned int minidx1 = static_cast<unsigned>(mdx);
+
+  // Sanity check
+  double fwrap_plus = RFlux1[minidx1]; // Wrap in pos flux
+  double fwrap_minus = 
+    static_cast<double>(currsize - minidx1) * dflux1; // Abs neg wrap
+  double cs1, cs2;
+  cs1 = nsig1 * sg1;
+  cs2 = nsig2 * sg1;
+  if ((fwrap_plus > cs1) || (fwrap_minus > cs1)) {
+    // Worth further investigation
+    if (fwrap_plus < cs2) {
+      std::stringstream errstr;
+      errstr << "Top wrapping problem dim 1; wrapping point at "
+	     << fwrap_plus << " which is only " << fwrap_plus / sg1
+	     << " sigma away from expected (0) mean with sigma " << sg1;
+      throw affineExcept("PDFactoryDouble", "unwrapPD", errstr.str());
+    }
+    if (fwrap_minus < cs2) {
+      std::stringstream errstr;
+      errstr << "Bottom wrapping problem dim 1; wrapping point at "
+	     << -fwrap_minus << " which is only " << fwrap_minus / sg1
+	     << " sigma away from expected (0) mean, with sigma " << sg1;
+      throw affineExcept("PDFactoryDouble", "unwrapPD", errstr.str());
+    } 
+    // Min/max ratio test
+    if (maxval / minval < maxminratio) {
+      std::stringstream errstr;
+      errstr << "Dim 1 wrapping problem with wrapping fluxes: "
+	     << fwrap_plus << " and " << -fwrap_minus << " with min/max ratio: "
+	     << maxval / minval << " and sigma: " << sg1;
+      throw affineExcept("PDFactoryDouble", "unwrapPD", errstr.str());
+    }
+  }
+  
+  // Now second dimension.  This one is slower due to stride issues.
+  // That could be improved with an auxilliary array, but it doesn't
+  // seem worth it, frankly
+  mdx = nm1; // Index of current minimum
+  minval = 0.5 * pofd[nm1];
+  for (unsigned int i = 1; i < currsize - 1; ++i) 
+    minval += pofd[i * currsize + nm1];
+  minval += 0.5 * pofd[nm1 * currsize + nm1];
+  maxval = minval;
+  for (int j = currsize - 2; j >= 0; --j) {
+    cval = 0.5 * pofd[j];
+    for (unsigned int i = 1; i < currsize - 1; ++i) 
+      cval += pofd[i * currsize + j];
+    cval += 0.5 * pofd[nm1 * currsize + j];
+    if (cval < minval) {
+      minval = cval;
+      mdx = j;
+    } else if (cval > maxval) maxval = cval;
+  }
+  unsigned int minidx2 = static_cast<unsigned>(mdx);
+
+  // Same sanity check
+  fwrap_plus = RFlux2[minidx2]; 
+  fwrap_minus = static_cast<double>(currsize - minidx2) * dflux2;
+  cs1 = nsig1 * sg2;
+  cs2 = nsig2 * sg2;
+  if ((fwrap_plus > cs1) || (fwrap_minus > cs1)) {
+    // Worth further investigation
+    if (fwrap_plus < cs2) {
+      std::stringstream errstr;
+      errstr << "Top wrapping problem dim 2; wrapping point at "
+	     << fwrap_plus << " which is only " << fwrap_plus / sg2
+	     << " sigma away from expected (0) mean with sigma " << sg2;
+      throw affineExcept("PDFactoryDouble", "unwrapPD", errstr.str());
+    }
+    if (fwrap_minus < cs2) {
+      std::stringstream errstr;
+      errstr << "Bottom wrapping problem dim 2; wrapping point at "
+	     << -fwrap_minus << " which is only " << fwrap_minus / sg2
+	     << " sigma away from expected (0) mean, with sigma " << sg2;
+      throw affineExcept("PDFactoryDouble", "unwrapPD", errstr.str());
+    } 
+    // Min/max ratio test
+    if (maxval / minval < maxminratio) {
+      std::stringstream errstr;
+      errstr << "Dim 2 wrapping problem with wrapping fluxes: "
+	     << fwrap_plus << " and " << -fwrap_minus << " with min/max ratio: "
+	     << maxval / minval << " and sigma: " << sg2;
+      throw affineExcept("PDFactoryDouble", "unwrapPD", errstr.str());
+
+    }
+  }
+
+  // Now the actual copying, which is an exercise in index gymnastics
+  pd.resize(currsize, currsize);
+  size_t size_double = sizeof(double); // Size of double
+  std::memset(pd.pd_, 0, currsize * currsize * size_double);
+
+  size_t rowsz;
+  double *ptr_curr, *ptr_out; // convenience pointers
+  // We start with the neg, neg bit -- that is stuff >= both
+  // minidx1 and minidx2, which ends up in the 0, 0 part of the output
+  ptr_out = pd.pd_;
+  ptr_curr = pofd + minidx1 * currsize + minidx2;
+  rowsz = (currsize - minidx2) * size_double;
+  for (unsigned int i = 0; i < currsize - minidx1; ++i)
+    std::memcpy(ptr_out + i * currsize, ptr_curr + i * currsize, rowsz);
+
+  // Next pos neg
+  ptr_out = pd.pd_ + (currsize - minidx1) * currsize;
+  ptr_curr = pofd + minidx2;
+  for (unsigned int i = 0; i < minidx1; ++i) 
+    std::memcpy(ptr_out + i * currsize, ptr_curr + i * currsize, rowsz);
+
+  // pos, pos
+  ptr_out = pd.pd_ + (currsize - minidx1) * currsize + (currsize - minidx2);
+  ptr_curr = pofd;
+  rowsz = minidx2 * size_double;
+  for (unsigned int i = 0; i < minidx1; ++i)
+    std::memcpy(ptr_out + i * currsize, ptr_curr + i * currsize, rowsz);
+  
+  // neg, pos
+  ptr_out = pd.pd_ + (currsize - minidx2);
+  ptr_curr = pofd + minidx1 * currsize;
+  for (unsigned int i = 0; i < currsize - minidx1; ++i)
+    std::memcpy(ptr_out + i * currsize, ptr_curr + i * currsize, rowsz);
+
+  pd.logflat = false;
+  pd.minflux1 = 0.0; pd.dflux1 = dflux1;
+  pd.minflux2 = 0.0; pd.dflux2 = dflux2;
+
+#ifdef TIMING
+  copyTime += std::clock() - starttime;
+#endif
+
+  // Normalize
+#ifdef TIMING
+  starttime = std::clock();
+#endif
+  pd.normalize();
+#ifdef TIMING
+  normTime += std::clock() - starttime;
+#endif
+
+  // Mean subtract axes
+#ifdef TIMING
+  starttime = std::clock();
+#endif
+  double tmn1, tmn2; //True means
+  pd.getMeans(tmn1, tmn2, false);
+  if (std::isinf(tmn1) || std::isnan(tmn1) || std::isinf(tmn2) ||
+       std::isnan(tmn2)) {
+    std::stringstream str;
+    str << "Un-shift amounts not finite band1: " << tmn1 << " "
+        << tmn2 << std::endl;
+    str << "At length: " << currsize << " with sigma: " << sg1 << " "
+        << sg2;
+    throw affineExcept("PDFactoryDouble", "unwrapPD", str.str());
+  }
+  pd.minflux1 = -tmn1;
+  pd.minflux2 = -tmn2;
+#ifdef TIMING
+  meanTime += std::clock() - starttime;
+#endif
+
+}
+
+
+/*!
   \param[in] n Size of transform (square)
-  \param[in] sigma1 Maximum allowed sigma in dimension 1
-  \param[in] sigma2 Maximum allwed sigma in dimension 2
+  \param[in] minflux1 Minimum flux generated for R, dimension 1
   \param[in] maxflux1 Maximum flux generated for R, dimension 1
+  \param[in] minflux2 Minimum flux generated for R, dimension 2
   \param[in] maxflux2 Maximum flux generator for R, dimension 2
   \param[in] model    number counts model to use for fill.  Params must be set
   \param[in] bm       Beam
@@ -642,28 +934,19 @@ void PDFactoryDouble::computeR(double maxflux1, double maxflux2,
 	   a genuine error results in throwing an exception, not setting this
 	   to false.
 
-  Gets ready for P(D) computation by preparing R
-
-  Note that n is the transform size; the output array will generally
-  be smaller because of padding.  Furthermore, because of mean shifting,
-  the maximum flux often won't quite match the target values.
+  Gets ready for P(D) computation by preparing R.
+  The idea is to compute everything that doesn't require knowing the
+  exact sigmas here so we can call this multiple times on
+  maps with the same beam but different noise values.
 */
-bool PDFactoryDouble::initPD(unsigned int n, double sigma1,
-			     double sigma2, double maxflux1, 
-			     double maxflux2, 
+bool PDFactoryDouble::initPD(unsigned int n, double minflux1, double maxflux1, 
+			     double minflux2, double maxflux2, 
 			     const numberCountsDouble& model,
-			     const doublebeam& bm,
-			     bool setEdge) {
+			     const doublebeam& bm, bool setEdge) {
 
   if (n == 0)
     throw affineExcept("PDFactoryDouble", "initPD", 
 		       "Invalid (non-positive) n");
-  if (sigma1 < 0.0)
-    throw affineExcept("PDFactoryDouble", "initPD",
-		       "Invalid (negative) sigma1");
-  if (sigma2 < 0.0)
-    throw affineExcept("PDFactoryDouble", "initPD",
-		       "Invalid (negative) sigma2");
   if (maxflux1 <= 0.0)
     throw affineExcept("PDFactoryDouble", "initPD",
 		       "Invalid (non-positive) maxflux1");
@@ -675,36 +958,28 @@ bool PDFactoryDouble::initPD(unsigned int n, double sigma1,
 
   //Make the plans, or keep the old ones if possible
   // Note we have to do this before we fill R, as plan construction
-  // may overwrite the values.  This allocates R and sets currfftlen
+  // may overwrite the values.  This allocates R and resizes
   setupTransforms(n);
 
-  //Initial guess at dfluxes, will be changed later
-  double inm1 = 1.0 / static_cast<double>(n-1);
-  dflux1 = maxflux1 * inm1;
-  dflux2 = maxflux2 * inm1;
+  // Compute R, including multiplying it by dflux
+  initR(n, minflux1, maxflux2, minflux1, maxflux2, model, bm, 
+	setEdge, true);
 
-  // Compute R
-  computeR(maxflux1, maxflux2, model, bm, setEdge);
+  // Get mean and variance estimates from R
+  getRStats();
 
-  //Whew!  R is now filled.  Now estimate the mean and standard
-  // deviation of the resulting P(D)
-  getRStats(n, mn1, mn2, var_noi1, var_noi2);
+  // Set the sigmas to the no-noise values for now
+  sg1 = sqrt(var_noi1);
+  sg2 = sqrt(var_noi2);
 
-  //Add the instrument noise into the variances
-  sg1 = sqrt(var_noi1 + sigma1 * sigma1);
-  sg2 = sqrt(var_noi2 + sigma2 * sigma2);
-
-  //Decide if we will shift and pad, and if so by how much
-  //Only do shifts if the noise is larger than one actual step size
-  // Otherwise we can't represent it well.
-  bool dopad1 = (sigma1 > dflux1);
-  bool dopad2 = (sigma2 > dflux2);
-  doshift1 = (dopad1 && (mn1 < pofd_mcmc::n_sigma_shift2d * sg1));
-  doshift2 = (dopad2 && (mn2 < pofd_mcmc::n_sigma_shift2d * sg2));
-  if (doshift1) shift1 = pofd_mcmc::n_sigma_shift2d * sg1 - mn1; else
-    shift1=0.0;
-  if (doshift2) shift2 = pofd_mcmc::n_sigma_shift2d * sg2 - mn2; else
-    shift2=0.0;
+  //Decide if we will shift and pad, and if so by how much.
+  // The idea is to shift the mean to zero -- but we only
+  // do the shift if the sigma is larger than one actual step size
+  // because otherwise we can't represent it well.
+  doshift1 = (sg1 > dflux1) && (fabs(mn1) > dflux1);
+  if (doshift1) shift1 = -mn1; else shift1 = 0.0;
+  doshift2 = (sg2 > dflux2) && (fabs(mn2) > dflux2);
+  if (doshift2) shift2 = -mn2; else shift2 = 0.0;
 
   if (verbose) {
     std::cout << " Initial mean estimate band1: " << mn1 << " band2: "
@@ -719,134 +994,16 @@ bool PDFactoryDouble::initPD(unsigned int n, double sigma1,
     else std::cout << " Not applying additional shift in band 2" << std::endl;
   }
 
-  //Make sure that maxflux is large enough that we don't get
-  // bad aliasing wrap from the top around into the lower P(D) values.
-  //If this is a problem, this is interpreted as a model gone astray,
-  // not a true error.
-  if (maxflux1 <= pofd_mcmc::n_sigma_pad * sg1) {
-    if (verbose)
-      std::cout << "Top wrap problem, dimension 1; with sigma1 estimate: " 
-		<< sg1 << std::endl
-		<< " sigma1: " << sigma1 << " sigma2: " << sigma2 << std::endl
-		<< " maxflux1: " << maxflux1 << " maxflux2: " << maxflux2
-		<< std::endl << "For model: " << model;
-    return false;
-  }
-  if (maxflux2 <= pofd_mcmc::n_sigma_pad * sg2) {
-    if (verbose)
-      std::cout << "Top wrap problem, dimension 2; with sigma2 estimate: " 
-		<< sg2 << std::endl
-		<< " sigma1: " << sigma1 << " sigma2: " << sigma2 << std::endl
-		<< " maxflux1: " << maxflux1 << " maxflux2: " << maxflux2
-		<< std::endl << "For model: " << model;
-    return false;
-  }
-
-  //The other side of the equation is that we want to zero-pad the
-  // top, and later discard that stuff.  The idea is as follows:
-  // the 'target mean' of the calculated P(D) will lie at mn+shift
-  // in each dimension.  We assume that anything within n_sigma_pad2d*sg
-  // is 'contaminated'.  That means that, if n_sigma_pad2d*sg >
-  // mn+shift, there will be some wrapping around the bottom of the P(D)
-  // to contaminate the top by an amount n_sigma_pad2d*sg - (mn+shift).
-  // We therefore zero pad and discard anything above
-  // maxflux - (n_sigma_pad2d*sg - (mn+shift))
-  double *rptr;  
-  if (dopad1) {
-    double contam = pofd_mcmc::n_sigma_pad2d * sg1 - (mn1+shift1);
-    if (contam <= 0) maxidx1 = n; else {
-      double topflux = maxflux1 - contam;
-      if (topflux < 0) {
-	std::stringstream errstr;
-	errstr << "Pad problem, dimension 1; with contam estimate: " 
-	       << contam << std::endl;
-	errstr << " sigma1: " << sigma1 << " sigma2: " << sigma2 << std::endl;
-	errstr << " maxflux1: " << maxflux1 << " maxflux2: " << maxflux2
-	       << std::endl;
-	errstr << "For model: " << model;
-	throw affineExcept("PDFactoryDouble", "initPD", errstr.str());
-      }
-      maxidx1 = static_cast< unsigned int>(topflux / dflux1);
-      if (maxidx1 > n) {
-	std::stringstream errstr;
-	errstr << "Pad problem, dimension 1; with maxidx1: " 
-	       << maxidx1 << std::endl;
-	errstr << " sigma1: " << sigma1 << " sigma2: " << sigma2 << std::endl;
-	errstr << " maxflux1: " << maxflux1 << " maxflux2: " << maxflux2
-	       << std::endl;
-	errstr << "For model: " << model;
-	throw affineExcept("PDFactoryDouble", "initPD", errstr.str());
-      }
-      if (maxidx1 == 0) 
-	throw affineExcept("PDFactoryDouble", "initPD", 
-			   "maxidx1 is 0, which is a problem");
-      //Now pad!
-      for (unsigned int i = maxidx1; i < n; ++i)
-	memset(rvals + n * i, 0, n * sizeof(double));
-    }
-  } else maxidx1 = n;
-
-
-  if (dopad2) {
-    double contam = pofd_mcmc::n_sigma_pad2d*sg2 - (mn2+shift2);
-    if (contam <= 0) maxidx2 = n; else {
-      double topflux = maxflux2 - contam;
-      if (topflux < 0) {
-	std::stringstream errstr;
-	errstr << "Pad problem, dimension 2; with contam estimate: " 
-	       << contam << std::endl;
-	errstr << " sigma1: " << sigma1 << " sigma2: " << sigma2 << std::endl;
-	errstr << " maxflux1: " << maxflux1 << " maxflux2: " << maxflux2
-	       << std::endl;
-	errstr << "For model: " << model;
-	throw affineExcept("PDFactoryDouble", "initPD", errstr.str());
-      }
-      maxidx2 = static_cast< unsigned int>(topflux / dflux2);
-      if (maxidx2 > n) {
-	std::stringstream errstr;
-	errstr << "Pad problem, dimension 2; with maxidx2: " 
-	       << maxidx2 << std::endl;
-	errstr << " sigma1: " << sigma1 << " sigma2: " << sigma2 << std::endl;
-	errstr << " maxflux1: " << maxflux1 << " maxflux2: " << maxflux2
-	       << std::endl;
-	errstr << "For model: " << model;
-	throw affineExcept("PDFactoryDouble", "initPD", errstr.str());
-      }
-      if (maxidx2 == 0) 
-	throw affineExcept("PDFactoryDouble", "initPD",
-			   "maxidx2 is 0, which is a problem");
-      for (unsigned int i = 0; i < maxidx1; ++i) {
-	rptr = rvals + n*i;
-	for (unsigned int j = maxidx2; j < n; ++j)
-	  rptr[j] = 0.0;
-      }
-      for (unsigned int i = maxidx2; i < n; ++i) 
-	memset(rvals + n * i, 0, n * sizeof(double));
-    }
-  } else maxidx2 = n;
-
-  //Multiply r by dflux factor to represent the actual
-  // number of sources in each bin.  Note we do this
-  // after calling getRStats, since the thing we have
-  // is no longer strictly R after this.
-  double dfactor = dflux1 * dflux2;
-  for (unsigned int i = 0; i < maxidx1; ++i) {
-    rptr = rvals + n*i;
-    for (unsigned int j = 0; j < maxidx2; ++j)
-      rptr[j] *= dfactor;
-  }
-  
   //Compute forward transform of this r value, store in rtrans
+  //Have to use argument version, since the address of rtrans, etc. can move
 #ifdef TIMING
   starttime = std::clock();
 #endif
-  fftw_execute_dft_r2c(plan,rvals,rtrans);
+  fftw_execute_dft_r2c(plan, rvals, rtrans);
 #ifdef TIMING
   fftTime += std::clock() - starttime;
 #endif
   
-  max_sigma1 = sigma1;
-  max_sigma2 = sigma2;
   initialized = true;
 
   return true;
@@ -860,45 +1017,23 @@ bool PDFactoryDouble::initPD(unsigned int n, double sigma1,
   \param[out] pd Holds P(D1,D2) on output
   \param[in] setLog If true, pd is log(P(D1,D2)) on output; convenient
               for likelihood evaluation.
-  \param[in] edgeFix  Apply a fix to the lower edges to minimize wrapping
-                       effects using a Gaussian to each row/col
 
-  Note that n is the transform size; the output array will generally
-  be smaller because of padding.  Furthermore, because of mean shifting,
-  the maximum flux often won't quite match the target values.
-
-  You must call initPD first, or bad things will probably happen.
+  You must call initPD first.
 */
-void PDFactoryDouble::getPD( double sigma1, double sigma2,  
-			     PDDouble& pd, bool setLog, bool edgeFix) {
+void PDFactoryDouble::getPD(double sigma1, double sigma2,  
+			    PDDouble& pd, bool setLog) {
 
   // The basic idea is to compute the P(D) from the previously filled
   // R values, adding in noise and all that fun stuff, filling pd
   // for output
 
-  if (! initialized )
+  if (!initialized )
     throw affineExcept("PDFactoryDouble", "getPD",
 		       "Must call initPD first");
-  if (sigma1 > max_sigma1) {
-    std::stringstream errstr("");
-    errstr << "Sigma 1 value " << sigma1 
-	   << " larger than maximum prepared value " << max_sigma1
-	   << std::endl;
-    errstr << "initPD should have been called with at least " << sigma1;
-    throw affineExcept("PDFactoryDouble", "getPD", errstr.str());
-  }
-  if (sigma2 > max_sigma2) {
-    std::stringstream errstr("");
-    errstr << "Sigma 2 value " << sigma2 
-	   << " larger than maximum prepared value " << max_sigma2
-	   << std::endl;
-    errstr << "initPD should have been called with at least " << sigma2;
-    throw affineExcept("PDFactoryDouble", "getPD", errstr.str());
-  }
 
   //Output array from 2D FFT is n * (n/2+1)
-  unsigned int n = currfftlen;
-  unsigned int ncplx = n/2 + 1;
+  unsigned int n = currsize;
+  unsigned int ncplx = n / 2 + 1;
       
   //Calculate p(omega) = exp( r(omega1,omega2) - r(0,0) ),
   // which is what we will transform back into pofd.
@@ -933,214 +1068,166 @@ void PDFactoryDouble::getPD( double sigma1, double sigma2,
   std::clock_t starttime = std::clock();
 #endif
 
-  if (doshift1 && doshift2) {
-    //Both shifted -- this should be the most common case,
-    // and corresponds to noise in both bands
-    double sigfac1 = 0.5*sigma1*sigma1;
-    double sigfac2 = 0.5*sigma2*sigma2;
-    
-    double sigprod1, meanprod1, didx2, w1, w2;
-    
-    //First, Pos freq
-    for (unsigned int idx1 = 0; idx1 < ncplx; ++idx1) {
-      r_input_rowptr = rtrans + idx1*ncplx; //Input
-      row_current_out = pval + idx1*ncplx; //Output
-      w1 = iflux1 * static_cast<double>(idx1);
-      meanprod1 = shift1*w1;
-      sigprod1  = sigfac1*w1*w1;
-      for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
-	didx2 = static_cast<double>(idx2);
-	w2 = iflux2 * didx2;
-	rval = r_input_rowptr[idx2][0] - r0 - sigprod1 - sigfac2*w2*w2;
-	ival = r_input_rowptr[idx2][1] - meanprod1 - shift2*w2;
-	expfac = exp( rval );
-	row_current_out[idx2][0] = expfac*cos(ival);
-	row_current_out[idx2][1] = expfac*sin(ival);
+  // Now we have 16 potential cases -- both shift bits, both with
+  //  and without sigma in each.  However, in practice it is unlikely
+  //  that we are shifting in one band and not the other, or have noise
+  //  in one band and not the other, so we will pay the small inefficiency
+  //  price for those cases by only exploring the 4 cases
+  //  (any shift vs. noshift) by (any sigma vs. no sigma).
+  if (doshift1 || doshift2) {
+    double meanprod1, didx2, w1, w2;
+    if (sigma1 > 0 || sigma2 > 0) {
+      double sigfac1 = 0.5 * sigma1 * sigma1;
+      double sigfac2 = 0.5 * sigma2 * sigma2;
+      double sigprod1;
+      //First, Pos freq
+      for (unsigned int idx1 = 0; idx1 < ncplx; ++idx1) {
+	r_input_rowptr = rtrans + idx1 * ncplx; //Input
+	row_current_out = pval + idx1 * ncplx; //Output
+	w1 = iflux1 * static_cast<double>(idx1);
+	meanprod1 = shift1 * w1;
+	sigprod1  = sigfac1 * w1 * w1;
+	for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
+	  didx2 = static_cast<double>(idx2);
+	  w2 = iflux2 * didx2;
+	  rval = r_input_rowptr[idx2][0] - r0 - sigprod1 - sigfac2 * w2 * w2;
+	  ival = r_input_rowptr[idx2][1] - meanprod1 - shift2 * w2;
+	  expfac = exp(rval);
+	  row_current_out[idx2][0] = expfac * cos(ival);
+	  row_current_out[idx2][1] = expfac * sin(ival);
+	}
+      }
+      //Now, Neg freq
+      for (unsigned int idx1 = ncplx; idx1 < n; ++idx1) {
+	r_input_rowptr = rtrans + idx1 * ncplx; //Input
+	row_current_out = pval + idx1 * ncplx; //Output
+	w1 = - iflux1 * static_cast<double>(n - idx1);
+	meanprod1 = shift1 * w1;
+	sigprod1  = sigfac1 * w1 * w1;
+	for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
+	  didx2 = static_cast<double>(idx2);
+	  w2 = iflux2 * didx2;
+	  rval = r_input_rowptr[idx2][0] - r0 - sigprod1 - sigfac2 * w2 * w2;
+	  ival = r_input_rowptr[idx2][1] - meanprod1 - shift2 * w2;
+	  expfac = exp(rval);
+	  row_current_out[idx2][0] = expfac * cos(ival);
+	  row_current_out[idx2][1] = expfac * sin(ival);
+	}
+      }
+    } else {
+      // Shifts, but no sigmas
+      for (unsigned int idx1 = 0; idx1 < ncplx; ++idx1) {
+	r_input_rowptr = rtrans + idx1 * ncplx; //Input
+	row_current_out = pval + idx1 * ncplx; //Output
+	w1 = iflux1 * static_cast<double>(idx1);
+	meanprod1 = shift1 * w1;
+	for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
+	  didx2 = static_cast<double>(idx2);
+	  w2 = iflux2 * didx2;
+	  rval = r_input_rowptr[idx2][0] - r0;
+	  ival = r_input_rowptr[idx2][1] - meanprod1 - shift2 * w2;
+	  expfac = exp(rval);
+	  row_current_out[idx2][0] = expfac * cos(ival);
+	  row_current_out[idx2][1] = expfac * sin(ival);
+	}
+      }
+      //Now, Neg freq
+      for (unsigned int idx1 = ncplx; idx1 < n; ++idx1) {
+	r_input_rowptr = rtrans + idx1 * ncplx; //Input
+	row_current_out = pval + idx1 * ncplx; //Output
+	w1 = - iflux1 * static_cast<double>(n - idx1);
+	meanprod1 = shift1 * w1;
+	for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
+	  didx2 = static_cast<double>(idx2);
+	  w2 = iflux2 * didx2;
+	  rval = r_input_rowptr[idx2][0] - r0;
+	  ival = r_input_rowptr[idx2][1] - meanprod1 - shift2 * w2;
+	  expfac = exp(rval);
+	  row_current_out[idx2][0] = expfac * cos(ival);
+	  row_current_out[idx2][1] = expfac * sin(ival);
+	}
       }
     }
-    //Now, Neg freq
-    for (unsigned int idx1 = ncplx; idx1 < n; ++idx1) {
-      r_input_rowptr = rtrans + idx1*ncplx; //Input
-      row_current_out = pval + idx1*ncplx; //Output
-      w1 = - iflux1 * static_cast<double>(n - idx1);
-      meanprod1 = shift1*w1;
-      sigprod1  = sigfac1*w1*w1;
-      for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
-	didx2 = static_cast<double>(idx2);
-	w2 = iflux2 * didx2;
-	rval = r_input_rowptr[idx2][0] - r0 - sigprod1 - sigfac2*w2*w2;
-	ival = r_input_rowptr[idx2][1] - meanprod1 - shift2*w2;
-	expfac = exp( rval );
-	row_current_out[idx2][0] = expfac*cos(ival);
-	row_current_out[idx2][1] = expfac*sin(ival);
-      }
-    }
-    //p(0,0) is special
-    pval[0][0] = 1.0;
-    pval[0][1] = 0.0;
-  } else if (doshift1) {
-    //Only shift in band 1
-    double sigfac1 = 0.5*sigma1*sigma1;
-    double sigprod1, meanprod1, w1;
-    for (unsigned int idx1 = 0; idx1 < ncplx; ++idx1) {
-      r_input_rowptr = rtrans + idx1*ncplx; //Input
-      row_current_out = pval + idx1*ncplx; //Output
-      w1 = iflux1 * static_cast<double>(idx1);
-      meanprod1 = shift1*w1;
-      sigprod1  = sigfac1*w1*w1;
-      for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
-	rval = r_input_rowptr[idx2][0] - r0 - sigprod1;
-	ival = r_input_rowptr[idx2][1] - meanprod1;
-	expfac = exp( rval );
-	row_current_out[idx2][0] = expfac*cos(ival);
-	row_current_out[idx2][1] = expfac*sin(ival);
-      }
-    }
-    for (unsigned int idx1 = ncplx; idx1 < n; ++idx1) {
-      r_input_rowptr = rtrans + idx1*ncplx; //Input
-      row_current_out = pval + idx1*ncplx; //Output
-      w1 = - iflux1 * static_cast<double>(n - idx1);
-      meanprod1 = shift1*w1;
-      sigprod1  = sigfac1*w1*w1;
-      for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
-	rval = r_input_rowptr[idx2][0] - r0 - sigprod1;
-	ival = r_input_rowptr[idx2][1] - meanprod1;
-	expfac = exp( rval );
-	row_current_out[idx2][0] = expfac*cos(ival);
-	row_current_out[idx2][1] = expfac*sin(ival);
-      }
-    }
-    pval[0][0] = 1.0;
-    pval[0][1] = 0.0;
-  } else if (doshift2) {
-    //And only shift band 2
-    //Only flux 2 shifted, has sigma
-    //Can do all of band 1 in one loop, since we ignore
-    // freq1
-    double sigfac2 = 0.5*sigma2*sigma2;
-    double didx2, w2;
-    for (unsigned int idx1 = 0; idx1 < n; ++idx1) {
-      r_input_rowptr = rtrans + idx1*ncplx; //Input
-      row_current_out = pval + idx1*ncplx; //Output
-      for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
-	didx2 = static_cast<double>(idx2);
-	w2 = iflux2 * didx2;
-	rval = r_input_rowptr[idx2][0] - r0 - sigfac2*w2*w2;
-	ival = r_input_rowptr[idx2][1] - shift2*w2;
-	expfac = exp( rval );
-	row_current_out[idx2][0] = expfac*cos(ival);
-	row_current_out[idx2][1] = expfac*sin(ival);
-      }
-    }
-    pval[0][0] = 1.0;
-    pval[0][1] = 0.0;
   } else {
-    //No shifts, sigmas
-    for (unsigned int idx1 = 0; idx1 < n; ++idx1) {
-      r_input_rowptr = rtrans + idx1*ncplx;
-      row_current_out = pval + idx1*ncplx;
-      for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
-	rval = r_input_rowptr[idx2][0] - r0;
-	ival = r_input_rowptr[idx2][1];
-	expfac = exp(rval);
-	row_current_out[idx2][0] = expfac*cos(ival);
-	row_current_out[idx2][1] = expfac*sin(ival);
+    // No shifts, but there may be sigmas
+    // TODO -- is there a symmetry here which simplifies this case,
+    //  since the sigmas are quadratic?
+    if (sigma1 > 0 || sigma2 > 0) {
+      double w1, w2, didx2;
+      double sigfac1 = 0.5 * sigma1 * sigma1;
+      double sigfac2 = 0.5 * sigma2 * sigma2;
+      double sigprod1;
+      //First, Pos freq
+      for (unsigned int idx1 = 0; idx1 < ncplx; ++idx1) {
+	r_input_rowptr = rtrans + idx1 * ncplx; //Input
+	row_current_out = pval + idx1 * ncplx; //Output
+	w1 = iflux1 * static_cast<double>(idx1);
+	sigprod1  = sigfac1 * w1 * w1;
+	for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
+	  didx2 = static_cast<double>(idx2);
+	  w2 = iflux2 * didx2;
+	  rval = r_input_rowptr[idx2][0] - r0 - sigprod1 - sigfac2 * w2 * w2;
+	  ival = r_input_rowptr[idx2][1];
+	  expfac = exp(rval);
+	  row_current_out[idx2][0] = expfac * cos(ival);
+	  row_current_out[idx2][1] = expfac * sin(ival);
+	}
+      }
+      //Now, Neg freq
+      for (unsigned int idx1 = ncplx; idx1 < n; ++idx1) {
+	r_input_rowptr = rtrans + idx1 * ncplx; //Input
+	row_current_out = pval + idx1 * ncplx; //Output
+	w1 = - iflux1 * static_cast<double>(n - idx1);
+	for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
+	  didx2 = static_cast<double>(idx2);
+	  w2 = iflux2 * didx2;
+	  rval = r_input_rowptr[idx2][0] - r0 - sigprod1 - sigfac2 * w2 * w2;
+	  ival = r_input_rowptr[idx2][1];
+	  expfac = exp(rval);
+	  row_current_out[idx2][0] = expfac * cos(ival);
+	  row_current_out[idx2][1] = expfac * sin(ival);
+	}
+      }
+    } else {
+      //No shifts, sigmas
+      for (unsigned int idx1 = 0; idx1 < n; ++idx1) {
+	r_input_rowptr = rtrans + idx1 * ncplx;
+	row_current_out = pval + idx1 * ncplx;
+	for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
+	  rval = r_input_rowptr[idx2][0] - r0;
+	  ival = r_input_rowptr[idx2][1];
+	  expfac = exp(rval);
+	  row_current_out[idx2][0] = expfac * cos(ival);
+	  row_current_out[idx2][1] = expfac * sin(ival);
+	}
       }
     }
-    pval[0][0] = 1.0;
-    pval[0][1] = 0.0;
   }
+
+  //p(0,0) is special, but shared by all cases.
+  pval[0][0] = 1.0;
+  pval[0][1] = 0.0;
+
 #ifdef TIMING
   p0Time += std::clock() - starttime;
 #endif
 
-  
   //Now transform back
   if (verbose) std::cout << " Reverse transform" << std::endl;
 #ifdef TIMING
   starttime = std::clock();
 #endif
-  fftw_execute(plan_inv); //overwrites pofd with reverse transform of pval
+  // From pval into pofd
+  fftw_execute_dft_c2r(plan, pval, pofd);
 #ifdef TIMING
   fftTime += std::clock() - starttime;
 #endif
 
-  //Enforce positivity
-#ifdef TIMING
-  starttime = std::clock();
-#endif
-  for (unsigned int idx = 0; idx < n*n; ++idx)
-    if (pofd[idx] < 0) pofd[idx] = 0.0;
-#ifdef TIMING
-  posTime += std::clock() - starttime;
-#endif
-
-  //Copy into output variable
-  pd.resize(maxidx1,maxidx2);
-  double *pdptr, *pofdptr;
-#ifdef TIMING
-  starttime = std::clock();
-#endif
-  for (unsigned int i = 0; i < maxidx1; ++i) {
-    pdptr = pd.pd_ + maxidx2*i; //Row pointer for output variable
-    pofdptr = pofd + n*i; //Row pointer for variable we are copying
-    for (unsigned int j = 0; j < maxidx2; ++j)
-      pdptr[j] = pofdptr[j];
-  }
-  pd.logflat = false;
-  pd.minflux1 = 0.0; pd.dflux1 = dflux1;
-  pd.minflux2 = 0.0; pd.dflux2 = dflux2;
-#ifdef TIMING
-  copyTime += std::clock() - starttime;
-#endif
-
-  //Normalize
-#ifdef TIMING
-  starttime = std::clock();
-#endif
-  pd.normalize();
-#ifdef TIMING
-  normTime += std::clock() - starttime;
-#endif
-
-  //Edge fix
-#ifdef TIMING
-  starttime = std::clock();
-#endif
-  if (edgeFix) pd.edgeFix();
-#ifdef TIMING
-  edgeTime += std::clock() - starttime;
-#endif
-  
-
-  //Now mean subtract each axis
-#ifdef TIMING
-  starttime = std::clock();
-#endif
-  double tmn1, tmn2; //True means
-  pd.getMeans(tmn1, tmn2, false);
-  if (std::isinf(tmn1) || std::isnan(tmn1) || std::isinf(tmn2) ||
-      std::isnan(tmn2) ) {
-    std::stringstream str;
-    str << "Un-shift amounts not finite band1: " << tmn1 << " "
-	<< tmn2 << std::endl;
-    str << "At length: " << n << " with noise: " << sigma1 << " "
-	<< sigma2;
-    throw affineExcept("PDFactoryDouble", "getPD", str.str());
-  }
-  if (verbose) {
-    std::cout << " Expected mean band1: " << std::fixed 
-	      << std::setprecision(6) << shift1+mn1 << " band2: "
-	      << shift2 + mn2 << std::endl;
-    std::cout << " Realized mean band1: " << std::fixed 
-	      << std::setprecision(6) << tmn1 << " band2: "
-	      << tmn2 << std::endl;
-  }
-  pd.minflux1 = -tmn1;
-  pd.minflux2 = -tmn2;
-#ifdef TIMING
-  meanTime += std::clock() - starttime;
-#endif
+  // Copy into output variable, also normalizing, mean subtracting, 
+  // making positive
+  sg1 = sqrt(var_noi1 + sigma1 * sigma1); // Used in unwrapPD
+  sg2 = sqrt(var_noi2 + sigma2 * sigma2);
+  unwrapPD(pd);
 
   //Turn PD to log for more efficient log computation of likelihood
 #ifdef TIMING
@@ -1205,5 +1292,6 @@ void PDFactoryDouble::recieveCopy(MPI_Comm comm, int src) {
     freeEdgevars();
     nedge   = newnedge;
   }
+  rinitialized = false;
   initialized = false;
 }

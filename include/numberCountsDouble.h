@@ -8,6 +8,7 @@
 
 #include<hdf5.h>
 
+#include "../include/global_settings.h"
 #include "../include/doublebeam.h"
 #include "../include/paramSet.h"
 
@@ -39,6 +40,10 @@ class numberCountsDouble {
 
   /*! \brief Maxium flux model is defined for */
   virtual dblpair getMaxFlux() const = 0;
+
+  /*! \brief Get range over which R is expected to be nonzero */
+  virtual std::pair<dblpair, dblpair> 
+    getRRange(const doublebeam&) const throw(affineExcept) = 0;
 
   virtual void setParams(const paramSet& params)=0; //!< Set parameters
 

@@ -8,6 +8,8 @@
 
 #include <mpi.h>
 
+#include "../include/global_settings.h"
+
 /*!
   \brief Data class for holding 2-band data from a fits files.
   Supports binning of data.
@@ -48,8 +50,8 @@ class fitsDataDouble {
   void applyBinning(unsigned int, unsigned int); //!< Takes an unbinned image and bins it
   void removeBinning(); //!< Removes binning
   std::pair<unsigned int, unsigned int> getNBins() const; //!< Get number of bins along each dimension
-  std::pair<double,double> getBinCent0() const; //!< Gets center of 0th bin along each dimension
-  std::pair<double,double> getBinDelta() const; //!< Gets size of bins along each dimension
+  dblpair getBinCent0() const; //!< Gets center of 0th bin along each dimension
+  dblpair getBinDelta() const; //!< Gets size of bins along each dimension
   const unsigned int* const getBinnedData() const { return binval; } //!< Access to binned elements
   unsigned int getBinnedData(unsigned int i, unsigned int j) const 
   { return binval[i*nbins2+j]; } //!< Unchecked binned data access
@@ -62,12 +64,12 @@ class fitsDataDouble {
   double getData1(unsigned int i) const { return data1[i]; } //!< Unchecked
   double getData2(unsigned int i) const { return data2[i]; } //!< Unchecked
   
-  std::pair<double,double> meanSubtract(); //!< Subract the mean from the data. May require rebinning
+  dblpair meanSubtract(); //!< Subract the mean from the data. May require rebinning
 
-  std::pair<double,double> getMin() const; //!< Gets minimum in each band
-  std::pair<double,double> getMax() const; //!< Gets maximum in each band
-  void getMinMax(double&, double&, double&, double&) const; //!< Get minima and maxima for both bands
-  std::pair<double,double> getMean() const; //!< Gets mean value in each band
+  dblpair getMin() const; //!< Gets minimum in each band
+  dblpair getMax() const; //!< Gets maximum in each band
+  std::pair<dblpair, dblpair> getMinMax() const; //!< Get minima and maxima for both bands
+  dblpair getMean() const; //!< Gets mean value in each band
 
   void sendSelf(MPI_Comm, int dest) const; //!< Send self
   void recieveCopy(MPI_Comm, int src); //!< Recieve

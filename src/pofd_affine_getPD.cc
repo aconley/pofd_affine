@@ -22,29 +22,25 @@ static struct option long_options[] = {
   {"hdf5", no_argument, 0, '8'},
   {"histogram", no_argument, 0, 'H'},
   {"log", no_argument, 0, 'l'},
-  {"maxflux", required_argument, 0, '2'},
-  {"nofixedge", no_argument, 0, 'F'},
   {"nflux", required_argument, 0, 'n'},
   {"ninterp", required_argument, 0, 'N'},
   {"sigmanoise", required_argument, 0, 's'},
   {"verbose", no_argument, 0, 'v'},
   {"wisdom", required_argument, 0, 'w'},
-  {"maxflux1", required_argument, 0, '3'},
-  {"maxflux2", required_argument, 0, '4'},
   {"nedge", required_argument, 0, '5'},
   {"sigma1", required_argument, 0, '6'},
   {"sigma2", required_argument, 0, '7'},
   {0, 0, 0, 0}
 };
-char optstring[] = "hdVfFH8l2:n:N:s:vw:3:4:5:6:7:";
+char optstring[] = "hdVfH8ln:N:s:vw:5:6:7:";
 
 int getPDSingle(int argc, char **argv) {
 
   double sigma_noise; //Noise
   unsigned int nflux, ninterp;
-  bool has_wisdom, has_user_maxflux, fixEdge, getLog;
+  bool has_wisdom, getLog;
   bool histogram, verbose, write_to_fits, write_as_hdf5;
-  double maxflux;
+  double minflux, maxflux;
   std::string wisdom_file;
   
   std::string modelfile; //Model file
@@ -56,13 +52,10 @@ int getPDSingle(int argc, char **argv) {
   has_wisdom          = false;
   nflux               = 262144;
   ninterp             = 1024;
-  maxflux             = std::numeric_limits<double>::quiet_NaN();
-  has_user_maxflux    = false;
   verbose             = false;
   histogram           = false;
   write_to_fits       = false;
   write_as_hdf5       = false;
-  fixEdge             = true;
   getLog              = false;
 
   int c;
@@ -74,18 +67,11 @@ int getPDSingle(int argc, char **argv) {
     case 'f' :
       write_to_fits = true;
       break;
-    case 'F':
-      fixEdge = false;
-      break;
     case '8':
       write_as_hdf5 = true;
       break;
     case 'H' :
       histogram = true;
-      break;
-    case '2' :
-      maxflux = atof(optarg);
-      has_user_maxflux = true;
       break;
     case 'l':
       getLog = true;
@@ -108,15 +94,17 @@ int getPDSingle(int argc, char **argv) {
       break;
     }
 
-  if (optind >= argc-2) {
+  if (optind >= argc-4) {
     std::cerr << "Some required arguments missing" << std::endl;
     std::cerr << " Use --help for description of inputs and options"
 	      << std::endl;
     return 1;
   }
   modelfile  = std::string(argv[optind]);
-  psffile    = std::string(argv[optind+1]);
-  outputfile = std::string(argv[optind+2]);
+  psffile    = std::string(argv[optind + 1]);
+  minflux    = atof(argv[optind + 2]);
+  maxflux    = atof(argv[optind + 3]);
+  outputfile = std::string(argv[optind + 4]);
 
   //Input tests
   if (nflux == 0) {
@@ -145,6 +133,8 @@ int getPDSingle(int argc, char **argv) {
   if (write_as_hdf5 && write_to_fits)
     std::cout << "WARNING: will only write as HDF5, not as FITS" << std::endl;
 
+  if (minflux > maxflux) std::swap(minflux, maxflux);
+  
   //Actual PD computation
   try {
     initFileKnots model_info(modelfile, false, false);
@@ -168,12 +158,6 @@ int getPDSingle(int argc, char **argv) {
     }
     if (verbose) pfactory.setVerbose();
 
-    if (! has_user_maxflux) {
-      //Need to decide on some estimate
-      double fluxPerBeam = model.getFluxPerArea() * bm.getEffectiveArea();
-      maxflux = model.getMaxFlux() - fluxPerBeam;
-    }
-
     if (verbose) {
       printf("  Beam area: %0.3e\n",bm.getEffectiveArea());
       printf("  Flux per area: %0.3f\n",
@@ -192,21 +176,19 @@ int getPDSingle(int argc, char **argv) {
       }
       if (getLog)
 	printf("  Getting Log_2 P(D)\n");
-      if (fixEdge)
-	printf("  Applying edge fix\n");
     }
 
     //Get P(D)
     if (verbose) std::cout << "Getting P(D) with transform length: " 
 			   << nflux << std::endl;
     bool succ;
-    succ = pfactory.initPD(nflux, sigma_noise, maxflux, model, bm);
+    succ = pfactory.initPD(nflux, minflux, maxflux, model, bm);
     if (!succ) {
       std::cerr << "Error initializing P(D) -- parameters not valid" 
 		<< std::endl;
       return 1;
     }    
-    pfactory.getPD(sigma_noise, pd, getLog, fixEdge);
+    pfactory.getPD(sigma_noise, pd, getLog);
     
     //Write it
     if (verbose) std::cout << "Writing P(D) to file " << outputfile 
@@ -242,9 +224,9 @@ int getPDDouble(int argc, char** argv) {
 
   double sigma1, sigma2; //Noise
   unsigned int nflux, nedge;
-  bool has_wisdom, has_user_maxflux1, has_user_maxflux2, write_as_hdf5;
-  bool histogram, verbose, write_to_fits, fixEdge, getLog, doedge;
-  double maxflux1, maxflux2;
+  bool has_wisdom, write_to_fits, write_as_hdf5;
+  bool histogram, verbose, getLog, doedge;
+  double minflux1, maxflux1, minflux2, maxflux2;
   std::string wisdom_file;
   
   std::string modelfile; //Model file
@@ -256,16 +238,11 @@ int getPDDouble(int argc, char** argv) {
   sigma2              = 0.002;
   has_wisdom          = false;
   nflux               = 2048;
-  maxflux1            = std::numeric_limits<double>::quiet_NaN();
-  maxflux2            = std::numeric_limits<double>::quiet_NaN();
-  has_user_maxflux1   = false;
-  has_user_maxflux2   = false;
   verbose             = false;
   histogram           = false;
   write_to_fits       = false;
   write_as_hdf5       = false;
   nedge               = 256;
-  fixEdge             = true;
   getLog              = false;
   doedge              = true;
 
@@ -278,9 +255,6 @@ int getPDDouble(int argc, char** argv) {
     case 'f' :
       write_to_fits = true;
       break;
-    case 'F':
-      fixEdge = false;
-      break;
     case '8':
       write_as_hdf5 = true;
       break;
@@ -290,16 +264,8 @@ int getPDDouble(int argc, char** argv) {
     case 'l':
       getLog = true;
       break;
-    case '3' :
-      maxflux1 = atof(optarg);
-      has_user_maxflux1 = true;
-      break;
-    case '4' :
-      maxflux2 = atof(optarg);
-      has_user_maxflux2 = true;
-      break;
     case '5' :
-      nedge = static_cast<unsigned int>( atoi(optarg) );
+      nedge = static_cast<unsigned int>(atoi(optarg));
       break;
     case '6' :
       sigma1 = atof(optarg);
@@ -316,16 +282,20 @@ int getPDDouble(int argc, char** argv) {
       break;
     }
 
-  if (optind >= argc-3) {
+  if (optind >= argc-7) {
     std::cerr << "Some required arguments missing" << std::endl;
     std::cerr << " Use --help for description of inputs and options"
 	      << std::endl;
     return 1;
   }
   modelfile  = std::string(argv[optind]);
-  psffile1   = std::string(argv[optind+1]);
-  psffile2   = std::string(argv[optind+2]);
-  outputfile = std::string(argv[optind+3]);
+  psffile1   = std::string(argv[optind + 1]);
+  psffile2   = std::string(argv[optind + 2]);
+  minflux1   = atof(argv[optind + 3]);
+  maxflux1   = atof(argv[optind + 4]);
+  minflux2   = atof(argv[optind + 5]);
+  maxflux2   = atof(argv[optind + 6]);
+  outputfile = std::string(argv[optind + 7]);
 
   //Input tests
   if (nflux == 0) {
@@ -349,6 +319,8 @@ int getPDDouble(int argc, char** argv) {
   if (write_as_hdf5 && write_to_fits)
     std::cout << "WARNING: will only write as HDF5, not as FITS" << std::endl;
   if (nedge == 0) doedge = false;
+  if (minflux1 > maxflux1) std::swap(minflux1, maxflux1);
+  if (minflux2 > maxflux2) std::swap(minflux2, maxflux2);
 
   //Actual PD computation
   try {
@@ -371,16 +343,6 @@ int getPDDouble(int argc, char** argv) {
       pfactory.addWisdom(wisdom_file);
     }
     if (verbose) pfactory.setVerbose();
-
-    if (! has_user_maxflux1) {
-      //Need to decide on some estimate
-      double fluxPerBeam = model.getFluxPerArea(0) * bm.getEffectiveArea1();
-      maxflux1 = model.getMaxFlux(0) - fluxPerBeam;
-    }
-    if (! has_user_maxflux2) {
-      double fluxPerBeam = model.getFluxPerArea(1) * bm.getEffectiveArea2();
-      maxflux2 = model.getMaxFlux(1) - fluxPerBeam;
-    }
 
     if (verbose) {
       printf("  Beam area, band 1: %0.3e\n",bm.getEffectiveArea1());
@@ -414,22 +376,20 @@ int getPDDouble(int argc, char** argv) {
       }
       if (getLog)
 	printf("  Getting Log_2 P(D)\n");
-      if (fixEdge)
-	printf("  Applying edge fix.\n");
     }
 
     //Get P(D)
     if (verbose) std::cout << "Getting P(D) with transform length: " 
 			   << nflux << std::endl;
     bool succ;
-    succ = pfactory.initPD(nflux, sigma1, sigma2, maxflux1, maxflux2,
+    succ = pfactory.initPD(nflux, minflux1, maxflux1, maxflux2, maxflux2,
 			   model, bm, doedge);
     if (!succ) {
       std::cerr << "Error initializing P(D) -- parameters not valid" 
 		<< std::endl;
       return 1;
     }    
-    pfactory.getPD(sigma1, sigma2, pd, getLog, fixEdge);
+    pfactory.getPD(sigma1, sigma2, pd, getLog);
 
     //Write it
     if (verbose) std::cout << "Writing P(D) to file " << outputfile 
@@ -485,14 +445,17 @@ int main( int argc, char** argv ) {
       std::cerr << "\tEither" << std::endl;
       std::cerr << std::endl;
 
-      std::cerr << "\t pofd_mcmc_getPD [options] modelfile beamfile outputfile"
+      std::cerr << "\t pofd_mcmc_getPD [options] modelfile beamfile minflux"
+		<< std::endl;
+      std::cerr << "\t\t maxflux outputfile"
 		<< std::endl;
       std::cerr << std::endl;
       std::cerr << "\tfor the 1D case or" << std::endl;
       std::cerr << std::endl;
       std::cerr << "\t pofd_mcmc_getPD -d [options] modelfile beamfile1"
 		<< " beamfile2" << std::endl;
-      std::cerr << "\t  outputfile" << std::endl;
+      std::cerr << "\t  minflux1 maxflux1 minflux2 maxflux2 outputfile" 
+		<< std::endl;
       std::cerr << std::endl;
       std::cerr << "\tfor the 2D case." << std::endl;
       std::cerr << std::endl;
@@ -543,7 +506,12 @@ int main( int argc, char** argv ) {
       std::cerr << std::endl;
       std::cerr << "\tIn both cases the output PD is written to outputfile "
 		<< "either as" << std::endl;
-      std::cerr << "\ttext or as a FITS file." << std::endl;
+      std::cerr << "\ttext, FITS, or HDF5 depending on the options." 
+		<< std::endl;
+      std::cerr << std::endl;
+      std::cerr << "\tThe minimum and maximum ranges of R (not the output P(D))"
+		<< " are" << std::endl;
+      std::cerr << "\tspecified by minflux/maxflux." << std::endl;
       std::cerr << std::endl;
       std::cerr << "OPTIONS" << std::endl;
       std::cerr << "\t-d, --double" << std::endl;

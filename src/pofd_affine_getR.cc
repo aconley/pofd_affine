@@ -68,11 +68,6 @@ int getRSingle( int argc, char** argv ) {
   initfile = std::string(argv[optind + 3]);
   psffile = std::string(argv[optind + 4]);
   outfile = std::string(argv[optind + 5]);
-
-  if (posonly && negonly) {
-    std::cerr << "Can't set both posonly and negonly" << std::endl;
-    return 1;
-  }
   
   double dflux;
   if (nflux > 1)
@@ -133,10 +128,10 @@ int getRSingle( int argc, char** argv ) {
       H5Sclose(mems_id);
 
       // Model
-      groupid = H5Gcreate(objid, "Model", H5P_DEFAULT, H5P_DEFAULT, 
+      group_id = H5Gcreate(file_id, "Model", H5P_DEFAULT, H5P_DEFAULT, 
 			  H5P_DEFAULT);
-      model.writeToHDF5Handle(groupid);
-      H5Gclose(groupid);
+      model.writeToHDF5Handle(group_id);
+      H5Gclose(group_id);
 
       // Rflux
       adims = nflux;
@@ -195,7 +190,6 @@ int getRDouble(int argc, char** argv) {
   unsigned int nflux1, nflux2;
 
   histogram     = false;
-  posonly       = false;
   verbose       = false;
   write_as_hdf5 = false;
 
@@ -246,6 +240,7 @@ int getRDouble(int argc, char** argv) {
   else
     dflux1 = maxflux1 - minflux1;
   if (maxflux2 < minflux2) std::swap(minflux2, maxflux2);
+  if (nflux2 > 1)
     dflux2 = (maxflux2 - minflux2) / static_cast<double>(nflux2 - 1);
   else
     dflux2 = maxflux2 - minflux2;
@@ -295,7 +290,7 @@ int getRDouble(int argc, char** argv) {
 			   "Failed to open HDF5 file to write");
       }
       hsize_t adims;
-      hid_t mems_id, att_id, dat_id;
+      hid_t mems_id, att_id, dat_id, group_id;
       
       // Properties
       adims = 1;
@@ -311,10 +306,10 @@ int getRDouble(int argc, char** argv) {
       H5Sclose(mems_id);
 
       // Model
-      groupid = H5Gcreate(objid, "Model", H5P_DEFAULT, H5P_DEFAULT, 
+      group_id = H5Gcreate(file_id, "Model", H5P_DEFAULT, H5P_DEFAULT, 
 			  H5P_DEFAULT);
-      model.writeToHDF5Handle(groupid);
-      H5Gclose(groupid);
+      model.writeToHDF5Handle(group_id);
+      H5Gclose(group_id);
 
       // Fluxes
       adims = nflux1;
@@ -488,9 +483,6 @@ int main( int argc, char** argv ) {
       std::cerr << "\t\tUse the 2D model." << std::endl;
       std::cerr << "\t-H, --histogram" << std::endl;
       std::cerr << "\t\tUse beam histogramming." << std::endl;
-      std::cerr << "\t-p, --posonly" << std::endl;
-      std::cerr << "\t\tOnly use the positive parts of the beam "
-		<< "(if they exist)." << std::endl;
       std::cerr << "\t-V, --version" << std::endl;
       std::cerr << "\t\tOutput the version number and exit." << std::endl;
       std::cerr << std::endl;

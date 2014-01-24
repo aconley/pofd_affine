@@ -21,7 +21,7 @@
 
   Doesn't include priors.
 
-  Datasets are grouped by their beam because some of the compuation
+  Datasets are grouped by their beam because some of the computation
   can be shared that way.
 
   \ingroup Likelihoods  
@@ -34,10 +34,13 @@ class calcLikeSingle {
   bool data_read; //!< Have we read data?
   unsigned int ndatasets; //!< Number of data sets
   fitsData* data; //!< Actual data sets -- len ndatasets
-  double maxflux; //!< Maximum flux across all data sets for initPD call
+  double minDataFlux; //!< Minimum flux density in actual data 
+  double maxDataFlux; //!< Maximum flux density in actual data 
 
   mutable PD pd; //!< Holds PD; convenience variable
   mutable PDFactory pdfac; //!< Computes PD
+  double minRFlux; //!< Minimum flux for initPD call
+  double maxRFlux; //!< Maximum flux for initPD call
 
   //Noise information
   double* sigma_base; //!< Base value of sigma, len ndatasets
@@ -94,6 +97,8 @@ class calcLikeSingle {
   void applyBinning(unsigned int); //!< Bins data
   void removeBinning(); //!< Remove binning of data
 
+  void setRRange(const numberCounts&); //!< Set range of R evaluations
+
   void setLikeNorm(unsigned int i, double val) { like_norm[i]=val;} //!< Set likelihood normalization factor relative to beam area; set to zero to nor normalize
   void setLikeNorm(const std::vector<double>&); //!< Set likelihood normalization factor
   void setLikeNorm(unsigned int n, const double* const); //!< Set likelihood normalization factor
@@ -112,8 +117,7 @@ class calcLikeSingle {
 
   /*! \brief Returns \f$\log L\f$ over all data sets.  Model must be set */
   double getLogLike(const numberCounts&, bool& pars_invalid, 
-		    double sigmult=1.0, unsigned int fftsize=131072, 
-		    bool edgefix=true) const;
+		    double sigmult=1.0, unsigned int fftsize=131072) const;
 
   void writePDToStream(std::ostream& os) const; //!< Write out computed P(D)
   
@@ -152,7 +156,6 @@ class calcLike {
   //Transform stuff
   unsigned int fftsize; //!< Size of FFT (on each dim)
   unsigned int ninterp; //!< R interpolation size
-  bool edgeFix; //!< Apply edge fix
 
   //Data
   unsigned int nbeamsets; //!< Number of beam sets 
@@ -175,7 +178,7 @@ class calcLike {
  public:
   /*! \brief Constructor */
   calcLike(unsigned int FFTSIZE=262144, unsigned int NINTERP=1024, 
-	   bool EDGEFIX=true, bool BINNED=false, unsigned int NBINS=1000);
+	   bool BINNED=false, unsigned int NBINS=1000);
   ~calcLike(); //!< Destuctor
 
   void freeData(); //!< Remove internal data
@@ -199,14 +202,11 @@ class calcLike {
 
   void setNInterp(unsigned int); //!< Set interpolation size
   unsigned int getNInterp() const { return ninterp; } //!< Get interpolation size
-
   void setBinData(); //!< Turn on binning of data
   void unSetBinData(); //!< Turn off binning of data
   void setNBins(unsigned int); //!< Change number of bins
 
-  void setEdgeFix() { edgeFix=true; } //!< Turn on edge fixing
-  void unSetEdgeFix() { edgeFix=false; } //!< Turn off edge fixing
-  bool getEdgeFix() const { return edgeFix; } //!< Are we edge fixing?
+  void setRRanges(const paramSet& p); //!< Set R ranges for all datasets
 
   /*! \brief Get number of knots in model */
   unsigned int getNKnots() const { return model.getNKnots(); } 
@@ -217,14 +217,14 @@ class calcLike {
   void setKnotPositions(const initFileKnots& ifile)
   { ifile.getKnotPos(model); }
 
-  //Sigma prior
+  // Sigma prior
   /*! \brief Activates the sigma prior with width set to value */
   void setSigmaPrior(double val) { 
     has_sigma_prior=true; sigma_prior_width = val;}
   /*! \brief De-activate the sigma prior */
   void unsetSigmaPrior() { has_sigma_prior = false; }
 
-  //CFIRB prior
+  // CFIRB prior
   /*! \brief Activates the CFIRB prior with the specified values */
   void setCFIRBPrior(double, double);
   /*! \brief De-activated CFIRB prior */

@@ -26,10 +26,15 @@ PDFactory::PDFactory(const std::string& wisfile, unsigned int NINTERP) {
 }
 
 PDFactory::~PDFactory() {
-  if (RinterpFlux != NULL) delete[] RinterpFlux;
-  if (RinterpVals != NULL) delete[] RinterpVals;
-  if (acc != NULL)  gsl_interp_accel_free(acc);
-  if (spline != NULL) gsl_spline_free(spline);
+  if (RinterpFlux_pos != NULL) delete[] RinterpFlux_pos;
+  if (RinterpVals_pos != NULL) delete[] RinterpVals_pos;
+  if (acc_pos != NULL)  gsl_interp_accel_free(acc_pos);
+  if (spline_pos != NULL) gsl_spline_free(spline_pos);
+
+  if (RinterpFlux_neg != NULL) delete[] RinterpFlux_neg;
+  if (RinterpVals_neg != NULL) delete[] RinterpVals_neg;
+  if (acc_neg != NULL)  gsl_interp_accel_free(acc_neg);
+  if (spline_neg != NULL) gsl_spline_free(spline_neg);
 
   if (rvals != NULL) fftw_free(rvals);
   if (rtrans != NULL) fftw_free(rtrans);
@@ -44,7 +49,6 @@ PDFactory::~PDFactory() {
   \param[in] NINTERP number of interpolation points
 */
 void PDFactory::init(unsigned int NINTERP) {
-  currfftlen = 0;
   currsize = 0;
   ninterp = NINTERP;
 
@@ -52,16 +56,23 @@ void PDFactory::init(unsigned int NINTERP) {
   resetTime();
 #endif
 
-  acc = gsl_interp_accel_alloc();
-  spline = NULL;
+  acc_pos = gsl_interp_accel_alloc();
+  spline_pos = NULL;
+  acc_neg = gsl_interp_accel_alloc();
+  spline_neg = NULL;
 
-  interpvars_allocated = false;
-  RinterpFlux = NULL;
-  RinterpVals = NULL;
+  interpvars_allocated_pos = false;
+  RinterpFlux_pos = NULL;
+  RinterpVals_pos = NULL;
+
+  interpvars_allocated_neg = false;
+  RinterpFlux_neg = NULL;
+  RinterpVals_neg = NULL;
 
   plan = plan_inv = NULL;
   rvars_allocated = false;
   rvals = NULL;
+  rdflux = false;
   rtrans = NULL;
   pval = NULL;
   pofd = NULL;
@@ -72,7 +83,7 @@ void PDFactory::init(unsigned int NINTERP) {
   has_wisdom = false;
   fftw_plan_style = FFTW_MEASURE;
 
-  max_sigma = 0.0;
+  rinitialized = false;
   initialized = false;
 
 }
@@ -112,39 +123,28 @@ void PDFactory::summarizeTime(unsigned int nindent) const {
 #endif
 
 /*
-  Doesn't force resize if there is already enough room available
-
   \param[in] NSIZE new size
   \returns True if a resize was needed
-*/
-bool PDFactory::resize(unsigned int NSIZE) {
-  if (NSIZE > currsize) {
-    strict_resize(NSIZE);
-    return true;
-  } else return false;
-}
-
-/*!
-  Forces a resize
-
-  \param[in] NSIZE new size (must be > 0)
 */
 //I don't check for 0 NSIZE because that should never happen
 // in practice, and it isn't worth the idiot-proofing
 // rtrans always gets nulled in here, then refilled when you
 //  call initPD
-void PDFactory::strict_resize(unsigned int NSIZE) {
-  if (NSIZE == currsize) return;
+bool PDFactory::resize(unsigned int NSIZE) {
+  if (NSIZE == currsize) return false;
   freeRvars();
   currsize = NSIZE;
+  if (plan != NULL) { fftw_destroy_plan(plan); plan = NULL; }
+  if (plan_inv != NULL) { fftw_destroy_plan(plan_inv); plan_inv = NULL; }  
   initialized = false;
+  return true;
 }
 
+// Doesn't necessarily invalidate the plans
 void PDFactory::allocateRvars() {
   if (rvars_allocated) return;
   if (currsize == 0)
-    throw affineExcept("PDFactory", "allocate_rvars",
-		       "Invalid (0) currsize");
+    throw affineExcept("PDFactory", "allocate_rvars", "Invalid (0) currsize");
   rvals = (double*) fftw_malloc(sizeof(double) * currsize);
   pofd = (double*) fftw_malloc(sizeof(double) * currsize);
   unsigned int fsize = currsize / 2 + 1;
@@ -153,6 +153,7 @@ void PDFactory::allocateRvars() {
   rvars_allocated = true;
 }
 
+// Doesn't necessarily invalidate the plans
 void PDFactory::freeRvars() {
   if (rvals != NULL) { fftw_free(rvals); rvals=NULL; }
   if (rtrans != NULL) {fftw_free(rtrans); rtrans=NULL; }
@@ -168,40 +169,83 @@ void PDFactory::freeRvars() {
 void PDFactory::setNInterp(unsigned int NINTERP) {
   if (NINTERP == ninterp) return;
   ninterp = NINTERP;
-  if (interpvars_allocated) {
-    freeInterp();
-    allocateInterp();
+  if (interpvars_allocated_pos) {
+    freeInterpPos();
+    allocateInterpPos();
+  }
+  if (interpvars_allocated_neg) {
+    freeInterpNeg();
+    allocateInterpNeg();
   }
 }
 
-void PDFactory::allocateInterp() {
-  if (interpvars_allocated) return;
+void PDFactory::allocateInterpPos() {
+  if (interpvars_allocated_pos) return;
   if (ninterp == 0)
-    throw affineExcept("PDFactory", "allocateInterp",
+    throw affineExcept("PDFactory", "allocateInterpPos",
 		       "Invalid (0) ninterp");
   
-  //Note that acc is always allocated
-  spline = gsl_spline_alloc( gsl_interp_cspline, 
-			     static_cast<size_t>(ninterp));
-  RinterpFlux = new double[ninterp];
-  RinterpVals = new double[ninterp];
-  interpvars_allocated = true;
+  //Note that acc_pos is always allocated
+  spline_pos = gsl_spline_alloc( gsl_interp_cspline, 
+				 static_cast<size_t>(ninterp));
+  RinterpFlux_pos = new double[ninterp];
+  RinterpVals_pos = new double[ninterp];
+  interpvars_allocated_pos = true;
+  rinitialized = false; // Can't match rinterp any more
 }
 
 
-void PDFactory::freeInterp() {
-  if (RinterpFlux != NULL) { delete[] RinterpFlux; RinterpFlux = NULL; }
-  if (RinterpVals != NULL) { delete[] RinterpVals; RinterpVals = NULL; }
-  interpvars_allocated = false;
+void PDFactory::freeInterpPos() {
+  if (RinterpFlux_pos != NULL) { 
+    delete[] RinterpFlux_pos; 
+    RinterpFlux_pos = NULL; 
+  }
+  if (RinterpVals_pos != NULL) { 
+    delete[] RinterpVals_pos; 
+    RinterpVals_pos = NULL; 
+  }
+  interpvars_allocated_pos = false;
+  rinitialized = false; // Can't match rinterp any more
   initialized = false;
 }
+
+void PDFactory::allocateInterpNeg() {
+  if (interpvars_allocated_neg) return;
+  if (ninterp == 0)
+    throw affineExcept("PDFactory", "allocateInterpNeg",
+		       "Invalid (0) ninterp");
+  
+  //Note that acc_neg is always allocated
+  spline_neg = gsl_spline_alloc(gsl_interp_cspline, 
+				static_cast<size_t>(ninterp));
+  RinterpFlux_neg = new double[ninterp];
+  RinterpVals_neg = new double[ninterp];
+  interpvars_allocated_neg = true;
+  rinitialized = false; // Can't match rinterp any more
+}
+
+void PDFactory::freeInterpNeg() {
+  if (RinterpFlux_neg != NULL) { 
+    delete[] RinterpFlux_neg; 
+    RinterpFlux_neg = NULL; 
+  }
+  if (RinterpVals_neg != NULL) { 
+    delete[] RinterpVals_neg; 
+    RinterpVals_neg = NULL; 
+  }
+  interpvars_allocated_neg = false;
+  initialized = false;
+  rinitialized = false; // Can't match rinterp any more
+}
+
 
 /*!
   Frees all internal memory
 */
 void PDFactory::free() {
   freeRvars();
-  freeInterp();
+  freeInterpPos();
+  freeInterpNeg();
 }
 
 /*!
@@ -237,27 +281,30 @@ void PDFactory::addWisdom(const std::string& filename) {
 }
 
 /*!
-  \param[in] n Transform size
+  \param[in] n New transform size.
+  Sets up transforms, resizing if needed
 */
 void PDFactory::setupTransforms(unsigned int n) {
 
-  //The transform plan is that the forward transform
-  // takes rvals to rtrans.  We then do things to rtrans
-  // to turn it into pval, including shifting, adding noise,
-  // etc, and then transform from pval to pofd.
+  // The transform plan is that the forward transform
+  //  takes rvals to rtrans.  We then do things to rtrans
+  //  to turn it into pval, including shifting, adding noise,
+  //  etc, and then transform from pval to pofd.
+  // However, because we may move around the arrays,
+  //  one should always call these plans in array-execute form
 
-  if (n == 0)
+  if (currsize == 0)
     throw affineExcept("PDFactoryDouble", "setupTransforms",
 		       "Invalid (0) transform size");
 
   // Make sure we have enough room
-  bool did_resize = resize(n);
+  resize(n);
 
   //We need the R variables allocated so we can plan to them
   if (!rvars_allocated) allocateRvars();
 
   int intn = static_cast<int>(n);
-  if (did_resize || (currfftlen != n) || (plan == NULL)) {
+  if (plan == NULL) {
     if (plan != NULL) fftw_destroy_plan(plan);
     plan = fftw_plan_dft_r2c_1d(intn, rvals, rtrans,
 				fftw_plan_style);
@@ -270,7 +317,7 @@ void PDFactory::setupTransforms(unsigned int n) {
     throw affineExcept("PDFactory", "setupTransforms", str.str());
   }
 
-  if (did_resize || (currfftlen != n) || (plan_inv == NULL)) {
+  if (plan_inv == NULL) {
     if (plan_inv != NULL) fftw_destroy_plan(plan_inv);
     plan_inv = fftw_plan_dft_c2r_1d(intn, pval, pofd,
 				    fftw_plan_style);
@@ -282,156 +329,283 @@ void PDFactory::setupTransforms(unsigned int n) {
 			<< " that size";
     throw affineExcept("PDFactory", "setupTransforms", str.str());
   }
+}
 
-  currfftlen = n;
+/*!
+  \param[in] n Number of elements
+  \param[in] minflux Minimum flux to use in R
+  \param[in] maxflux Maximum flux to use in R
+
+  Sets up flux information for R.  minflux may not actually be
+   achieved if it is negative, because we try to include flux=0 in that case.
+   If maxflux is negative, it is treated as zero.  And if minflux is
+   greater than zero -- it is treated as zero.
+
+  We don't actually store an array of fluxes.  We just store the
+   information to recreate it.  For purely positive fluxes, this is
+   trivial -- the r flux array is i * dflux + minflux_R after this routine.
+  
+  If there are negative fluxes, this is more complicated.
+  The positive fluxes go up to index wrapRidx.  So we have
+   0 <= i <= wrapRidx  flux = i * dflux
+   wrapRidx < i < n = (i - wrapRidx - 1) * dflux + minflux_R
+  The latter doesn't quite get up to 0, since that was already included in
+   the first part. 
+*/
+void PDFactory::initRFlux(unsigned int n, double minflux, double maxflux) {
+  // Make sure there is room
+  resize(n);
+
+  if (n == 0)
+    throw affineExcept("PDFactory", "initRFlux", "Invalid (0) n");
+  if (maxflux < minflux) std::swap(minflux, maxflux);
+
+  if (n == 1) {
+    if (minflux < 0.0)
+      throw affineExcept("PDFactory", "initRFlux", 
+			 "n must be > 1 with negative fluxes");
+    dflux = maxflux - minflux;
+    minflux_R = minflux;
+    wrapRidx = 0;
+    return;
+  }
+
+  double inm1 = 1.0 / static_cast<double>(n - 1);
+  if (maxflux > 0) {
+    if (minflux > 0) minflux = 0.0; // Always need zero in there somehow
+    if (minflux == 0) {
+      // Simple case -- 0 to maxflux
+      wrapRidx = n - 1;
+      minflux_R = 0.0;
+      dflux = maxflux * inm1;
+    } else {
+      // Most complicated case -- maxflux > 0, minflux < 0
+      //  We would really like to have flux = 0 included.  Also, we 
+      // are wrapping negative fluxes around to the top of the array.  
+      // This doesn't work out for arbitrary min/max flux, 
+      // so something has to give. The choice here is to tweak minflux 
+      // by the smallest amount possible to make it work while keeping
+      // maxflux the same.
+      dflux = (maxflux - minflux) * inm1; // Initial value
+      dflux = maxflux / (n - floor(-minflux / dflux) - 2.0); //Adjust
+      
+      // Figure out what index we go up to with positive fills
+      wrapRidx = static_cast<unsigned int>(maxflux / dflux);
+      minflux_R = (wrapRidx+1) * dflux - static_cast<double>(n) * dflux;
+    }
+  } else {
+    // Maxflux is either 0 or negative.  We will therefore treat it
+    // as zero, since we want to include it.
+    if (minflux >= 0) // But then we need minflux to be negative
+      throw affineExcept("PDFactory", "initRFlux", 
+			 "No effective range in R fluxes");
+    dflux = - minflux * inm1;
+    wrapRidx = 0; // Includes 0, rest of the array is negative
+    minflux_R = minflux;
+  }
+  rinitialized = false; // Any r likely no longer matches this
+  initialized = false; // If there was a P(D), it's no longer valid
 }
 
 /*!
   \param[in] model number counts model to use for fill.  Params must be set
   \param[in] bm Beam 
-  \returns The maximum index that is actually filled
 
   The R and interpolation variables must have already been allocated
-*/
-unsigned int PDFactory::computeR(const numberCounts& model, 
-				 const beam& bm) {
+  This fills in the interpolation variables with R, then interpolates
+  out to the full range.
 
+  Doesn't check validity of model or beam -- caller should do that  
+*/
+void PDFactory::initRInterp(const numberCounts& model, const beam& bm) {
+  
   if (!rvars_allocated)
     throw affineExcept("PDFactory", "computeR",
 		       "R variables must have been previously allocated");
-  if (!interpvars_allocated) allocateInterp();
 
-  // What beams are we using?
+  // Figure out which ones we need to fill
   bool has_pos = bm.hasPos();
   bool has_neg = bm.hasNeg();
-  if ( !(has_pos || has_neg))
+  if (!(has_pos || has_neg))
     throw affineExcept("PDFactory", "computeR",
 		       "Beam has neither positive nor negative bits");
 
-  //Set min/max interpolation is filled in for; the lower
-  // limit is tricky.  For now controlled by user
-  //The max must be slightly less than the top value because R is zero there
-  //The max value is the max model flux times the max pixel
-  // so we have to have different versions for pos/neg
-  double ininterpm1 = 1.0 / static_cast<double>(ninterp-1);
+  double modelmin, modelmax;
   modelmin = model.getMinFlux();
   modelmax = model.getMaxFlux();
+  double ininterpm1 = 1.0 / static_cast<double>(ninterp-1);
 
-  unsigned int max_fill_idx = 0; // Maximum index in R that is set
-  unsigned int n = currfftlen;
   if (has_pos) {
+    if (!interpvars_allocated_pos) allocateInterpPos();
+    // Figure out limits -- we bascially just want to go out to
+    //  where R is nonzero because we will be interpolating in log space.  
+    //  That doesn't work on the lower edge (since R is nonzero for any
+    //  value > 0), so we just use some constant times the lowest model flux.
     double mininterpflux = modelmin * subedgemult;
     double maxinterpflux = modelmax * bm.getMinMaxPos().second;
-    //R[maxinterpflux] = 0.0, which we don't want to include in our
-    // log/log interpolation, so step it back slightly
+
+    // R[maxinterpflux] = 0.0, which we don't want to include in our
+    //  log/log interpolation, so step it back slightly
     double dinterp = 0.001 * (maxinterpflux - mininterpflux) * ininterpm1;
     maxinterpflux -= dinterp;
 
-    //Note that the interpolation is in log space
+    // Note that the interpolation is in log2 space, so therefore
+    //  we want the interpolation flux to be spaced that way
     double dinterpflux = (log2(maxinterpflux / mininterpflux)) * ininterpm1;
     for (unsigned int i = 0; i < ninterp; ++i)
-      RinterpFlux[i] = mininterpflux * 
+      RinterpFlux_pos[i] = mininterpflux * 
 	exp2(static_cast<double>(i) * dinterpflux);
-
+    
+    // Now actually get R
 #ifdef TIMING
     std::clock_t starttime = std::clock();
 #endif
-    model.getR(ninterp, RinterpFlux, bm, RinterpVals, numberCounts::BEAMPOS);
+    model.getR(ninterp, RinterpFlux_pos, bm, RinterpVals_pos);
 #ifdef TIMING
     RTime += std::clock() - starttime;
 #endif
-
+    
     //Load the values into the spline.  Note we take the log --
     // we are interpolating in log space 
     double val;
     for (unsigned int i = 0; i < ninterp; ++i) {
-      val = RinterpVals[i];
-      if (val > 0) RinterpVals[i] = log2(val); //log2 is faster than ln
-      else RinterpVals[i] = pofd_mcmc::smalllogval;
+      val = RinterpVals_pos[i]; // We are paranoid about < 0 values
+      if (val > 0) RinterpVals_pos[i] = log2(val); //log2 is faster than ln
+      else RinterpVals_pos[i] = pofd_mcmc::smalllogval;
     }
-    //Load the Spline
-    gsl_spline_init(spline, RinterpFlux, RinterpVals, 
+    gsl_spline_init(spline_pos, RinterpFlux_pos, RinterpVals_pos, 
 		    static_cast<size_t>(ninterp));
 
-    //Now interpolate out; note r still needs to be multiplied by dflux
-    // for use later.  We figure out which bins are covered by the
-    // interpolation for efficiency
-    int st = static_cast<int>(mininterpflux / dflux + 0.9999999999999999);
-    unsigned int minitidx = (st < 0) ? 0 : static_cast<unsigned int>(st);
-    unsigned int maxitidx = static_cast<unsigned int>(maxinterpflux / dflux);
-    if (maxitidx >= n) maxitidx=n - 1;
-
-    //Now interpolate, setting to zero outside the range
-    if (minitidx > 0) memset(rvals, 0, minitidx * sizeof(double));
-    double cflux, splval;
-    for (unsigned int i = minitidx; i <= maxitidx; ++i) {
-      cflux = static_cast<double>(i) * dflux; //Min is always 0 in R
-      splval = gsl_spline_eval(spline, cflux, acc);
-      rvals[i] = exp2(splval);
-    }
-    for (unsigned int i = maxitidx+1; i < n; ++i)
-      rvals[i] = 0.0;
-    max_fill_idx = maxitidx;
   }
+  // Same, but for negative beam
   if (has_neg) {
-    //And now, we do basically the same thing for the negative beam
-    double mininterpflux = modelmin * subedgemult;
-    double maxinterpflux = modelmax * bm.getMinMaxNeg().second;
-    double dinterp = 0.001*(maxinterpflux-mininterpflux)*ininterpm1;
-    maxinterpflux -= dinterp;
-    double dinterpflux = (log2(maxinterpflux/mininterpflux))*ininterpm1;
-    for (unsigned int i = 0; i < ninterp; ++i)
-      RinterpFlux[i] = 
-        mininterpflux * exp2(static_cast<double>(i) * dinterpflux);
+    if (!interpvars_allocated_neg) allocateInterpNeg();
 
+    double maxinterpflux = -modelmin * subedgemult;
+    double mininterpflux = -modelmax * bm.getMinMaxNeg().second;
+
+    // For this sign, it's R[mininterpflux] that is zero
+    double dinterp = 0.001 * (maxinterpflux - mininterpflux) * ininterpm1;
+    mininterpflux += dinterp;
+
+    // Note that the interpolation is in log2 space, so therefore
+    //  we want the interpolation flux to be spaced that way
+    // Except we want it spaced with more values at the top end now
+    double dinterpflux = (log2(mininterpflux / maxinterpflux)) * ininterpm1;
+    for (unsigned int i = 0; i < ninterp; ++i)
+      RinterpFlux_neg[i] = maxinterpflux * 
+	exp2(static_cast<double>(i) * dinterpflux);
+    
 #ifdef TIMING
     std::clock_t starttime = std::clock();
 #endif
-    model.getR(ninterp,RinterpFlux,bm,RinterpVals,numberCounts::BEAMNEG);
+    model.getR(ninterp, RinterpFlux_neg, bm, RinterpVals_neg);
 #ifdef TIMING
     RTime += std::clock() - starttime;
 #endif
 
     double val;
     for (unsigned int i = 0; i < ninterp; ++i) {
-      val = RinterpVals[i];
-      if (val > 0) RinterpVals[i] = log2(val); //log2 is faster
-      else RinterpVals[i] = pofd_mcmc::smalllogval;
+      val = RinterpVals_neg[i];
+      if (val > 0) RinterpVals_neg[i] = log2(val); //log2 is faster than ln
+      else RinterpVals_neg[i] = pofd_mcmc::smalllogval;
     }
-    gsl_spline_init(spline, RinterpFlux, RinterpVals, 
-                     static_cast<size_t>(ninterp));
-
-    //Now interpolate out, same as before
-    int st = static_cast<int>( mininterpflux/dflux + 0.9999999999999999 );
-    unsigned int minitidx = (st < 0) ? 0 : static_cast<unsigned int>(st);
-    unsigned int maxitidx = static_cast<unsigned int>(maxinterpflux/dflux);
-    if (maxitidx >= n) maxitidx=n-1;
-
-    //Interpolate out
-    if (has_pos) {
-      //In this case we are adding onto previous r values.  We can ignore
-      // the ends, since we would just be adding 0 anyways.
-      double cflux, splval;
-      for (unsigned int i = minitidx; i <= maxitidx; ++i) {
-	cflux = static_cast<double>(i)*dflux; //Min is always 0 in R
-	splval = gsl_spline_eval(spline, cflux, acc);
-	rvals[i] += exp2(splval);
-      }
-      if (maxitidx > max_fill_idx) max_fill_idx = maxitidx;
-    } else {
-      if (minitidx > 0) memset(rvals, 0, minitidx * sizeof(double));
-      double cflux, splval;
-      for (unsigned int i = minitidx; i <= maxitidx; ++i) {
-	cflux = static_cast<double>(i)*dflux; //Min flux is always 0 in R
-	splval = gsl_spline_eval(spline, cflux, acc);
-	rvals[i] = exp2(splval);
-      }
-      for (unsigned int i = maxitidx+1; i < n; ++i)
-	rvals[i] = 0.0;
-      max_fill_idx = maxitidx;
-    }
+    gsl_spline_init(spline_neg, RinterpFlux_neg, RinterpVals_neg, 
+		    static_cast<size_t>(ninterp));
   }
-  return max_fill_idx;
+  rinitialized = false; // Any r likely no longer matches this
+  initialized = false; //!< any transform no longer matches Rinterp
+}
+  
+/*!
+  \param[in] n New size of transform.  Will resize if different than old
+  \param[in] minflux Minimum flux desired in R fill
+  \param[in] maxflux Maximum flux desired in R fill
+  \param[in] model Number counts model
+  \param[in] bm Beam
+  \param[in] muldr Multiply R by dflux
+
+  This is the interface to initRInterp and initRFlux, plus does the
+  filling of the real R.  It does not check the model or beam for
+  validity, so the caller (initPD) must.
+*/
+void PDFactory::initR(unsigned int n, double minflux, double maxflux,
+		      const numberCounts& model, const beam& bm,
+		      bool muldr) {
+  // Set up interp vars, flux ranges
+  initRInterp(model, bm);
+  initRFlux(n, minflux, maxflux);
+
+  // Now interpolate out R into rvals.
+
+  //Now interpolate out; note r still needs to be multiplied by dflux
+  // for use later.  We figure out which bins are covered by the
+  // interpolation for efficiency
+  bool haspos = bm.hasPos() && (maxflux > 0);
+  bool hasneg = bm.hasNeg() && (minflux < 0) && (wrapRidx > 0);
+  
+  std::memset(rvals, 0, n * sizeof(double));
+  if (haspos) {
+    double minI = RinterpFlux_pos[0]; // Min interpolated value
+    double maxI = RinterpFlux_pos[ninterp-1]; // Max interpolated value
+    
+    // This is the minimum R index which will be non-zero for the
+    // positive bit
+    unsigned int minitidx = static_cast<unsigned int>(minI / dflux + 
+						      0.9999999999999999);
+    // And this the maximum
+    unsigned int maxitidx = static_cast<unsigned int>(maxI / dflux);
+    if (maxitidx > wrapRidx) maxitidx = wrapRidx;
+
+#ifdef TIMING
+    std::clock_t starttime = std::clock();
+#endif
+    double cflux, splval;
+    for (unsigned int i = minitidx; i <= maxitidx; ++i) {
+      cflux = static_cast<double>(i) * dflux; //Min is always 0 in positive R
+      splval = gsl_spline_eval(spline_pos, cflux, acc_pos);
+      rvals[i] = exp2(splval); // Recall -- spline is log
+    }
+#ifdef TIMING
+    RTime += std::clock() - starttime;
+#endif
+
+  }
+  if (hasneg) {
+    double minI = RinterpFlux_neg[0]; // Min interpolated value
+    double maxI = RinterpFlux_neg[ninterp-1]; // Max interpolated value
+    
+    // This is the minimum R index which will be non-zero for the
+    // negative bit.  The computation is more complicated here
+    unsigned int minitidx = 
+      static_cast<unsigned int>((minI - minflux_R) / dflux + 
+				wrapRidx + 1 + 0.9999999999999999);
+    if (minitidx <= wrapRidx) minitidx = wrapRidx + 1; // Necessary?
+    unsigned int maxitidx = 
+      static_cast<unsigned int>((maxI - minflux_R) / dflux +
+				wrapRidx + 1);
+    if (maxitidx > n - 1) maxitidx = n - 1;
+
+#ifdef TIMING
+    std::clock_t starttime = std::clock();
+#endif
+    double cflux, splval;
+    for (unsigned int i = minitidx; i <= maxitidx; ++i) {
+      cflux = static_cast<double>(i - wrapRidx - 1) * dflux + minflux_R; 
+      splval = gsl_spline_eval(spline_neg, cflux, acc_neg);
+      rvals[i] = exp2(splval);
+    }
+#ifdef TIMING
+    RTime += std::clock() - starttime;
+#endif
+  }
+
+  if (muldr) {
+    for (unsigned int i = 0; i < n; ++i) rvals[i] *= dflux;
+    rdflux = true;
+  } else rdflux = false;
+
+  rinitialized = true;
 }
 
 /*!
@@ -439,33 +613,194 @@ unsigned int PDFactory::computeR(const numberCounts& model,
 */
 void PDFactory::getMeanVarFromR() {
 
-  if (!rvars_allocated)
+  if (rinitialized)
     throw affineExcept("PDFactory", "getMeanVarFromR",
-		       "R variables not allocated");
+		       "R variables not computed");
 
-  unsigned int n = currfftlen;
-  // mn = \int x R dx.
-  mn = rvals[1]; //Noting that RFlux[0] = 0 always
-  for (unsigned int i = 2; i < n-1; ++i)
-    mn += rvals[i] * static_cast<double>(i);
-  mn += 0.5 * rvals[n-1] * static_cast<double>(n-1);
-  mn *= dflux * dflux;  //Once for x, once for the bin size in the integral
-
-  // var = \int x^2 R dx
-  var_noi= rvals[1]; //Again, using the fact that RFlux[0] = 0
-  double idbl;
-  for (unsigned int i = 2; i < n-1; ++i) {
-    idbl = static_cast<double>(i);
-    var_noi += rvals[i] * idbl * idbl;
+  // We take advantage of the relations:
+  //  mn = \int x R dx
+  //  var = \int x^2 R dx
+  // and use the trapezoid rule. The fact that we may have wrapped
+  // makes this a bit complicated...  we deal with this by doing a
+  // straigt sum (that is, ignore the 0.5 at the edges) then fixing
+  // for that.  Well, actually, only the lower edge needs special treatment
+  double cf, prod;
+  mn = 0.0;
+  var_noi = 0.0;
+  // Pos fluxes
+  // Can start at 1 because cf = 0 at i = 0, so no contribution
+  for (unsigned int i = 1; i <= wrapRidx-1; ++i) {
+    cf = static_cast<double>(i) * dflux;
+    prod = cf * rvals[i];
+    mn += prod;
+    var_noi += cf * prod;
   }
-  idbl = static_cast<double>(n-1);
-  var_noi += 0.5 * rvals[n-1] * idbl * idbl;
-  var_noi *= dflux * dflux * dflux;
+  // Upper edge
+  cf = static_cast<double>(wrapRidx) * dflux;
+  prod = 0.5 * cf * rvals[wrapRidx];
+  mn += prod;
+  var_noi += cf * prod;
+  // Neg fluxes
+  for (unsigned int i = wrapRidx + 1; i < currsize; ++i) {
+    cf = static_cast<double>(i - wrapRidx - 1) * dflux + minflux_R;
+    prod = cf * rvals[i];
+    mn += prod;
+    var_noi += cf * prod;
+  }
+  // Correct lower limit
+  if (wrapRidx < currsize - 1) { // Have negative fluxes, index is wrapRidx+1
+    cf = minflux_R;
+    prod = 0.5 * cf * rvals[wrapRidx - 1];
+    mn -= prod;
+    var_noi -= cf * prod;
+  } else { // No neg fluxes - lower limit is first element.  But these are 0
+    //cf = 0;
+    //prod = 0.5 * cf * rvals[0]; 
+    //mn -= prod;
+    //var_noi -= cf * prod;
+  }
+  
+  // Deal with presence/absence of dflux in R
+  if (!rdflux) {
+    mn *= dflux;
+    var_noi *= dflux;
+  }
+}
+
+/*!
+  \param[out] pd Holds P(D) on output, normalized, mean subtracted,
+                 and with positivity enforced.
+  
+  This does the unwrapping of the internal P(D) into pd.
+*/
+// This should only ever be called by getPD, so the inputs aren't checked
+void PDFactory::unwrapPD(PD& pd) const {
+  
+  // Our acceptance testing is a bit complicated.
+  // If the minimum point is more than nsig1 away from the expected mean (0)
+  //  then we just accept it.  If it is more than nsig2 away, we make sure
+  //  that the min/max ratio of the P(D) along that axis is more than
+  //  maxminratio.  If it is less than nsig2, we just flat out reject.
+  const double nsig1 = 4.0; 
+  const double nsig2 = 2.0;
+  const double maxminratio = 1e5;
+  
+  // First, Enforce positivity
+#ifdef TIMING
+  starttime = std::clock();
+#endif
+  for (unsigned int idx = 0; idx < currsize; ++idx)
+    if (pofd[idx] < 0) pofd[idx] = 0.0;
+#ifdef TIMING
+  posTime += std::clock() - starttime;
+#endif
+
+  // This is slightly tricky -- we may (probably do) have wrapping issues
+  // so we need to un-wrap.  We do this by scanning from the top to
+  // find the minimum in the P(D), then split the array there.
+  // We also find the maximum, but don't keep track of its index
+#ifdef TIMING
+  starttime = std::clock();
+#endif
+  int mdx = static_cast<int>(currsize - 1);
+  double cval, minval, maxval;
+  minval = maxval = pofd[mdx];
+  for (int i = currsize - 2; i >= 0; --i) {
+    cval = pofd[i];
+    if (cval < minval) {
+      minval = cval;
+      mdx = i;
+    } else if (cval > maxval) maxval = cval;
+  }
+  unsigned int minidx = static_cast<unsigned>(mdx);
+
+  // Make sure this is sane!
+  double fwrap_plus = static_cast<double>(minidx) * dflux; // Wrap in pos flux
+  double fwrap_minus = fabs(static_cast<double>(minidx - wrapRidx - 1) * dflux +
+			    minflux_R); // |Wrap| in neg flux
+  double cs1, cs2;
+  cs1 = nsig1 * sg;
+  cs2 = nsig2 * sg;
+  if ((fwrap_plus > cs1) || (fwrap_minus > cs1)) {
+    // Worth further investigation
+    if (fwrap_plus < cs2) {
+      std::stringstream errstr;
+      errstr << "Top wrapping problem; wrapping point at "
+	     << fwrap_plus << " which is only " << fwrap_plus / sg
+	     << " sigma away from expected (0) mean with sigma " << sg;
+      throw affineExcept("PDFactory", "unwrapPD", errstr.str());
+    }
+    if (fwrap_minus < cs2) {
+      std::stringstream errstr;
+      errstr << "Bottom wrapping problem; wrapping point at "
+	     << -fwrap_minus << " which is only " << fwrap_minus / sg
+	     << " sigma away from expected (0) mean, with sigma " << sg;
+      throw affineExcept("PDFactory", "unwrapPD", errstr.str());
+    } 
+    // Min/max ratio test
+    if (maxval / minval < maxminratio) {
+      std::stringstream errstr;
+      errstr << "Wrapping problem with wrapping fluxes: "
+	     << fwrap_plus << " and " << -fwrap_minus << " with min/max ratio: "
+	     << maxval / minval << " and sigma: " << sg;
+      throw affineExcept("PDFactory", "unwrapPD", errstr.str());
+    }
+  }
+
+  // Copy over.  Things above minidx in pofd go into the bottom of
+  // pd.pd_, then the stuff below that in pofd goes above that in pd.pd_
+  // in the same order.
+  pd.resize(currsize);
+  double *ptr_curr, *ptr_out; // convenience vars
+  ptr_curr = pofd + minidx;
+  ptr_out = pd.pd_;
+  //for (unsigned int i = 0; i < currsize - minidx; ++i)
+  //  ptr_out[i] = ptr_curr[i];
+  std::memcpy(ptr_out, ptr_curr, (currsize - minidx) * sizeof(double));
+  ptr_curr = pofd;
+  ptr_out = pd.pd_ + currsize - minidx;
+  //for (unsigned int i = 0; i < minidx; ++i)
+  //  ptr_out[i] = ptr_curr[i];
+  std::memcpy(ptr_out, ptr_curr, minidx * sizeof(double));
+
+  pd.logflat = false;
+  pd.minflux = 0.0; pd.dflux = dflux;
+
+#ifdef TIMING
+  copyTime += std::clock() - starttime;
+#endif
+
+  //Normalize
+#ifdef TIMING
+  starttime = std::clock();
+#endif
+  pd.normalize();
+#ifdef TIMING
+  normTime += std::clock() - starttime;
+#endif
+
+  //Now mean subtract flux axis
+#ifdef TIMING
+  starttime = std::clock();
+#endif
+  double tmn; //True mean
+  pd.getMean(tmn, false);
+  if (std::isinf(tmn) || std::isnan(tmn)) {
+    std::stringstream str;
+    str << "Un-shift amounts not finite: " << tmn << " " << std::endl;
+    str << "At length: " << currsize << " with noise: " << sg;
+    throw affineExcept("PDFactory", "unwrapPD", str.str());
+  }
+  pd.minflux = -tmn;
+#ifdef TIMING
+  meanTime += std::clock() - starttime;
+#endif
+
 }
 
 /*!
   \param[in] n       Size of transform 
-  \param[in] sigma   Maximum allowed sigma
+  \param[in] minflux Minimum flux generated in R
   \param[in] maxflux Maximum flux generated in R
   \param[in] model   number counts model to use for fill.  Params must be set
   \param[in] bm      Beam 
@@ -478,23 +813,21 @@ void PDFactory::getMeanVarFromR() {
   transforming it.  The idea is to compute everything that doesn't
   require knowing sigma here so we can call this multiple times on
   maps with the same beam but different noise values.
- 
-  Note that n is the transform size; the output array will generally
-  be smaller because of padding.  Furthermore, because of mean shifting,
-  the maximum flux will end up being -less- than maxflux in practice
-  by about the mean flux + 10 sigma.
 */
-bool PDFactory::initPD(unsigned int n, double sigma,
-		       double maxflux, const numberCounts& model,
-		       const beam& bm) {
+bool PDFactory::initPD(unsigned int n, double minflux, double maxflux, 
+		       const numberCounts& model, const beam& bm) {
 
   if (n == 0)
     throw affineExcept("PDFactory", "initPD", "Invalid (non-positive) n");  
-  if (sigma < 0.0)
-    throw affineExcept("PDFactory", "initPD", "Invalid (negative) sigma1");
   if (maxflux <= 0.0)
     throw affineExcept("PDFactory", "initPD", "Invalid (non-positive) maxflux");
+  if (!model.isValid())
+    throw affineExcept("PDFactory", "initPD", "Invalid model");
+  if (!bm.hasData())
+    throw affineExcept("PDFactory", "initPD", "Empty beam");
 
+  // We are about to nuke these
+  rinitialized = false;
   initialized = false;
 
   //Make the plans, or keep the old ones if possible
@@ -502,38 +835,22 @@ bool PDFactory::initPD(unsigned int n, double sigma,
   // may overwrite the values.  This allocates R and sets currfftlen
   setupTransforms(n);
 
-  //Compute R.  We do this via interpolation -- compute R
-  // for ninterp positions, then fill that into rvals.
-  // We do pos and neg seperately because the interpolation works
-  // better on each component, rather than interpolating on
-  // the sum of R.  At least, that's the theory.  Note that the
-  // interpolated R is always computed out to its highest non-zero value
-  dflux = maxflux / static_cast<double>(n - 1);
-  unsigned int max_fill_idx;
-  max_fill_idx = computeR(model, bm); //Also allocates the interp vars as needed
-  
+  // Initialize R, multiplying it by dflux
+  initR(n, minflux, maxflux, model, bm, true);
+
   //Now that we have R, use it to compute the mean and variance
   // (stored in mn and var_noi)
   getMeanVarFromR();
 
-  //Now, compute the sigma for the maximum instrumental sigma
-  // supported by this call to init
-  sg = sqrt(var_noi + sigma * sigma);
+  // Set this to the value without instrument noise for now
+  sg = sqrt(var_noi);
 
-  //Multiply R by dflux factor to represent the actual
-  // number of sources in each bin
-  for (unsigned int i = 0; i < n; ++i)
-    rvals[i] *= dflux;
-
-  //Decide if we will shift and pad, and if so by how much
-  //Only do shift if the noise is larger than one actual step size
-  // Otherwise we can't represent it well.
-  bool dopad = (sigma > dflux);
-  doshift = (dopad &&  (mn < pofd_mcmc::n_sigma_shift * sg));
-  if (doshift) 
-    shift = pofd_mcmc::n_sigma_shift * sg - mn; 
-  else
-    shift=0.0;
+  //Decide if we will shift and pad, and if so by how much.
+  // The idea is to shift the mean to zero -- but we only
+  // do the shift if the sigma is larger than one actual step size
+  // because otherwise we can't represent it well.
+  doshift = (sg > dflux) && (fabs(mn) > dflux);
+  if (doshift) shift = -mn; else shift = 0.0;
 
   if (verbose) {
     std::cout << " Initial mean estimate: " << mn << std::endl;
@@ -544,81 +861,16 @@ bool PDFactory::initPD(unsigned int n, double sigma,
       std::cout << " Not applying additional shift" << std::endl;
   }
 
-  //Make sure that maxflux is large enough that we don't get
-  // bad aliasing wrap from the top around into the lower P(D) values.
-  //If it is -not- large enough this is treated as an invalid set of
-  // parameters rather than an error.  This is slightly risky -- the user
-  // could cause this to screw up.  But, in practice, for users who
-  // know what they are doing what this pretty much always means is that
-  // the model has gone crazy
-  if (maxflux <= pofd_mcmc::n_sigma_pad * sg) {
-    if (verbose) 
-      std::cout << "Top wrap problem, with maxflux: " << maxflux << std::endl
-		<< " instrument sigma value: " << sigma << std::endl
-		<< " intrinsic sigma estimate: " << sqrt(var_noi) << std::endl
-		<< " and current sigma estimate: " << sg << std::endl
-		<< "For model: " << model;
-    return false;
-  }
-
-  //The other side of the equation is that we want to zero-pad the
-  // top, and later discard that stuff.
-  // The idea is as follows:
-  // the 'target mean' of the calculated P(D) will lie at mn+shift.
-  // We assume that anything within n_sigma_pad * sg
-  // is 'contaminated'.  That means that, if n_sigma_pad*sg >
-  // mn+shift, there will be some wrapping around the bottom of the P(D)
-  // to contaminate the top by an amount n_sigma_pad*sg - (mn+shift).
-  // We therefore zero pad and discard anything above
-  // maxflux - (n_sigma_pad*sg - (mn+shift))
-  if (dopad) {
-    double contam = pofd_mcmc::n_sigma_pad*sg - (mn+shift);
-    if (contam < 0) maxidx = n; else {
-      double topflux = maxflux - contam;
-      if (topflux < 0) {
-	std::stringstream errstr;
-	errstr << "Padding problem with with maxflux: " << maxflux
-	   << " sigma value: " << sigma 
-	   << " and contam value: " << contam << std::endl;
-	errstr << "For model: " << model;
-	throw affineExcept("PDFactory", "initPD", errstr.str());
-      }
-      maxidx = static_cast< unsigned int>(topflux / dflux);
-      if (maxidx > n) {
-	std::stringstream errstr;
-	errstr << "Padding index problem with with maxflux: " << maxflux
-	   << " sigma value: " << sigma 
-	   << " and contam value: " << contam << std::endl;
-	errstr << "For model: " << model;
-	throw affineExcept("PDFactory", "initPD", errstr.str());
-      }
-      if (maxidx == 0) {
-	std::stringstream errstr;
-	errstr << "maxidx=0 problem with with maxflux: " << maxflux
-	   << " sigma value: " << sigma 
-	   << " and contam value: " << contam << std::endl;
-	errstr << "For model: " << model;
-	throw affineExcept("PDFactory", "initPD", 
-			   errstr.str());
-      }
-      // Apply the padding
-      if (maxidx <= max_fill_idx)
-	for (unsigned int i = maxidx; i < n; ++i)
-	  rvals[i] = 0.0;
-    }
-  } else maxidx = n;
-
   //Compute forward transform of this r value, store in rtrans
-  //Have to use argument version, since the address of rtrans can move
+  //Have to use argument version, since the address of rtrans, etc. can move
 #ifdef TIMING
   starttime = std::clock();
 #endif
-  fftw_execute_dft_r2c(plan,rvals,rtrans); 
+  fftw_execute_dft_r2c(plan, rvals, rtrans); 
 #ifdef TIMING
   fftTime += std::clock() - starttime;
 #endif
 
-  max_sigma = sigma;
   initialized = true;
 
   return true;
@@ -635,37 +887,23 @@ bool PDFactory::initPD(unsigned int n, double sigma,
   \param[in] edgeFix  Apply a fix to the lower edges to minimize wrapping
                       effects using a Gaussian to each row/col
 
-  Note that n is the transform size; the output array will generally
-  be smaller because of padding.  Furthermore, because of mean shifting,
-  the maximum flux often won't quite match the target values.
-
-  You must call initPD first, or bad things will probably happen.
+  You must call initPD first.
 */
-void PDFactory::getPD(double sigma, PD& pd, bool setLog, 
-		      bool edgeFix) {
+void PDFactory::getPD(double sigma, PD& pd, bool setLog) {
 
   // The basic idea is to compute the P(D) from the previously filled
   // R values, adding in noise and all that fun stuff, filling pd
   // for output
 
-  if (! initialized )
+  if (!initialized )
     throw affineExcept("PDFactory", "getPD", "Must call initPD first");
-  if (sigma > max_sigma) {
-    std::stringstream errstr("");
-    errstr << "Sigma value " << sigma
-	   << " larger than maximum prepared value " << max_sigma
-	   << std::endl;
-    errstr << "initPD should have been called with at least " << sigma;
-    throw affineExcept("PDFactory", "getPD", errstr.str());
-  }
 
   //Output array from 2D FFT is n/2+1
-  unsigned int n = currfftlen;
+  unsigned int n = currsize;
   unsigned int ncplx = n / 2 + 1;
       
   //Calculate p(omega) = exp( r(omega) - r(0) ),
-  // convolving together all the bits into pval, which
-  // is what we will transform back into pofd.
+  // which is what we will transform back into pofd.
   // The forward transform of R is stored in rtrans 
   // There are some complications because of shifts and all that.
   // The frequencies are:
@@ -683,26 +921,50 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog,
   r0 = rtrans[0][0]; //r[0] is pure real
   double iflux = mcmc_affine::two_pi / (n * dflux);
 
+  // Four cases -- with and without shifting, with and without sigma.
+  //  Write them out explicitly since this is inner loop stuff
   if (doshift) {
-    //This should be the most common case,
-    // and corresponds to having some noise
-    double sigfac = 0.5*sigma*sigma;
     double w;
-    for (unsigned int idx = 1; idx < ncplx; ++idx) {
-      w    = iflux * static_cast<double>(idx);
-      rval = rtrans[idx][0] - r0 - sigfac*w*w;
-      ival = rtrans[idx][1] - shift*w;
-      expfac = exp( rval );
-      pval[idx][0] = expfac*cos(ival);
-      pval[idx][1] = expfac*sin(ival);
-    } 
+    if (sigma > 0) {
+      double sigfac = 0.5 * sigma * sigma;
+      for (unsigned int idx = 1; idx < ncplx; ++idx) {
+	w = iflux * static_cast<double>(idx);
+	rval = rtrans[idx][0] - r0 - sigfac * w * w;
+	ival = rtrans[idx][1] - shift * w;
+	expfac = exp(rval);
+	pval[idx][0] = expfac * cos(ival);
+	pval[idx][1] = expfac * sin(ival);
+      } 
+    } else {
+      for (unsigned int idx = 1; idx < ncplx; ++idx) {
+	w = iflux * static_cast<double>(idx);
+	rval = rtrans[idx][0] - r0;
+	ival = rtrans[idx][1] - shift * w;
+	expfac = exp(rval);
+	pval[idx][0] = expfac * cos(ival);
+	pval[idx][1] = expfac * sin(ival);
+      } 
+    }
   } else {
-    //No shift, sigma must be zero
-    for (unsigned int idx = 1; idx < ncplx; ++idx) {
-      expfac = exp(rtrans[idx][0]-r0);
-      ival = rtrans[idx][1];
-      pval[idx][0] = expfac*cos(ival);
-      pval[idx][1] = expfac*sin(ival);
+    double expfac, ival;
+    if (sigma > 0.0) {
+      double w, rval;
+      double sigfac = 0.5 * sigma * sigma;
+      for (unsigned int idx = 1; idx < ncplx; ++idx) {
+	w = iflux * static_cast<double>(idx);
+	rval = rtrans[idx][0] - r0 - sigfac * w * w;
+	ival = rtrans[idx][1];
+	expfac = exp(rval);
+	pval[idx][0] = expfac * cos(ival);
+	pval[idx][1] = expfac * sin(ival);
+      }
+    } else {
+      for (unsigned int idx = 1; idx < ncplx; ++idx) {
+	expfac = exp(rtrans[idx][0]-r0);
+	ival = rtrans[idx][1];
+	pval[idx][0] = expfac * cos(ival);
+	pval[idx][1] = expfac * sin(ival);
+      }
     }
   }
   //p(0) is special
@@ -718,72 +980,16 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog,
 #ifdef TIMING
   starttime = std::clock();
 #endif
-  fftw_execute(plan_inv); //overwrites pofd with reverse transform of pval
+  // From pval into pofd
+  fftw_execute_dft_c2r(plan, pval, pofd);
 #ifdef TIMING
   fftTime += std::clock() - starttime;
 #endif
 
-  //Enforce positivity
-#ifdef TIMING
-  starttime = std::clock();
-#endif
-  for (unsigned int idx = 0; idx < n; ++idx)
-    if (pofd[idx] < 0) pofd[idx] = 0.0;
-#ifdef TIMING
-  posTime += std::clock() - starttime;
-#endif
-
-  //Copy into output variable
-#ifdef TIMING
-  starttime = std::clock();
-#endif
-  pd.resize(maxidx);
-  for (unsigned int i = 0; i < maxidx; ++i)
-    pd.pd_[i] = pofd[i];
-  pd.logflat = false;
-  pd.minflux = 0.0; pd.dflux = dflux;
-#ifdef TIMING
-  copyTime += std::clock() - starttime;
-#endif
-
-  //Normalize
-#ifdef TIMING
-  starttime = std::clock();
-#endif
-  pd.normalize();
-#ifdef TIMING
-  normTime += std::clock() - starttime;
-#endif
-
-  //Fix up the edge.  Must be done after normalization
-#ifdef TIMING
-  starttime = std::clock();
-#endif
-  if (edgeFix) pd.edgeFix();
-#ifdef TIMING
-  edgeTime += std::clock() - starttime;
-#endif
-
-  //Now mean subtract flux axis
-#ifdef TIMING
-  starttime = std::clock();
-#endif
-  double tmn; //True mean
-  pd.getMean(tmn,false);
-  if ( std::isinf(tmn) || std::isnan(tmn) ) {
-    std::stringstream str;
-    str << "Un-shift amounts not finite: " << tmn << " " << std::endl;
-    str << "At length: " << n << " with noise: " << sigma;
-    throw affineExcept("PDFactory", "getPD", str.str());
-  }
-  if (verbose) {
-    std::cerr << " Expected mean: " << shift+mn 
-	      << " Realized mean: " << tmn << std::endl;
-  }
-  pd.minflux = -tmn;
-#ifdef TIMING
-  meanTime += std::clock() - starttime;
-#endif
+  // Copy into output variable, also normalizing, mean subtracting, 
+  // making positive
+  sg = sqrt(var_noi + sigma * sigma); // Used in unwrapPD
+  unwrapPD(pd);
 
   //Turn PD to log for more efficient log computation of likelihood
 #ifdef TIMING
@@ -794,7 +1000,7 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog,
   logTime += std::clock() - starttime;
 #endif
 }
- 
+
 void PDFactory::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<unsigned int*>(&fftw_plan_style), 1, MPI_UNSIGNED,
 	   dest, pofd_mcmc::PDFSENDPLANSTYLE, comm);
@@ -837,8 +1043,10 @@ void PDFactory::recieveCopy(MPI_Comm comm, int src) {
   MPI_Recv(&nnewinterp, 1, MPI_UNSIGNED, src, pofd_mcmc::PDFNINTERP,
 	   comm, &Info);
   if (nnewinterp != ninterp) {
-    freeInterp();
+    freeInterpPos();
+    freeInterpNeg();
     ninterp = nnewinterp;
   }
+  rinitialized = false;
   initialized = false;
 }

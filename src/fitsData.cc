@@ -325,19 +325,19 @@ double fitsData::getMax() const {
 }
 
 /*!
-  \param[out] min Minimum flux
-  \param[out] max Maximum flux
+  \returns min/max flux density as a pair
 */
-void fitsData::getMinMax(double& min, double& max) const {
+dblpair fitsData::getMinMax() const {
+  double min, max;
   if (n == 0) {
     min = max = std::numeric_limits<double>::quiet_NaN();
-    return;
+    return std::make_pair(min, max);
   }
   
   if (is_binned) {
     min = bincent0;
     max = bincent0 + static_cast<double>(nbins-1)*bindelta;
-    return;
+    return std::make_pair(min, max);
   }
 
   double cval;
@@ -347,6 +347,7 @@ void fitsData::getMinMax(double& min, double& max) const {
     if (cval < min) min=cval;
     if (cval > max) max=cval;
   }
+  return std::make_pair(min, max);
 }
 
 /*!
@@ -390,25 +391,24 @@ void fitsData::applyBinning(unsigned int NBINS) {
   std::memset(binval, 0, nbins * sizeof(unsigned int));
 
   //First, we need the minimum and maximum
-  double minval, maxval;
-  getMinMax(minval, maxval);
+  dblpair minmax = getMinMax();
 
   //We want to put the max and min in the center of the top and
   // bottom bin (not at the edges -- a somewhat arbitrary choice)
-   bincent0 = minval;
-   if (nbins == 1)
-     bindelta = 2 * (maxval - minval);
-   else
-     bindelta = (maxval - minval) / static_cast<double>(nbins - 1);
+  bincent0 = minmax.first;
+  if (nbins == 1)
+    bindelta = 2 * (minmax.second - minmax.first);
+  else
+    bindelta = (minmax.second - minmax.first) / static_cast<double>(nbins - 1);
 
-   //And... bin
-   double ibindelta = 1.0/bindelta;
-   unsigned int idx;
-   for (unsigned int i = 0; i < n; ++i) {
-     idx = static_cast<unsigned int>((data[i] - bincent0) * ibindelta + 0.5);
-     binval[idx] += 1;
-   }
-   is_binned = true;
+  //And... bin
+  double ibindelta = 1.0 / bindelta;
+  unsigned int idx;
+  for (unsigned int i = 0; i < n; ++i) {
+    idx = static_cast<unsigned int>((data[i] - bincent0) * ibindelta + 0.5);
+    binval[idx] += 1;
+  }
+  is_binned = true;
 }
 
 void fitsData::removeBinning() {

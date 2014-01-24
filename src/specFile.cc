@@ -26,7 +26,6 @@ void specFile::init() {
   ignore_mask = false;
   fftsize = 131072;
   ninterp = 1024;
-  edge_fix = true;
   minbeamval = 1e-5;
   beam_histogram = true;
   nbeamhist = 120;
@@ -174,14 +173,6 @@ void specFile::readFile(const std::string& flname) {
       
       ninterp = static_cast<unsigned int>(ival);
 
-    } else if (words[0] == "edge_fix") {
-      if (words.size() < 2) {
-	errstr << "edge_fix line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
-      }
-
-      edge_fix = utility::string_true(words[1]);
     } else if (words[0] == "minbeamval") {
       if (words.size() < 2) {
 	errstr << "minbeamval line doesn't have right number of entries: "

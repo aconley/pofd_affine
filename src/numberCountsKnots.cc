@@ -292,6 +292,56 @@ double numberCountsKnots::getMaxFlux() const {
   return knots[nknots-1];
 }
 
+
+/*!
+  \param[in] bm Beam to compute range for
+  \returns A pair of min/max fluxes over which R is expected to be nonzero.
+
+  Doesn't check for model validity.
+  We also include flux=0, even though R is technically zero there.
+*/
+dblpair numberCountsKnots::getRRangeInternal(const beam& bm) const 
+  throw(affineExcept) {
+
+  const double safetyfac = 1.01;
+
+  double maxknot = knots[nknots - 1];
+  
+  bool haspos = bm.hasPos();
+  bool hasneg = bm.hasNeg();
+
+  double minRF, maxRF;
+  if (haspos) {
+    maxRF = maxknot / bm.getMinMaxPos().second;
+    if (hasneg)
+      minRF = - safetyfac * maxknot * bm.getMinMaxNeg().second;
+    else
+      minRF = 0.0;
+  } else {
+    maxRF = 0.0;
+    minRF = - safetyfac * maxknot * bm.getMinMaxNeg().second;
+  }
+  return std::make_pair(minRF, maxRF);
+}
+
+/*!
+  \param[in] bm Beam to compute range for
+  \returns A pair of min/max fluxes over which R is expected to be nonzero.
+
+  We also include flux=0, even though R is technically zero there.
+*/
+dblpair numberCountsKnots::getRRange(const beam& bm) const 
+  throw(affineExcept) {
+
+  if (!isValid())
+    throw affineExcept("numberCountsKnots", "getRRange",
+		       "Model is not valid");
+  if (!bm.hasData())
+    throw affineExcept("numberCountsKnots", "getRRange",
+		       "Beam is empty");
+  return getRRangeInternal(bm);
+}
+
 /*!
   \param[inout] comm MPI communicator
   \param[in] dest Destination to send messages to

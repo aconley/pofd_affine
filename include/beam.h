@@ -71,6 +71,7 @@ class beam {
 
   void readFile(const std::string& filename, double MINVAL=1e-5); //!< Read in file
   void makeHistogram(unsigned int NBINS=120); //!< Prepare the histogram
+  bool hasData() const { return haspos || hasneg; } //!< has data been loaded
 
   double getEffectiveArea() const; //!< Get effective area of beam in sq deg
   double getEffectiveAreaPos() const; //!< Get effective area of positive beam in sq deg

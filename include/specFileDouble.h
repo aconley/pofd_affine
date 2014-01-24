@@ -52,8 +52,6 @@
                   Activates beam histogramming.  On by default.
    nbeamhist= value
                   If beam histogramming, number of bins in histogram (def: 150)
-   edge_fix=    bool
-                  Apply edge fix to P(D). On by default.
    fit_sigma1=  value
                   If value is true, this turns on fitting for sigma in band 1
    fit_sigma2=  value
@@ -109,7 +107,6 @@ struct specFileDouble {
   unsigned int fftsize; //!< Length of fft
   bool edge_set; //!< Do edge setting integration
   unsigned int nedge; //!< Number of edge integration points
-  bool edge_fix; //!< Apply edge fix to P(D)
   double minbeamval; //!< Minimum beam value used
   bool beam_histogram; //!< Do beam histogramming
   unsigned int nbeamhist; //!< Number of beam histogram bins

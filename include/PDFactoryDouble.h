@@ -24,39 +24,42 @@
   Unlike the one band version, doesn't interpolate on R.  Two dimensional
   interpolation was either inaccurate or not faster than directly computing
   R in tests.
- */
-
+*/
 class PDFactoryDouble {
  private :
   //Constants controlling edge integrations
   static const double lowEdgeRMult; //!< How far down to go from model limits in edge integrals
   static const bool use_edge_log_x; //!< Integrate Rx in x log space
   static const bool use_edge_log_y; //!< Integrate Ry in y log space
-
+  
+  bool rinitialized; //!< R, RFluxes are filled
   bool initialized; //!< forward transformed R is filled
 
   unsigned int currsize; //!< Current memory allocation
-  unsigned int currfftlen; //!< Current FFT length (in each dimension)
-  double max_sigma1; //!< Current max supported sigma, band 1
-  double max_sigma2; //!< Current max supported sigma, band 2
   double mn1; //!< Expected mean, band 1
   double mn2; //!< Expected mean, band 2
   double var_noi1; //!< Expected variance without instrumental noise, band 1
   double var_noi2; //!< Expected variance without instrumental noise, band 2
-  double sg1; //!< Expected sigma (inc instrument noise), band 1
-  double sg2; //!< Expected sigma (inc instrument noise), band 2
+  double sg1; //!< Expected sigma (inc instrument noise), band 1 of most recent
+  double sg2; //!< Expected sigma (inc instrument noise), band 2 of most recent
 
+  unsigned int fftw_plan_style; //!< FFTW plan flags
+  bool has_wisdom; //!< Has FFTW wisdom 
+  std::string wisdom_file; //!< Name of wisdom file
   fftw_plan plan;     //!< Holds forward transformation plan
   fftw_plan plan_inv; //!< Holds inverse transformation plan
 
   //Working variables for transformation
   bool rvars_allocated; //!< Are R variables (rest of this block) allocated
   double* rvals; //!< Working space for R computation, row major order
+  bool rdflux; //!< Has rvals been multiplied by dflux1 * dflux2?
   fftw_complex *rtrans; //!< Holds FFTed rvals 
   fftw_complex* pval; //!< Working variable holding p = exp( stuff )
   double* pofd; //!< Internal P(D) variable.  
   double *RFlux1; //!< Holds R flux values for fill
+  unsigned int RwrapIdx1; //!< Pos/neg wrap index in RFlux1
   double *RFlux2; //!< Holds R flux values for fill
+  unsigned int RwrapIdx2; //!< Pos/neg wrap index in RFlux2
 
   void allocateRvars(); //!< Allocates R variables if needed
   void freeRvars(); //!< Free R variables
@@ -73,31 +76,32 @@ class PDFactoryDouble {
 
   double dflux1; //!< Flux size step of last computation, band 1
   double dflux2; //!< Flux size step of last computation, band 2
-  unsigned int maxidx1; //!< Max non-zero index in R, band 2
-  unsigned int maxidx2; //!< Max non-zero index in R, band 2
   bool doshift1; //!< Apply shifting, band 2
   bool doshift2; //!< Apply shifting, band 2
   double shift1; //!< Shift amount, band 2
   double shift2; //!< Shift amount, band 2
 
-  unsigned int fftw_plan_style; //!< FFTW plan flags
-  bool has_wisdom; //!< Has FFTW wisdom 
-  std::string wisdom_file; //!< Name of wisdom file
-
   bool verbose; //!< Outputs information about each iter
 
   void init(unsigned int); //!< Initializes memory
-  bool resize(unsigned int); //!< Sets transform size arrays
-  void strict_resize(unsigned int); //!< Sets transform size arrays
+  void resize(unsigned int); //!< Sets transform size arrays
 
-  void setupTransforms(unsigned int); //!< Sets up FFTW plans and resizes
-  void computeR(double, double, const numberCountsDouble&,
-		const doublebeam&, bool);
+  /*! \brief Sets RFlux1, Rflux2, with wrapping */
+  void initRFlux(unsigned int n, double minflux1, double maxflux1,
+		 double minflux2, double maxflux2);
+
+  /*! \brief Fills in rvals */
+  void initR(unsigned int n, double minflux1, double maxflux1,
+	     double minflux2, double maxflux2, 
+	     const numberCountsDouble&, const doublebeam&, 
+	     bool setEdge=true, bool muldr=false); 
 
   /*! \brief Get P(D) statistics from R computation (so without inst. noise) */
-  void getRStats(unsigned int n, double& mn1, double& mn2,
-		 double& var1, double& var2) const;
+  void getRStats();
 
+  void unwrapPD(PDDouble& pd) const; //!< Moves computed P(D) to output var
+
+  void setupTransforms(unsigned int); //!< Sets up FFTW plans and resizes
 #ifdef TIMING
   std::clock_t RTime, p0Time, fftTime, posTime, copyTime;
   std::clock_t normTime, edgeTime, meanTime, logTime;
@@ -114,9 +118,6 @@ class PDFactoryDouble {
   void setVerbose() { verbose = true; } //!< Sets verbose mode
   void unsetVerbose() { verbose = false; } //!< Unset verbose mode
 
-  /*! \brief Get size of current FFT */
-  unsigned int getCurrFFTLen() const { return currfftlen; }
-
   /*! \brief Returns edge integration length */
   unsigned int getNEdge() const { return nedge; }
   void setNEdge(unsigned int); //!< Set nedge
@@ -125,17 +126,16 @@ class PDFactoryDouble {
   void addWisdom(const std::string& filename);
 
   /*! \brief Initializes P(D) by computing R and forward transforming it*/
-  bool initPD(unsigned int, double, double, double, double, 
-	      const numberCountsDouble&, const doublebeam&,
+  bool initPD(unsigned int n, double minflux1, double maxflux1, 
+	      double minflux2, double maxflux2, 
+	      const numberCountsDouble&, const doublebeam& bm,
 	      bool setEdge=true);
 
   /*! \brief Gets P(D) with specified noise levels */
-  void getPD(double, double, PDDouble&, bool setLog=true, 
-	     bool edgeFix=false);
+  void getPD(double, double, PDDouble&, bool setLog=true);
 
   void sendSelf(MPI_Comm, int dest) const; //!< MPI copy send operation
   void recieveCopy(MPI_Comm, int dest); //!< MPI copy recieve operation
-
 
 #ifdef TIMING
   void resetTime(); //!< Reset timing information
