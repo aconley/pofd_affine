@@ -939,10 +939,10 @@ void numberCountsDoubleLogNormal::setRWorkSize(unsigned int sz) const {
   }
   if (sz > 0) {
     for (unsigned int i = 0; i < 2; ++i) {
-      if (RWorkValid[i] != NULL) RWorkValid[i] = new bool[sz];
-      if (RWork1[i] != NULL) RWork1[i] = new double[sz];
-      if (RWork2[i] != NULL) RWork2[i] = new double[sz];
-      if (RWork3[i] != NULL) RWork3[i] = new double[sz];
+      RWorkValid[i] = new bool[sz];
+      RWork1[i] = new double[sz];
+      RWork2[i] = new double[sz];
+      RWork3[i] = new double[sz];
     }
   } else {
     for (unsigned int i = 0; i < 2; ++i) {
@@ -1205,8 +1205,7 @@ dblpair numberCountsDoubleLogNormal::getMinFlux() const {
   if (nknots == 0) 
     return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
 			  std::numeric_limits<double>::quiet_NaN());
-  return std::make_pair(std::numeric_limits<double>::min(),
-			std::numeric_limits<double>::min());
+  return std::make_pair(knots[0], std::numeric_limits<double>::min());
 }
 
 /*
@@ -1240,7 +1239,6 @@ dblpair numberCountsDoubleLogNormal::getMaxFlux() const {
 std::pair<dblpair, dblpair> 
 numberCountsDoubleLogNormal::getRRangeInternal(const doublebeam& bm) const 
   throw(affineExcept) {
-  const double safetyfac = 1.01;
 
   double minflux1, maxflux1, minflux2, maxflux2;
   minflux1 = maxflux1 = minflux2 = maxflux2 = 0.0;
@@ -1249,30 +1247,30 @@ numberCountsDoubleLogNormal::getRRangeInternal(const doublebeam& bm) const
   double cval;
   if (bm.hasSign(0)) {
     // pos/pos bit.  Affects maximum values in bands 1 and 2
-    cval = safetyfac * maxf.first * bm.getMinMax1(0).second;
+    cval = maxf.first * bm.getMinMax1(0).second;
     if (cval > maxflux1) maxflux1 = cval;
-    cval = safetyfac * maxf.second * bm.getMinMax2(0).second;
+    cval = maxf.second * bm.getMinMax2(0).second;
     if (cval > maxflux2) maxflux2 = cval;
   }
   if (bm.hasSign(1)) {
     //pos/neg bit.  Affects maximum in band 1, minimum in band 2
-    cval = safetyfac * maxf.first * bm.getMinMax1(1).second;
+    cval = maxf.first * bm.getMinMax1(1).second;
     if (cval > maxflux1) maxflux1 = cval;
-    cval = -safetyfac * maxf.second * bm.getMinMax2(1).second;
+    cval = - maxf.second * bm.getMinMax2(1).second;
     if (cval < minflux2) minflux2 = cval;
   }
   if (bm.hasSign(2)) {
     //neg/pos bit.  Affects minimum in band 1, maximum in band 2
-    cval = -safetyfac * maxf.first * bm.getMinMax1(2).second;
+    cval = - maxf.first * bm.getMinMax1(2).second;
     if (cval < minflux1) minflux1 = cval;
-    cval = safetyfac * maxf.second * bm.getMinMax2(2).second;
+    cval = maxf.second * bm.getMinMax2(2).second;
     if (cval > maxflux2) maxflux2 = cval;
   }
   if (bm.hasSign(3)) {
     //neg/neg bit.  Affects minimum in bands 1 and 2
-    cval = -safetyfac * maxf.first * bm.getMinMax1(3).second;
+    cval = - maxf.first * bm.getMinMax1(3).second;
     if (cval < minflux1) minflux1 = cval;
-    cval = -safetyfac * maxf.second * bm.getMinMax2(3).second;
+    cval = - maxf.second * bm.getMinMax2(3).second;
     if (cval < minflux2) minflux2 = cval;
   }
 
@@ -1506,6 +1504,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
   double minknot = knots[0];
   double maxknot = knots[nknots-1];
 
+  // Make sure there's enough room to do the computation
   unsigned int maxnpsf = bm.getMaxNPix();
   setRWorkSize(maxnpsf);
 

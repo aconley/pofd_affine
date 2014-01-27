@@ -912,9 +912,6 @@ void slave() {
 	     << like.getNInterp();
       throw affineExcept("test_copy", "slave", errstr.str());
     }
-    if (like.getEdgeFix())
-      throw affineExcept("test_copy", "slave", 
-			 "calcLike.getEdgeFix() should be false");
     MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
@@ -962,9 +959,6 @@ void slave() {
     if (like.getNEdge() != 104)
       throw affineExcept("test_copy", "slave", 
 			 "calcLike.getNEdge() should be 104");
-    if (like.getEdgeFix())
-      throw affineExcept("test_copy", "slave", 
-			 "calcLikeDouble.getEdgeFix() should be false");
     if (like.getEdgeInteg())
       throw affineExcept("test_copy", "slave", 
 			 "calcLikeDouble.getEdgeInteg() should be false");

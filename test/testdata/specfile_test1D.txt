@@ -7,7 +7,6 @@ ignore_mask = false #note the extra space around =
  #Inline comment
 fftsize= 2048 #small!
 ninterp= 1200
-edge_fix = false
 minbeamval = 1e-6
 beam_histogram = yes
 fit_sigma = no

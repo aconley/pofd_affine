@@ -7,7 +7,6 @@ ignore_mask = true #note the extra space around =
  #Inline comment
 fftsize= 2048 #Comment should be ignored
 nedge= 100
-edge_fix = false
 beam_histogram = yes
 fit_sigma1 = no
 fit_sigma2 = false

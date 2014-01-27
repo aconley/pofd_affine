@@ -302,6 +302,8 @@ void calcLikeSingle::setSigmaBase(unsigned int n, const double* const s) {
   moving the R ranges around causes numerical jitter in the likelihoods.
 */
 void calcLikeSingle::setRRange(const numberCounts& model) { 
+  const double safetyfac = 1.01;
+
   if (std::isnan(maxsigma_base))
     throw affineExcept("calcLikeSingle", "setRRange", "Sigma base not yet set");
   if (!has_beam)
@@ -317,9 +319,9 @@ void calcLikeSingle::setRRange(const numberCounts& model) {
   // by setting exp_conf to something non-zero
   double sigma = sqrt(exp_conf * exp_conf + maxsigma_base * maxsigma_base);
   
-  // Add some padding to the top of the r range
-  minRFlux = rawrange.first;
-  maxRFlux = rawrange.second + pofd_mcmc::n_zero_pad * sigma;
+  // Add some padding to the top of the r range and include a safety factor
+  minRFlux = safetyfac * rawrange.first;
+  maxRFlux = safetyfac * rawrange.second + pofd_mcmc::n_zero_pad * sigma;
   
   // Make sure this actually covers the data
   if (minDataFlux < minRFlux && bm.hasNeg()) minRFlux = minDataFlux;

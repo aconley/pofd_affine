@@ -5,6 +5,7 @@
 #include<cmath>
 #include<sstream>
 #include<algorithm>
+#include<cstring>
 
 #include<fitsio.h>
 
@@ -76,7 +77,7 @@ doublebeam::doublebeam(const std::string& filename1,
 }
 
 void doublebeam::cleanup() {
-  double nan = std::numeric_limits<double>::quiet_NaN();
+  double NaN = std::numeric_limits<double>::quiet_NaN();
   for (unsigned int i = 0; i < 4; ++i) {
     hassign[i] = false;
     npix[i] = 0;
@@ -89,8 +90,8 @@ void doublebeam::cleanup() {
     if (binweights[i] != NULL) { delete[] binweights[i]; binweights[i] = NULL; }
     if (binvals1[i] != NULL) { delete[] binvals1[i]; binvals1[i] = NULL; }
     if (binvals2[i] != NULL) { delete[] binvals2[i]; binvals2[i] = NULL; }
-    tot1[i] = tot2[i] = totsq1[i] = totsq2[i] = nan;
-    minbm1[i] = maxbm1[i] = minbm2[i] = maxbm2[i] = nan;
+    tot1[i] = tot2[i] = totsq1[i] = totsq2[i] = NaN;
+    minbm1[i] = maxbm1[i] = minbm2[i] = maxbm2[i] = NaN;
   }
 }
 
@@ -482,9 +483,9 @@ void doublebeam::makeHistogram(unsigned int NBINS) {
       ihiststep2 = dnbins / (maxbinval2 - minbinval2);
 
       // Zero temporaries
-      for (unsigned int i = 0; i < nbins2; ++i) tmpwt[i] = 0;
-      for (unsigned int i = 0; i < nbins2; ++i) tmphist1[i] = 0.0;
-      for (unsigned int i = 0; i < nbins2; ++i) tmphist2[i] = 0.0;
+      std::memset(tmpwt, 0, nbins2 * sizeof(unsigned int));
+      std::memset(tmphist1, 0, nbins2 * sizeof(double));
+      std::memset(tmphist2, 0, nbins2 * sizeof(double));
 
       p1 = pixarr1[sgn];
       p2 = pixarr2[sgn];
@@ -512,12 +513,15 @@ void doublebeam::makeHistogram(unsigned int NBINS) {
 	if (tmpwt[i] > 0) ++n_nonzero; 
       // assert(n_nonzero > 0);
       
-      // Allocate the final array, copy over
-      p1 = binweights[sgn] = new double[n_nonzero];
-      p2 = binvals1[sgn] = new double[n_nonzero];
-      p3 = binvals2[sgn] = new double[n_nonzero];
+      // Allocate the final arrays
+      binweights[sgn] = new double[n_nonzero];
+      binvals1[sgn] = new double[n_nonzero];
+      binvals2[sgn] = new double[n_nonzero];
       
       totidx = 0;
+      p1 = binweights[sgn];
+      p2 = binvals1[sgn];
+      p3 = binvals2[sgn];
       for (unsigned int i = 0; i < nbins2; ++i) {
 	utmp = tmpwt[i];
 	if (utmp > 0) {
@@ -528,8 +532,6 @@ void doublebeam::makeHistogram(unsigned int NBINS) {
 	  ++totidx;
 	}
       }
-      // assert(totidx == n_nonzero);
-
       ishistogrammed[sgn] = true;
       nhist[sgn] = n_nonzero;
     }
@@ -539,8 +541,13 @@ void doublebeam::makeHistogram(unsigned int NBINS) {
   delete[] tmphist2;
 }
 
+/*!
+  \returns True if the beam has any data loaded, false otherwise
+*/
 bool doublebeam::hasData() const {
-  return std::max_element(hassign, hassign + 4);
+  for (unsigned int i = 0; i < 4; ++i)
+    if (hassign[i]) return true;
+  return false;
 }
 
 /*!

@@ -303,8 +303,6 @@ double numberCountsKnots::getMaxFlux() const {
 dblpair numberCountsKnots::getRRangeInternal(const beam& bm) const 
   throw(affineExcept) {
 
-  const double safetyfac = 1.01;
-
   double maxknot = knots[nknots - 1];
   
   bool haspos = bm.hasPos();
@@ -312,14 +310,14 @@ dblpair numberCountsKnots::getRRangeInternal(const beam& bm) const
 
   double minRF, maxRF;
   if (haspos) {
-    maxRF = maxknot / bm.getMinMaxPos().second;
+    maxRF = maxknot * bm.getMinMaxPos().second;
     if (hasneg)
-      minRF = - safetyfac * maxknot * bm.getMinMaxNeg().second;
+      minRF = - maxknot * bm.getMinMaxNeg().second;
     else
       minRF = 0.0;
   } else {
     maxRF = 0.0;
-    minRF = - safetyfac * maxknot * bm.getMinMaxNeg().second;
+    minRF = - maxknot * bm.getMinMaxNeg().second;
   }
   return std::make_pair(minRF, maxRF);
 }

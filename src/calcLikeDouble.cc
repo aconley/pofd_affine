@@ -416,6 +416,8 @@ void calcLikeDoubleSingle::setSigmaBase2(unsigned int n,const double* const s) {
   moving the R ranges around causes numerical jitter in the likelihoods.
 */
 void calcLikeDoubleSingle::setRRange(const numberCountsDouble& model) { 
+  const double safetyfac = 1.01;
+
   if (std::isnan(maxsigma_base1) || std::isnan(maxsigma_base2))
     throw affineExcept("calcLikeDoubleSingle", "setRRange", 
 		       "Sigma base1 not yet set");
@@ -433,11 +435,13 @@ void calcLikeDoubleSingle::setRRange(const numberCountsDouble& model) {
   double sigma1 = sqrt(exp_conf1 * exp_conf1 + maxsigma_base1 * maxsigma_base1);
   double sigma2 = sqrt(exp_conf2 * exp_conf2 + maxsigma_base2 * maxsigma_base2);
   
-  // Add some padding to the top of the r range
-  minRFlux1 = rawrange.first.first;
-  maxRFlux1 = rawrange.first.second + pofd_mcmc::n_zero_pad * sigma1;
-  minRFlux2 = rawrange.second.first;
-  maxRFlux2 = rawrange.second.second + pofd_mcmc::n_zero_pad * sigma2;
+  // Add some padding to the top of the r range, include safety factor
+  minRFlux1 = safetyfac * rawrange.first.first;
+  maxRFlux1 = safetyfac * rawrange.first.second + 
+    pofd_mcmc::n_zero_pad * sigma1;
+  minRFlux2 = safetyfac * rawrange.second.first;
+  maxRFlux2 = safetyfac * rawrange.second.second + 
+    pofd_mcmc::n_zero_pad * sigma2;
   
   // Make sure this actually covers the data
   if (minDataFlux1 < minRFlux1 && (bm.hasSign(2) || bm.hasSign(3))) 

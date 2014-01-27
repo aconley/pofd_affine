@@ -55,7 +55,7 @@ void specFile::readFile(const std::string& flname) {
   double lnorm;
 
   std::ifstream ifs(flname.c_str());
-  if ( ! ifs ) {
+  if (!ifs) {
     ifs.close();
     errstr << "Error reading spec file: " << flname;
     throw affineExcept("specFile", "readFile", errstr.str());
@@ -66,7 +66,7 @@ void specFile::readFile(const std::string& flname) {
   int ival;
   while (!ifs.eof()) {
 
-    std::getline(ifs,line);
+    std::getline(ifs, line);
     
     //Comment line
     if (line[0] == '#') continue;
@@ -85,7 +85,7 @@ void specFile::readFile(const std::string& flname) {
       }
 
       //Datafile
-      datafiles.push_back( words[1] );
+      datafiles.push_back(words[1]);
 
       //Sigma
       str.str(words[2]); str.clear(); str >> dblval;

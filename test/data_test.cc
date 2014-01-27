@@ -21,10 +21,10 @@ TEST(fitsDataTest, Read) {
 
   EXPECT_NEAR(-0.011066, dat.getMin(), 1e-5) << "Didn't get expected minimum";
   EXPECT_NEAR(0.0659472, dat.getMax(), 1e-5) << "Didn't get expected maximum";
-  double minval, maxval;
-  dat.getMinMax(minval, maxval);
-  EXPECT_NEAR(-0.011066, minval, 1e-5) << "Didn't get expected minimum";
-  EXPECT_NEAR(0.0659472, maxval, 1e-5) << "Didn't get expected maximum";
+
+  dblpair minmax = dat.getMinMax();
+  EXPECT_NEAR(-0.011066, minmax.first, 1e-5) << "Didn't get expected minimum";
+  EXPECT_NEAR(0.0659472, minmax.second, 1e-5) << "Didn't get expected maximum";
 
   //Same, but without masking
   dat.readData(testfile, true);
@@ -40,8 +40,9 @@ TEST(fitsDataTest, Read) {
   EXPECT_TRUE(dat2.hasData()) << "After constructor read, should have data";
   EXPECT_FALSE(dat2.isBinned()) << "Data should not be binned after constructor read";
   EXPECT_EQ(38431U, dat2.getN()) << "Unexpected number of data points";
-  EXPECT_NEAR(-0.011066, dat2.getMin(), 1e-5) << "Didn't get expected minimum";
-  EXPECT_NEAR(0.0659472, dat2.getMax(), 1e-5) << "Didn't get expected maximum";
+  minmax = dat2.getMinMax();
+  EXPECT_NEAR(-0.011066, minmax.first, 1e-5)  << "Didn't get expected minimum";
+  EXPECT_NEAR(0.0659472, minmax.second, 1e-5) << "Didn't get expected maximum";
 
 }
 

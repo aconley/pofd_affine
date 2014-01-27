@@ -113,7 +113,7 @@ class doublebeam {
   // Histogram information
   unsigned int getNBins() const { return nbins; }
   bool isHistogrammed(unsigned int i) const { return ishistogrammed[i]; }
-  bool getNHist(unsigned int i) const { return nhist[i]; }
+  unsigned int getNHist(unsigned int i) const { return nhist[i]; }
   
   // More direct acess 
   const double* const getBinWeights(unsigned int i) const { return binweights[i]; }

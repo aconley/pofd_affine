@@ -267,6 +267,10 @@ int getRDouble(int argc, char** argv) {
 		<< std::endl;
       std::cout << "Beam area, band 2: " << bm.getEffectiveArea2() << std::endl;
     }
+    
+    std::cout << "R(0.003, 0.003): "
+	      << model.getR(0.003, 0.003, bm) << std::endl;
+    exit(1);
 
     fluxes1 = new double[nflux1];
     for (unsigned int i = 0; i < nflux1; ++i)
@@ -486,10 +490,6 @@ int main( int argc, char** argv ) {
       std::cerr << "\t-V, --version" << std::endl;
       std::cerr << "\t\tOutput the version number and exit." << std::endl;
       std::cerr << std::endl;
-      std::cerr << "ONE-D ONLY OPTIONS" << std::endl;
-      std::cerr << "\t-n, --negonly" << std::endl;
-      std::cerr << "\t\tOnly use the negative parts of the beam "
-		<< "(if they exist)." << std::endl;
       return 0;
       break;
     case 'd' :

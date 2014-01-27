@@ -73,6 +73,8 @@ class beam {
   void makeHistogram(unsigned int NBINS=120); //!< Prepare the histogram
   bool hasData() const { return haspos || hasneg; } //!< has data been loaded
 
+  double getMinval() const { return minval; }
+
   double getEffectiveArea() const; //!< Get effective area of beam in sq deg
   double getEffectiveAreaPos() const; //!< Get effective area of positive beam in sq deg
   double getEffectiveAreaNeg() const; //!< Get effective area of negative beam in sq deg

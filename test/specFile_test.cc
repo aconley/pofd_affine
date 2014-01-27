@@ -11,88 +11,92 @@
 // look like what is expected
 TEST(specFile1DTest, ReadCheck) {
 
-  specFile spec_info("testdata/specfile_test1D.txt");
+  try {
+    specFile spec_info("testdata/specfile_test1D.txt");
+  
+    ASSERT_EQ(spec_info.datafiles.size(), 2U) << 
+      "Unexpected number of datasets";
+    EXPECT_EQ(spec_info.datafiles[0], std::string("file1.fits")) <<
+      "Expected first data file to be file1.fits, but it is " <<
+      spec_info.datafiles[0];
+    EXPECT_EQ(spec_info.datafiles[1], std::string("file2.fits")) <<
+      "Expected second data file to be file2.fits, but it is " <<
+      spec_info.datafiles[1];
     
-  ASSERT_EQ(spec_info.datafiles.size(), 2U) << 
-    "Unexpected number of datasets";
-  EXPECT_EQ(spec_info.datafiles[0], std::string("file1.fits")) <<
-    "Expected first data file to be file1.fits, but it is " <<
-    spec_info.datafiles[0];
-  EXPECT_EQ(spec_info.datafiles[1], std::string("file2.fits")) <<
-    "Expected second data file to be file2.fits, but it is " <<
-    spec_info.datafiles[1];
-
-  ASSERT_EQ(spec_info.sigmas.size(), 2U) <<
-    "Unexpected number of sigmas";
-  EXPECT_NEAR(spec_info.sigmas[0], 0.0014, 0.0001) <<
-    "Expected first instrument sigma to be 0.0014";
-  EXPECT_NEAR(spec_info.sigmas[1], 0.002, 0.0001) <<
-    "Expected second instrument sigma to be 0.002";
-
-  ASSERT_EQ(spec_info.psffiles.size(), 2U) <<
-    "Unexpected number of psffiles";
-  EXPECT_EQ(spec_info.psffiles[0], std::string("beam1.fits")) <<
-    "Expected first beam file to be beam1.fits, but it is " << 
-    spec_info.psffiles[0];
-  EXPECT_EQ(spec_info.psffiles[1], std::string("beam3.fits")) <<
-    "Expected second beam file to be beam3.fits, but it is " << 
-    spec_info.psffiles[1];
-
-  ASSERT_EQ(spec_info.like_norm.size(), 2U) << 
-    "Unexpected number of like_norms";
-  EXPECT_NEAR(spec_info.like_norm[0], 1.0, 0.0001) <<
-    "Expected first like norm to be 1, but it is " << spec_info.like_norm[0];
-  EXPECT_NEAR(spec_info.like_norm[1], 1.1, 0.0001) <<
-    "Expected second like norm to be 1.1, but it is " << spec_info.like_norm[1];
-
-  EXPECT_TRUE(spec_info.bin_data) << "Expected data binning to be on";
-  EXPECT_EQ(spec_info.nbins, 500U) << "Expected nbins to be 500 but it is " << 
-    spec_info.nbins;
-
-  EXPECT_TRUE(spec_info.mean_sub) << "Expected mean_sub binning to be on";
-
-  EXPECT_FALSE(spec_info.ignore_mask) << "Expected ignore_mask to be off";
-
-  EXPECT_EQ(spec_info.fftsize, 2048U) <<
-    "Expected fftsize to be 2048 but it is " << spec_info.fftsize;
-
-  EXPECT_EQ(spec_info.ninterp, 1200U) <<
-    "Expected ninterp to be 1200 but it is " << spec_info.ninterp;
-
-  EXPECT_FALSE(spec_info.edge_fix) << "Expected edge_fix to be off";
-
-  EXPECT_TRUE(spec_info.beam_histogram) << 
-    "Expected beam histogramming to be on";
-
-  EXPECT_TRUE(spec_info.fit_sigma) << "Expected fit_sigma to be on";
-  
-  ASSERT_TRUE(spec_info.has_sigprior) << "Expected to have sigma prior";
-  EXPECT_NEAR(spec_info.sigprior_stdev, 0.15, 0.0001) <<
-    "Unexpected sigma prior stdev value";
-
-  EXPECT_EQ(spec_info.exp_conf, 0.0) <<
-    "Expected zero expected confusion noise";
-
-  EXPECT_FLOAT_EQ(spec_info.minbeamval, 1e-6) <<
-    "Unexpected minimum beam value";
-
-  EXPECT_EQ(spec_info.nbeamhist, 120) <<
-    "Unexpected number of beam histogram bins";
-
-  ASSERT_TRUE(spec_info.has_cfirbprior) << "Expected to have CFIRB prior";
-  EXPECT_NEAR(spec_info.cfirbprior_mean, 1.05, 0.0001) <<
-    "Expected cfirb prior mean to be 1.05, but it is " <<
-    spec_info.cfirbprior_mean;
-  EXPECT_NEAR(spec_info.cfirbprior_stdev, 0.1, 0.0001) <<
-    "Expected cfirb prior stdev to be 0.1, but it is " <<
-    spec_info.cfirbprior_stdev;
-
-  ASSERT_TRUE(spec_info.has_wisdom_file) << "Expected to have wisdom file";
-  EXPECT_EQ(spec_info.wisdom_file, std::string("a_wisdom_file.txt")) <<
-    "Expected wisdom file name 'a_wisdom_file.txt', got " << 
-    spec_info.wisdom_file;
-  
-  EXPECT_EQ(1, spec_info.verbosity) << "Expected level 1 verbosity";
+    ASSERT_EQ(spec_info.sigmas.size(), 2U) <<
+      "Unexpected number of sigmas";
+    EXPECT_NEAR(spec_info.sigmas[0], 0.0014, 0.0001) <<
+      "Expected first instrument sigma to be 0.0014";
+    EXPECT_NEAR(spec_info.sigmas[1], 0.002, 0.0001) <<
+      "Expected second instrument sigma to be 0.002";
+    
+    ASSERT_EQ(spec_info.psffiles.size(), 2U) <<
+      "Unexpected number of psffiles";
+    EXPECT_EQ(spec_info.psffiles[0], std::string("beam1.fits")) <<
+      "Expected first beam file to be beam1.fits, but it is " << 
+      spec_info.psffiles[0];
+    EXPECT_EQ(spec_info.psffiles[1], std::string("beam3.fits")) <<
+      "Expected second beam file to be beam3.fits, but it is " << 
+      spec_info.psffiles[1];
+    
+    ASSERT_EQ(spec_info.like_norm.size(), 2U) << 
+      "Unexpected number of like_norms";
+    EXPECT_NEAR(spec_info.like_norm[0], 1.0, 0.0001) <<
+      "Expected first like norm to be 1, but it is " << spec_info.like_norm[0];
+    EXPECT_NEAR(spec_info.like_norm[1], 1.1, 0.0001) <<
+      "Expected second like norm to be 1.1, but it is " << spec_info.like_norm[1];
+    
+    EXPECT_TRUE(spec_info.bin_data) << "Expected data binning to be on";
+    EXPECT_EQ(spec_info.nbins, 500U) << "Expected nbins to be 500 but it is " << 
+      spec_info.nbins;
+    
+    EXPECT_TRUE(spec_info.mean_sub) << "Expected mean_sub binning to be on";
+    
+    EXPECT_FALSE(spec_info.ignore_mask) << "Expected ignore_mask to be off";
+    
+    EXPECT_EQ(spec_info.fftsize, 2048U) <<
+      "Expected fftsize to be 2048 but it is " << spec_info.fftsize;
+    
+    EXPECT_EQ(spec_info.ninterp, 1200U) <<
+      "Expected ninterp to be 1200 but it is " << spec_info.ninterp;
+    
+    EXPECT_TRUE(spec_info.beam_histogram) << 
+      "Expected beam histogramming to be on";
+    
+    EXPECT_TRUE(spec_info.fit_sigma) << "Expected fit_sigma to be on";
+    
+    ASSERT_TRUE(spec_info.has_sigprior) << "Expected to have sigma prior";
+    EXPECT_NEAR(spec_info.sigprior_stdev, 0.15, 0.0001) <<
+      "Unexpected sigma prior stdev value";
+    
+    EXPECT_EQ(spec_info.exp_conf, 0.0) <<
+      "Expected zero expected confusion noise";
+    
+    EXPECT_FLOAT_EQ(spec_info.minbeamval, 1e-6) <<
+      "Unexpected minimum beam value";
+    
+    EXPECT_EQ(spec_info.nbeamhist, 120) <<
+      "Unexpected number of beam histogram bins";
+    
+    ASSERT_TRUE(spec_info.has_cfirbprior) << "Expected to have CFIRB prior";
+    EXPECT_NEAR(spec_info.cfirbprior_mean, 1.05, 0.0001) <<
+      "Expected cfirb prior mean to be 1.05, but it is " <<
+      spec_info.cfirbprior_mean;
+    EXPECT_NEAR(spec_info.cfirbprior_stdev, 0.1, 0.0001) <<
+      "Expected cfirb prior stdev to be 0.1, but it is " <<
+      spec_info.cfirbprior_stdev;
+    
+    ASSERT_TRUE(spec_info.has_wisdom_file) << "Expected to have wisdom file";
+    EXPECT_EQ(spec_info.wisdom_file, std::string("a_wisdom_file.txt")) <<
+      "Expected wisdom file name 'a_wisdom_file.txt', got " << 
+      spec_info.wisdom_file;
+    
+    EXPECT_EQ(1, spec_info.verbosity) << "Expected level 1 verbosity";
+  } catch (const affineExcept& ex) {
+    std::cout << "Error processing specFile1D" << std::endl;
+    std::cout << ex << std::endl;
+    throw ex;
+  }
 }
 
 
@@ -166,8 +170,6 @@ TEST(specFile2DTest, ReadCheck) {
   ASSERT_TRUE(spec_info.edge_set) << "Expected edge_set to be on";
   EXPECT_EQ(spec_info.nedge, 100U) <<
     "Expected nedge to be 100 but it is " << spec_info.nedge;
-
-  EXPECT_FALSE(spec_info.edge_fix) << "Expected edge_fix to be off";
 
   EXPECT_TRUE(spec_info.beam_histogram) << 
     "Expected beam histogramming to be on";

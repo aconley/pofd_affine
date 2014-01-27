@@ -19,8 +19,12 @@
 //////////////////////////////////////////////////
 //beam
 TEST(beam1DTest, Read) {
-  beam bm("testdata/band1_beam.fits");
-  
+  beam bm;
+  ASSERT_FALSE(bm.hasData()) << "Beam should not have data before reading";
+
+  bm.readFile("testdata/band1_beam.fits");
+  ASSERT_TRUE(bm.hasData()) << "Beam should have data";
+
   EXPECT_TRUE(bm.hasPos()) << "Beam should have positive pixels";
   EXPECT_EQ(277U, bm.getNPos()) << "Beam had wrong number of positive pixels";
   EXPECT_FALSE(bm.isPosHist()) << "Beam should not have positive weights";
@@ -42,10 +46,24 @@ TEST(beam1DTest, Read) {
     "Beam had unexpected maximum pixel value";
 }
 
+TEST(beam1DTest, ReadConstructor) {
+  beam bm("testdata/band1_beam.fits");
+  ASSERT_TRUE(bm.hasData()) << "Beam should have data";
+
+  EXPECT_TRUE(bm.hasPos()) << "Beam should have positive pixels";
+  EXPECT_EQ(277U, bm.getNPos()) << "Beam had wrong number of positive pixels";
+  EXPECT_FALSE(bm.isPosHist()) << "Beam should not have positive weights";
+  EXPECT_FALSE(bm.hasNeg()) << "Beam should have no negative pixels";
+  EXPECT_EQ(0U, bm.getNNeg()) << "Beam had wrong number of negative pixels";
+  EXPECT_FALSE(bm.isNegHist()) << "Beam should not have negative weights";
+  EXPECT_NEAR(4.0, bm.getPixSize(), 0.0001) << "Wrong pixel size";
+}
+
 TEST(beam1DTest, CopyConstructor) {
   beam bm("testdata/band1_beam.fits");
   beam bm2(bm);
 
+  ASSERT_TRUE(bm2.hasData()) << "Beam should have data";
   EXPECT_TRUE(bm2.hasPos()) << "Beam should have positive pixels";
   EXPECT_EQ(bm.getNPos(), bm2.getNPos()) << 
     "Beam had wrong number of positive pixels";
@@ -119,6 +137,7 @@ TEST(beam1DTest, Histogram) {
     "Beam^2 had wrong effective area";
   EXPECT_NEAR(0.97798554, bm.getMinMaxPos().second, 1e-5) <<
     "Beam had unexpected maximum pixel value";
+  EXPECT_FLOAT_EQ(1e-5, bm.getMinval()) << "Unexpected minimum acceptance val";
 
   //Check histogram
   const double *wts = bm.getPosHistWeights();
@@ -137,9 +156,12 @@ TEST(beam1DTest, Histogram) {
 //////////////////////////////////////////////////
 // doublebeam
 TEST(beam2DTest, Read) {
-  doublebeam bm("testdata/band1_beam.fits",
-		"testdata/band2_beam.fits", false, 120, 0.0);
-  
+  doublebeam bm;
+  ASSERT_FALSE(bm.hasData()) << "Beam should not have data before read";
+
+  bm.readFiles("testdata/band1_beam.fits", "testdata/band2_beam.fits", 0.0);
+  ASSERT_TRUE(bm.hasData()) << "Beam should have data after read";
+
   EXPECT_TRUE(bm.hasSign(0)) << "Beam should have pos-pos pixels";
   EXPECT_FALSE(bm.hasSign(1)) << "Beam should not have pos-neg pixels";
   EXPECT_FALSE(bm.hasSign(2)) << "Beam should not have neg-pos pixels";
@@ -150,6 +172,11 @@ TEST(beam2DTest, Read) {
   EXPECT_EQ(0U, bm.getNPix(2)) << "Beam had wrong number of neg-pos pixels";
   EXPECT_EQ(0U, bm.getNPix(3)) << "Beam had wrong number of neg-neg pixels";
   EXPECT_NEAR(4.0, bm.getPixSize(), 0.0001) << "Wrong pixel size";
+  EXPECT_FLOAT_EQ(0.0, bm.getMinval()) << "Unexpected minimum value";
+
+  for (unsigned int i = 0; i < 4; ++i)
+    EXPECT_FALSE(bm.isHistogrammed(i)) 
+      << "Beam should not be histogrammed for component: " << i;
 
   // Re read with standard minval
   bm.readFiles("testdata/band1_beam.fits", "testdata/band2_beam.fits", 1e-6);
@@ -163,6 +190,11 @@ TEST(beam2DTest, Read) {
   EXPECT_EQ(0U, bm.getNPix(2)) << "Beam had wrong number of neg-pos pixels";
   EXPECT_EQ(0U, bm.getNPix(3)) << "Beam had wrong number of neg-neg pixels";
   EXPECT_NEAR(4.0, bm.getPixSize(), 0.0001) << "Wrong pixel size";
+  EXPECT_FLOAT_EQ(1e-6, bm.getMinval()) << "Unexpected minimum value";
+
+  for (unsigned int i = 0; i < 4; ++i)
+    EXPECT_FALSE(bm.isHistogrammed(i)) 
+      << "Beam should not be histogrammed for component: " << i;
 
   //Beam1 tests
   EXPECT_NEAR(2.8327225e-5, bm.getEffectiveArea1(), 1e-8) <<
@@ -191,6 +223,23 @@ TEST(beam2DTest, Read) {
     "Beam had wrong neg-neg effective area in band2";
   EXPECT_NEAR(0.98850347, bm.getMinMax2(0).second, 1e-5) <<
     "Beam had unexpected maximum pixel value in band 2";
+}
+
+TEST(beam2DTest, Histogram) {
+  doublebeam bm("testdata/band1_beam.fits", "testdata/band2_beam.fits",
+		true, 150, 1e-6);
+  ASSERT_TRUE(bm.hasData()) << "Beam should have data after read";
+  EXPECT_FLOAT_EQ(1e-6, bm.getMinval()) << "Unexpected minimum accepted val";
+  ASSERT_TRUE(bm.isHistogrammed(0)) << "pp beam should be histogrammed";
+  for (unsigned int i = 1; i < 4; ++i)
+    EXPECT_FALSE(bm.isHistogrammed(i)) 
+      << "Beam should not be histogrammed for component: " << i;
+  EXPECT_EQ(150, bm.getNBins()) << "Unexpected number of histogram bins";
+  EXPECT_EQ(45, bm.getNHist(0)) << "Unexpected number of hist bins in 0 (pp)"
+				<< " component";
+  for (unsigned int i = 1; i < 4; ++i)
+    EXPECT_EQ(0, bm.getNHist(i)) << "Unexpected number of hist bins in "
+				 << "component " << i;
 }
 
 //////////////////////////////////////////////////
@@ -387,6 +436,30 @@ TEST(model1DTest, Integration) {
     "Unexpected flux^2 per area";
 }
 
+
+//Test getting R range
+TEST(model1DTest, getRRange) {
+  const unsigned int nknots = 5;
+  const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.050 };
+  const float knotval[nknots] = { 10.0, 7.0, 5.0, 4.0, -1.0 };
+
+  numberCountsKnotsSpline model(nknots, knotpos);
+  paramSet p(nknots, knotval);
+  model.setParams(p);
+  ASSERT_TRUE(model.isValid()) << "Model should consider itself valid";
+  beam bm("testdata/band1_beam.fits");
+  
+  ASSERT_NEAR(knotpos[0], model.getMinFlux(), 1e-5)
+    << "Unexpected model minimum flux";
+  ASSERT_NEAR(knotpos[nknots-1], model.getMaxFlux(), 1e-5)
+    << "Unexpected model minimum flux";
+
+  dblpair rng = model.getRRange(bm);
+  EXPECT_FLOAT_EQ(0, rng.first) << "Model lower R range should be zero";
+  EXPECT_NEAR(0.0488993, rng.second, 1e-4) << "Unexpected model upper R range";
+}
+
+
 //Test getting R; this depends on the details of
 // the spline model, so will change if GSL changes anything
 // Hence, it's a little hard to say exactly what the results should be.
@@ -406,7 +479,7 @@ TEST(model1DTest, getR) {
   const double rexpect[ntest] = {1891.52, 0.817009, 0.000313631};
   double rval, reldiff;
   for (unsigned int i = 0; i < ntest; ++i) {
-    rval = model.getR(fluxdens[i], bm, numberCounts::BEAMBOTH);
+    rval = model.getR(fluxdens[i], bm);
     reldiff = fabs(rval - rexpect[i]) / rexpect[i];
     EXPECT_NEAR(0.0, reldiff, 1e-3) <<
       "R value not as expected -- wanted: " << rexpect[i] <<
@@ -443,7 +516,7 @@ TEST(model1DTest, getRHist) {
   const double rexpect[ntest] = {1891.52, 0.817009, 0.000313631};
   double rval, reldiff;
   for (unsigned int i = 0; i < ntest; ++i) {
-    rval = model.getR(fluxdens[i], bm, numberCounts::BEAMBOTH);
+    rval = model.getR(fluxdens[i], bm);
     reldiff = fabs(rval - rexpect[i]) / rexpect[i];
     EXPECT_NEAR(0.0, reldiff, 1e-3) <<
       "R value not as expected -- wanted: " << rexpect[i] <<
@@ -460,7 +533,6 @@ TEST(model1DTest, getRHist) {
       " got " << rarr[i] << " relative difference: " << reldiff;
   }
 }
-
 
 //////////////////////////////////////////////////
 // numberCountsDoubleLogNormal
@@ -639,6 +711,77 @@ TEST(model2DTest, SetGetParams) {
       "Recovered wrong parameter value after set/get params at index: " << i;
 }
 
+
+//Test model min/max
+TEST(model2DTest, getModelRange) {
+  const unsigned int nknots = 5;
+  const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
+  const unsigned int nsigmas = 2;
+  const float sigmapos[nsigmas] = { 0.002, 0.020 };
+  const unsigned int noffsets = 1;
+  const float offsetpos[noffsets] = { 0.03 };
+  const unsigned int ntot = nknots + nsigmas + noffsets;
+  const float pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, 0.2, -0.03 };
+
+  numberCountsDoubleLogNormal model(nknots, knotpos, nsigmas, sigmapos,
+				    noffsets, offsetpos);
+  paramSet p(ntot, pvals);
+  model.setParams(p);
+  ASSERT_TRUE(model.isValid()) << "Model should be valid";
+
+  dblpair minmax;
+  minmax = model.getMinFlux();
+  EXPECT_NEAR(knotpos[0], minmax.first, 1e-5)
+    << "Unexpected band 1 minimum flux density";
+  minmax = model.getMaxFlux();
+  EXPECT_NEAR(0.040, minmax.first, 1e-5) 
+    << "Band 1 model max not as expected";
+  EXPECT_NEAR(0.0636028, minmax.second, 1e-3) 
+    << "Band 2 model max not as expected";
+}
+
+//Test getting R range
+TEST(model2DTest, getRRange) {
+  const unsigned int nknots = 5;
+  const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
+  const unsigned int nsigmas = 2;
+  const float sigmapos[nsigmas] = { 0.002, 0.020 };
+  const unsigned int noffsets = 1;
+  const float offsetpos[noffsets] = { 0.03 };
+  const unsigned int ntot = nknots + nsigmas + noffsets;
+  const float pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, 0.2, -0.03 };
+
+  numberCountsDoubleLogNormal model(nknots, knotpos, nsigmas, sigmapos,
+				    noffsets, offsetpos);
+  paramSet p(ntot, pvals);
+  model.setParams(p);
+  ASSERT_TRUE(model.isValid()) << "Model should be valid";
+
+  doublebeam bm("testdata/band1_beam.fits",
+		"testdata/band2_beam.fits");
+  
+  ASSERT_NEAR(bm.getMinMax1(0).second, 0.97798554, 1e-5)
+    << "Unexpected beam band 1 maximum";
+  
+  dblpair bmrange = bm.getMinMax1(0);
+  ASSERT_NEAR(0.97798554, bmrange.second, 1e-5)
+    << "Unexpected beam band 1 maximum";
+  bmrange = bm.getMinMax2(0);
+  ASSERT_NEAR(0.98850347, bmrange.second, 1e-5)
+    << "Unexpected beam band 2 maximum";
+
+  std::pair<dblpair, dblpair> rng = model.getRRange(bm);
+  EXPECT_FLOAT_EQ(0, rng.first.first) << 
+    "Model band 1 lower R range should be zero";
+  EXPECT_NEAR(0.039119421, rng.first.second, 1e-4) 
+    << "Unexpected model upper R range band 1";
+  EXPECT_FLOAT_EQ(0, rng.second.first) << 
+    "Model band 2 lower R range should be zero";
+  EXPECT_NEAR(0.062871593, rng.second.second, 1e-4) 
+    << "Unexpected model upper R range band 2";
+}
+
+
 //For the following tests (NumberCounts, Integration, getR)
 // it's hard to say what the 'correct' value is because the models
 // are complicated.  But we can still record values from the time
@@ -700,14 +843,16 @@ TEST(model2DTest, Integration) {
 }
 
 TEST(model2DTest, getR) {
+
+  // Simple model that can be tested against IDL code
   const unsigned int nknots = 5;
   const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
-  const unsigned int nsigmas = 2;
-  const float sigmapos[nsigmas] = { 0.002, 0.020 };
+  const unsigned int nsigmas = 1;
+  const float sigmapos[nsigmas] = { 0.015 };
   const unsigned int noffsets = 1;
   const float offsetpos[noffsets] = { 0.03 };
   const unsigned int ntot = nknots + nsigmas + noffsets;
-  const float pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, 0.2, -0.03 };
+  const float pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.15, -0.03 };
 
   numberCountsDoubleLogNormal model(nknots, knotpos, nsigmas, sigmapos,
 				    noffsets, offsetpos);
@@ -717,11 +862,12 @@ TEST(model2DTest, getR) {
 
   doublebeam bm("testdata/band1_beam.fits",
 		"testdata/band2_beam.fits");
-
+  
+  // Comparison is direct computation from IDL without histogramming
   const unsigned int ntest = 4;
   const double fluxdens1[ntest] = {0.003, 0.011, 0.011, 0.03};
   const double fluxdens2[ntest] = {0.003, 0.010, 0.015, 0.028};
-  const double rexp[ntest] = { 97571.4, 10.9065, 9.95045, 0.102312 };
+  const double rexp[ntest] = { 76926.027, 9.6701326, 11.520839, 0.12455423 };
   
   //Scalar version
   double rval, reldiff;
@@ -733,14 +879,16 @@ TEST(model2DTest, getR) {
       " got: " << rval << " for " << fluxdens1[i] << " " << fluxdens2[i];
   }
 
+  // Vector version
   const unsigned int ntest_1 = 3;
   const unsigned int ntest_2 = 2;
   const double fluxdens1_2d[ntest_1] = {0.003, 0.011, 0.02};
   const double fluxdens2_2d[ntest_2] = {0.003, 0.015};
   
+  // Based on IDL direct evaluation
   const double rexp_2d[ntest_1 * ntest_2] = 
-    {97571.4, 0.277285, 8.66458e-13,
-     9.95045, 1.30238e-19, 0.46487};
+    {76926.027, 0.024892799, 1.2063052e-15, 11.520839,
+     1.9838477e-34, 0.21958590};
   double rval_2d[ntest_1 * ntest_2];
   model.getR(ntest_1, fluxdens1_2d, ntest_2, fluxdens2_2d,
 	     bm, rval_2d);
@@ -758,14 +906,16 @@ TEST(model2DTest, getR) {
 
 //Same test, but with histogrammed beam
 TEST(model2DTest, getRHist) {
+
+  // Simple model that can be tested against IDL code
   const unsigned int nknots = 5;
   const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
-  const unsigned int nsigmas = 2;
-  const float sigmapos[nsigmas] = { 0.002, 0.020 };
+  const unsigned int nsigmas = 1;
+  const float sigmapos[nsigmas] = { 0.020 };
   const unsigned int noffsets = 1;
   const float offsetpos[noffsets] = { 0.03 };
   const unsigned int ntot = nknots + nsigmas + noffsets;
-  const float pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, 0.2, -0.03 };
+  const float pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.15, -0.03 };
 
   numberCountsDoubleLogNormal model(nknots, knotpos, nsigmas, sigmapos,
 				    noffsets, offsetpos);
@@ -777,10 +927,12 @@ TEST(model2DTest, getRHist) {
 		true, 150);
   ASSERT_TRUE(bm.isHistogrammed(0)) << "Beam should be histogrammed";
 
+  // The comparison values are from a non-histogrammed beam
+  // with 0 minflux, so shouldn't be precisely the same.
   const unsigned int ntest = 4;
   const double fluxdens1[ntest] = {0.003, 0.011, 0.011, 0.03};
   const double fluxdens2[ntest] = {0.003, 0.010, 0.015, 0.028};
-  const double rexp[ntest] = { 97571.4, 10.9065, 9.95045, 0.102312 };
+  const double rexp[ntest] = { 76926.027, 9.6701326, 11.520839, 0.12455423 };
   
   //Scalar version
   double rval, reldiff;
@@ -798,9 +950,10 @@ TEST(model2DTest, getRHist) {
   const double fluxdens1_2d[ntest_1] = {0.003, 0.011, 0.02};
   const double fluxdens2_2d[ntest_2] = {0.003, 0.015};
   
+  // Based on IDL direct evaluation
   const double rexp_2d[ntest_1 * ntest_2] = 
-    {97571.4, 0.277285, 8.66458e-13,
-     9.95045, 1.30238e-19, 0.46487};
+    {76926.027, 0.024892799, 1.2063052e-15, 11.520839,
+     1.9838477e-34, 0.21958590};
   double rval_2d[ntest_1 * ntest_2];
   model.getR(ntest_1, fluxdens1_2d, ntest_2, fluxdens2_2d,
 	     bm, rval_2d);
@@ -815,7 +968,6 @@ TEST(model2DTest, getRHist) {
 	fluxdens2[j];
     }
 }
-
 
 ////////////////////////////////////////////
 
