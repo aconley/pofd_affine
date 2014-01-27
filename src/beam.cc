@@ -343,8 +343,8 @@ void beam::readFile(const std::string& filename, double MINVAL) {
     totnegsq = totneg * totneg;
     for (unsigned int i = 1; i < nneg; ++i) {
       val = negpixarr[i];
-      totneg = val;
-      totnegsq = val * val;
+      totneg += val;
+      totnegsq += val * val;
     }
   }
 

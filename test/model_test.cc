@@ -16,231 +16,7 @@
 #include "../include/numberCountsKnotsSpline.h"
 #include "../include/numberCountsDoubleLogNormal.h"
 
-//////////////////////////////////////////////////
-//beam
-TEST(beam1DTest, Read) {
-  beam bm;
-  ASSERT_FALSE(bm.hasData()) << "Beam should not have data before reading";
 
-  bm.readFile("testdata/band1_beam.fits");
-  ASSERT_TRUE(bm.hasData()) << "Beam should have data";
-
-  EXPECT_TRUE(bm.hasPos()) << "Beam should have positive pixels";
-  EXPECT_EQ(277U, bm.getNPos()) << "Beam had wrong number of positive pixels";
-  EXPECT_FALSE(bm.isPosHist()) << "Beam should not have positive weights";
-  EXPECT_FALSE(bm.hasNeg()) << "Beam should have no negative pixels";
-  EXPECT_EQ(0U, bm.getNNeg()) << "Beam had wrong number of negative pixels";
-  EXPECT_FALSE(bm.isNegHist()) << "Beam should not have negative weights";
-  EXPECT_NEAR(4.0, bm.getPixSize(), 0.0001) << "Wrong pixel size";
-  EXPECT_NEAR(2.8327039e-5, bm.getEffectiveArea(), 1e-8) <<
-    "Beam had wrong effective area";
-  EXPECT_NEAR(2.8327039e-5, bm.getEffectiveAreaPos(), 1e-8) <<
-    "Beam had wrong positive effective area";
-  EXPECT_FLOAT_EQ(0.0, bm.getEffectiveAreaNeg()) <<
-    "Beam should have zero negative area";
-  EXPECT_NEAR(22.944899, bm.getEffectiveAreaPix(), 1e-4) << 
-    "Didn't get expected beam area in pixels";
-  EXPECT_NEAR(1.3852891e-5, bm.getEffectiveAreaSq(), 1e-8) <<
-    "Beam^2 had wrong effective area";
-  EXPECT_NEAR(0.97798554, bm.getMinMaxPos().second, 1e-5) <<
-    "Beam had unexpected maximum pixel value";
-}
-
-TEST(beam1DTest, ReadConstructor) {
-  beam bm("testdata/band1_beam.fits");
-  ASSERT_TRUE(bm.hasData()) << "Beam should have data";
-
-  EXPECT_TRUE(bm.hasPos()) << "Beam should have positive pixels";
-  EXPECT_EQ(277U, bm.getNPos()) << "Beam had wrong number of positive pixels";
-  EXPECT_FALSE(bm.isPosHist()) << "Beam should not have positive weights";
-  EXPECT_FALSE(bm.hasNeg()) << "Beam should have no negative pixels";
-  EXPECT_EQ(0U, bm.getNNeg()) << "Beam had wrong number of negative pixels";
-  EXPECT_FALSE(bm.isNegHist()) << "Beam should not have negative weights";
-  EXPECT_NEAR(4.0, bm.getPixSize(), 0.0001) << "Wrong pixel size";
-}
-
-TEST(beam1DTest, CopyConstructor) {
-  beam bm("testdata/band1_beam.fits");
-  beam bm2(bm);
-
-  ASSERT_TRUE(bm2.hasData()) << "Beam should have data";
-  EXPECT_TRUE(bm2.hasPos()) << "Beam should have positive pixels";
-  EXPECT_EQ(bm.getNPos(), bm2.getNPos()) << 
-    "Beam had wrong number of positive pixels";
-  EXPECT_FALSE(bm2.hasNeg()) << "Beam should have no negative pixels";
-  EXPECT_EQ(bm.getNNeg(), bm2.getNNeg()) << 
-    "Beam had wrong number of negative pixels";
-  EXPECT_FLOAT_EQ(bm.getPixSize(), bm2.getPixSize()) << "Wrong pixel size";
-  EXPECT_FLOAT_EQ(bm.getEffectiveArea(), bm2.getEffectiveArea()) <<
-    "Beam had wrong effective area";
-  EXPECT_FLOAT_EQ(bm.getEffectiveAreaPos(), bm2.getEffectiveAreaPos()) <<
-    "Beam had wrong positive effective area";
-  EXPECT_FLOAT_EQ(bm.getEffectiveAreaNeg(), bm2.getEffectiveAreaNeg()) <<
-    "Beam should have zero negative area";
-  EXPECT_FLOAT_EQ(bm.getEffectiveAreaPix(), bm2.getEffectiveAreaPix()) <<
-    "Didn't get expected beam area in pixels";
-  EXPECT_FLOAT_EQ(bm.getEffectiveAreaSq(), bm2.getEffectiveAreaSq()) <<
-    "Beam^2 had wrong effective area";
-  EXPECT_FLOAT_EQ(bm.getMinMaxPos().first, bm2.getMinMaxPos().first) <<
-    "Beam had unexpected minimum pixel value";
-  EXPECT_FLOAT_EQ(bm.getMinMaxPos().second, bm2.getMinMaxPos().second) <<
-    "Beam had unexpected maximum pixel value";
-}
-
-TEST(beam1DTest, Equals) {
-  beam bm("testdata/band1_beam.fits");
-  beam bm2("testdata/band2_beam.fits");
-  bm2 = bm;
-
-  EXPECT_TRUE(bm2.hasPos()) << "Beam should have positive pixels";
-  EXPECT_EQ(bm.getNPos(), bm2.getNPos()) << 
-    "Beam had wrong number of positive pixels";
-  EXPECT_FALSE(bm2.hasNeg()) << "Beam should have no negative pixels";
-  EXPECT_EQ(bm.getNNeg(), bm2.getNNeg()) << 
-    "Beam had wrong number of negative pixels";
-  EXPECT_FLOAT_EQ(bm.getPixSize(), bm2.getPixSize()) << "Wrong pixel size";
-  EXPECT_FLOAT_EQ(bm.getEffectiveArea(), bm2.getEffectiveArea()) <<
-    "Beam had wrong effective area";
-  EXPECT_FLOAT_EQ(bm.getEffectiveAreaPos(), bm2.getEffectiveAreaPos()) <<
-    "Beam had wrong positive effective area";
-  EXPECT_FLOAT_EQ(bm.getEffectiveAreaNeg(), bm2.getEffectiveAreaNeg()) <<
-    "Beam should have zero negative area";
-  EXPECT_FLOAT_EQ(bm.getEffectiveAreaPix(), bm2.getEffectiveAreaPix()) <<
-    "Didn't get expected beam area in pixels";
-  EXPECT_FLOAT_EQ(bm.getEffectiveAreaSq(), bm2.getEffectiveAreaSq()) <<
-    "Beam^2 had wrong effective area";
-  EXPECT_FLOAT_EQ(bm.getMinMaxPos().first, bm2.getMinMaxPos().first) <<
-    "Beam had unexpected minimum pixel value";
-  EXPECT_FLOAT_EQ(bm.getMinMaxPos().second, bm2.getMinMaxPos().second) <<
-    "Beam had unexpected maximum pixel value";
-}
-
-TEST(beam1DTest, Histogram) {
-  beam bm("testdata/band1_beam.fits", true, 120, 1e-5);
-  
-  ASSERT_TRUE(bm.hasPos()) << "Beam should have positive pixels";
-  ASSERT_TRUE(bm.isPosHist()) << "Beam should have positive weights";
-  EXPECT_EQ(39U, bm.getNHistPos()) 
-    << "Beam had wrong number of positive pixels";
-  EXPECT_FALSE(bm.hasNeg()) << "Beam should have no negative pixels";
-  EXPECT_EQ(0U, bm.getNNeg()) << "Beam had wrong number of negative pixels";
-  EXPECT_NEAR(4.0, bm.getPixSize(), 0.0001) << "Wrong pixel size";
-  EXPECT_NEAR(2.8327039e-5, bm.getEffectiveArea(), 1e-8) <<
-    "Beam had wrong effective area";
-  EXPECT_NEAR(2.8327039e-5, bm.getEffectiveAreaPos(), 1e-8) <<
-    "Beam had wrong positive effective area";
-  EXPECT_FLOAT_EQ(0.0, bm.getEffectiveAreaNeg()) <<
-    "Beam should have zero negative area";
-  EXPECT_NEAR(22.944899, bm.getEffectiveAreaPix(), 1e-6) << 
-    "Didn't get expected beam area in pixels";
-  EXPECT_NEAR(1.3852891e-5, bm.getEffectiveAreaSq(), 1e-8) <<
-    "Beam^2 had wrong effective area";
-  EXPECT_NEAR(0.97798554, bm.getMinMaxPos().second, 1e-5) <<
-    "Beam had unexpected maximum pixel value";
-  EXPECT_FLOAT_EQ(1e-5, bm.getMinval()) << "Unexpected minimum acceptance val";
-
-  //Check histogram
-  const double *wts = bm.getPosHistWeights();
-  const double* iparr = bm.getPosHist();
-  double exp_posweights[5] = {8.0, 4.0, 4.0, 4.0, 1.0};
-  for (unsigned int i = 34; i < 39; ++i)
-    EXPECT_FLOAT_EQ(exp_posweights[i-34], wts[i]) << 
-      "Didn't get expected weight";
-  const double exp_inv[5] = {1.99712, 1.74686, 1.33647, 1.169, 1.02251};
-  for (unsigned int i = 34; i < 39; ++i)
-    EXPECT_NEAR(exp_inv[i-34], iparr[i], 0.0001) << 
-      "Got unexpected binned inverse pixel value in index: " << i;
-
-}
-
-//////////////////////////////////////////////////
-// doublebeam
-TEST(beam2DTest, Read) {
-  doublebeam bm;
-  ASSERT_FALSE(bm.hasData()) << "Beam should not have data before read";
-
-  bm.readFiles("testdata/band1_beam.fits", "testdata/band2_beam.fits", 0.0);
-  ASSERT_TRUE(bm.hasData()) << "Beam should have data after read";
-
-  EXPECT_TRUE(bm.hasSign(0)) << "Beam should have pos-pos pixels";
-  EXPECT_FALSE(bm.hasSign(1)) << "Beam should not have pos-neg pixels";
-  EXPECT_FALSE(bm.hasSign(2)) << "Beam should not have neg-pos pixels";
-  EXPECT_FALSE(bm.hasSign(3)) << "Beam should not have neg-neg";
-  EXPECT_EQ(625U, bm.getTotalNPix()) << "Wrong number of total pixels in beam";
-  EXPECT_EQ(625U, bm.getNPix(0)) << "Beam had wrong number of pos-pos pixels";
-  EXPECT_EQ(0U, bm.getNPix(1)) << "Beam had wrong number of pos-neg pixels";
-  EXPECT_EQ(0U, bm.getNPix(2)) << "Beam had wrong number of neg-pos pixels";
-  EXPECT_EQ(0U, bm.getNPix(3)) << "Beam had wrong number of neg-neg pixels";
-  EXPECT_NEAR(4.0, bm.getPixSize(), 0.0001) << "Wrong pixel size";
-  EXPECT_FLOAT_EQ(0.0, bm.getMinval()) << "Unexpected minimum value";
-
-  for (unsigned int i = 0; i < 4; ++i)
-    EXPECT_FALSE(bm.isHistogrammed(i)) 
-      << "Beam should not be histogrammed for component: " << i;
-
-  // Re read with standard minval
-  bm.readFiles("testdata/band1_beam.fits", "testdata/band2_beam.fits", 1e-6);
-  EXPECT_TRUE(bm.hasSign(0)) << "Beam should have pos-pos pixels";
-  EXPECT_FALSE(bm.hasSign(1)) << "Beam should not have pos-neg pixels";
-  EXPECT_FALSE(bm.hasSign(2)) << "Beam should not have neg-pos pixels";
-  EXPECT_FALSE(bm.hasSign(3)) << "Beam should not have neg-neg";
-  EXPECT_EQ(325U, bm.getTotalNPix()) << "Wrong number of total pixels in beam";
-  EXPECT_EQ(325U, bm.getNPix(0)) << "Beam had wrong number of pos-pos pixels";
-  EXPECT_EQ(0U, bm.getNPix(1)) << "Beam had wrong number of pos-neg pixels";
-  EXPECT_EQ(0U, bm.getNPix(2)) << "Beam had wrong number of neg-pos pixels";
-  EXPECT_EQ(0U, bm.getNPix(3)) << "Beam had wrong number of neg-neg pixels";
-  EXPECT_NEAR(4.0, bm.getPixSize(), 0.0001) << "Wrong pixel size";
-  EXPECT_FLOAT_EQ(1e-6, bm.getMinval()) << "Unexpected minimum value";
-
-  for (unsigned int i = 0; i < 4; ++i)
-    EXPECT_FALSE(bm.isHistogrammed(i)) 
-      << "Beam should not be histogrammed for component: " << i;
-
-  //Beam1 tests
-  EXPECT_NEAR(2.8327225e-5, bm.getEffectiveArea1(), 1e-8) <<
-    "Beam had wrong effective area in band1";
-  EXPECT_NEAR(2.8327225e-5, bm.getEffectiveAreaSign1(0), 1e-8) <<
-    "Beam had wrong pos-pos effective area in band1";
-  EXPECT_FLOAT_EQ(0.0, bm.getEffectiveAreaSign1(1)) <<
-    "Beam had wrong pos-neg effective area in band1";
-  EXPECT_FLOAT_EQ(0.0, bm.getEffectiveAreaSign1(2)) <<
-    "Beam had wrong neg-pos effective area in band1";
-  EXPECT_FLOAT_EQ(0.0, bm.getEffectiveAreaSign1(3)) <<
-    "Beam had wrong neg-neg effective area in band1";
-  EXPECT_NEAR(0.97798554, bm.getMinMax1(0).second, 1e-5) <<
-    "Beam had unexpected maximum pixel value in band1";
-
-  //Beam2 tests
-  EXPECT_NEAR(5.4604548e-5, bm.getEffectiveArea2(), 1e-8) <<
-    "Beam had wrong effective area in band2";
-  EXPECT_NEAR(5.4604548e-5, bm.getEffectiveAreaSign2(0), 1e-8) <<
-    "Beam had wrong pos-pos effective area in band2";
-  EXPECT_FLOAT_EQ(0.0, bm.getEffectiveAreaSign2(1)) <<
-    "Beam had wrong pos-neg effective area in band2";
-  EXPECT_FLOAT_EQ(0.0, bm.getEffectiveAreaSign2(2)) <<
-    "Beam had wrong neg-pos effective area in band2";
-  EXPECT_FLOAT_EQ(0.0, bm.getEffectiveAreaSign2(3)) <<
-    "Beam had wrong neg-neg effective area in band2";
-  EXPECT_NEAR(0.98850347, bm.getMinMax2(0).second, 1e-5) <<
-    "Beam had unexpected maximum pixel value in band 2";
-}
-
-TEST(beam2DTest, Histogram) {
-  doublebeam bm("testdata/band1_beam.fits", "testdata/band2_beam.fits",
-		true, 150, 1e-6);
-  ASSERT_TRUE(bm.hasData()) << "Beam should have data after read";
-  EXPECT_FLOAT_EQ(1e-6, bm.getMinval()) << "Unexpected minimum accepted val";
-  ASSERT_TRUE(bm.isHistogrammed(0)) << "pp beam should be histogrammed";
-  for (unsigned int i = 1; i < 4; ++i)
-    EXPECT_FALSE(bm.isHistogrammed(i)) 
-      << "Beam should not be histogrammed for component: " << i;
-  EXPECT_EQ(150, bm.getNBins()) << "Unexpected number of histogram bins";
-  EXPECT_EQ(45, bm.getNHist(0)) << "Unexpected number of hist bins in 0 (pp)"
-				<< " component";
-  for (unsigned int i = 1; i < 4; ++i)
-    EXPECT_EQ(0, bm.getNHist(i)) << "Unexpected number of hist bins in "
-				 << "component " << i;
-}
 
 //////////////////////////////////////////////////
 // numberCountsKnotsSpline
@@ -486,6 +262,11 @@ TEST(model1DTest, getR) {
       " got " << rval << " relative difference: " << reldiff;
   }
 
+  EXPECT_FLOAT_EQ(0.0, model.getR(-0.001, bm))
+    << "R should be zero for negative flux density";
+  EXPECT_FLOAT_EQ(0.0, model.getR(0.1, bm))
+    << "R should be zero above model";
+
   //Vectorized version
   double rarr[ntest];
   model.getR(ntest, fluxdens, bm, rarr);
@@ -533,6 +314,85 @@ TEST(model1DTest, getRHist) {
       " got " << rarr[i] << " relative difference: " << reldiff;
   }
 }
+
+
+//Same tests, but beam has negative components
+TEST(model1DTest, getRNeg) {
+  const unsigned int nknots = 5;
+  const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.050 };
+  const float knotval[nknots] = { 10.0, 7.0, 5.0, 4.0, -1.0 };
+
+  numberCountsKnotsSpline model(nknots, knotpos);
+  paramSet p(nknots, knotval);
+  model.setParams(p);
+  ASSERT_TRUE(model.isValid()) << "Model should consider itself valid";
+
+  // First, non-histogrammed beam
+  beam bm("testdata/band12_beam_f100.fits[0]", false, 120, 1e-5);
+  ASSERT_FALSE(bm.isPosHist()) << "Pos beam should not have weights";
+  ASSERT_FALSE(bm.isNegHist()) << "Neg beam should not have weights";
+  ASSERT_FLOAT_EQ(8.0, bm.getPixSize()) << "Wrong pixel size";
+
+  const unsigned int ntest = 5;
+  const double fluxdens[ntest] = {-0.03, -0.003, -1e-4, 0.003, 0.03};
+  const double rexpect[ntest] = {0.0, 0.019075718, 11916638.0, 969.44687,
+				 7.2612855e-5};
+				 
+  double rval, reldiff;
+  for (unsigned int i = 0; i < ntest; ++i) {
+    rval = model.getR(fluxdens[i], bm);
+    if (rexpect[i] > 0)
+      reldiff = fabs(rval - rexpect[i]) / rexpect[i];
+    else
+      reldiff = fabs(rval - rexpect[i]);
+    EXPECT_NEAR(0.0, reldiff, 1e-3) <<
+      "R value not as expected -- wanted: " << rexpect[i] <<
+      " got " << rval << " relative difference: " << reldiff <<
+      " for flux: " << fluxdens[i];
+  }
+
+  //Vectorized version
+  double rarr[ntest];
+  model.getR(ntest, fluxdens, bm, rarr);
+  for (unsigned int i = 0; i < ntest; ++i) {
+    if (rexpect[i] > 0)
+      reldiff = fabs(rarr[i] - rexpect[i]) / rexpect[i];
+    else
+      reldiff = fabs(rarr[i] - rexpect[i]);
+    EXPECT_NEAR(0.0, reldiff, 1e-3) <<
+      "R value not as expected -- wanted: " << rexpect[i] <<
+      " got " << rarr[i] << " relative difference: " << reldiff <<
+      " for flux density: " << fluxdens[i];
+  }
+
+  // Repeat with histogramming
+  bm.makeHistogram(200);
+  ASSERT_TRUE(bm.isPosHist()) << "Pos beam should have weights";
+  ASSERT_TRUE(bm.isNegHist()) << "Neg beam should have weights";
+  for (unsigned int i = 0; i < ntest; ++i) {
+    rval = model.getR(fluxdens[i], bm);
+    if (rexpect[i] > 0)
+      reldiff = fabs(rval - rexpect[i]) / rexpect[i];
+    else
+      reldiff = fabs(rval - rexpect[i]);
+    EXPECT_NEAR(0.0, reldiff, 1e-3) <<
+      "R value not as expected -- wanted: " << rexpect[i] <<
+      " got " << rval << " relative difference: " << reldiff <<
+      " for flux: " << fluxdens[i];
+  }
+  model.getR(ntest, fluxdens, bm, rarr);
+  for (unsigned int i = 0; i < ntest; ++i) {
+    if (rexpect[i] > 0)
+      reldiff = fabs(rarr[i] - rexpect[i]) / rexpect[i];
+    else
+      reldiff = fabs(rarr[i] - rexpect[i]);
+    EXPECT_NEAR(0.0, reldiff, 1e-3) <<
+      "R value not as expected -- wanted: " << rexpect[i] <<
+      " got " << rarr[i] << " relative difference: " << reldiff <<
+      " for flux density: " << fluxdens[i];
+  }
+}
+
 
 //////////////////////////////////////////////////
 // numberCountsDoubleLogNormal
@@ -969,6 +829,113 @@ TEST(model2DTest, getRHist) {
     }
 }
 
+// Check with beam that has negative bits
+TEST(model2DTest, getRNeg) {
+
+  // Simple model that can be tested against IDL code
+  const unsigned int nknots = 5;
+  const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
+  const unsigned int nsigmas = 1;
+  const float sigmapos[nsigmas] = { 0.015 };
+  const unsigned int noffsets = 1;
+  const float offsetpos[noffsets] = { 0.03 };
+  const unsigned int ntot = nknots + nsigmas + noffsets;
+  const float pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.15, -0.3 };
+
+  numberCountsDoubleLogNormal model(nknots, knotpos, nsigmas, sigmapos,
+				    noffsets, offsetpos);
+  paramSet p(ntot, pvals);
+  model.setParams(p);
+  ASSERT_TRUE(model.isValid()) << "Model should be valid";
+
+  doublebeam bm("testdata/band12_beam_f100.fits[0]",
+		"testdata/band12_beam_f100.fits[1]", false, 150, 1e-7);
+  
+  // Comparison is direct computation from IDL without histogramming
+  const unsigned int ntest = 4;
+  const double fluxdens1[ntest] = {-2e-4, -2e-4, 0.003, 0.011};
+  const double fluxdens2[ntest] = {-3e-4, 1e-4, 0.002, 0.010};
+  const double rexp[ntest] = { 1.596908e8, 12727124, 75840.624, 20.409118 };
+  
+  //Scalar version
+  double rval, reldiff;
+  for (unsigned int i = 0; i < ntest; ++i) {
+    rval = model.getR(fluxdens1[i], fluxdens2[i], bm);
+    reldiff = fabs(rval - rexp[i])/rexp[i];
+    EXPECT_NEAR(0.0, reldiff, 1e-3) <<
+      "R not as expected -- wanted: " << rexp[i] <<
+      " got: " << rval << " for " << fluxdens1[i] << " " << fluxdens2[i];
+  }
+
+  EXPECT_FLOAT_EQ(0, model.getR(0.050, 0.030, bm))
+    << "R should be zero outside model coverage";
+  EXPECT_FLOAT_EQ(0, model.getR(0.050, -0.030, bm))
+    << "R should be zero outside model coverage";
+  EXPECT_FLOAT_EQ(0, model.getR(-0.050, 0.030, bm))
+    << "R should be zero outside model coverage";
+  EXPECT_FLOAT_EQ(0, model.getR(-0.050, -0.030, bm))
+    << "R should be zero outside model coverage";
+
+  // Vector version
+  const unsigned int ntest_1 = 3;
+  const unsigned int ntest_2 = 2;
+  const double fluxdens1_2d[ntest_1] = {-3e-4, -1e-4, 1e-3};
+  const double fluxdens2_2d[ntest_2] = {-2e-4, 0.5e-3};
+  
+  // Based on IDL direct evaluation
+  const double rexp_2d[ntest_1 * ntest_2] = 
+    {37281355, 771.54407, 45388812, 49.613048, 0.0, 7762.3524 };
+  double rval_2d[ntest_1 * ntest_2];
+  model.getR(ntest_1, fluxdens1_2d, ntest_2, fluxdens2_2d,
+	     bm, rval_2d);
+  unsigned int idx;
+  for (unsigned int i = 0; i < ntest_1; ++i)
+    for (unsigned int j = 0; j < ntest_2; ++j) {
+      idx = i * ntest_2 + j;
+      if (rexp_2d[idx] > 0)
+	reldiff = fabs(rval_2d[idx] - rexp_2d[idx]) / rexp_2d[idx];
+      else
+	reldiff = fabs(rval_2d[idx] - rexp_2d[idx]);
+      EXPECT_NEAR(0.0, reldiff, 1e-3) <<
+	"R not as expected -- wanted: " << rexp_2d[idx] <<
+	" got: " << rval_2d[idx] << " for " << fluxdens1[i] << " " << 
+	fluxdens2[j];
+    }
+
+  // Histogram and try again; pos-neg shouldn't be histed (too few elems)
+  bm.makeHistogram(200);
+  ASSERT_TRUE(bm.isHistogrammed(0)) << "Pos-pos should be histogrammed";
+  ASSERT_FALSE(bm.isHistogrammed(1)) << "Pos-neg should not be histogrammed";
+  ASSERT_TRUE(bm.isHistogrammed(2)) << "Neg-pos should be histogrammed";
+  ASSERT_TRUE(bm.isHistogrammed(3)) << "Neg-neg should be histogrammed";
+
+  // Scalar
+  for (unsigned int i = 0; i < ntest; ++i) {
+    rval = model.getR(fluxdens1[i], fluxdens2[i], bm);
+    reldiff = fabs(rval - rexp[i])/rexp[i];
+    EXPECT_NEAR(0.0, reldiff, 1e-3) <<
+      "R not as expected -- wanted: " << rexp[i] <<
+      " got: " << rval << " for " << fluxdens1[i] << " " << fluxdens2[i];
+  }
+  // Vector
+  model.getR(ntest_1, fluxdens1_2d, ntest_2, fluxdens2_2d,
+	     bm, rval_2d);
+  for (unsigned int i = 0; i < ntest_1; ++i)
+    for (unsigned int j = 0; j < ntest_2; ++j) {
+      idx = i * ntest_2 + j;
+      if (rexp_2d[idx] > 0)
+	reldiff = fabs(rval_2d[idx] - rexp_2d[idx]) / rexp_2d[idx];
+      else
+	reldiff = fabs(rval_2d[idx] - rexp_2d[idx]);
+      EXPECT_NEAR(0.0, reldiff, 1e-3) <<
+	"R not as expected -- wanted: " << rexp_2d[idx] <<
+	" got: " << rval_2d[idx] << " for " << fluxdens1[i] << " " << 
+	fluxdens2[j];
+    }
+
+}
+
+
 ////////////////////////////////////////////
 
 GTEST_API_ int main(int argc, char **argv) {
@@ -977,5 +944,3 @@ GTEST_API_ int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
-
-
