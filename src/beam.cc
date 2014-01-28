@@ -402,8 +402,8 @@ void beam::makeHistogram(unsigned int NBINS) {
     double minlog2val = log2(pospixarr[0]) - log2outscale;
     double maxlog2val = log2(pospixarr[npos - 1]) + log2outscale;
     double histstep = (maxlog2val - minlog2val) / static_cast<double>(nbins);
-    for (unsigned int i = 0; i < nbins; ++i) tmp_wt[i] = 0;
-    for (unsigned int i = 0; i < nbins; ++i) tmp_val[i] = 0.0;
+    std::memset(tmp_wt, 0, nbins * sizeof(unsigned int));
+    std::memset(tmp_val, 0, nbins * sizeof(double));
     for (unsigned int i = 0; i < npos; ++i) {
       curr_val = pospixarr[i];
       idx = static_cast<unsigned int>((log2(curr_val) - minlog2val) / histstep);
@@ -431,8 +431,8 @@ void beam::makeHistogram(unsigned int NBINS) {
     double minlog2val = log2(negpixarr[0]) - log2outscale;
     double maxlog2val = log2(negpixarr[nneg - 1]) + log2outscale;
     double histstep = (maxlog2val - minlog2val) / static_cast<double>(nbins);
-    for (unsigned int i = 0; i < nbins; ++i) tmp_wt[i] = 0;
-    for (unsigned int i = 0; i < nbins; ++i) tmp_val[i] = 0.0;
+    std::memset(tmp_wt, 0, nbins * sizeof(unsigned int));
+    std::memset(tmp_val, 0, nbins * sizeof(double));
     for (unsigned int i = 0; i < nneg; ++i) {
       curr_val = negpixarr[i]; // Alread fabsed
       idx = static_cast<unsigned int>((log2(curr_val) - minlog2val) / histstep);

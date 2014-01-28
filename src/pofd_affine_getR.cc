@@ -22,10 +22,11 @@ static struct option long_options[] = {
   {"verbose",no_argument, 0, 'v'},
   {"version",no_argument, 0, 'V'}, //Below here, not parsed in main routine
   {"hdf5", no_argument, 0, '1'},
-  {"histogram",no_argument, 0, 'H'},
+  {"histogram", no_argument, 0, 'H'},
+  {"nhist", required_argument, 0, 'n'},
   {0, 0, 0, 0}
 };
-char optstring[] = "dh1HvV";
+char optstring[] = "dh1Hn:vV";
 
 //One-D version
 int getRSingle( int argc, char** argv ) {
@@ -35,11 +36,12 @@ int getRSingle( int argc, char** argv ) {
   std::string psffile; //Beam file
   bool histogram, verbose, write_as_hdf5; 
   double minflux, maxflux;
-  unsigned int nflux;
+  unsigned int nflux, nhist;
 
   histogram     = false;
   verbose       = false;
   write_as_hdf5 = false;
+  nhist         = 120;
 
   int c;
   int option_index = 0;
@@ -50,10 +52,13 @@ int getRSingle( int argc, char** argv ) {
     case '1':
       write_as_hdf5 = true;
       break;
-    case 'H' :
+    case 'H':
       histogram = true;
       break;
-    case 'v' :
+    case 'n' :
+      nhist = atoi(optarg);
+      break;
+    case 'v':
       verbose = true;
       break;
     }
@@ -83,19 +88,19 @@ int getRSingle( int argc, char** argv ) {
     numberCountsKnotsSpline model;
     model_info.getKnotPos(model);
 
-    beam bm(psffile, histogram);
+    beam bm(psffile, histogram, nhist);
     paramSet pars(model_info.getNKnots());
     model_info.getParams(pars);
     model.setParams(pars);
 
     if (verbose) {
-      std::cout << "Flux per area: " << model.getFluxPerArea()
-		<< std::endl;
-      std::cout << "Beam area: " << bm.getEffectiveArea() << std::endl;
-      if (bm.hasPos()) std::cout << " Beam has positive components" 
-				 << std::endl;
-      if (bm.hasNeg()) std::cout << " Beam has negative components" 
-				 << std::endl;
+      printf("   Beam area:          %0.3e [deg^2]\n", bm.getEffectiveArea());
+      printf("   Pixel size:         %0.2f [arcsec]\n", bm.getPixSize());
+      printf("   Flux per area:      %0.2f [Jy deg^-2]\n", 
+	     model.getFluxPerArea());
+      printf("   Source density:     %0.4e [deg^-2]\n", model.getNS());
+      if (histogram)
+	printf("   Nbeamhist:          %u\n", nhist);
     }
     fluxes = new double[nflux];
     for (unsigned int i = 0; i < nflux; ++i)
@@ -187,11 +192,12 @@ int getRDouble(int argc, char** argv) {
   std::string psffile1, psffile2; //Beam file
   bool histogram, verbose, write_as_hdf5;
   double minflux1, maxflux1, minflux2, maxflux2;
-  unsigned int nflux1, nflux2;
+  unsigned int nflux1, nflux2, nhist;
 
   histogram     = false;
   verbose       = false;
   write_as_hdf5 = false;
+  nhist         = 150;
 
   int c;
   int option_index = 0;
@@ -202,10 +208,13 @@ int getRDouble(int argc, char** argv) {
     case '1':
       write_as_hdf5 = true;
       break;
-    case 'H' :
+    case 'H':
       histogram = true;
       break;
-    case 'v' :
+    case 'n':
+      nhist = atoi(optarg);
+      break;
+    case 'v':
       verbose = true;
       break;
     }
@@ -254,23 +263,23 @@ int getRDouble(int argc, char** argv) {
     numberCountsDoubleLogNormal model;
     model_info.getModelPositions(model);
 
-    doublebeam bm(psffile1, psffile2, histogram);
+    doublebeam bm(psffile1, psffile2, histogram, nhist);
     paramSet pars(model_info.getNTot());
     model_info.getParams(pars);
     model.setParams(pars);
 
     if (verbose) {
-      std::cout << "Flux per area, band 1: " << model.getFluxPerArea(0)
-		<< std::endl;
-      std::cout << "Beam area, band 1: " << bm.getEffectiveArea1() << std::endl;
-      std::cout << "Flux per area, band 2: " << model.getFluxPerArea(1)
-		<< std::endl;
-      std::cout << "Beam area, band 2: " << bm.getEffectiveArea2() << std::endl;
+      printf("   Beam area1:         %0.3e [deg^2]\n", bm.getEffectiveArea1());
+      printf("   Beam area2:         %0.3e [deg^2]\n", bm.getEffectiveArea2());
+      printf("   Pixel size:         %0.2f [arcsec]\n", bm.getPixSize());
+      printf("   Flux per area 1:    %0.2f [Jy deg^-2]\n", 
+	     model.getFluxPerArea(1));
+      printf("   Flux per area 2:    %0.2f [Jy deg^-2]\n", 
+	     model.getFluxPerArea(2));
+      printf("   Source density:     %0.4e [deg^-2]\n", model.getNS());
+      if (histogram)
+	printf("   Nbeamhist:          %u\n", nhist);
     }
-    
-    std::cout << "R(0.003, 0.003): "
-	      << model.getR(0.003, 0.003, bm) << std::endl;
-    exit(1);
 
     fluxes1 = new double[nflux1];
     for (unsigned int i = 0; i < nflux1; ++i)
@@ -398,8 +407,8 @@ int main( int argc, char** argv ) {
   // if this is 1D or 2D c) displaying the version number
   int c;
   int option_index = 0;
-  while ( ( c = getopt_long(argc,argv,optstring,long_options,
-			    &option_index ) ) != -1 ) 
+  while ((c = getopt_long(argc,argv,optstring,long_options,
+			  &option_index)) != -1) 
     switch(c) {
     case 'h' :
       std::cerr << "NAME" << std::endl;
@@ -487,6 +496,9 @@ int main( int argc, char** argv ) {
       std::cerr << "\t\tUse the 2D model." << std::endl;
       std::cerr << "\t-H, --histogram" << std::endl;
       std::cerr << "\t\tUse beam histogramming." << std::endl;
+      std::cerr << "\t-n, --nhist VALUE" << std::endl;
+      std::cerr << "\t\tNumber of beam histogram bins (def: 120 or 150)." 
+		<< std::endl;
       std::cerr << "\t-V, --version" << std::endl;
       std::cerr << "\t\tOutput the version number and exit." << std::endl;
       std::cerr << std::endl;

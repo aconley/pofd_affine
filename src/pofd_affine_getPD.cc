@@ -22,9 +22,10 @@ static struct option long_options[] = {
   {"hdf5", no_argument, 0, '8'},
   {"histogram", no_argument, 0, 'H'},
   {"log", no_argument, 0, 'l'},
+  {"nbins", required_argument, 0, '1'},
   {"nflux", required_argument, 0, 'n'},
   {"ninterp", required_argument, 0, 'N'},
-  {"sigmanoise", required_argument, 0, 's'},
+  {"sigma", required_argument, 0, 's'},
   {"verbose", no_argument, 0, 'v'},
   {"wisdom", required_argument, 0, 'w'},
   {"nedge", required_argument, 0, '5'},
@@ -32,12 +33,13 @@ static struct option long_options[] = {
   {"sigma2", required_argument, 0, '7'},
   {0, 0, 0, 0}
 };
-char optstring[] = "hdVfH8ln:N:s:vw:5:6:7:";
+
+char optstring[] = "hdVfH8l1:n:N:s:vw:5:6:7:";
 
 int getPDSingle(int argc, char **argv) {
 
   double sigma_noise; //Noise
-  unsigned int nflux, ninterp;
+  unsigned int nflux, ninterp, nbins;
   bool has_wisdom, getLog;
   bool histogram, verbose, write_to_fits, write_as_hdf5;
   double minflux, maxflux;
@@ -48,10 +50,11 @@ int getPDSingle(int argc, char **argv) {
   std::string psffile;  //Beam file
 
   //Defaults
-  sigma_noise         = 0.002;
+  sigma_noise         = 0.0;
   has_wisdom          = false;
   nflux               = 262144;
   ninterp             = 1024;
+  nbins               = 120;
   verbose             = false;
   histogram           = false;
   write_to_fits       = false;
@@ -76,11 +79,14 @@ int getPDSingle(int argc, char **argv) {
     case 'l':
       getLog = true;
       break;
+    case '1':
+      nbins = static_cast<unsigned int>(atoi(optarg));
+      break;
     case 'n' :
-      nflux = static_cast< unsigned int >( atoi(optarg) );
+      nflux = static_cast<unsigned int>(atoi(optarg));
       break;
     case 'N' :
-      ninterp = static_cast<unsigned int>( atoi(optarg) );
+      ninterp = static_cast<unsigned int>(atoi(optarg));
       break;
     case 's' :
       sigma_noise = atof(optarg);
@@ -143,7 +149,7 @@ int getPDSingle(int argc, char **argv) {
     model_info.getKnotPos(model);
 
     PDFactory pfactory(ninterp);
-    beam bm(psffile, histogram);
+    beam bm(psffile, histogram, nbins);
 
     paramSet pars(model_info.getNKnots());
     model_info.getParams(pars);
@@ -188,6 +194,7 @@ int getPDSingle(int argc, char **argv) {
 		<< std::endl;
       return 1;
     }    
+    std::cerr << "Get PD" << std::endl;
     pfactory.getPD(sigma_noise, pd, getLog);
     
     //Write it
@@ -209,7 +216,7 @@ int getPDSingle(int argc, char **argv) {
     }
   } catch (const affineExcept& ex) {
     std::cerr << "Error encountered" << std::endl;
-    std::cerr << ex << std::endl;
+    std::cerr << ex.what() << std::endl;
     return 8;
   } catch (const std::bad_alloc& ba) {
     std::cerr << "Bad allocation error: " << ba.what() << std::endl;
@@ -223,7 +230,7 @@ int getPDSingle(int argc, char **argv) {
 int getPDDouble(int argc, char** argv) {
 
   double sigma1, sigma2; //Noise
-  unsigned int nflux, nedge;
+  unsigned int nflux, nedge, nbins;
   bool has_wisdom, write_to_fits, write_as_hdf5;
   bool histogram, verbose, getLog, doedge;
   double minflux1, maxflux1, minflux2, maxflux2;
@@ -234,12 +241,13 @@ int getPDDouble(int argc, char** argv) {
   std::string psffile1, psffile2;  //Beam file
 
   //Defaults
-  sigma1              = 0.002;
-  sigma2              = 0.002;
+  sigma1              = 0.0;
+  sigma2              = 0.0;
   has_wisdom          = false;
   nflux               = 2048;
   verbose             = false;
   histogram           = false;
+  nbins               = 150;
   write_to_fits       = false;
   write_as_hdf5       = false;
   nedge               = 256;
@@ -249,34 +257,37 @@ int getPDDouble(int argc, char** argv) {
   int c;
   int option_index = 0;
   optind = 1;
-  while ( ( c = getopt_long(argc,argv,optstring,long_options,
-			    &option_index ) ) != -1 ) 
+  while ((c = getopt_long(argc,argv,optstring,long_options,
+			  &option_index)) != -1) 
     switch(c) {
-    case 'f' :
+    case 'f':
       write_to_fits = true;
       break;
     case '8':
       write_as_hdf5 = true;
       break;
-    case 'H' :
+    case 'H':
       histogram = true;
       break;
     case 'l':
       getLog = true;
       break;
-    case '5' :
+    case '1':
+      nbins = static_cast<unsigned int>(atoi(optarg));
+      break;
+    case '5':
       nedge = static_cast<unsigned int>(atoi(optarg));
       break;
-    case '6' :
+    case '6':
       sigma1 = atof(optarg);
       break;
-    case '7' :
+    case '7':
       sigma2 = atof(optarg);
       break;
-    case 'v' :
+    case 'v':
       verbose = true;
       break;
-    case 'w' :
+    case 'w':
       has_wisdom = true;
       wisdom_file = std::string( optarg );
       break;
@@ -333,7 +344,7 @@ int getPDDouble(int argc, char** argv) {
     model.setParams(pars);
 
     PDFactoryDouble pfactory(nedge);
-    doublebeam bm(psffile1, psffile2, histogram);
+    doublebeam bm(psffile1, psffile2, histogram, nbins);
 
     PDDouble pd;
 
@@ -410,7 +421,7 @@ int getPDDouble(int argc, char** argv) {
     }
   } catch (const affineExcept& ex) {
     std::cerr << "Error encountered" << std::endl;
-    std::cerr << ex << std::endl;
+    std::cerr << ex.what() << std::endl;
     return 8;
   } catch (const std::bad_alloc& ba) {
     std::cerr << "Bad allocation error: " << ba.what() << std::endl;
@@ -438,21 +449,21 @@ int main( int argc, char** argv ) {
       std::cerr << "NAME" << std::endl;
       std::cerr << "\tpofd_affine_getPD -- get the PD for a number counts "
 		<< "model. Both" << std::endl;
-      std::cerr << "\tone-dimensional and two-dimensional models are supported."
+      std::cerr << "\t one-dimensional and two-dimensional models are supported."
 		<< std::endl;
       std::cerr << std::endl;
       std::cerr << "SYNOPSIS" << std::endl;
       std::cerr << "\tEither" << std::endl;
       std::cerr << std::endl;
 
-      std::cerr << "\t pofd_mcmc_getPD [options] modelfile beamfile minflux"
+      std::cerr << "\t pofd_affine_getPD [options] modelfile beamfile minflux"
 		<< std::endl;
       std::cerr << "\t\t maxflux outputfile"
 		<< std::endl;
       std::cerr << std::endl;
       std::cerr << "\tfor the 1D case or" << std::endl;
       std::cerr << std::endl;
-      std::cerr << "\t pofd_mcmc_getPD -d [options] modelfile beamfile1"
+      std::cerr << "\t pofd_affine_getPD -d [options] modelfile beamfile1"
 		<< " beamfile2" << std::endl;
       std::cerr << "\t  minflux1 maxflux1 minflux2 maxflux2 outputfile" 
 		<< std::endl;
@@ -518,8 +529,6 @@ int main( int argc, char** argv ) {
       std::cerr << "\t\tUse the 2D model." << std::endl;
       std::cerr << "\t-f, --fits" << std::endl;
       std::cerr << "\t\tWrite the output as a FITS file." << std::endl;
-      std::cerr << "\t-F, --nofixedge" << std::endl;
-      std::cerr << "\t\tDon't apply edge fix up." << std::endl;
       std::cerr << "\t--hdf5" << std::endl;
       std::cerr << "\t\tWrite as HDF5 instead of FITS or text."
 		<< std::endl;
@@ -527,7 +536,12 @@ int main( int argc, char** argv ) {
       std::cerr << "\t\tUse beam histogramming." << std::endl;
       std::cerr << "\t-l, --log" << std::endl;
       std::cerr << "\t\tReturn log2 P(D) rather than P(D)." << std::endl;
-      std::cerr << "\t-n, --nflux value" << std::endl;
+      std::cerr << "\t--nbins VALUE" << std::endl;
+      std::cerr << "\t\tNumber of bins to use in beam histogram (if "
+		<< "histogramming" << std::endl;
+      std::cerr << "\t\tis being used.  (def: 120 for 1D, 150 for 2D)"
+		<< std::endl;
+      std::cerr << "\t-n, --nflux VALUE" << std::endl;
       std::cerr << "\t\tThe number of requested fluxes, also the FFT length." 
 		<< std::endl;
       std::cerr << "\t\tShould be a power of 2. For the 2D model, this is the"
@@ -545,36 +559,24 @@ int main( int argc, char** argv ) {
 		<< std::endl;
       std::cerr << std::endl;
       std::cerr << "ONE-D ONLY OPTIONS" << std::endl;
-      std::cerr << "\t--maxflux value" << std::endl;
-      std::cerr << "\t\tMaximum flux value. (def: Largest knot minus the"
-		<< std::endl;
-      std::cerr << "\t\tmean flux from the model)" << std::endl;
       std::cerr << "\t-N, --ninterp value" << std::endl;
       std::cerr << "\t\tLength of interpolation vector used in computing R"
 		<< std::endl;
-      std::cerr << "\t-s, --sigmanoise noise" << std::endl;
+      std::cerr << "\t-s, --sigma noise" << std::endl;
       std::cerr << "\t\tThe assumed per-pixel noise (assumed Gaussian, "
-		<< "def: 0.002)" << std::endl;
+		<< "def: 0)" << std::endl;
       std::cerr << "TWO-D ONLY OPTIONS" << std::endl;
-      std::cerr << "\t--maxflux1 value" << std::endl;
-      std::cerr << "\t\tMaximum flux value, band 1. (def: Largest knot minus "
-		<< "the" << std::endl;
-      std::cerr << "\t\tmean flux from the model)" << std::endl;
-      std::cerr << "\t--maxflux2 value" << std::endl;
-      std::cerr << "\t\tMaximum flux value, band 1. (def: approximate max minus"
-		<< std::endl;
-      std::cerr << "\t\tmean flux from the model)" << std::endl;
       std::cerr << "\t--nedge value" << std::endl;
       std::cerr << "\t\tNumber of bins in edge integrals for R."
 		<< std::endl;
       std::cerr << "\t--sigma1 noise" << std::endl;
       std::cerr << "\t\tThe assumed per-pixel noise, band 1 (assumed Gaussian,"
 		<< std::endl;
-      std::cerr << "\t\tdef: 0.002)" << std::endl;
+      std::cerr << "\t\tdef: 0)" << std::endl;
       std::cerr << "\t--sigma2 noise" << std::endl;
       std::cerr << "\t\tThe assumed per-pixel noise, band 2 (assumed Gaussian,"
 		<< std::endl;
-      std::cerr << "\t\tdef: 0.002)" << std::endl;
+      std::cerr << "\t\tdef: 0)" << std::endl;
       return 0;
       break;
     case 'd' :
@@ -587,7 +589,7 @@ int main( int argc, char** argv ) {
       break;
     }
 
-  if (! twod)
+  if (!twod)
     return getPDSingle(argc,argv);
   else
     return getPDDouble(argc,argv);

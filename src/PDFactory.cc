@@ -293,7 +293,7 @@ void PDFactory::setupTransforms(unsigned int n) {
   // However, because we may move around the arrays,
   //  one should always call these plans in array-execute form
 
-  if (currsize == 0)
+  if (n == 0)
     throw affineExcept("PDFactoryDouble", "setupTransforms",
 		       "Invalid (0) transform size");
 
@@ -532,6 +532,7 @@ void PDFactory::initRInterp(const numberCounts& model, const beam& bm) {
 void PDFactory::initR(unsigned int n, double minflux, double maxflux,
 		      const numberCounts& model, const beam& bm,
 		      bool muldr) {
+
   // Set up interp vars, flux ranges
   initRInterp(model, bm);
   initRFlux(n, minflux, maxflux);
@@ -564,7 +565,7 @@ void PDFactory::initR(unsigned int n, double minflux, double maxflux,
     for (unsigned int i = minitidx; i <= maxitidx; ++i) {
       cflux = static_cast<double>(i) * dflux; //Min is always 0 in positive R
       splval = gsl_spline_eval(spline_pos, cflux, acc_pos);
-      rvals[i] = exp2(splval); // Recall -- spline is log
+      rvals[i] = exp2(splval); // Recall -- spline is log2
     }
 #ifdef TIMING
     RTime += std::clock() - starttime;

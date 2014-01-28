@@ -372,7 +372,7 @@ double numberCountsKnotsSpline::getR(double fluxdensity, const beam& bm) const {
   prefac = bm.getPixSize() / 3600.0;  //To sq deg
   prefac = prefac * prefac;
   
-  double currarg, ieta, retval;
+  double currarg, ieta, retval, cts;
   retval = 0.0;
   if (fluxdensity > 0) { // Note that R(0) = 0, so we just test > <
     if (bm.isPosHist()) {
@@ -384,8 +384,8 @@ double numberCountsKnotsSpline::getR(double fluxdensity, const beam& bm) const {
 	ieta = ipixarr[i];
 	currarg = fluxdensity * ieta;
 	if (currarg < minknot || currarg >= maxknot) continue;
-	retval += warr[i] * ieta * 
-	  exp2(gsl_spline_eval(splinelog, log2(currarg), acc));
+	cts = exp2(gsl_spline_eval(splinelog, log2(currarg), acc));
+	retval += warr[i] * ieta * cts;
       }
     } else {
       // Raw beam
@@ -407,8 +407,8 @@ double numberCountsKnotsSpline::getR(double fluxdensity, const beam& bm) const {
 	ieta = ipixarr[i];
 	currarg = - fluxdensity * ieta; // Note the -
 	if (currarg < minknot || currarg >= maxknot) continue;
-	retval += warr[i] * ieta * 
-	  exp2(gsl_spline_eval(splinelog, log2(currarg), acc));
+	cts = exp2(gsl_spline_eval(splinelog, log2(currarg), acc));
+	retval += warr[i] * ieta * cts;
       }
     } else {
       unsigned int npsf = bm.getNNeg();
