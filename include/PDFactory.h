@@ -109,8 +109,8 @@ class PDFactory {
 #endif
 
  public :
-  PDFactory(unsigned int NINTERP=1024); //!< Default constructor
-  PDFactory(const std::string&,unsigned int NINTERP=1024); //!< Constructor with wisdom file
+  PDFactory(unsigned int NINTERP=2048); //!< Default constructor
+  PDFactory(const std::string&,unsigned int NINTERP=2048); //!< Constructor with wisdom file
   ~PDFactory(); //!< Destructor
 
   void free(); //!< Frees memory
@@ -132,6 +132,9 @@ class PDFactory {
 
   /*! \brief Gets P(D) of with specified noise level */
   void getPD(double, PD&, bool setLog=true);
+
+  /*! \brief Write computed R out to HDF5 file */
+  void writeRToHDF5(const std::string& filename) const;
 
   void sendSelf(MPI_Comm, int dest) const; //!< MPI copy send operation
   void recieveCopy(MPI_Comm, int dest); //!< MPI copy recieve operation

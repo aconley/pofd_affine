@@ -273,9 +273,9 @@ int getRDouble(int argc, char** argv) {
       printf("   Beam area2:         %0.3e [deg^2]\n", bm.getEffectiveArea2());
       printf("   Pixel size:         %0.2f [arcsec]\n", bm.getPixSize());
       printf("   Flux per area 1:    %0.2f [Jy deg^-2]\n", 
-	     model.getFluxPerArea(1));
+	     model.getFluxPerArea(0));
       printf("   Flux per area 2:    %0.2f [Jy deg^-2]\n", 
-	     model.getFluxPerArea(2));
+	     model.getFluxPerArea(1));
       printf("   Source density:     %0.4e [deg^-2]\n", model.getNS());
       if (histogram)
 	printf("   Nbeamhist:          %u\n", nhist);
@@ -327,7 +327,7 @@ int getRDouble(int argc, char** argv) {
       // Fluxes
       adims = nflux1;
       mems_id = H5Screate_simple(1, &adims, NULL);
-      dat_id = H5Dcreate2(file_id, "Flux1", H5T_NATIVE_DOUBLE,
+      dat_id = H5Dcreate2(file_id, "RFlux1", H5T_NATIVE_DOUBLE,
 			  mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
       H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
 	       H5P_DEFAULT, fluxes1);
@@ -335,7 +335,7 @@ int getRDouble(int argc, char** argv) {
       H5Sclose(mems_id);
       adims = nflux2;
       mems_id = H5Screate_simple(1, &adims, NULL);
-      dat_id = H5Dcreate2(file_id, "Flux2", H5T_NATIVE_DOUBLE,
+      dat_id = H5Dcreate2(file_id, "RFlux2", H5T_NATIVE_DOUBLE,
 			  mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
       H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
 	       H5P_DEFAULT, fluxes2);

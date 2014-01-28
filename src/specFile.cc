@@ -25,7 +25,7 @@ void specFile::init() {
   mean_sub = false;
   ignore_mask = false;
   fftsize = 131072;
-  ninterp = 1024;
+  ninterp = 2048;
   minbeamval = 1e-5;
   beam_histogram = true;
   nbeamhist = 120;

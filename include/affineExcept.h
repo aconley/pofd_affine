@@ -19,6 +19,7 @@ class affineExcept : public std::exception {
   std::string errmethod;         //!< Method throwing the exception
   std::string errstr;            //!< Error string (user consumption)
 
+  mutable std::string whatmsg;  //!< Holds combined error message
  public:
   // Constructors
   explicit affineExcept(const std::string& errstr); //!< Just with errstring

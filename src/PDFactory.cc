@@ -484,17 +484,20 @@ void PDFactory::initRInterp(const numberCounts& model, const beam& bm) {
     double maxinterpflux = -modelmin * subedgemult;
     double mininterpflux = -modelmax * bm.getMinMaxNeg().second;
 
-    // For this sign, it's R[mininterpflux] that is zero
+    // Step back from both edges slightly
     double dinterp = 0.001 * (maxinterpflux - mininterpflux) * ininterpm1;
-    mininterpflux += dinterp;
+    mininterpflux += dinterp; 
+    maxinterpflux -= dinterp;
 
     // Note that the interpolation is in log2 space, so therefore
     //  we want the interpolation flux to be spaced that way
     // Except we want it spaced with more values at the top end now
+    // Also recall that the GSL spline class must have values in increasing
+    //  order
     double dinterpflux = (log2(mininterpflux / maxinterpflux)) * ininterpm1;
     for (unsigned int i = 0; i < ninterp; ++i)
       RinterpFlux_neg[i] = maxinterpflux * 
-	exp2(static_cast<double>(i) * dinterpflux);
+	exp2(static_cast<double>(ninterp - i - 1) * dinterpflux);
     
 #ifdef TIMING
     std::clock_t starttime = std::clock();
@@ -527,7 +530,7 @@ void PDFactory::initRInterp(const numberCounts& model, const beam& bm) {
 
   This is the interface to initRInterp and initRFlux, plus does the
   filling of the real R.  It does not check the model or beam for
-  validity, so the caller (initPD) must.
+  validity, so the caller (initPD) must do so.
 */
 void PDFactory::initR(unsigned int n, double minflux, double maxflux,
 		      const numberCounts& model, const beam& bm,
@@ -591,8 +594,9 @@ void PDFactory::initR(unsigned int n, double minflux, double maxflux,
     std::clock_t starttime = std::clock();
 #endif
     double cflux, splval;
+    double mval = minflux_R - static_cast<double>(wrapRidx + 1)*dflux;
     for (unsigned int i = minitidx; i <= maxitidx; ++i) {
-      cflux = static_cast<double>(i - wrapRidx - 1) * dflux + minflux_R; 
+      cflux = static_cast<double>(i)* dflux + mval;
       splval = gsl_spline_eval(spline_neg, cflux, acc_neg);
       rvals[i] = exp2(splval);
     }
@@ -614,7 +618,7 @@ void PDFactory::initR(unsigned int n, double minflux, double maxflux,
 */
 void PDFactory::getMeanVarFromR() {
 
-  if (rinitialized)
+  if (!rinitialized)
     throw affineExcept("PDFactory", "getMeanVarFromR",
 		       "R variables not computed");
 
@@ -722,7 +726,7 @@ void PDFactory::unwrapPD(PD& pd) const {
   double cs1, cs2;
   cs1 = nsig1 * sg;
   cs2 = nsig2 * sg;
-  if ((fwrap_plus > cs1) || (fwrap_minus > cs1)) {
+  if ((fwrap_plus < cs1) || (fwrap_minus < cs1)) {
     // Worth further investigation
     if (fwrap_plus < cs2) {
       std::stringstream errstr;
@@ -796,7 +800,6 @@ void PDFactory::unwrapPD(PD& pd) const {
 #ifdef TIMING
   meanTime += std::clock() - starttime;
 #endif
-
 }
 
 /*!
@@ -820,12 +823,18 @@ bool PDFactory::initPD(unsigned int n, double minflux, double maxflux,
 
   if (n == 0)
     throw affineExcept("PDFactory", "initPD", "Invalid (non-positive) n");  
+  if (n == 1)
+    throw affineExcept("PDFactory", "initPD", "Invalid (==0) n");  
   if (maxflux <= 0.0)
     throw affineExcept("PDFactory", "initPD", "Invalid (non-positive) maxflux");
+  if (minflux == maxflux)
+    throw affineExcept("PDFactory", "initPD", 
+		       "Invalid (0) range between min/max flux");
   if (!model.isValid())
     throw affineExcept("PDFactory", "initPD", "Invalid model");
   if (!bm.hasData())
     throw affineExcept("PDFactory", "initPD", "Empty beam");
+
 
   // We are about to nuke these
   rinitialized = false;
@@ -855,7 +864,7 @@ bool PDFactory::initPD(unsigned int n, double minflux, double maxflux,
 
   if (verbose) {
     std::cout << " Initial mean estimate: " << mn << std::endl;
-    std::cout << " Initial stdev estimate: " << sg << std::endl;
+    std::cout << " Initial stdev estimate (no inst noise): " << sg << std::endl;
     if (doshift)
       std::cout << " Additional shift applied: " << shift << std::endl;
     else 
@@ -982,7 +991,7 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog) {
   starttime = std::clock();
 #endif
   // From pval into pofd
-  fftw_execute_dft_c2r(plan, pval, pofd);
+  fftw_execute_dft_c2r(plan_inv, pval, pofd);
 #ifdef TIMING
   fftTime += std::clock() - starttime;
 #endif
@@ -1001,6 +1010,74 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog) {
   logTime += std::clock() - starttime;
 #endif
 }
+
+/*!
+  \param[in] filename File to write to
+
+  You must call initPD or initR first, or bad things will probably happen.
+*/
+void PDFactory::writeRToHDF5(const std::string& filename) const {
+  if (!rinitialized )
+    throw affineExcept("PDFactory", "writeRToHDF5",
+		       "Must call initR or initPD first");
+
+  hid_t file_id;
+  file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
+		      H5P_DEFAULT);
+
+  if (H5Iget_ref(file_id) < 0) {
+    H5Fclose(file_id);
+    throw affineExcept("PDFactory", "writeToHDF5",
+		     "Failed to open HDF5 file to write");
+  }
+
+  // Write it as one dataset -- Rflux, R. 
+  hsize_t adims;
+  hid_t mems_id, att_id, dat_id;
+  
+  // Properties
+  adims = 1;
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  att_id = H5Acreate2(file_id, "dflux", H5T_NATIVE_DOUBLE,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux);
+  H5Aclose(att_id);
+  H5Sclose(mems_id);
+
+  // Rflux.  Set up a temporary array to put RFlux in
+  double* RFlux = new double[currsize];
+  for (unsigned int i = 0; i <= wrapRidx; ++i)
+    RFlux[i] = static_cast<double>(i) * dflux;
+  double mval = minflux_R - static_cast<double>(wrapRidx + 1)*dflux;
+  for (unsigned int i = wrapRidx + 1; i < currsize; ++i)
+    RFlux[i] = static_cast<double>(i) * dflux - mval;
+  adims = currsize;
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  dat_id = H5Dcreate2(file_id, "RFlux", H5T_NATIVE_DOUBLE,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
+	   H5P_DEFAULT, RFlux);
+  H5Dclose(dat_id);
+  delete[] RFlux;
+
+  // R -- which we may need to copy to remove the dflux
+  dat_id = H5Dcreate2(file_id, "R", H5T_NATIVE_DOUBLE,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  if (rdflux) {
+    double* tmp = new double[currsize];
+    double idflux = 1.0 / dflux;
+    for (unsigned int i = 0; i < currsize; ++i) tmp[i] = rvals[i] * idflux;
+    H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,  H5P_DEFAULT, tmp);
+    delete[] tmp;
+  } else
+    H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,  H5P_DEFAULT, rvals);
+  H5Dclose(dat_id);
+  H5Sclose(mems_id);
+
+  // Done
+  H5Fclose(file_id);
+}
+
 
 void PDFactory::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<unsigned int*>(&fftw_plan_style), 1, MPI_UNSIGNED,

@@ -1531,7 +1531,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
   // If abs(f1) is bigger than this, R is zero for this component
   double maxf1[4];
   for (unsigned int i = 0; i < 4; ++i)
-    maxf1[i] = hassign[i] ? maxknot / bm.getMinMax1(i).second : 0.0;
+    maxf1[i] = hassign[i] ? maxknot * bm.getMinMax1(i).second : 0.0;
 
   // Pixel area factor
   double prefac;

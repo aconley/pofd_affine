@@ -345,7 +345,6 @@ void PDFactoryDouble::initR(unsigned int n, double minflux1,
 
   initRFlux(n, minflux1, maxflux1, minflux2, maxflux2);
 
-
   //Now fill in R.  The edges require special care (the part between
   // 0 and dflux in each dimension, which is the bottom edge of the
   // R array even with wrapping).  This
@@ -683,7 +682,7 @@ void PDFactoryDouble::setupTransforms(unsigned int n) {
 			<< " that size";
     throw affineExcept("PDFactoryDouble", "setupTransforms", str.str());
   }
-  if (plan_inv != NULL) {
+  if (plan_inv == NULL) {
     plan_inv = fftw_plan_dft_c2r_2d(intn, intn, pval, pofd,
 				    fftw_plan_style);
     if (plan_inv == NULL) {
@@ -759,13 +758,13 @@ void PDFactoryDouble::unwrapPD(PDDouble& pd) const {
   unsigned int minidx1 = static_cast<unsigned>(mdx);
 
   // Sanity check
-  double fwrap_plus = RFlux1[minidx1]; // Wrap in pos flux
+  double fwrap_plus = static_cast<double>(minidx1) * dflux1; // Wrap in pos flux
   double fwrap_minus = 
     static_cast<double>(currsize - minidx1) * dflux1; // Abs neg wrap
   double cs1, cs2;
   cs1 = nsig1 * sg1;
   cs2 = nsig2 * sg1;
-  if ((fwrap_plus > cs1) || (fwrap_minus > cs1)) {
+  if ((fwrap_plus < cs1) || (fwrap_minus < cs1)) {
     // Worth further investigation
     if (fwrap_plus < cs2) {
       std::stringstream errstr;
@@ -813,11 +812,11 @@ void PDFactoryDouble::unwrapPD(PDDouble& pd) const {
   unsigned int minidx2 = static_cast<unsigned>(mdx);
 
   // Same sanity check
-  fwrap_plus = RFlux2[minidx2]; 
+  fwrap_plus = static_cast<double>(minidx2) * dflux2;
   fwrap_minus = static_cast<double>(currsize - minidx2) * dflux2;
   cs1 = nsig1 * sg2;
   cs2 = nsig2 * sg2;
-  if ((fwrap_plus > cs1) || (fwrap_minus > cs1)) {
+  if ((fwrap_plus < cs1) || (fwrap_minus < cs1)) {
     // Worth further investigation
     if (fwrap_plus < cs2) {
       std::stringstream errstr;
@@ -915,7 +914,6 @@ void PDFactoryDouble::unwrapPD(PDDouble& pd) const {
 #ifdef TIMING
   meanTime += std::clock() - starttime;
 #endif
-
 }
 
 
@@ -947,13 +945,22 @@ bool PDFactoryDouble::initPD(unsigned int n, double minflux1, double maxflux1,
   if (n == 0)
     throw affineExcept("PDFactoryDouble", "initPD", 
 		       "Invalid (non-positive) n");
+  if (n == 1)
+    throw affineExcept("PDFactoryDouble", "initPD", 
+		       "Invalid n (==1)");
   if (maxflux1 <= 0.0)
     throw affineExcept("PDFactoryDouble", "initPD",
 		       "Invalid (non-positive) maxflux1");
   if (maxflux2 <= 0.0)
     throw affineExcept("PDFactoryDouble", "initPD",
 		       "Invalid (non-positive) maxflux2");
-  
+  if (maxflux1 == minflux1)
+    throw affineExcept("PDFactoryDouble", "initPD",
+		       "Invalid range (0) between min/max flux in band 1");
+  if (maxflux2 == minflux2)
+    throw affineExcept("PDFactoryDouble", "initPD",
+		       "Invalid range (0) between min/max flux in band 2");
+
   initialized = false;
 
   //Make the plans, or keep the old ones if possible
@@ -962,7 +969,7 @@ bool PDFactoryDouble::initPD(unsigned int n, double minflux1, double maxflux1,
   setupTransforms(n);
 
   // Compute R, including multiplying it by dflux
-  initR(n, minflux1, maxflux2, minflux1, maxflux2, model, bm, 
+  initR(n, minflux1, maxflux1, minflux2, maxflux2, model, bm, 
 	setEdge, true);
 
   // Get mean and variance estimates from R
@@ -984,7 +991,8 @@ bool PDFactoryDouble::initPD(unsigned int n, double minflux1, double maxflux1,
   if (verbose) {
     std::cout << " Initial mean estimate band1: " << mn1 << " band2: "
 	      << mn2 << std::endl;
-    std::cout << " Initial stdev estimate band1: " << sg1 << " band2: "
+    std::cout << " Initial stdev estimate band1 (no inst noise): " 
+	      << sg1 << " band2: "
 	      << sg2 << std::endl;
     if (doshift1)
       std::cout << " Additional shift in band 1: " << shift1 << std::endl;
@@ -1030,6 +1038,9 @@ void PDFactoryDouble::getPD(double sigma1, double sigma2,
   if (!initialized )
     throw affineExcept("PDFactoryDouble", "getPD",
 		       "Must call initPD first");
+  if (!rvars_allocated) 
+    throw affineExcept("PDFactoryDouble", "getPD",
+		       "Should not have been able to get here without allocating R variables");
 
   //Output array from 2D FFT is n * (n/2+1)
   unsigned int n = currsize;
@@ -1218,7 +1229,7 @@ void PDFactoryDouble::getPD(double sigma1, double sigma2,
   starttime = std::clock();
 #endif
   // From pval into pofd
-  fftw_execute_dft_c2r(plan, pval, pofd);
+  fftw_execute_dft_c2r(plan_inv, pval, pofd);
 #ifdef TIMING
   fftTime += std::clock() - starttime;
 #endif
@@ -1238,6 +1249,80 @@ void PDFactoryDouble::getPD(double sigma1, double sigma2,
   logTime += std::clock() - starttime;
 #endif
 }
+
+/*!
+  \param[in] filename File to write to
+
+  You must call initR or initPD first.
+*/
+void PDFactoryDouble::writeRToHDF5(const std::string& filename) const {
+  if (!rinitialized)
+    throw affineExcept("PDFactoryDouble", "writeRToHDF5",
+		       "Must call initPD or initR first");
+
+  hid_t file_id;
+  file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
+		      H5P_DEFAULT);
+
+  if (H5Iget_ref(file_id) < 0) {
+    H5Fclose(file_id);
+    throw affineExcept("PDFactoryDouble", "writeToHDF5",
+		       "Failed to open HDF5 file to write");
+  }
+
+  // Write it as one dataset -- Rflux1, Rflux2, R. 
+  hsize_t adims;
+  hid_t mems_id, att_id, dat_id;
+  
+  // First, some properties
+  adims = 1;
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  att_id = H5Acreate2(file_id, "dflux1", H5T_NATIVE_DOUBLE,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux1);
+  H5Aclose(att_id);
+  att_id = H5Acreate2(file_id, "dflux2", H5T_NATIVE_DOUBLE,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux2);
+  H5Aclose(att_id);
+  H5Sclose(mems_id);
+
+  // Rfluxes
+  adims = currsize;
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  dat_id = H5Dcreate2(file_id, "RFlux1", H5T_NATIVE_DOUBLE,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
+	   H5P_DEFAULT, RFlux1);
+  H5Dclose(dat_id);
+  dat_id = H5Dcreate2(file_id, "RFlux2", H5T_NATIVE_DOUBLE,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
+	   H5P_DEFAULT, RFlux2);
+  H5Dclose(dat_id);
+  H5Sclose(mems_id);
+
+  // R -- which we may need to copy to remove the dflux
+  hsize_t dims_steps[2] = {currsize, currsize};
+  mems_id = H5Screate_simple(2, dims_steps, NULL);
+  dat_id = H5Dcreate2(file_id, "R", H5T_NATIVE_DOUBLE,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  if (rdflux) {
+    double* tmp = new double[currsize * currsize];
+    double idflux = 1.0 / (dflux1 * dflux2);
+    for (unsigned int i = 0; i < currsize * currsize; ++i) 
+      tmp[i] = rvals[i] * idflux;
+    H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,  H5P_DEFAULT, tmp);
+    delete[] tmp;
+  } else
+    H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,  H5P_DEFAULT, rvals);
+  H5Dclose(dat_id);
+  H5Sclose(mems_id);
+
+  // Done
+  H5Fclose(file_id);
+}
+
  
 /*!
   \param[in] comm Communicator

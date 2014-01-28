@@ -36,7 +36,7 @@
    fftsize=     nfft
                   Sets fft transform length (def: 131072)
    ninterp=     value
-                  Number of R interpolation points (def: 1024)
+                  Number of R interpolation points (def: 2048)
    minbeamval=  value
                   Minimum beam value used.  Everything with an absolute
 		  value <= than this is ignored.  This can be zero if you

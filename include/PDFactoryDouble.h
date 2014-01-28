@@ -134,6 +134,9 @@ class PDFactoryDouble {
   /*! \brief Gets P(D) with specified noise levels */
   void getPD(double, double, PDDouble&, bool setLog=true);
 
+  /*! \brief Write out current R as an HDF5 file */
+  void writeRToHDF5(const std::string&) const;
+  
   void sendSelf(MPI_Comm, int dest) const; //!< MPI copy send operation
   void recieveCopy(MPI_Comm, int dest); //!< MPI copy recieve operation
 

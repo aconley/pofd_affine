@@ -25,6 +25,7 @@ static struct option long_options[] = {
   {"nbins", required_argument, 0, '1'},
   {"nflux", required_argument, 0, 'n'},
   {"ninterp", required_argument, 0, 'N'},
+  {"rfile", required_argument, 0, 'r'},
   {"sigma", required_argument, 0, 's'},
   {"verbose", no_argument, 0, 'v'},
   {"wisdom", required_argument, 0, 'w'},
@@ -34,13 +35,13 @@ static struct option long_options[] = {
   {0, 0, 0, 0}
 };
 
-char optstring[] = "hdVfH8l1:n:N:s:vw:5:6:7:";
+char optstring[] = "hdVfH8l1:n:N:r:s:vw:5:6:7:";
 
 int getPDSingle(int argc, char **argv) {
 
   double sigma_noise; //Noise
   unsigned int nflux, ninterp, nbins;
-  bool has_wisdom, getLog;
+  bool has_wisdom, getLog, writeR;
   bool histogram, verbose, write_to_fits, write_as_hdf5;
   double minflux, maxflux;
   std::string wisdom_file;
@@ -48,18 +49,20 @@ int getPDSingle(int argc, char **argv) {
   std::string modelfile; //Model file
   std::string outputfile; //Ouput pofd option
   std::string psffile;  //Beam file
-
+  std::string rfile; //!< File to write R to
+  
   //Defaults
   sigma_noise         = 0.0;
   has_wisdom          = false;
   nflux               = 262144;
-  ninterp             = 1024;
+  ninterp             = 2048;
   nbins               = 120;
   verbose             = false;
   histogram           = false;
   write_to_fits       = false;
   write_as_hdf5       = false;
   getLog              = false;
+  writeR              = false;
 
   int c;
   int option_index = 0;
@@ -88,6 +91,10 @@ int getPDSingle(int argc, char **argv) {
     case 'N' :
       ninterp = static_cast<unsigned int>(atoi(optarg));
       break;
+    case 'r':
+      writeR = true;
+      rfile = std::string(optarg);
+      break;
     case 's' :
       sigma_noise = atof(optarg);
       break;
@@ -96,11 +103,11 @@ int getPDSingle(int argc, char **argv) {
       break;
     case 'w' :
       has_wisdom = true;
-      wisdom_file = std::string( optarg );
+      wisdom_file = std::string(optarg);
       break;
     }
 
-  if (optind >= argc-4) {
+  if (optind >= argc - 4) {
     std::cerr << "Some required arguments missing" << std::endl;
     std::cerr << " Use --help for description of inputs and options"
 	      << std::endl;
@@ -138,6 +145,10 @@ int getPDSingle(int argc, char **argv) {
   }
   if (write_as_hdf5 && write_to_fits)
     std::cout << "WARNING: will only write as HDF5, not as FITS" << std::endl;
+  if (writeR && rfile.empty()) {
+    std::cerr << "Requested write of R to empty filename" << std::endl;
+    return 1;
+  }
 
   if (minflux > maxflux) std::swap(minflux, maxflux);
   
@@ -158,21 +169,23 @@ int getPDSingle(int argc, char **argv) {
     PD pd;
 
     if (has_wisdom) {
-      std::cout << "Reading in wisdom file: " << wisdom_file 
-		<< std::endl;
+      if (verbose)
+	std::cout << "Reading in wisdom file: " << wisdom_file 
+		  << std::endl;
       pfactory.addWisdom(wisdom_file);
     }
     if (verbose) pfactory.setVerbose();
 
     if (verbose) {
-      printf("  Beam area: %0.3e\n",bm.getEffectiveArea());
-      printf("  Flux per area: %0.3f\n",
+      printf("  Beam area:            %0.3e [deg^2]\n",bm.getEffectiveArea());
+      printf("  Pixel size:           %0.1f [arcsec]\n", bm.getPixSize());
+      printf("  Flux per area:        %0.3f [Jy deg^-2]\n",
 	     model.getFluxPerArea());
-      printf("  Nknots: %u\n",model_info.getNKnots());
-      printf("  Sigma:  %0.5f\n",sigma_noise);
+      printf("  Nknots:               %u\n",model_info.getNKnots());
+      printf("  Sigma:                %0.5f [Jy]\n",sigma_noise);
       if (histogram)
 	printf("  Using beam histogramming to reduce beam size to: %u %u\n",
-	       bm.getNPos(),bm.getNNeg());
+	       bm.getNPos(), bm.getNNeg());
       printf("  Interpolation length:  %u\n",ninterp);
       printf("  Positions and initial values:\n");
       std::pair<double,double> pr;
@@ -184,7 +197,7 @@ int getPDSingle(int argc, char **argv) {
 	printf("  Getting Log_2 P(D)\n");
     }
 
-    //Get P(D)
+    // Get P(D)
     if (verbose) std::cout << "Getting P(D) with transform length: " 
 			   << nflux << std::endl;
     bool succ;
@@ -197,7 +210,7 @@ int getPDSingle(int argc, char **argv) {
     std::cerr << "Get PD" << std::endl;
     pfactory.getPD(sigma_noise, pd, getLog);
     
-    //Write it
+    // Write it
     if (verbose) std::cout << "Writing P(D) to file " << outputfile 
 			   << std::endl;
     if (write_as_hdf5) {
@@ -213,6 +226,12 @@ int getPDSingle(int argc, char **argv) {
       }
       ofs << pd;
       ofs.close();
+    }
+    
+    // Write R
+    if (writeR) {
+      if (verbose) std::cout << "Writing R to: " << rfile << std::endl;
+      pfactory.writeRToHDF5(rfile);
     }
   } catch (const affineExcept& ex) {
     std::cerr << "Error encountered" << std::endl;
@@ -232,13 +251,14 @@ int getPDDouble(int argc, char** argv) {
   double sigma1, sigma2; //Noise
   unsigned int nflux, nedge, nbins;
   bool has_wisdom, write_to_fits, write_as_hdf5;
-  bool histogram, verbose, getLog, doedge;
+  bool histogram, verbose, getLog, doedge, writeR;
   double minflux1, maxflux1, minflux2, maxflux2;
   std::string wisdom_file;
   
   std::string modelfile; //Model file
   std::string outputfile; //Ouput pofd option
   std::string psffile1, psffile2;  //Beam file
+  std::string rfile; //!< File to write R to
 
   //Defaults
   sigma1              = 0.0;
@@ -253,6 +273,7 @@ int getPDDouble(int argc, char** argv) {
   nedge               = 256;
   getLog              = false;
   doedge              = true;
+  writeR              = false;
 
   int c;
   int option_index = 0;
@@ -278,6 +299,13 @@ int getPDDouble(int argc, char** argv) {
     case '5':
       nedge = static_cast<unsigned int>(atoi(optarg));
       break;
+    case 'n':
+      nflux = static_cast<unsigned int>(atoi(optarg));
+      break;
+    case 'r':
+      writeR = true;
+      rfile = std::string(optarg);
+      break;
     case '6':
       sigma1 = atof(optarg);
       break;
@@ -289,11 +317,11 @@ int getPDDouble(int argc, char** argv) {
       break;
     case 'w':
       has_wisdom = true;
-      wisdom_file = std::string( optarg );
+      wisdom_file = std::string(optarg);
       break;
     }
 
-  if (optind >= argc-7) {
+  if (optind >= argc - 7) {
     std::cerr << "Some required arguments missing" << std::endl;
     std::cerr << " Use --help for description of inputs and options"
 	      << std::endl;
@@ -329,6 +357,10 @@ int getPDDouble(int argc, char** argv) {
   }
   if (write_as_hdf5 && write_to_fits)
     std::cout << "WARNING: will only write as HDF5, not as FITS" << std::endl;
+  if (writeR && rfile.empty()) {
+    std::cout << "Requested R be written to empty filename" << std::endl;
+    return 1;
+  }
   if (nedge == 0) doedge = false;
   if (minflux1 > maxflux1) std::swap(minflux1, maxflux1);
   if (minflux2 > maxflux2) std::swap(minflux2, maxflux2);
@@ -349,24 +381,29 @@ int getPDDouble(int argc, char** argv) {
     PDDouble pd;
 
     if (has_wisdom) {
-      std::cout << "Reading in wisdom file: " << wisdom_file 
-		<< std::endl;
+      if (verbose)
+	std::cout << "Reading in wisdom file: " << wisdom_file 
+		  << std::endl;
       pfactory.addWisdom(wisdom_file);
     }
     if (verbose) pfactory.setVerbose();
 
     if (verbose) {
-      printf("  Beam area, band 1: %0.3e\n",bm.getEffectiveArea1());
-      printf("  Flux per area, band 1: %0.3f\n",
+      printf("  Beam area, band 1:       %0.3e [deg^2]\n",
+	     bm.getEffectiveArea1());
+      printf("  Beam area, band 2:       %0.3e [deg^2]\n",
+	     bm.getEffectiveArea2());
+      printf("  Pixel size:              %0.1f [arcsec]\n", bm.getPixSize());
+      printf("  Flux per area, band 1:   %0.3f [Jy deg^-2]\n",
 	     model.getFluxPerArea(0));
-      printf("  Beam area, band 2: %0.3e\n",bm.getEffectiveArea2());
-      printf("  Flux per area, band 2: %0.3f\n",
+
+      printf("  Flux per area, band 2:   %0.3f [Jy deg^-2]\n",
 	     model.getFluxPerArea(1));
-      printf("  Nknots: %u\n",model_info.getNKnots());
-      printf("  Nsigma: %u\n",model_info.getNSigmas());
-      printf("  Noffset: %u\n",model_info.getNOffsets());
-      printf("  Sigma, band 1:  %0.5f\n",sigma1);
-      printf("  Sigma, band 2:  %0.5f\n",sigma2);
+      printf("  Nknots:                  %u\n", model_info.getNKnots());
+      printf("  Nsigma:                  %u\n", model_info.getNSigmas());
+      printf("  Noffset:                 %u\n", model_info.getNOffsets());
+      printf("  Sigma, band 1:           %0.5f [Jy]\n", sigma1);
+      printf("  Sigma, band 2:           %0.5f [Jy]\n", sigma2);
       if (histogram)
 	printf("  Using beam histogramming to reduce beam size\n");
       printf("  Knot Positions and initial values:\n");
@@ -393,7 +430,7 @@ int getPDDouble(int argc, char** argv) {
     if (verbose) std::cout << "Getting P(D) with transform length: " 
 			   << nflux << std::endl;
     bool succ;
-    succ = pfactory.initPD(nflux, minflux1, maxflux1, maxflux2, maxflux2,
+    succ = pfactory.initPD(nflux, minflux1, maxflux1, minflux2, maxflux2,
 			   model, bm, doedge);
     if (!succ) {
       std::cerr << "Error initializing P(D) -- parameters not valid" 
@@ -418,6 +455,12 @@ int getPDDouble(int argc, char** argv) {
       }
       ofs << pd;
       ofs.close();
+    }
+
+    // Write R
+    if (writeR) {
+      if (verbose) std::cout << "Writing R to: " << rfile << std::endl;
+      pfactory.writeRToHDF5(rfile);
     }
   } catch (const affineExcept& ex) {
     std::cerr << "Error encountered" << std::endl;
@@ -539,18 +582,21 @@ int main( int argc, char** argv ) {
       std::cerr << "\t--nbins VALUE" << std::endl;
       std::cerr << "\t\tNumber of bins to use in beam histogram (if "
 		<< "histogramming" << std::endl;
-      std::cerr << "\t\tis being used.  (def: 120 for 1D, 150 for 2D)"
+      std::cerr << "\t\tis being used.  (def: 120 for 1D, 150 for 2D)."
 		<< std::endl;
       std::cerr << "\t-n, --nflux VALUE" << std::endl;
       std::cerr << "\t\tThe number of requested fluxes, also the FFT length." 
 		<< std::endl;
-      std::cerr << "\t\tShould be a power of 2. For the 2D model, this is the"
+      std::cerr << "\t\tBest if a power of 2. For the 2D model, this is the"
 		<< std::endl;
       std::cerr << "\t\tsize along each dimension. (def: 262144 for 1D, 2048"
 		<< std::endl;
-      std::cerr << "\t\tfor 2D)" << std::endl;
+      std::cerr << "\t\tfor 2D)." << std::endl;
+      std::cerr << "\t-r, --rfile FILENAME" << std::endl;
+      std::cerr << "\t\tWrite R as an HDF5 file to this filename."
+		<< std::endl;
       std::cerr << "\t-v, --verbose" << std::endl;
-      std::cerr << "\t\tPrint informational messages while running"
+      std::cerr << "\t\tPrint informational messages while running."
 		<< std::endl;
       std::cerr << "\t-V, --version" << std::endl;
       std::cerr << "\t\tOutput the version number and exit." << std::endl;
@@ -561,10 +607,10 @@ int main( int argc, char** argv ) {
       std::cerr << "ONE-D ONLY OPTIONS" << std::endl;
       std::cerr << "\t-N, --ninterp value" << std::endl;
       std::cerr << "\t\tLength of interpolation vector used in computing R"
-		<< std::endl;
+		<< " (def: 2048)." << std::endl;
       std::cerr << "\t-s, --sigma noise" << std::endl;
       std::cerr << "\t\tThe assumed per-pixel noise (assumed Gaussian, "
-		<< "def: 0)" << std::endl;
+		<< "def: 0)." << std::endl;
       std::cerr << "TWO-D ONLY OPTIONS" << std::endl;
       std::cerr << "\t--nedge value" << std::endl;
       std::cerr << "\t\tNumber of bins in edge integrals for R."
@@ -572,11 +618,11 @@ int main( int argc, char** argv ) {
       std::cerr << "\t--sigma1 noise" << std::endl;
       std::cerr << "\t\tThe assumed per-pixel noise, band 1 (assumed Gaussian,"
 		<< std::endl;
-      std::cerr << "\t\tdef: 0)" << std::endl;
+      std::cerr << "\t\tdef: 0)." << std::endl;
       std::cerr << "\t--sigma2 noise" << std::endl;
       std::cerr << "\t\tThe assumed per-pixel noise, band 2 (assumed Gaussian,"
 		<< std::endl;
-      std::cerr << "\t\tdef: 0)" << std::endl;
+      std::cerr << "\t\tdef: 0)." << std::endl;
       return 0;
       break;
     case 'd' :
