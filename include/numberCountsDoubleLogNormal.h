@@ -96,7 +96,6 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   //Workspace
   gsl_integration_workspace *gsl_work; //!< Integration workspace for QAG
   mutable unsigned int nRWork; //!< Number of elements in R working arrays
-  mutable bool* RWorkValid; //!< Has R work been set for a given index
   mutable double* RWork; //!< R working array; for pre-computing R bits
   void setRWorkSize(unsigned int) const; //!< Controls R working arrays
 

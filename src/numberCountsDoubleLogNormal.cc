@@ -34,7 +34,6 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal() :
   knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false) {
   
   nRWork = 0;
-  RWorkValid = NULL;
   RWork = NULL;
 
   acc = gsl_interp_accel_alloc();
@@ -58,7 +57,6 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
   knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false) {
 
   nRWork = 0;
-  RWorkValid = NULL;
   RWork = NULL;
 
   if (NKNOTS > 0) {
@@ -134,7 +132,6 @@ numberCountsDoubleLogNormal(const std::vector<float>& KNOTS,
   knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false) {
 
   nRWork = 0;
-  RWorkValid = NULL;
   RWork = NULL;
 
   knots = 0; knots = logknots = logknotvals = NULL; 
@@ -168,7 +165,6 @@ numberCountsDoubleLogNormal(const std::vector<double>& KNOTS,
   knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false) {
 
   nRWork = 0;
-  RWorkValid = NULL;
   RWork = NULL;
 
   knots = 0; knots = logknots = logknotvals = NULL; 
@@ -205,7 +201,6 @@ numberCountsDoubleLogNormal(unsigned int nk, const float* const K,
   knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false) {
 
   nRWork = 0;
-  RWorkValid = NULL;
   RWork = NULL;
 
   knots = 0; knots = logknots = logknotvals = NULL; splinelog = NULL;
@@ -241,7 +236,6 @@ numberCountsDoubleLogNormal(unsigned int nk, const double* const K,
   knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false) {
 
   nRWork = 0;
-  RWorkValid = NULL;
   RWork = NULL;
 
   knots = 0; knots = logknots = logknotvals = NULL; splinelog = NULL;
@@ -273,7 +267,6 @@ numberCountsDoubleLogNormal(const numberCountsDoubleLogNormal& other) {
   splinelog = NULL;
   sigmainterp = offsetinterp = NULL;
   nRWork = 0;
-  RWorkValid = NULL;
   RWork = NULL;
   knots_valid = sigmas_valid = offsets_valid = false;
   knotpos_loaded = sigmapos_loaded = offsetpos_loaded = false;
@@ -356,7 +349,6 @@ numberCountsDoubleLogNormal::~numberCountsDoubleLogNormal() {
   gsl_integration_workspace_free(gsl_work);
   delete[] varr;
 
-  if (RWorkValid != NULL) delete[] RWorkValid;
   if (RWork != NULL) fftw_free(RWork);
 }
 
@@ -925,12 +917,9 @@ void numberCountsDoubleLogNormal::setRWorkSize(unsigned int sz) const {
 
   if (sz <= nRWork) return;
   if (RWork != NULL) fftw_free(RWork);
-  if (RWorkValid != NULL) delete[] RWorkValid;
   if (sz > 0) {
-    RWorkValid = new bool[sz];
     RWork = (double*) fftw_malloc(sizeof(double) * sz * 3);
   } else {
-    RWorkValid = NULL;
     RWork = NULL;
   }
 
@@ -1518,9 +1507,9 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 
   // Make sure there's enough room to do the computation
   // We need to be able to hold the larger of pp + pn or np + nn
-  unsigned int n_pp_pn = npsf[0] + npsf[1];
-  unsigned int n_np_nn = npsf[2] + npsf[3];
-  setRWorkSize(std::max(n_pp_pn, n_np_nn));
+  unsigned int maxnpsf = std::max(npsf[0] + npsf[1],
+				  npsf[2] + npsf[3]);
+  setRWorkSize(maxnpsf);
 
   // Pixel area factor and Lognorm factor
   const double normfac = 1.0 / sqrt(2 * M_PI);
@@ -1541,7 +1530,6 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
   //  Rather than checking that, however, in practice this should be extremely
   //  rare because if the pn beam component is present, we are going to
   //  want to explore f2 < 0 space to compute the P(D).
-  //   RWorkValid says if the component is initialized
   //   RWork[*,0] = n1(f1/eta1) / eta1 * sigma1(f1/eta1), 
   //      possibly multiplied by the wts if the beam is histogrammed
   //   RWork[*,1] will hold log(f1/eta1) + offset(f1/eta1)
@@ -1549,7 +1537,6 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
   //  We only test for out of range (R always 0) on the first flux density
   //   because the model doesn't actually terminate sharply in the other band
   unsigned int sgnbreak; // Index of first bit of second component in RWork
-  bool *RWVptr; // Pointer into RWorkValid
   double *RWptr, *cRW; // Pointers into RWork array for sgn components
   double *rowptr; // Row pointer into output (R)
   const double *wptr; // Weights 
@@ -1568,31 +1555,29 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
     rowptr = R + i * n2;
     // Set sign and |f1| if needed
     if (f1val > 0) sgn1 = 0; else { sgn1 = 2; f1val = fabs(f1val); }
+    sgnbreak = npsf[sgn1]; // RWork[sgnbreak, :] is the start of second comp
     for (unsigned int k = 0; k < 2; ++k) { // Loop over two sign bits
       sgn = sgn1 + k;
-      sgnbreak = npsf[sgn1];
       if (hassign[sgn] && f1val < maxf1[sgn]) {
 	curr_n = npsf[sgn];
 	iparr1 = ibmptr1[sgn];
-	RWVptr = RWorkValid + k * sgnbreak;
-	RWptr = RWork + k * sgnbreak * 3;
+	RWptr = RWork + k * sgnbreak * 3; // &RWork[k*sgnbreak, 0]
 	if (ishist[sgn]) {
 	  // With beam hist
 	  wptr = wtptr[sgn];
-	  for (unsigned int j = 0; j < curr_n; ++j) {
+	  for (unsigned int j = 0; j < curr_n; ++j) { //Loop over beam pixels
 	    ieta1 = iparr1[j];
 	    f1prod = f1val * ieta1;
-	    cRW = RWptr + 3 * j;
+	    cRW = RWptr + 3 * j; // &RWork[k*sgnbreak + j, 0]
 	    if (f1prod >= minknot && f1prod < maxknot) {
 	      cts = exp2(gsl_spline_eval(splinelog, log2(f1prod), acc));
 	      if (cts > 0) {
 		isigma = 1.0 / getSigmaInner(f1prod);
-		RWVptr[j] = true;
-		cRW[0] = wptr[j] * cts * ieta1 * isigma;
+		cRW[0] = wptr[j] * ieta1 * isigma * cts;
 		cRW[1] = log(f1prod) + getOffsetInner(f1prod);
 		cRW[2] = -0.5 * isigma * isigma;
-	      } else RWVptr[j] = false;
-	    } else RWVptr[j] = false;
+	      } else cRW[0] = 0;
+	    } else cRW[0] = 0;
 	  }
 	} else {
 	  // No beam hist
@@ -1604,18 +1589,22 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 	      cts = exp2(gsl_spline_eval(splinelog, log2(f1prod), acc));
 	      if (cts > 0) {
 		isigma = 1.0 / getSigmaInner(f1prod);
-		RWVptr[j] = true;
 		cRW[0] = cts * ieta1 * isigma;
 		cRW[1] = log(f1prod) + getOffsetInner(f1prod);
 		cRW[2] = -0.5 * isigma * isigma;
-	      } else RWVptr[j] = false;
-	    } else RWVptr[j] = false;
+	      } else cRW[0] = 0;
+	    } else cRW[0] = 0;
 	  }
 	}
-      } // We test for sign presence below, so we don't need to zero
+      } else {
+	// Zero out Rwork[:,0] to mark as not valid
+	for (unsigned int k = 0; k < npsf[sgn] + npsf[sgn+1]; ++k)
+	  RWork[3*k] = 0.0;
+      }
     }
 
     //Now loop over flux 2 values
+    double cRW0;
     for (unsigned int j = 0; j < n2; ++j) {
       f2val = f2[j];
       if (f2val == 0) continue; // R will be zero
@@ -1633,14 +1622,14 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 	curr_n = npsf[sgn];
 	iparr2 = ibmptr2[sgn];
 	if2 = 1.0 / f2val;
-	RWVptr = RWorkValid + sgnoff * sgnbreak;
-	RWptr = RWork + sgnoff * sgnbreak * 3;
+	RWptr = RWork + sgnoff * sgnbreak * 3; //&RWork[sgnoff*sgnbreak, 0]
 	for (unsigned int k = 0; k < curr_n; ++k) {
-	  if (RWVptr[k]) {
-	    cRW = RWptr + k * 3;
+	  cRW = RWptr + k * 3; //&RWork[sgnoff*sgnbreak + k, 0]
+	  cRW0 = cRW[0]; //RWork[sgnoff*sgnbreak + k, 0]
+	  if (cRW0 != 0) {
 	    f2prod = f2val * iparr2[k];
 	    tfac = log(f2prod) - cRW[1];
-	    workval += cRW[0] * exp(tfac * tfac * cRW[2]);
+	    workval += cRW0 * exp(tfac * tfac * cRW[2]);
 	  }
 	}
 	rowptr[j] = prefac * workval * if2;
