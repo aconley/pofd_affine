@@ -151,23 +151,23 @@ void PDFactoryDouble::summarizeTime(unsigned int nindent) const {
   std::string prestring(nindent,' ');
     
   std::cout << "R time: " << prestring 
-	    << 1.0*RTime/CLOCKS_PER_SEC << std::endl;
+	    << 1.0*RTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "p0 time: " << prestring 
-	    << 1.0*p0Time/CLOCKS_PER_SEC << std::endl;
+	    << 1.0*p0Time/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "fft time: " << prestring 
-	    << 1.0*fftTime/CLOCKS_PER_SEC << std::endl;
+	    << 1.0*fftTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "pos time: " << prestring 
-	    << 1.0*posTime/CLOCKS_PER_SEC << std::endl;
+	    << 1.0*posTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "copy time: " << prestring 
-	    << 1.0*copyTime/CLOCKS_PER_SEC << std::endl;
+	    << 1.0*copyTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "norm time: " << prestring 
-	    << 1.0*normTime/CLOCKS_PER_SEC << std::endl;
+	    << 1.0*normTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "edge time: " << prestring 
-	    << 1.0*edgeTime/CLOCKS_PER_SEC << std::endl;
+	    << 1.0*edgeTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "mean time: " << prestring 
-	    << 1.0*meanTime/CLOCKS_PER_SEC << std::endl;
+	    << 1.0*meanTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "log time: " << prestring 
-	    << 1.0*logTime/CLOCKS_PER_SEC << std::endl;
+	    << 1.0*logTime/CLOCKS_PER_SEC << "s" << std::endl;
 }
 #endif
 

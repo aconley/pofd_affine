@@ -300,7 +300,8 @@ int getRDouble(int argc, char** argv) {
 #endif
     model.getR(nflux1, fluxes1, nflux2, fluxes2, bm, R);
 #ifdef TIMING
-    std::cout << "R time: " << std::clock() - starttime << std::endl;
+    std::cout << "R time: " << 1.0 * (std::clock() - starttime) /
+      CLOCKS_PER_SEC << "s" << std::endl;
 #endif
 
     if (write_as_hdf5) {

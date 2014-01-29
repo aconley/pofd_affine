@@ -411,7 +411,12 @@ int getPDDouble(int argc, char** argv) {
       printf("  Sigma, band 1:           %0.5f [Jy]\n", sigma1);
       printf("  Sigma, band 2:           %0.5f [Jy]\n", sigma2);
       if (histogram)
-	printf("  Using beam histogramming to reduce beam size\n");
+	printf("  Using beam histogramming to reduce beam size to %u %u %u %u\n",
+	       bm.getNHist(0), bm.getNHist(1), bm.getNHist(2), bm.getNHist(3));
+      else
+	printf("  Beam size is %u %u %u %u\n",
+	       bm.getNPix(0), bm.getNPix(1), bm.getNPix(2), bm.getNPix(3));
+
       printf("  Knot Positions and initial values:\n");
       std::pair<double,double> pr;
       for (unsigned int i = 0; i < model_info.getNKnots(); ++i) {
