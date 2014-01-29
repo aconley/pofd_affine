@@ -37,9 +37,9 @@ void initRFluxInternal(unsigned int n, double minflux, double maxflux,
     // RFlux = 0 included in the array.  Also, we are wrapping 
     // negative fluxes around to the top of the array.
     // We do this by tweaking minflux slightly
-    dflux = maxflux / (n - floor(-minflux / dflux) - 2.0);
+    dflux = maxflux / (n - floor(-minflux / dflux) - 1.0);
     // Figure out what index we go up to with positive fills
-    wrapidx = static_cast<unsigned int>(maxflux / dflux);
+    wrapidx = static_cast<unsigned int>(maxflux / dflux + 0.999999999);
     rflux[0] = 0.0;
     for (unsigned int i = 1; i <= wrapidx; ++i) // Pos Rflux
       rflux[i] = static_cast<double>(i) * dflux;
@@ -350,7 +350,6 @@ void PDFactoryDouble::initR(unsigned int n, double minflux1,
   // R array even with wrapping).  This
   // first call will fill nonsense values into the lower edges, which
   // we will later overwrite
-  double *rptr;  
 
 #ifdef TIMING
   std::clock_t starttime = std::clock();
@@ -365,6 +364,7 @@ void PDFactoryDouble::initR(unsigned int n, double minflux1,
     // and setting to the mean value inside that.
     //Use the trapezoidal rule in either log or linear flux
     // space
+    double *rptr;
 
     //Edge bits
     //Minimum values in integral; maximum are dflux1, dflux2

@@ -1567,7 +1567,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
   const double *iparr2; // Inverse beam 2
   unsigned int sgn1, sgnoff, sgn; // Sign index for this component
   unsigned int curr_n; // Number of beam elements for current component
-  double f1val, f2val, f1prod, f2prod, ieta1, workval, isigma, tfac, if2;
+  double f1val, f2val, f1prod, f2prod, ieta1, workval, isigma, tfac, if2, cts;
 
   bool hasNegX1 = hassign[2] || hassign[3]; // Any neg x1 beam components
   std::memset(R, 0, n1 * n2 * sizeof(double));
@@ -1590,12 +1590,14 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 	  ieta1 = iparr1[j];
 	  f1prod = f1val * ieta1;
 	  if (f1prod >= minknot && f1prod < maxknot) {
-	    cR1[j] = log(f1prod) + getOffsetInner(f1prod);
-	    isigma = 1.0 / getSigmaInner(f1prod);
-	    cR3[j] = -0.5 * isigma * isigma;
-	    cR2[j] = normfac * ieta1 * isigma *
-	      exp2(gsl_spline_eval(splinelog, log2(f1prod), acc));
-	    cRV[j] = true;
+	    cts = exp2(gsl_spline_eval(splinelog, log2(f1prod), acc));
+	    if (cts > 0) {
+	      cR1[j] = log(f1prod) + getOffsetInner(f1prod);
+	      isigma = 1.0 / getSigmaInner(f1prod);
+	      cR3[j] = -0.5 * isigma * isigma;
+	      cR2[j] = normfac * ieta1 * isigma * cts;
+	      cRV[j] = true;
+	    } else cRV[j] = false;
 	  } else cRV[j] = false;
 	}
 	if (ishist[sgn]) { // Add on beam weights
@@ -1631,10 +1633,10 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 	for (unsigned int k = 0; k < curr_n; ++k)
 	  if (cRV[k]) {
 	    f2prod = f2val * iparr2[k];
-	    tfac = log(f2prod) - cR1[k]; 
-	    workval += cR2[k] * if2 * exp(tfac * tfac * cR3[k]);
+	    tfac = log(f2prod) - cR1[k];
+	    workval += cR2[k] * exp(tfac * tfac * cR3[k]);
 	  }
-	rowptr[j] = prefac * workval;
+	rowptr[j] = prefac * workval * if2;
       } // Recall that R was zeroed
     }
   }

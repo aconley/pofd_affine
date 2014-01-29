@@ -233,6 +233,12 @@ int getPDSingle(int argc, char **argv) {
       if (verbose) std::cout << "Writing R to: " << rfile << std::endl;
       pfactory.writeRToHDF5(rfile);
     }
+
+#ifdef TIMING
+    std::cout << "Timing results:" << std::endl;
+    pfactory.summarizeTime(2);
+#endif
+
   } catch (const affineExcept& ex) {
     std::cerr << "Error encountered" << std::endl;
     std::cerr << ex.what() << std::endl;
@@ -462,6 +468,11 @@ int getPDDouble(int argc, char** argv) {
       if (verbose) std::cout << "Writing R to: " << rfile << std::endl;
       pfactory.writeRToHDF5(rfile);
     }
+
+#ifdef TIMING
+    std::cout << "Timing results:" << std::endl;
+    pfactory.summarizeTime(2);
+#endif
   } catch (const affineExcept& ex) {
     std::cerr << "Error encountered" << std::endl;
     std::cerr << ex.what() << std::endl;

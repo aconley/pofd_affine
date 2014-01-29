@@ -1,6 +1,8 @@
 #ifndef __global_settings__
 #define __global_settings__
 
+#define TIMING
+
 #include<cmath>
 #include<utility>
 #include<unistd.h>

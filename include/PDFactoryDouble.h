@@ -54,7 +54,7 @@ class PDFactoryDouble {
   double* rvals; //!< Working space for R computation, row major order
   bool rdflux; //!< Has rvals been multiplied by dflux1 * dflux2?
   fftw_complex *rtrans; //!< Holds FFTed rvals 
-  fftw_complex* pval; //!< Working variable holding p = exp( stuff )
+  fftw_complex* pval; //!< Working variable holding p = exp(stuff)
   double* pofd; //!< Internal P(D) variable.  
   double *RFlux1; //!< Holds R flux values for fill
   unsigned int RwrapIdx1; //!< Pos/neg wrap index in RFlux1
@@ -103,8 +103,8 @@ class PDFactoryDouble {
 
   void setupTransforms(unsigned int); //!< Sets up FFTW plans and resizes
 #ifdef TIMING
-  std::clock_t RTime, p0Time, fftTime, posTime, copyTime;
-  std::clock_t normTime, edgeTime, meanTime, logTime;
+  mutable std::clock_t RTime, p0Time, fftTime, posTime, copyTime;
+  mutable std::clock_t normTime, edgeTime, meanTime, logTime, starttime;
 #endif
 
  public :

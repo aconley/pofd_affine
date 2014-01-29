@@ -387,10 +387,10 @@ void PDFactory::initRFlux(unsigned int n, double minflux, double maxflux) {
       // by the smallest amount possible to make it work while keeping
       // maxflux the same.
       dflux = (maxflux - minflux) * inm1; // Initial value
-      dflux = maxflux / (n - floor(-minflux / dflux) - 2.0); //Adjust
+      dflux = maxflux / (n - floor(-minflux / dflux) - 1.0); //Adjust
       
       // Figure out what index we go up to with positive fills
-      wrapRidx = static_cast<unsigned int>(maxflux / dflux);
+      wrapRidx = static_cast<unsigned int>(maxflux / dflux + 0.9999999999);
       minflux_R = (wrapRidx+1) * dflux - static_cast<double>(n) * dflux;
     }
   } else {

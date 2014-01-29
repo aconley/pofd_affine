@@ -3,6 +3,10 @@
 #include<getopt.h>
 #include<hdf5.h>
 
+#ifdef TIMING
+#include<ctime>
+#endif
+
 #include "../include/global_settings.h"
 #include "../include/beam.h"
 #include "../include/doublebeam.h"
@@ -107,6 +111,7 @@ int getRSingle( int argc, char** argv ) {
       fluxes[i] = minflux + static_cast<double>(i) * dflux;
 
     R = new double[nflux];
+
     model.getR(nflux, fluxes, bm, R);
     
     if (write_as_hdf5) {
@@ -289,8 +294,15 @@ int getRDouble(int argc, char** argv) {
       fluxes2[i] = minflux2 + static_cast<double>(i) * dflux2;
 
     R = new double[nflux1 * nflux2];
+
+#ifdef TIMING
+    std::clock_t starttime = std::clock();
+#endif
     model.getR(nflux1, fluxes1, nflux2, fluxes2, bm, R);
-    
+#ifdef TIMING
+    std::cout << "R time: " << std::clock() - starttime << std::endl;
+#endif
+
     if (write_as_hdf5) {
       if (verbose) std::cout << "Writing to: " << outfile 
 			     << " as HDF5" << std::endl;
