@@ -1598,7 +1598,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 	}
       } else {
 	// Zero out Rwork[:,0] to mark as not valid
-	for (unsigned int k = 0; k < npsf[sgn] + npsf[sgn+1]; ++k)
+	for (unsigned int k = 0; k < (npsf[sgn1] + npsf[sgn1+1]); ++k)
 	  RWork[3*k] = 0.0;
       }
     }
