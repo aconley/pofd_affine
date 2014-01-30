@@ -162,8 +162,6 @@ void PDFactoryDouble::summarizeTime(unsigned int nindent) const {
 	    << 1.0*copyTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "norm time: " << prestring 
 	    << 1.0*normTime/CLOCKS_PER_SEC << "s" << std::endl;
-  std::cout << "edge time: " << prestring 
-	    << 1.0*edgeTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "mean time: " << prestring 
 	    << 1.0*meanTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "log time: " << prestring 
@@ -374,33 +372,31 @@ void PDFactoryDouble::initR(unsigned int n, double minflux1,
     double dinterpfluxedge1, dinterpfluxedge2;
     double iRxnorm = 0.0, iRynorm = 0.0, iR00norm = 0.0;
     
-    if (setEdge) {
-      if (!edgevars_allocated) allocateEdgevars();
-      if (use_edge_log_x) {
-	dinterpfluxedge1 = -log(PDFactoryDouble::lowEdgeRMult) * inedgem1;
-	for (unsigned int i = 0; i < nedge; ++i)
-	  REdgeFlux1[i] = minedge1 * 
-	    exp(static_cast<double>(i) * dinterpfluxedge1);
-      } else {
-	dinterpfluxedge1 = (dflux1 - minedge1) * inedgem1;
-	for (unsigned int i = 0; i < nedge; ++i)
-	  REdgeFlux1[i] = minedge1 + static_cast<double>(i) * dinterpfluxedge1;
-      }
-      if (use_edge_log_y) {
-	dinterpfluxedge2 = -log(PDFactoryDouble::lowEdgeRMult) * inedgem1;
-	for (unsigned int i = 0; i < nedge; ++i)
-	  REdgeFlux2[i] = minedge2 * 
-	    exp(static_cast<double>(i) * dinterpfluxedge2);
-      } else {
-	dinterpfluxedge2 = (dflux2 - minedge2) * inedgem1;
-	for (unsigned int i = 0; i < nedge; ++i)
-	  REdgeFlux2[i] = minedge2 + static_cast<double>(i) * dinterpfluxedge2;
-      }
-      iRxnorm  = dinterpfluxedge1 / (dflux1 - minedge1);
-      iRynorm  = dinterpfluxedge2 / (dflux2 - minedge2);
-      iR00norm = dinterpfluxedge1 * dinterpfluxedge2 /
-	((dflux1 - minedge1) * (dflux2 - minedge2));
+    if (!edgevars_allocated) allocateEdgevars();
+    if (use_edge_log_x) {
+      dinterpfluxedge1 = -log(PDFactoryDouble::lowEdgeRMult) * inedgem1;
+      for (unsigned int i = 0; i < nedge; ++i)
+	REdgeFlux1[i] = minedge1 * 
+	  exp(static_cast<double>(i) * dinterpfluxedge1);
+    } else {
+      dinterpfluxedge1 = (dflux1 - minedge1) * inedgem1;
+      for (unsigned int i = 0; i < nedge; ++i)
+	REdgeFlux1[i] = minedge1 + static_cast<double>(i) * dinterpfluxedge1;
     }
+    if (use_edge_log_y) {
+      dinterpfluxedge2 = -log(PDFactoryDouble::lowEdgeRMult) * inedgem1;
+      for (unsigned int i = 0; i < nedge; ++i)
+	REdgeFlux2[i] = minedge2 * 
+	  exp(static_cast<double>(i) * dinterpfluxedge2);
+    } else {
+      dinterpfluxedge2 = (dflux2 - minedge2) * inedgem1;
+      for (unsigned int i = 0; i < nedge; ++i)
+	REdgeFlux2[i] = minedge2 + static_cast<double>(i) * dinterpfluxedge2;
+    }
+    iRxnorm  = dinterpfluxedge1 / (dflux1 - minedge1);
+    iRynorm  = dinterpfluxedge2 / (dflux2 - minedge2);
+    iR00norm = dinterpfluxedge1 * dinterpfluxedge2 /
+      ((dflux1 - minedge1) * (dflux2 - minedge2));
 
     //First, do r[0,0]
     double scriptr;
@@ -445,7 +441,7 @@ void PDFactoryDouble::initR(unsigned int n, double minflux1,
 	scriptr += REdgeWork[i];
       rvals[0] = scriptr * iR00norm;
     }
-    
+
     //Now do Rx = R[0,y], integral along x
     double fixed_value;
     for (unsigned int j = 1; j < n; ++j) {
@@ -1011,7 +1007,6 @@ bool PDFactoryDouble::initPD(unsigned int n, double minflux1, double maxflux1,
 #ifdef TIMING
   fftTime += std::clock() - starttime;
 #endif
-  
   initialized = true;
 
   return true;
