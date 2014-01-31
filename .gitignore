@@ -42,6 +42,7 @@ libpd.la
 initFile_test
 specFile_test
 mpi_copy_test
+pofd_test
 model_test
 beam_test
 data_test

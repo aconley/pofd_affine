@@ -328,7 +328,7 @@ TEST(beam2DTest, NegBeam) {
 ////////////////////////////////////////////
 
 GTEST_API_ int main(int argc, char **argv) {
-  std::cout << "Running model tests\n";
+  std::cout << "Running beam tests\n";
 
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

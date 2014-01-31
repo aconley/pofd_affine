@@ -3,7 +3,7 @@ if DOTEST
 OTHERDIR=../src/
 
 check_PROGRAMS = chain_test ensemble_test mpi_copy_test initFile_test \
-	specFile_test beam_test model_test queue_test data_test
+	specFile_test beam_test model_test queue_test data_test pofd_test
 
 chain_test_SOURCES = chain_test.cc
 chain_test_LDADD = $(OTHERDIR)/libaffine.la
@@ -28,6 +28,9 @@ beam_test_LDADD = $(OTHERDIR)/libpd.la
 
 model_test_SOURCES = model_test.cc
 model_test_LDADD = $(OTHERDIR)/libpd.la
+
+pofd_test_SOURCES = pofd_test.cc
+pofd_test_LDADD = $(OTHERDIR)/libpd.la
 
 data_test_SOURCES = data_test.cc
 data_test_LDADD = $(OTHERDIR)/libpd.la
