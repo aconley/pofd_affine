@@ -186,33 +186,32 @@ void PD::edgeFix(bool donorm) {
     throw affineExcept("PD", "edgeFix", "Not supported for logged PDs");
 
   //Get mean and vars
-  double mn, var;
-  getMeanAndVar(mn, var, donorm);
-  if (std::isnan(mn) || std::isinf(mn) ||
-      std::isnan(var) || std::isinf(var)) {
+  dblpair mnvar = getMeanAndVar(donorm);
+  if (std::isnan(mnvar.first) || std::isinf(mnvar.first) ||
+      std::isnan(mnvar.second) || std::isinf(mnvar.second)) {
     std::stringstream errstr;
     errstr << "Problem with mean/var of P(D): " << std::endl;
-    if (std::isnan(mn)) errstr << std::endl << "Mean is NaN";
-    if (std::isinf(mn)) errstr << std::endl<< "Mean is Inf";
-    if (std::isnan(var)) errstr << std::endl << "Var is NaN";
-    if (std::isinf(var)) errstr << std::endl << "Var is Inf";
+    if (std::isnan(mnvar.first)) errstr << std::endl << "Mean is NaN";
+    if (std::isinf(mnvar.first)) errstr << std::endl << "Mean is Inf";
+    if (std::isnan(mnvar.second)) errstr << std::endl << "Var is NaN";
+    if (std::isinf(mnvar.second)) errstr << std::endl << "Var is Inf";
     throw affineExcept("PD", "edgeFix", errstr.str());
   }
-  double istdev = 1.0 / sqrt(var);
+  double istdev = 1.0 / sqrt(mnvar.second);
 
   //Figure out what indexes these represent in x and y
   double maxfluxfix;
   int maxidx;
-  maxfluxfix = mn - PD::lowsigval*sqrt(var);
+  maxfluxfix = mnvar.first - PD::lowsigval*sqrt(mnvar.second);
   maxidx = static_cast<int>((maxfluxfix - minflux) / dflux);
   maxfluxfix = minflux + maxidx * dflux;
   
   double pdval, tval, preconst, stepfac, subfac;
   if (maxidx > 1) {
     pdval = pd_[maxidx];
-    tval = (maxfluxfix - mn) * istdev;
+    tval = (maxfluxfix - mnvar.first) * istdev;
     preconst = pdval * exp(0.5 * tval * tval);
-    subfac = (minflux - mn) * istdev;
+    subfac = (minflux - mnvar.first) * istdev;
     stepfac = dflux * istdev;
     for (int i = 0; i < maxidx; ++i) {
       tval = subfac + i * stepfac;
@@ -223,18 +222,18 @@ void PD::edgeFix(bool donorm) {
 
 
 /*!
-  \param[out] mean mean of P(D)
   \param[in] donorm Do not assume that P(D) is normalized.
+
+  \returns Mean of the P(D).
 */
-void PD::getMean(double& mean, bool donorm) const {
-  if (n == 0) {
-    mean = std::numeric_limits<double>::quiet_NaN();
-    return;
-  }
+double PD::getMean(bool donorm) const {
+
+  if (n == 0) 
+    return std::numeric_limits<double>::quiet_NaN();
   
   //We use the trapezoidal rule here for the integrals
   // so it isn't quite a simple sum
-  mean = 0.0;
+  double mean = 0.0;
 
   if (logflat) {
     //i=0 has weight 0
@@ -255,20 +254,17 @@ void PD::getMean(double& mean, bool donorm) const {
   if (donorm) mean /= getIntegral();
 
   mean += minflux;
+  return mean;
 }
 
 /*!
-  \param[out] mean mean value
-  \param[out] var  variance
   \param[in] donorm Do not assume that P(D) is normalized.
+  \returns A pair containing the mean and variance.
 */
-void PD::getMeanAndVar(double& mean, double& var,
-		       bool donorm) const {
-  if (n == 0) {
-    mean = std::numeric_limits<double>::quiet_NaN();
-    var = std::numeric_limits<double>::quiet_NaN();
-    return;
-  }
+dblpair PD::getMeanAndVar(bool donorm) const {
+  if (n == 0) 
+    return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
+			  std::numeric_limits<double>::quiet_NaN());
   
   double normfac = 1.0;
   if (donorm) normfac = 1.0 / getIntegral();
@@ -281,7 +277,7 @@ void PD::getMeanAndVar(double& mean, double& var,
   //Why not just call getMeans?  To avoid calling getIntegral
   // twice.  After this, mean1 and mean2 will be the actual
   // means/dflux - minflux.
-  mean = 0.0;
+  double mean = 0.0;
   if (logflat) {
     //i=0 has weight 0
     for (unsigned int i = 1; i < n-1; ++i)
@@ -302,7 +298,7 @@ void PD::getMeanAndVar(double& mean, double& var,
   if (donorm) mean *= normfac;
 
   //Now, compute the variance
-  var = 0.0;
+  double var = 0.0;
   double xval;
   if (logflat) {
     //i=0 has weight 0
@@ -327,6 +323,8 @@ void PD::getMeanAndVar(double& mean, double& var,
 
   //Correct mean for offset
   mean += minflux;
+
+  return std::make_pair(mean, var);
 }
 
 /*!

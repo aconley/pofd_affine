@@ -227,8 +227,11 @@ void PDDouble::edgeFix(bool donorm) {
     throw affineExcept("PDDouble", "edgeFix", "Not supported for logged PDs");
 
   //Get mean and vars
+  std::pair<dblpair, dblpair> mnvar;
   double mn1, mn2, var1, var2;
-  getMeansAndVars(mn1, mn2, var1, var2, donorm);
+  mnvar = getMeansAndVars(donorm);
+  mn1 = mnvar.first.first; var1 = mnvar.first.second;
+  mn2 = mnvar.second.first; var2 = mnvar.second.second;
   if (std::isnan(mn1) || std::isinf(mn1) ||
       std::isnan(var1) || std::isinf(var1) ||
       std::isnan(mn2) || std::isinf(mn2) ||
@@ -324,28 +327,27 @@ void PDDouble::edgeFix(bool donorm) {
 
 
 /*!
-  \param[out] mean1 mean along axis 1
-  \param[out] mean2 mean along axis 2
   \param[in] donorm Do not assume that P(D) is normalized.
+  \returns Pair of the mean along each axis
 */
-void PDDouble::getMeans(double& mean1, double& mean2,
-			bool donorm) const {
-  if ((n1 == 0) || (n2 == 0)) {
-    mean1 = std::numeric_limits<double>::quiet_NaN();
-    mean2 = std::numeric_limits<double>::quiet_NaN();
-    return;
-  }
+dblpair PDDouble::getMeans(bool donorm) const {
+  if ((n1 == 0) || (n2 == 0)) 
+    return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
+			  std::numeric_limits<double>::quiet_NaN());
 
   //We use the trapezoidal rule here for the integrals
   // so it isn't quite a simple sum
   double xsum, pval, *rowptr;
-  mean1 = mean2 = 0.0;
+  double mean1 = 0.0, mean2 = 0.0;
 
   if (!logflat) {
     //Integrate over lowest x value.  Note that x = 0
     // here (modulo the minflux, which we add later anyways)
     // so there is no mean1 contribution
-    for (unsigned int j = 1; j < n2-1; ++j)
+
+    // i = 0 term
+    // mean2 = 0.5 * 0 * pd[0];
+    for (unsigned int j = 1; j < n2 - 1; ++j)
       mean2 += j * pd_[j]; 
     mean2 += 0.5 * (n2 - 1) * pd_[n2 - 1]; //(y=0 at pd_[0])
     mean2 *= 0.5; //End bit of trap in x, so 1/2 factor
@@ -365,7 +367,7 @@ void PDDouble::getMeans(double& mean1, double& mean2,
       mean2 += 0.5 * (n2 - 1) * rowptr[n2 - 1];
     }
 
-    //Endpiece, all multiplied by 1/2 since last x bit
+    //Endpiece (i=n1-1), all multiplied by 1/2 since last x bit
     rowptr = pd_ + (n1 - 1) * n2;
     xsum = 0.5 * rowptr[0];
     for (unsigned int j = 1; j < n2 - 1; ++j) {
@@ -419,24 +421,19 @@ void PDDouble::getMeans(double& mean1, double& mean2,
   }
   mean1 += minflux1;
   mean2 += minflux2;
+  return std::make_pair(mean1, mean2);
 }
 
 /*!
-  \param[out] mean1 mean along axis 1
-  \param[out] mean2 mean along axis 2
-  \param[out] var1  variance along axis 1
-  \param[out] var2  variance along axis 2
   \param[in] donorm Do not assume that P(D) is normalized.
+  \returns A pair of pairs, each component of which is the
+     mean and variance along first the 1st then 2nd axis
 */
-void PDDouble::getMeansAndVars(double& mean1, double& mean2,
-			       double& var1, double& var2,
-			       bool donorm) const {
+std::pair<dblpair, dblpair> PDDouble::getMeansAndVars(bool donorm) const {
   if ((n1 == 0) || (n2 == 0)) {
-    mean1 = std::numeric_limits<double>::quiet_NaN();
-    mean2 = std::numeric_limits<double>::quiet_NaN();
-    var1  = std::numeric_limits<double>::quiet_NaN();
-    var2  = std::numeric_limits<double>::quiet_NaN();
-    return;
+    dblpair v = std::make_pair(std::numeric_limits<double>::quiet_NaN(),
+			       std::numeric_limits<double>::quiet_NaN());
+    return std::make_pair(v, v);
   }
 
   double normfac = 1.0;
@@ -447,7 +444,7 @@ void PDDouble::getMeansAndVars(double& mean1, double& mean2,
   // twice.  After this, mean1 and mean2 will be the actual
   // means/dflux - minflux.
   double xsum, pval, *rowptr;
-  mean1 = mean2 = 0.0;
+  double mean1 = 0.0, mean2 = 0.0;
   if (!logflat) {
     for (unsigned int j = 1; j < n2 - 1; ++j)
       mean2 += j*pd_[j]; 
@@ -515,7 +512,7 @@ void PDDouble::getMeansAndVars(double& mean1, double& mean2,
   
   //Now variances, pretty much the same calculation
   // Recall mean1, mean2 are means/dflux - minflux
-  var1 = var2 = 0.0;
+  double var1 = 0.0, var2 = 0.0;
   double deltax, deltay;
   if (!logflat) {
     //i=0 bit, 1/2 factor for end
@@ -642,6 +639,8 @@ void PDDouble::getMeansAndVars(double& mean1, double& mean2,
 
   mean1 += minflux1;
   mean2 += minflux2;
+  return std::make_pair(std::make_pair(mean1, var1),
+			std::make_pair(mean2, var2));
 }
 
 

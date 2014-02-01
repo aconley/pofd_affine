@@ -789,7 +789,7 @@ void PDFactory::unwrapPD(PD& pd) const {
   starttime = std::clock();
 #endif
   double tmn; //True mean
-  pd.getMean(tmn, false);
+  tmn = pd.getMean(false);
   if (std::isinf(tmn) || std::isnan(tmn)) {
     std::stringstream str;
     str << "Un-shift amounts not finite: " << tmn << " " << std::endl;
