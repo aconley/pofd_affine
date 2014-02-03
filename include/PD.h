@@ -55,15 +55,15 @@ class PD {
 
   void edgeFix(bool donorm=true); //!< Apply Gaussian replacement to bottom edges
 
-  void getMean(double&, bool donorm=true) const; //!< Get mean 
+  double getMean(bool donorm=true) const; //!< Get mean 
 
-  void getMeanAndVar(double&, double&, bool donorm=true) const; //!< Get mean and variance 
+  dblpair getMeanAndVar(bool donorm=true) const; //!< Get mean and variance 
   
   PD& operator=(const PD&); //!< Copy
 
   /*! \brief Fill contents from array*/
-  void fill(unsigned int, double, double,
-	    const double* const, bool LOG=true); 
+  void fill(unsigned int N, double MIN, double DF,
+	    const double* const DATA, bool LOG=true); 
 
   /*! \brief Get flux value for specified index */
   double getFluxVal(unsigned int i) const { return minflux+static_cast<double>(i)*dflux; }

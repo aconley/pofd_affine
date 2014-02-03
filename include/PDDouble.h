@@ -60,10 +60,8 @@ class PDDouble {
   void deLog(); //!< de-logify if not already
 
   void edgeFix(bool donorm=true); //!< Apply Gaussian replacement to bottom edges
-
-  void getMeans(double&, double&, bool donorm=true) const; //!< Get mean along each axis
-
-  void getMeansAndVars(double&, double&, double&, double&, bool donorm=true) const; //!< Get means and variances along each axis
+  dblpair getMeans(bool donorm=true) const; //!< Get mean along each axis
+  std::pair<dblpair, dblpair> getMeansAndVars(bool donorm=true) const; //!< Get means and variances along each axis
   
   PDDouble& operator=(const PDDouble&); //!< Copy
 

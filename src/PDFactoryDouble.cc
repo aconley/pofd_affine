@@ -894,19 +894,19 @@ void PDFactoryDouble::unwrapPD(PDDouble& pd) const {
 #ifdef TIMING
   starttime = std::clock();
 #endif
-  double tmn1, tmn2; //True means
-  pd.getMeans(tmn1, tmn2, false);
-  if (std::isinf(tmn1) || std::isnan(tmn1) || std::isinf(tmn2) ||
-       std::isnan(tmn2)) {
+  dblpair tmn; // True mean from P(D) rather than estimate
+  tmn = pd.getMeans(false);
+  if (std::isinf(tmn.first) || std::isnan(tmn.first) || 
+      std::isinf(tmn.second) || std::isnan(tmn.second)) {
     std::stringstream str;
-    str << "Un-shift amounts not finite band1: " << tmn1 << " "
-        << tmn2 << std::endl;
+    str << "Un-shift amounts not finite band1: " << tmn.first << " band2: "
+        << tmn.second << std::endl;
     str << "At length: " << currsize << " with sigma: " << sg1 << " "
         << sg2;
     throw affineExcept("PDFactoryDouble", "unwrapPD", str.str());
   }
-  pd.minflux1 = -tmn1;
-  pd.minflux2 = -tmn2;
+  pd.minflux1 = -tmn.first;
+  pd.minflux2 = -tmn.second;
 #ifdef TIMING
   meanTime += std::clock() - starttime;
 #endif
