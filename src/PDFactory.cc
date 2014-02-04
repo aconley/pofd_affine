@@ -680,15 +680,23 @@ void PDFactory::getMeanVarFromR() {
 */
 // This should only ever be called by getPD, so the inputs aren't checked
 void PDFactory::unwrapPD(PD& pd) const {
-  
+  // The idea is to find the point where the postive and negative bits
+  //  cross each other and split there.  It is tempting to do this
+  //  by finding the minimum, but that turns out to be somewhat unstable
+  //  in that successive runs with the same inputs result in slightly
+  //  different minima due to numeric 'noise'.  So it's better to just
+  //  look for the first point that is more than some specified value
+  //  down from the peak -if- it exists, and the minimum otherwise
+  const double peakfrac = 1e-10; // How far down from the peak we want
+
   // Our acceptance testing is a bit complicated.
-  // If the minimum point is more than nsig1 away from the expected mean (0)
+  // If the split point is more than nsig1 away from the expected mean (0)
   //  then we just accept it.  If it is more than nsig2 away, we make sure
   //  that the min/max ratio of the P(D) along that axis is more than
   //  maxminratio.  If it is less than nsig2, we just flat out reject.
   const double nsig1 = 4.0; 
   const double nsig2 = 2.0;
-  const double maxminratio = 1e5;
+  const double minmaxratio = 1e-5;
   
   // First, Enforce positivity
 #ifdef TIMING
@@ -702,7 +710,7 @@ void PDFactory::unwrapPD(PD& pd) const {
 
   // This is slightly tricky -- we may (probably do) have wrapping issues
   // so we need to un-wrap.  We do this by scanning from the top to
-  // find the minimum in the P(D), then split the array there.
+  // find the minimum in the P(D) and its index.
   // We also find the maximum, but don't keep track of its index
 #ifdef TIMING
   starttime = std::clock();
@@ -717,12 +725,25 @@ void PDFactory::unwrapPD(PD& pd) const {
       mdx = i;
     } else if (cval > maxval) maxval = cval;
   }
-  unsigned int minidx = static_cast<unsigned>(mdx);
-
+  unsigned int splitidx = static_cast<unsigned int>(mdx);
+  double splitval = minval;
+  if (minval / maxval < peakfrac) {
+    // The min is very small -- so look for a more robust split val
+    //  from the top
+    double targval = peakfrac * maxval;
+    for (int i = currsize - 1; i >= 0; --i)
+      if (pofd[i] <= targval) {
+	splitidx = static_cast<unsigned int>(i);
+	splitval = pofd[i];
+	break;
+      }
+  }
   // Make sure this is sane!
-  double fwrap_plus = static_cast<double>(minidx) * dflux; // Wrap in pos flux
-  double fwrap_minus = fabs(static_cast<double>(minidx - wrapRidx - 1) * dflux +
-			    minflux_R); // |Wrap| in neg flux
+  double fwrap_plus = 
+    static_cast<double>(splitidx) * dflux; // Wrap in pos flux
+  double fwrap_minus = 
+    fabs(static_cast<double>(splitidx - wrapRidx - 1) * dflux +
+	 minflux_R); // |Wrap| in neg flux
   double cs1, cs2;
   cs1 = nsig1 * sg;
   cs2 = nsig2 * sg;
@@ -743,30 +764,30 @@ void PDFactory::unwrapPD(PD& pd) const {
       throw affineExcept("PDFactory", "unwrapPD", errstr.str());
     } 
     // Min/max ratio test
-    if (maxval / minval < maxminratio) {
+    if (splitval / maxval > minmaxratio) {
       std::stringstream errstr;
       errstr << "Wrapping problem with wrapping fluxes: "
 	     << fwrap_plus << " and " << -fwrap_minus << " with min/max ratio: "
-	     << maxval / minval << " and sigma: " << sg;
+	     << splitval / maxval << " and sigma: " << sg;
       throw affineExcept("PDFactory", "unwrapPD", errstr.str());
     }
   }
 
-  // Copy over.  Things above minidx in pofd go into the bottom of
+  // Copy over.  Things above splitidx in pofd go into the bottom of
   // pd.pd_, then the stuff below that in pofd goes above that in pd.pd_
   // in the same order.
   pd.resize(currsize);
   double *ptr_curr, *ptr_out; // convenience vars
-  ptr_curr = pofd + minidx;
+  ptr_curr = pofd + splitidx;
   ptr_out = pd.pd_;
-  //for (unsigned int i = 0; i < currsize - minidx; ++i)
+  //for (unsigned int i = 0; i < currsize - splitidx; ++i)
   //  ptr_out[i] = ptr_curr[i];
-  std::memcpy(ptr_out, ptr_curr, (currsize - minidx) * sizeof(double));
+  std::memcpy(ptr_out, ptr_curr, (currsize - splitidx) * sizeof(double));
   ptr_curr = pofd;
-  ptr_out = pd.pd_ + currsize - minidx;
-  //for (unsigned int i = 0; i < minidx; ++i)
+  ptr_out = pd.pd_ + currsize - splitidx;
+  //for (unsigned int i = 0; i < splitidx; ++i)
   //  ptr_out[i] = ptr_curr[i];
-  std::memcpy(ptr_out, ptr_curr, minidx * sizeof(double));
+  std::memcpy(ptr_out, ptr_curr, splitidx * sizeof(double));
 
   pd.logflat = false;
   pd.minflux = 0.0; pd.dflux = dflux;

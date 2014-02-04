@@ -74,6 +74,7 @@ PDFactoryDouble::~PDFactoryDouble() {
   if (RFlux2 != NULL) fftw_free(RFlux2);
 
   if (rvals != NULL)  fftw_free(rvals);
+  if (rsum != NULL)  fftw_free(rsum);
   if (rtrans != NULL) fftw_free(rtrans);
   if (pofd != NULL)   fftw_free(pofd);
   if (pval != NULL)   fftw_free(pval);
@@ -101,6 +102,7 @@ void PDFactoryDouble::init(unsigned int NEDGE) {
   RwrapIdx1 = RwrapIdx2 = 0;
   rdflux = false;
   rvals = NULL;
+  rsum = NULL;
   rtrans = NULL;
   pofd = NULL;
   pval = NULL;
@@ -191,6 +193,7 @@ void PDFactoryDouble::allocateRvars() {
 		       "Invalid (0) currsize");
   RFlux1 = (double*) fftw_malloc(sizeof(double) * currsize);
   RFlux2 = (double*) fftw_malloc(sizeof(double) * currsize);
+  rsum = (double*) fftw_malloc(sizeof(double) * currsize);
   unsigned int fsize = currsize * currsize;
   rvals = (double*) fftw_malloc(sizeof(double) * fsize);
   pofd  = (double*) fftw_malloc(sizeof(double) * fsize);
@@ -205,12 +208,13 @@ void PDFactoryDouble::allocateRvars() {
 
 // Also doesn't necessarily invalidate the plans
 void PDFactoryDouble::freeRvars() {
-  if (RFlux1 != NULL)     { fftw_free(RFlux1); RFlux1=NULL; }
-  if (RFlux2 != NULL)     { fftw_free(RFlux2); RFlux2=NULL; }
-  if (rvals != NULL)      { fftw_free(rvals); rvals=NULL; }
-  if (rtrans != NULL)     { fftw_free(rtrans); rtrans=NULL; }
-  if (pval != NULL)       { fftw_free(pval); pval = NULL; }
-  if (pofd != NULL)       { fftw_free(pofd); pofd = NULL; }
+  if (RFlux1 != NULL) { fftw_free(RFlux1); RFlux1=NULL; }
+  if (RFlux2 != NULL) { fftw_free(RFlux2); RFlux2=NULL; }
+  if (rvals != NULL)  { fftw_free(rvals); rvals=NULL; }
+  if (rsum != NULL)   { fftw_free(rsum); rsum=NULL; }
+  if (rtrans != NULL) { fftw_free(rtrans); rtrans=NULL; }
+  if (pval != NULL)   { fftw_free(pval); pval = NULL; }
+  if (pofd != NULL)   { fftw_free(pofd); pofd = NULL; }
   rvars_allocated = false;
   rinitialized = false;
   initialized = false;
@@ -701,14 +705,20 @@ void PDFactoryDouble::setupTransforms(unsigned int n) {
 // This should only ever be called by getPD, so we don't really
 // check the inputs
 void PDFactoryDouble::unwrapPD(PDDouble& pd) const {
+  // This is similar to the 1D case -- we want to unwrap the PD where
+  //  the negative and positive bits overlap.  But using the minimum
+  //  is unstable due to numeric 'noise' so we instead look for the PD
+  //  being down by a certain amount relative to peak.
+  const double peakfrac = 1e-10; // How far down from the peak we want
+
   // Our acceptance testing is a bit complicated.
-  // If the minimum point is more than nsig1 away from the expected mean (0)
+  // If the split point is more than nsig1 away from the expected mean (0)
   //  then we just accept it.  If it is more than nsig2 away, we make sure
   //  that the min/max ratio of the P(D) along that axis is more than
   //  maxminratio.  If it is less than nsig2, we just flat out reject.
   const double nsig1 = 4.0; 
   const double nsig2 = 2.0;
-  const double maxminratio = 1e5;
+  const double minmaxratio = 1e-5;
 
   //Enforce positivity
 #ifdef TIMING
@@ -731,32 +741,47 @@ void PDFactoryDouble::unwrapPD(PDDouble& pd) const {
 #ifdef TIMING
   starttime = std::clock();
 #endif
+  // Sum into rsum, making this a 1D problem
   int nm1 = static_cast<int>(currsize - 1);
-  int mdx = nm1; // Curr min index
-  double cval, minval, maxval, *rowptr; 
-  // Initialize minval to last col
-  rowptr = pofd + nm1 * currsize;
-  minval = 0.5 * rowptr[0];
-  for (unsigned int j = 1; j < currsize - 1; ++j) minval += rowptr[j];
-  minval += 0.5 * rowptr[currsize - 1];
-  maxval = minval;
-  // Now do others
-  for (int i = currsize - 2; i >= 0; --i) {
+  double cval, *rowptr;
+  for (unsigned int i = 0; i < currsize; ++i) {
     rowptr = pofd + i * currsize;
     cval = 0.5 * rowptr[0];
-    for (unsigned int j = 1; j < currsize - 1; ++j) cval += rowptr[j];
-    cval += 0.5 * rowptr[currsize - 1];
+    for (unsigned int j = 1; j < currsize - 1; ++j)
+      cval += rowptr[j];
+    cval += 0.5 * rowptr[currsize-1];
+    rsum[i] = cval;
+  }
+  int mdx = nm1; // Curr min index
+  double minval, maxval;
+  minval = maxval = rsum[nm1];
+  for (int i = currsize - 2; i >= 0; --i) {
+    cval = rsum[i];
     if (cval < minval) {
       minval = cval;
       mdx = i;
     } else if (cval > maxval) maxval = cval;
   }
-  unsigned int minidx1 = static_cast<unsigned>(mdx);
+  unsigned int splitidx1 = static_cast<unsigned int>(mdx);
+  double splitval1 = minval;
+  if (minval / maxval < peakfrac) {
+    // There should therefore be a more robust point that isn't so
+    //  far down -- look for it from the top again
+    // There is such a point -- look for it again from the top
+    double targval = peakfrac * maxval;
+    for (int i = currsize - 1; i >= 0; --i)
+      if (rsum[i] <= targval) {
+	splitidx1 = static_cast<unsigned int>(i);
+	splitval1 = rsum[i];
+	break;
+      }
+  }
 
   // Sanity check
-  double fwrap_plus = static_cast<double>(minidx1) * dflux1; // Wrap in pos flux
+  double fwrap_plus = 
+    static_cast<double>(splitidx1) * dflux1; // Wrap in pos flux
   double fwrap_minus = 
-    static_cast<double>(currsize - minidx1) * dflux1; // Abs neg wrap
+    static_cast<double>(currsize - splitidx1) * dflux1; // Abs neg wrap
   double cs1, cs2;
   cs1 = nsig1 * sg1;
   cs2 = nsig2 * sg1;
@@ -777,39 +802,48 @@ void PDFactoryDouble::unwrapPD(PDDouble& pd) const {
       throw affineExcept("PDFactoryDouble", "unwrapPD", errstr.str());
     } 
     // Min/max ratio test
-    if (maxval / minval < maxminratio) {
+    if (splitval1 / maxval > minmaxratio) {
       std::stringstream errstr;
       errstr << "Dim 1 wrapping problem with wrapping fluxes: "
 	     << fwrap_plus << " and " << -fwrap_minus << " with min/max ratio: "
-	     << maxval / minval << " and sigma: " << sg1;
+	     << splitval1 / maxval << " and sigma: " << sg1;
       throw affineExcept("PDFactoryDouble", "unwrapPD", errstr.str());
     }
   }
   
   // Now second dimension.  This one is slower due to stride issues.
-  // That could be improved with an auxilliary array, but it doesn't
-  // seem worth it, frankly
-  mdx = nm1; // Index of current minimum
-  minval = 0.5 * pofd[nm1];
-  for (unsigned int i = 1; i < currsize - 1; ++i) 
-    minval += pofd[i * currsize + nm1];
-  minval += 0.5 * pofd[nm1 * currsize + nm1];
-  maxval = minval;
-  for (int j = currsize - 2; j >= 0; --j) {
+  //  but otherwise is the same
+  for (unsigned int j = 0; j < currsize; ++j) {
     cval = 0.5 * pofd[j];
-    for (unsigned int i = 1; i < currsize - 1; ++i) 
+    for (unsigned int i = 1; i < currsize - 1; ++i)
       cval += pofd[i * currsize + j];
-    cval += 0.5 * pofd[nm1 * currsize + j];
+    cval += 0.5 * pofd[(currsize - 1) * currsize + j];
+    rsum[j] = cval;
+  }
+  mdx = nm1; // Curr min index
+  minval = maxval = rsum[nm1];
+  for (int i = currsize - 2; i >= 0; --i) {
+    cval = rsum[i];
     if (cval < minval) {
       minval = cval;
-      mdx = j;
+      mdx = i;
     } else if (cval > maxval) maxval = cval;
   }
-  unsigned int minidx2 = static_cast<unsigned>(mdx);
+  unsigned int splitidx2 = static_cast<unsigned int>(mdx);
+  double splitval2 = minval;
+  if (minval / maxval < peakfrac) {
+    double targval = peakfrac * maxval;
+    for (int i = currsize - 1; i >= 0; --i)
+      if (rsum[i] <= targval) {
+	splitidx2 = static_cast<unsigned int>(i);
+	splitval2 = rsum[i];
+	break;
+      }
+  }
 
   // Same sanity check
-  fwrap_plus = static_cast<double>(minidx2) * dflux2;
-  fwrap_minus = static_cast<double>(currsize - minidx2) * dflux2;
+  fwrap_plus = static_cast<double>(splitidx2) * dflux2;
+  fwrap_minus = static_cast<double>(currsize - splitidx2) * dflux2;
   cs1 = nsig1 * sg2;
   cs2 = nsig2 * sg2;
   if ((fwrap_plus < cs1) || (fwrap_minus < cs1)) {
@@ -829,11 +863,11 @@ void PDFactoryDouble::unwrapPD(PDDouble& pd) const {
       throw affineExcept("PDFactoryDouble", "unwrapPD", errstr.str());
     } 
     // Min/max ratio test
-    if (maxval / minval < maxminratio) {
+    if (splitval2 / maxval > minmaxratio) {
       std::stringstream errstr;
       errstr << "Dim 2 wrapping problem with wrapping fluxes: "
 	     << fwrap_plus << " and " << -fwrap_minus << " with min/max ratio: "
-	     << maxval / minval << " and sigma: " << sg2;
+	     << splitval2 / maxval << " and sigma: " << sg2;
       throw affineExcept("PDFactoryDouble", "unwrapPD", errstr.str());
 
     }
@@ -847,30 +881,30 @@ void PDFactoryDouble::unwrapPD(PDDouble& pd) const {
   size_t rowsz;
   double *ptr_curr, *ptr_out; // convenience pointers
   // We start with the neg, neg bit -- that is stuff >= both
-  // minidx1 and minidx2, which ends up in the 0, 0 part of the output
+  // splitidx1 and splitidx2, which ends up in the 0, 0 part of the output
   ptr_out = pd.pd_;
-  ptr_curr = pofd + minidx1 * currsize + minidx2;
-  rowsz = (currsize - minidx2) * size_double;
-  for (unsigned int i = 0; i < currsize - minidx1; ++i)
+  ptr_curr = pofd + splitidx1 * currsize + splitidx2;
+  rowsz = (currsize - splitidx2) * size_double;
+  for (unsigned int i = 0; i < currsize - splitidx1; ++i)
     std::memcpy(ptr_out + i * currsize, ptr_curr + i * currsize, rowsz);
 
   // Next pos neg
-  ptr_out = pd.pd_ + (currsize - minidx1) * currsize;
-  ptr_curr = pofd + minidx2;
-  for (unsigned int i = 0; i < minidx1; ++i) 
+  ptr_out = pd.pd_ + (currsize - splitidx1) * currsize;
+  ptr_curr = pofd + splitidx2;
+  for (unsigned int i = 0; i < splitidx1; ++i) 
     std::memcpy(ptr_out + i * currsize, ptr_curr + i * currsize, rowsz);
 
   // pos, pos
-  ptr_out = pd.pd_ + (currsize - minidx1) * currsize + (currsize - minidx2);
+  ptr_out = pd.pd_ + (currsize - splitidx1) * currsize + (currsize - splitidx2);
   ptr_curr = pofd;
-  rowsz = minidx2 * size_double;
-  for (unsigned int i = 0; i < minidx1; ++i)
+  rowsz = splitidx2 * size_double;
+  for (unsigned int i = 0; i < splitidx1; ++i)
     std::memcpy(ptr_out + i * currsize, ptr_curr + i * currsize, rowsz);
   
   // neg, pos
-  ptr_out = pd.pd_ + (currsize - minidx2);
-  ptr_curr = pofd + minidx1 * currsize;
-  for (unsigned int i = 0; i < currsize - minidx1; ++i)
+  ptr_out = pd.pd_ + (currsize - splitidx2);
+  ptr_curr = pofd + splitidx1 * currsize;
+  for (unsigned int i = 0; i < currsize - splitidx1; ++i)
     std::memcpy(ptr_out + i * currsize, ptr_curr + i * currsize, rowsz);
 
   pd.logflat = false;
