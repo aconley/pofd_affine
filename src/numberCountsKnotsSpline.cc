@@ -538,7 +538,7 @@ void numberCountsKnotsSpline::writeToHDF5Handle(hid_t objid) const {
 		       "Input handle is not valid");
 
   // Name of model
-  const char modeltype[] = "numberCountsKnots";
+  const char modeltype[] = "numberCountsKnotsSpline";
   hid_t datatype = H5Tcopy(H5T_C_S1);
   H5Tset_size(datatype, strlen(modeltype)); 
   adims = 1;
