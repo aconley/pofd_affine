@@ -13,7 +13,10 @@
 #include "../include/paramSet.h"
 
 /*!
-  \brief Fit a polynomial
+  \brief Fit a polynomial to a fixed set of input data
+
+  Has one bonus parameter, the rms of the data points around the
+  model.
 */
 class polyFit : public affineEnsemble {
 private :
@@ -21,6 +24,8 @@ private :
   double *x;
   double *y;
   double *iyvar;
+
+  double rms; //!< RMS of data around model, computed by getLogLike
 public:
   polyFit(const std::string&, unsigned int, unsigned int, 
 	  unsigned int, unsigned int, double, unsigned int, bool);
@@ -29,6 +34,8 @@ public:
   void generateInitialPosition(const paramSet&);
   void readFile(const std::string&);
   double getLogLike(const paramSet&, bool&);
+
+  void fillBonusParams(paramSet&, bool);
 };
 
 polyFit::polyFit(const std::string& datafile, unsigned int NWALKERS, 
@@ -96,8 +103,9 @@ void polyFit::initChains() {
 
   unsigned int npar = getNParams();
   paramSet p(npar);
-  for (unsigned int i = 0; i < npar; ++i)
+  for (unsigned int i = 0; i < npar-1; ++i)
     p[i] = 0.0;
+  p[npar - 1] = std::numeric_limits<double>::quiet_NaN();
   has_initStep = true;
   initStep = p;
   generateInitialPosition(p);
@@ -117,8 +125,9 @@ void polyFit::generateInitialPosition(const paramSet& p) {
   paramSet p2(npar);
   unsigned int nwalk = getNWalkers();
   for (unsigned int i = 0; i < nwalk; ++i) {
-    for (unsigned int j = 0; j < npar; ++j)
+    for (unsigned int j = 0; j < npar-1; ++j)
       p2[j] = rangen.doub() - 0.5 + p[j];
+    p2[npar-1] = std::numeric_limits<double>::quiet_NaN(); // RMS
     chains.addNewStep(i, p2, -std::numeric_limits<double>::infinity());
     naccept[i] = 0;
   }
@@ -137,18 +146,29 @@ double polyFit::getLogLike(const paramSet& p, bool& rej) {
     return 0;
   }
 
-  double val, xval, delta, logLike;
+  double val, xval, deltasq, logLike;
   logLike = 0.0;
+  rms = 0.0;
   for (unsigned int i = 0; i < ndata; ++i) {
     xval = x[i];
-    val = p[npar-1];
-    for (int j=static_cast<int>(npar)-2; j >= 0; --j)
+    val = p[npar-2]; // highest poly coeff
+    for (int j=static_cast<int>(npar)-3; j >= 0; --j)
       val = val * xval + p[j];
-    delta = y[i] - val;
-    logLike -= 0.5 * delta * delta * iyvar[i];
+    deltasq = y[i] - val;
+    deltasq *= deltasq;
+    logLike -= 0.5 * deltasq * iyvar[i];
+    rms += deltasq;
   }
 
+  rms = sqrt(rms / static_cast<double>(ndata));
   return logLike;
+}
+
+void polyFit::fillBonusParams(paramSet& p, bool rej) {
+  if (rej)
+    p[getNParams()-1] = std::numeric_limits<double>::quiet_NaN();
+  else
+    p[getNParams()-1] = rms;
 }
 
 /////////////////////////////////////
@@ -156,11 +176,11 @@ double polyFit::getLogLike(const paramSet& p, bool& rej) {
 int main(int argc, char** argv) {
 
   const unsigned int nterms = 4;
-  const double coeffs[nterms] = {0.5, 0.04, -0.15, 0.3}; // Correct model
 
+  bool verbose, fixed_burn;
   unsigned int nwalkers, nsamples, min_burn, init_steps;
   double scalefac, init_temp;
-  bool verbose, fixed_burn;
+  std::string outfile;
 
   //Defaults
   verbose     = false;
@@ -173,15 +193,15 @@ int main(int argc, char** argv) {
   int c;
   int option_index = 0;
   static struct option long_options[] = {
-    {"help",no_argument,0,'h'},
+    {"help", no_argument, 0, 'h'},
     {"fixedburn", no_argument, 0, 'f'},
     {"initsteps", required_argument, 0, 'i'},
     {"inittemp", required_argument, 0, 'I'},
-    {"minburn",required_argument,0,'m'},
-    {"scalefac",required_argument,0,'s'},
-    {"verbose",no_argument,0,'v'},
-    {"Version",no_argument,0,'V'},
-    {0,0,0,0}
+    {"minburn", required_argument, 0, 'm'},
+    {"scalefac", required_argument,0, 's'},
+    {"verbose", no_argument, 0, 'v'},
+    {"Version", no_argument, 0, 'V'},
+    {0, 0, 0, 0}
   };
   char optstring[] = "hfi:I:m:s:vV";
 
@@ -201,13 +221,18 @@ int main(int argc, char** argv) {
 	std::cerr << "\t\tdata set." << std::endl;
 	std::cerr << std::endl;
 	std::cerr << "SYNOPSIS" << std::endl;
-	std::cerr << "\tpolyfit_example nwalkers nsamples"
+	std::cerr << "\tpolyfit_example nwalkers nsamples outfile"
 		  << std::endl;
 	std::cerr << "DESCRIPTION:" << std::endl;
 	std::cerr << "\tFits the polynomail using an affine-invariant " 
 		  << "MCMC code," << std::endl;
 	std::cerr << "\twith nwalkers walkers and generating (approximately)"
 		  << " nsamples samples." << std::endl;
+	std::cerr << "\tThe RMS of the data around the model is also computed"
+		  << std::endl;
+	std::cerr << "\tfor each step in the chain.  The chain is output to" 
+		  << std::endl;
+	std::cerr << "\toutfile in HDF5 format." << std::endl;
 	std::cerr << std::endl;
 	std::cerr << "\tThe input polynomial is: " << std::endl
 		  << "\t\t0.5 + 0.04 x - 0.15 x^2 + 0.3 x^3"
@@ -231,10 +256,7 @@ int main(int argc, char** argv) {
 	std::cerr << "\t-m, --minburn MINBURN" << std::endl;
 	std::cerr << "\t\tMinimum number of burn-in steps to do per "
 		  << "walker (def: 50)" << std::endl;
-	std::cerr << "\t-o, --outfile FILENAME\n" << std::endl;
-	std::cerr << "\t\tWrite the resulting chain to this file."
-		  << std::endl;
-	std::cerr << "\t-s, --scalefac SCALEFAC\n" << std::endl;
+	std::cerr << "\t-s, --scalefac SCALEFAC" << std::endl;
 	std::cerr << "\t\tScaling factor in MCMC proposal density (def: 2)"
 		  << std::endl;
 	std::cerr << "\t-v, --verbose" << std::endl;
@@ -275,7 +297,7 @@ int main(int argc, char** argv) {
       break;
     }
 
-  if (optind >= argc - 1) {
+  if (optind >= argc - 2) {
     if (rank == 0)
       std::cerr << "Required arguments missing" << std::endl;
     MPI_Finalize();
@@ -284,6 +306,7 @@ int main(int argc, char** argv) {
 
   nwalkers = atoi(argv[optind]);
   nsamples = atoi(argv[optind + 1]);
+  outfile = std::string(argv[optind + 2]);
   if (nwalkers == 0 || nsamples == 0) {
     MPI_Finalize();
     return 0;
@@ -306,7 +329,7 @@ int main(int argc, char** argv) {
 
   try {
     std::string infile="exampledata/polyexample.txt";
-    polyFit ply(infile, nwalkers, nterms, nsamples, init_steps,
+    polyFit ply(infile, nwalkers, nterms + 1, nsamples, init_steps,
 		init_temp, min_burn, fixed_burn);
     ply.setScalefac(scalefac);
 
@@ -314,6 +337,8 @@ int main(int argc, char** argv) {
     ply.setParamName(1, "c[1]*x");
     ply.setParamName(2, "c[2]*x^2");
     ply.setParamName(3, "c[3]*x^3");
+    ply.setParamName(4, "RMS");
+    ply.setParamBonus(4);
 
     if (verbose) {
       ply.setVerbose();
@@ -326,16 +351,7 @@ int main(int argc, char** argv) {
     
     if (rank == 0) {
       // Summarize results
-      float mn, var, low, up;
-      float conflevel = 0.683;
-      for (unsigned int i = 0; i < 4; ++i) {
-	ply.getParamStats(i, mn, var, low, up, conflevel);
-	std::cout << "Parameter: " << ply.getParamName(i) << " Mean: " 
-		  << mn << " Stdev: " << sqrt(var) << " true: " << coeffs[i] 
-		  << std::endl;
-	std::cout << "  lower limit: " << low << " upper limit: "
-		  << up << " (" << conflevel * 100.0 << "% limit)" << std::endl;
-      }
+      ply.printStatistics();
 
       std::vector<float> accept;
       ply.getAcceptanceFrac(accept);
@@ -344,6 +360,9 @@ int main(int argc, char** argv) {
 	mnacc += accept[i];
       std::cout << "Mean acceptance: " << mnacc / static_cast<double>(nwalkers)
 		<< std::endl;
+
+      // Write
+      ply.writeToHDF5(outfile);
     }
   } catch ( const affineExcept& ex ) {
     std::cerr << "Error encountered" << std::endl;

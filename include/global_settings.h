@@ -8,7 +8,7 @@
   \brief Global convenience variables
 */
 namespace mcmc_affine {
-  const char version[] = "0.2.5"; //!< Version number
+  const char version[] = "0.2.6"; //!< Version number
 
   // Just in case this cmath doesn't have PI (not all do)
   const double pi = 3.141592653589793238462643383279502884197; //!< \f$\pi\f$
@@ -21,10 +21,25 @@ namespace mcmc_affine {
 			 SENDINGRESULT=5, SENDINGPARREJ=6,
 			 PSSENDNPARS=100, PSSENDPVALS=101,
 			 PSTSENDIDX=110, PSTSENDOLIKE=111, 
-			 PSTSENDNLIKE=112, PSTSENDZ=113};
+			 PSTSENDNLIKE=112, PSTSENDZ=113 };
 			 
-  /*! \brief Keeps track of special states for parameters */
-  enum { FIXED=1, ACIGNORE=2 };
+  /*! \brief Keeps track of special states for parameters 
+    FIXED means the parameter is fixed, so all steps should have
+          the same value.  Additionally, this parameter should not be used when
+	  checking convergence.
+    ACIGNORE means that the parameter should be generated as usual,
+          but should not be included when computing the autocorrelation
+          (and hence plays no role in computing the convergence).
+    BONUS means that this is not a parameter of the model, but is a
+          quantity calculated from the model and stored as a bonus
+          piece of information.  It can't be generated as usual, but
+          must be supplied by the likelihood model on computation.
+          As an example, a number counts model might not formally have the mean
+	  flux per area as a parameter, but it may be useful to compute
+	  and store that information in the chain as a bonus parameter.
+	  Such a parameter will also always be ignored in the autocorrelation.
+  */
+  enum { FIXED=1, ACIGNORE=2, BONUS=4 };
   
   const useconds_t usleeplen = 1; //!< Sleep time if no message ready in usec
 }

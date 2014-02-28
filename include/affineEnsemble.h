@@ -31,7 +31,9 @@ private:
   // Keep track of special parameter states
   unsigned int nfixed; //!< Number of fixed params
   unsigned int nignore; //!< Number ignored in acor
+  unsigned int nbonus; //!< Number of bonus params
   std::vector<int> param_state; //!< Set to param_statue enum values
+  unsigned int countParamState(int) const; //!< Count number with flag set.
 
   unsigned int init_steps; //!< Number of initial steps to do before starting burn-in check
   double init_temp; //!< Temperature used during initial steps
@@ -114,13 +116,16 @@ public:
 
   // Interact with parameter states
   // Fixing a parameter will also make it ignored
-  void clearParamState(); //!< Fit all params and use all params in autocorrelation
+  void clearParamState(); //!< Fit all params, use all params in autocorrelation, no bonus params
   unsigned int getNFitParams() const; //!< Return number of params being fit
   unsigned int getNAcorParams() const; //!< Return number of parameters used in autocorrelation (burn in) check
+  unsigned int getNBonusParams() const; //!< Return number of bonus parameters
   void fixParam(unsigned int); //!< Treat parameter as fixed
   bool isParamFixed(unsigned int) const; //!< Is a particular parameter fixed?
   void ignoreParamAcor(unsigned int); //!< Ignore parameter in acor computation
   bool isParamIgnoredAcor(unsigned int) const; //!< Is a parameter being ignored?
+  void setParamBonus(unsigned int); //!< Treat a parameter as a bonus param
+  bool isParamBonus(unsigned int) const; //!< Is a parameter a bonus param?
 
   // Parameter names
   void setParamName(unsigned int, const std::string&); //!< Set param names
@@ -155,10 +160,13 @@ public:
 
   /*! \brief Computes the log likelihood. */
   virtual double getLogLike(const paramSet&, bool& params_rejected) = 0;
-
   double getLogLike(const paramSet&); //!< Computes log likelihood
 
-  /*! \brief Tests whether a given parameter set is valid */
+  /*! \brief Fill in bonus params */
+  virtual void fillBonusParams(paramSet&, bool rej=false) {}; // Note: not abstract, default to no bonus params
+
+  /*! \brief Tests whether a given parameter set is valid; should
+   understand about bonus params */
   virtual bool areParamsValid(const paramSet&) const { return true; }
 
   /*! \brief Generate a new step */

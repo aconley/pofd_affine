@@ -335,21 +335,16 @@ int main(int argc, char** argv) {
 	std::cout << mg << std::endl;
     }
 
-    mg.setParamName(0,"mn[0]");
-    mg.setParamName(1,"mn[1]");
-    mg.setParamName(2,"mn[2]");
-    mg.setParamName(3,"mn[3]");
-    mg.setParamName(4,"mn[4]");
+    mg.setParamName(0, "mn[0]");
+    mg.setParamName(1, "mn[1]");
+    mg.setParamName(2, "mn[2]");
+    mg.setParamName(3, "mn[3]");
+    mg.setParamName(4, "mn[4]");
 
     mg.sample(); //Also initializes
     
     if (rank == 0) {
-      std::vector<float> mn, var;
-      mg.getStats(mn, var);
-      std::cout << "Results" << std::endl;
-      for (unsigned int i = 0; i < mn.size(); ++i)
-	std::cout << "  Param " << i << " " << mn[i] << " +- "
-		  << sqrt(var[i]) << std::endl;
+      mg.printStatistics();
 
       std::vector<float> accept;
       mg.getAcceptanceFrac(accept);
