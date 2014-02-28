@@ -14,7 +14,9 @@
 #include "../include/paramSet.h"
 
 /*!
-  \brief Single-dimensional Gaussian,
+  \brief Single-dimensional Gaussian
+
+  The only model parameter is the mean
 */
 class singleGauss : public affineEnsemble {
 private:
@@ -30,7 +32,6 @@ public:
   void generateInitialPosition(const paramSet&);
   double getLogLike(const paramSet&, bool&);
   void getStats(float&, float&) const;
- 
 };
 
 singleGauss::singleGauss(double MN, double SIGMA,
@@ -42,6 +43,7 @@ singleGauss::singleGauss(double MN, double SIGMA,
     mean = MN;
     var  = SIGMA * SIGMA;
     gfac = - 0.5 / var;
+    setParamName(0, "Mean");
 }
 
 singleGauss::~singleGauss() {}
@@ -247,10 +249,8 @@ int main(int argc, char** argv) {
     sg.sample(); //Also initializes
 
     if (rank == 0) {
-      float mn, var;
-      sg.getStats(mn, var);
-      std::cout << "Mean: " << mn << " sigma: " << sqrt(var) << std::endl;
-
+      sg.printStatistics();
+      
       std::vector<float> accept;
       sg.getAcceptanceFrac(accept);
       std::cout << "Acceptance fractions:";

@@ -66,6 +66,7 @@ affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
     naccept.assign(nwalkers, 0);
     nfixed = 0;
     nignore = 0;
+    nbonus = 0;
     
     param_state.resize(nparams);
     param_state.assign(nparams, 0);
@@ -161,6 +162,7 @@ void affineEnsemble::setNParams(unsigned int n) {
   chains.setNParams(n);
   nfixed = 0;
   nignore = 0;
+  nbonus = 0;
 
   has_name.resize(n);
   has_name.assign(n, false);
@@ -197,17 +199,29 @@ void affineEnsemble::getMaxLogLikeParam(double& val, paramSet& p) const {
   chains.getMaxLogLikeParam(val,p);
 }
 
+/*!
+  \param[in] flag Flag to compare param state to
+  \returns Number of params with that flag set
+*/
+unsigned int affineEnsemble::countParamState(int flag) const {
+  unsigned int n = 0;
+  for (unsigned int i = 0; i < nparams; ++i)
+    if (param_state[i] & flag) ++n;
+  return n;
+}
+
 void affineEnsemble::clearParamState() {
   if (rank != 0) return;
   param_state.assign(param_state.size(), 0);
-  nfixed = nignore = 0;
+  nfixed = nignore = nbonus = 0;
 }
 
 /*!
-  \returns Number of parameters being fit (nparams minus number of fixed ones)
+  \returns Number of parameters being fit (nparams minus number of 
+    fixed and bonus ones)
 */
 unsigned int affineEnsemble::getNFitParams() const {
-  return nparams - nfixed;
+  return nparams - nfixed - nbonus;
 }
 
 /*!
@@ -218,6 +232,13 @@ unsigned int affineEnsemble::getNAcorParams() const {
 }
 
 /*!
+  \returns Number of bonus parameters
+*/
+unsigned int affineEnsemble::getNBonusParams() const {
+  return nbonus;
+}
+
+/*!
   \param[in] idx Parameter index of parameter to fix
 */
 void affineEnsemble::fixParam(unsigned int idx) {
@@ -225,12 +246,8 @@ void affineEnsemble::fixParam(unsigned int idx) {
   param_state[idx] |= mcmc_affine::FIXED;
   param_state[idx] |= mcmc_affine::ACIGNORE;
 
-  nfixed = 0;
-  for (unsigned int i = 0; i < nparams; ++i)
-    if (param_state[i] & mcmc_affine::FIXED) ++nfixed;
-  nignore = 0;
-  for (unsigned int i = 0; i < nparams; ++i)
-    if (param_state[i] & mcmc_affine::ACIGNORE) ++nignore;
+  nfixed = countParamState(mcmc_affine::FIXED);
+  nignore = countParamState(mcmc_affine::ACIGNORE);
 }
 
 /*!
@@ -248,10 +265,7 @@ bool affineEnsemble::isParamFixed(unsigned int idx) const {
 void affineEnsemble::ignoreParamAcor(unsigned int idx) {
   if (rank != 0) return;
   param_state[idx] |= mcmc_affine::ACIGNORE;
-
-  nignore = 0;
-  for (unsigned int i = 0; i < nparams; ++i)
-    if (param_state[i] & mcmc_affine::ACIGNORE) ++nignore;
+  nignore = countParamState(mcmc_affine::ACIGNORE);
 }
 
 /*!
@@ -262,6 +276,30 @@ void affineEnsemble::ignoreParamAcor(unsigned int idx) {
 bool affineEnsemble::isParamIgnoredAcor(unsigned int idx) const {
   if (rank != 0) return false;
   return param_state[idx] & mcmc_affine::ACIGNORE;
+}
+
+/*!
+  \param[in] idx Index of parameter to set as Bonus
+
+  Note that the parameter is automatically set to be ignored
+  in the autocorrelation as well.
+*/
+void affineEnsemble::setParamBonus(unsigned int idx) {
+  if (rank != 0) return;
+  param_state[idx] |= mcmc_affine::ACIGNORE;
+  param_state[idx] |= mcmc_affine::BONUS;
+
+  nignore = countParamState(mcmc_affine::ACIGNORE);
+  nbonus = countParamState(mcmc_affine::BONUS);
+}
+
+/*!
+  \param[in] idx Parameter index
+  \returns True if that parameter is a bonus parameter, false otherwise
+*/
+bool affineEnsemble::isParamBonus(unsigned int idx) const {
+  if (rank != 0) return false;
+  return param_state[idx] & mcmc_affine::BONUS;
 }
 
 /*!
@@ -413,7 +451,7 @@ void affineEnsemble::printStatistics(float conflevel,
   for (unsigned int i = 0; i < nparams; ++i) {
     if (!has_name[i]) parname = "Unknown"; else
       parname = parnames[i];
-    if ((param_state[i] & mcmc_affine::FIXED) == 0) {
+    if ((param_state[i] & mcmc_affine::FIXED) != 0) {
       mn = chains.getParamMean(i);
       os << "Parameter: " << parname << " Fixed at value: " << mn << std::endl;
     } else {
@@ -421,7 +459,10 @@ void affineEnsemble::printStatistics(float conflevel,
       os << "Parameter: " << parname << " Mean: " << mn << " Stdev: "
 	 << sqrt(var) << std::endl;
       os << "  lower limit: " << low << " upper limit: "
-	 << up << " (" << conflevel * 100.0 << "% limit)" << std::endl;
+	 << up << " (" << conflevel * 100.0 << "% limit)";
+      if (param_state[i] & mcmc_affine::BONUS)
+	os << " (bonus param)";
+      os << std::endl;
     }
   }
 
@@ -1018,7 +1059,8 @@ double affineEnsemble::getLogLike(const paramSet& p) {
   \param[out] prstep Newly proposed step for idx1
 
   This generates a new step, checking the parameter limits to make sure
-  they are obeyed, and obeying fixed parameters.
+  they are obeyed, and obeying fixed parameters, and setting bonus
+  parameters to NaN.
 */
 void affineEnsemble::generateNewStep(unsigned int idx1, unsigned int idx2,
 				     proposedStep& prstep) const 
@@ -1052,6 +1094,8 @@ void affineEnsemble::generateNewStep(unsigned int idx1, unsigned int idx2,
     if (param_state[i] & mcmc_affine::FIXED) {
       //Fixed parameter, keep previous
       prstep.newStep.setParamValue(i, prstep.oldStep[i]);
+    } else if (param_state[i] & mcmc_affine::BONUS) {
+      prstep.newStep.setParamValue(i, std::numeric_limits<double>::quiet_NaN());
     } else {
       val = prstep.z * prstep.oldStep[i] + omz * params_tmp[i];
       prstep.newStep.setParamValue(i, val);
@@ -1091,6 +1135,8 @@ void affineEnsemble::generateNewStep(unsigned int idx1, unsigned int idx2,
       if (param_state[i] & mcmc_affine::FIXED) {
 	//Fixed parameter, keep previous
 	prstep.newStep.setParamValue(i, prstep.oldStep[i]);
+      } else if (param_state[i] & mcmc_affine::BONUS) {
+	// Don't have to do anything; should still be NaN
       } else {
 	val = prstep.z * prstep.oldStep[i] + omz * params_tmp[i];
 	prstep.newStep.setParamValue(i, val);
@@ -1344,8 +1390,11 @@ void affineEnsemble::slaveSample() {
       else if (tag == mcmc_affine::SENDINGPOINT) {
 	pstep.recieveCopy(MPI_COMM_WORLD, 0);
 	
-	//Compute likelihood
+	// Compute likelihood
 	pstep.newLogLike = getLogLike(pstep.newStep, parrej);
+
+	// Fill bonus params (if any)
+	fillBonusParams(pstep.newStep, parrej);
 
 	//Send it back
 	MPI_Send(&jnk, 1, MPI_INT, 0, mcmc_affine::SENDINGRESULT,
@@ -1383,16 +1432,21 @@ void affineEnsemble::writeToStream(std::ostream& os) const {
 
   os << "Number of walkers: " << nwalkers << std::endl;
   os << "Number of parameters: " << nparams;
-  if (verbosity >= 2 && nfixed > 0) 
-    os << std::endl << " Number of fixed parameters: " << nfixed;
-  if (verbosity >= 2 && nignore > 0) 
-    os << std::endl << " Number of ignored parameters: " << nignore;
-  if (verbosity >= 2 && has_any_names) {
-    os << std::endl << "Parameter names: ";
-    for (unsigned int i = 0; i < nparams; ++i)
-      if (has_name[i]) os << std::endl << " " << i << ": " 
-			  << parnames[i];
+  if (verbosity >= 2) {
+    if (nfixed > 0) 
+      os << std::endl << " Number of fixed parameters: " << nfixed;
+    if (nignore > 0) 
+      os << std::endl << " Number of ignored parameters: " << nignore;
+    if (nbonus > 0) 
+      os << std::endl << " Number of bonus parameters: " << nbonus;
+    if (has_any_names) {
+      os << std::endl << "Parameter names: ";
+      for (unsigned int i = 0; i < nparams; ++i)
+	if (has_name[i]) os << std::endl << " " << i << ": " 
+			    << parnames[i];
+    }
   }
+
   if (init_steps > 0) {
     os << std::endl << "Will take initial steps to generate new starting"
        << " position";
@@ -1457,6 +1511,10 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nignore);
   H5Aclose(att_id);
+  att_id = H5Acreate2(objid, "nbonus", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  H5Awrite(att_id, H5T_NATIVE_UINT, &nbonus);
+  H5Aclose(att_id);
   att_id = H5Acreate2(objid, "init_steps", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &init_steps);
@@ -1510,6 +1568,12 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
   for (unsigned int i = 0; i < nparams; ++i) 
     batmp[i] = param_state[i] & mcmc_affine::ACIGNORE;
   att_id = H5Acreate2(objid, "acignore", H5T_NATIVE_HBOOL,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
+  // Bonus params
+  for (unsigned int i = 0; i < nparams; ++i) 
+    batmp[i] = param_state[i] & mcmc_affine::BONUS;
+  att_id = H5Acreate2(objid, "bonus", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
   delete[] batmp;

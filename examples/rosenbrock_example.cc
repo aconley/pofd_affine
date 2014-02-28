@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
 	std::cerr << "\t\tdensity." << std::endl;
 	std::cerr << std::endl;
 	std::cerr << "SYNOPSIS" << std::endl;
-	std::cerr << "\trosenbrock_example a1 a2 nwalkers nsamples outfile"
+	std::cerr << "\trosenbrock_example nwalkers nsamples a1 a2 outfile"
 		  << std::endl;
 	std::cerr << "DESCRIPTION:" << std::endl;
 	std::cerr << "\tDraws samples from a Rosenbrock density using"
@@ -199,11 +199,11 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  a1       = atof( argv[optind] );
-  a2       = atof( argv[optind+1] );
-  nwalkers = atoi( argv[optind+2] );
-  nsamples = atoi( argv[optind+3] );
-  outfile  = std::string( argv[optind+4] );
+  nwalkers = atoi(argv[optind]);
+  nsamples = atoi(argv[optind + 1]);
+  a1       = atof(argv[optind + 2]);
+  a2       = atof(argv[optind + 3]);
+  outfile  = std::string(argv[optind + 4]);
 
   if (nwalkers == 0 || nsamples == 0) {
     MPI_Finalize();
@@ -221,6 +221,8 @@ int main(int argc, char** argv) {
   try {
     rosenbrockDensity rd(a1, a2, nwalkers, nsamples, init_steps, init_temp,
 			 min_burn, fixed_burn);
+    rd.setParamName(0, "a1");
+    rd.setParamName(1, "a2");
     if (verbose) {
       rd.setVerbose();
       if (rank == 0)
@@ -230,6 +232,8 @@ int main(int argc, char** argv) {
     rd.sample(); //Also does initialization
     
     if (rank == 0) {
+      rd.printStatistics();
+
       std::vector<float> accept;
       rd.getAcceptanceFrac(accept);
       double mnacc = accept[0];
