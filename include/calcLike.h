@@ -163,6 +163,10 @@ class calcLike {
   bool bin_data; //!< Bin the data
   unsigned int nbins; //!< Number of bins (if bin_data)
 
+  // Mean flux per area from model; used in cfirb prior
+  //  but also used as a bonus parameter
+  mutable double mean_flux_per_area; //!< Mean flux per area
+
   //Priors
   bool has_cfirb_prior; //!< Are we using CFIRB prior
   double cfirb_prior_mean; //!< Value of CFIRB prior mean
@@ -236,6 +240,9 @@ class calcLike {
   /*! \brief Get Log Likelihood for set of parameters */
   double getLogLike(const paramSet&, bool&) const;
 
+  /*! \brief Assuming getLogLike already called, get mean flux per area */
+  double getMeanFluxPerArea() const { return mean_flux_per_area; }
+  
   /*! \brief Write to HDF5 handle */
   void writeToHDF5Handle(hid_t) const;
 

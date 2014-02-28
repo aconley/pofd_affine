@@ -510,6 +510,7 @@ calcLike::calcLike(unsigned int FFTSIZE, unsigned int NINTERP,
 
   nbeamsets = 0;
   beamsets  = NULL;
+  mean_flux_per_area = std::numeric_limits<double>::quiet_NaN();
 }
 
 calcLike::~calcLike() {
@@ -748,9 +749,12 @@ double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
       0.5*val*val;
   }
 
+  // Compute this as bonus param, even if we aren't using the CFIRB
+  //  prior; note that this is invalid if the params were invalid,
+  //  but pofdMCMC::fillBonusParams won't be called in that case anyways.
+  mean_flux_per_area = model.getFluxPerArea();
   if (has_cfirb_prior) {
-    double s_per_area = model.getFluxPerArea();
-    double val = (cfirb_prior_mean - s_per_area) / cfirb_prior_sigma;
+    double val = (cfirb_prior_mean - mean_flux_per_area) / cfirb_prior_sigma;
     LogLike -=  half_log_2pi + log(cfirb_prior_sigma) + 0.5*val*val;
   }
   return LogLike;

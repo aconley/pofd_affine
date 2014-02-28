@@ -63,9 +63,11 @@ bool pofdMCMC::initChainsMaster() {
 			 "No data files read");
 
 
-  //Number of parameters is number of knots + 1 for the
-  // sigma -- although that may be fixed
-  unsigned int npar = nknots + 1;
+  //Number of parameters is number of knots + 2;
+  // nknots for the actual model params
+  // 1 for the instrument sigma multiplier (possibly fixed)
+  // 1 for the mean flux per unit area (bonus)
+  unsigned int npar = nknots + 2;
   this->setNParams(npar);
 
   //Set up parameter names
@@ -76,11 +78,13 @@ bool pofdMCMC::initChainsMaster() {
     this->setParamName(i, parname.str());
   }
   this->setParamName(nknots, "SigmaMult");
+  this->setParamName(nknots + 1, "<S>area");
 
   // Set which parameters are fixed
   for (unsigned int i = 0; i < nknots; ++i)
     if (ifile.isKnotFixed(i)) this->fixParam(i);
   if (!spec_info.fit_sigma) this->fixParam(nknots);
+  this->setParamBonus(nknots + 1);
 
   //Initialize likelihood information -- priors, data, etc.
   likeSet.setKnotPositions(ifile);
@@ -109,8 +113,9 @@ bool pofdMCMC::initChainsMaster() {
   // Set up R init ranges using initial model 
   paramSet p(npar); // Generated parameter
   ifile.getParams(p); // Get central values from initialization file
-  p[npar - 1] = 1.0; // Sigma mult
-  ifile.getParams(p); // Sets to central (initial) values
+  p[nknots] = 1.0; // Sigma mult
+  // flux per area value
+  p[nknots + 1] = std::numeric_limits<double>::quiet_NaN();
   likeSet.setRRanges(p);
 
   // Verbosity
@@ -197,8 +202,8 @@ bool pofdMCMC::areParamsValid(const paramSet& p) const {
   if (!is_init)
     throw affineExcept("pofdMCMC", "areParamsValid",
 		       "Can't check params without initialization");
-  if (!ifile.isValid(p)) return false; //Doesn't check sigma multiplier
-  if (p[nparams-1] <= 0.0) return false;
+  if (!ifile.isValid(p)) return false; //Doesn't check sigma multiplier or bonus
+  if (p[nparams-2] <= 0.0) return false; // Sigma multiplier
   return true;
 }
 
@@ -257,6 +262,8 @@ void pofdMCMC::generateInitialPosition(const paramSet& p) {
       pnew[nknots] = trialval;
     } else pnew[nknots] = 1.0;
     
+    pnew[nknots + 1] = std::numeric_limits<double>::quiet_NaN();
+
     //Add to chain
     //It's possible that -infinity will not be available on some
     // architectures -- the c++ standard is oddly quiet about this.
@@ -325,6 +332,14 @@ double pofdMCMC::getLogLike(const paramSet& p, bool& pars_invalid) {
     throw affineExcept("pofdMCMC", "getLogLike",
 		       "Called on uninitialized object");
   return likeSet.getLogLike(p, pars_invalid);
+}
+
+void pofdMCMC::fillBonusParams(paramSet& par, bool rej) {
+  unsigned int npar = getNParams();
+  if (rej)
+    par[npar-1] = std::numeric_limits<double>::quiet_NaN();
+  else
+    par[npar-1] = likeSet.getMeanFluxPerArea();
 }
 
 /*!
