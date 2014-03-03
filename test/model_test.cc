@@ -733,7 +733,7 @@ TEST(model2DTest, getR) {
   double rval, reldiff;
   for (unsigned int i = 0; i < ntest; ++i) {
     rval = model.getR(fluxdens1[i], fluxdens2[i], bm);
-    reldiff = fabs(rval - rexp[i])/rexp[i];
+    reldiff = fabs(rval - rexp[i]) / rexp[i];
     EXPECT_NEAR(0.0, reldiff, 1e-3) <<
       "Rnot as expected -- wanted: " << rexp[i] <<
       " got: " << rval << " for " << fluxdens1[i] << " " << fluxdens2[i];

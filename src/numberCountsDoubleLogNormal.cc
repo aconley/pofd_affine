@@ -1443,7 +1443,8 @@ double numberCountsDoubleLogNormal::getR(double f1, double f2,
     for (unsigned int i = 0; i < npsf; ++i) {
       ieta1 = iparr1[i];
       ieta2 = iparr2[i];
-      retval += ieta1 * ieta2 * getNumberCountsInner(af1 * ieta1, af2 * ieta2);
+      retval += ieta1 * ieta2 * getNumberCountsInner(af1 * ieta1, 
+						     af2 * ieta2);
     } 
   }
 
@@ -1530,13 +1531,12 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
   //  Rather than checking that, however, in practice this should be extremely
   //  rare because if the pn beam component is present, we are going to
   //  want to explore f2 < 0 space to compute the P(D).
-  //   RWork[*,0] = n1(f1/eta1) / eta1 * sigma1(f1/eta1), 
+  //   RWork[*,0] = n1(f1/eta1) / eta1 * sigma1(f1/eta1) * pixel size prefac, 
   //      possibly multiplied by the wts if the beam is histogrammed
   //   RWork[*,1] will hold log(f1/eta1) + offset(f1/eta1)
   //   RWork[*,2] = -0.5 / sigma(f1/eta1)^2
   //  We only test for out of range (R always 0) on the first flux density
   //   because the model doesn't actually terminate sharply in the other band
-  unsigned int sgnbreak; // Index of first bit of second component in RWork
   double *RWptr, *cRW; // Pointers into RWork array for sgn components
   double *rowptr; // Row pointer into output (R)
   const double *wptr; // Weights 
@@ -1552,35 +1552,49 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
   for (unsigned int i = 0; i < n1; ++i) { // Loop over flux1
     f1val = f1[i];
     if ((f1val == 0) || (f1val < 0 && !hasNegX1)) continue; // R will be zero
-    rowptr = R + i * n2;
     // Set sign and |f1| if needed
     if (f1val > 0) sgn1 = 0; else { sgn1 = 2; f1val = fabs(f1val); }
-    sgnbreak = npsf[sgn1]; // RWork[sgnbreak, :] is the start of second comp
-    for (unsigned int k = 0; k < 2; ++k) { // Loop over two sign bits
-      sgn = sgn1 + k;
-      if (hassign[sgn] && f1val < maxf1[sgn]) {
-	curr_n = npsf[sgn];
-	iparr1 = ibmptr1[sgn];
-	RWptr = RWork + k * sgnbreak * 3; // &RWork[k*sgnbreak, 0]
+
+    // Number in neg/pos bits, if present
+    unsigned int np = hassign[sgn1] ? npsf[sgn1] : 0;
+    unsigned int nn = hassign[sgn1 + 1] ? npsf[sgn1 + 1] : 0;
+
+    // Loop over two sign bits (the sign on the second beam), pre-computing
+    //  RWork information as described above.  Some index trickery here,
+    //  so this isn't the clearest code.  But it's inner loop stuff, so
+    //  clarity is of secondary importance
+    for (unsigned int k = 0; k < 2; ++k) { // k = 0 is pos, k = 1 is neg
+      sgn = sgn1 + k; // Current full sign (0 through 4, usual scheme)
+      curr_n = (k == 0) ? np : nn;
+      // Skip stuff out of range; note we set RWork[:, 0] to 0 below
+      //  in the else, which we use to mark values to skip
+      if (curr_n > 0 && f1val < maxf1[sgn]) {
+	iparr1 = ibmptr1[sgn]; // Band 1 beam pixel array pointer
+	// &RWork[k * np, 0] -- piece of RWork for this sign
+	RWptr = RWork + k * np * 3; 
 	if (ishist[sgn]) {
 	  // With beam hist
 	  wptr = wtptr[sgn];
-	  for (unsigned int j = 0; j < curr_n; ++j) { //Loop over beam pixels
+	  //Loop over beam pixels in band 1
+	  for (unsigned int j = 0; j < curr_n; ++j) { 
 	    ieta1 = iparr1[j];
 	    f1prod = f1val * ieta1;
-	    cRW = RWptr + 3 * j; // &RWork[k*sgnbreak + j, 0]
+	    // cRW will be the RWork piece for this sign and beam pixel
+	    cRW = RWptr + 3 * j; 
 	    if (f1prod >= minknot && f1prod < maxknot) {
+	      // Band 1 number counts
 	      cts = exp2(gsl_spline_eval(splinelog, log2(f1prod), acc));
 	      if (cts > 0) {
+		// Pieces we can pre-compute
 		isigma = 1.0 / getSigmaInner(f1prod);
-		cRW[0] = wptr[j] * ieta1 * isigma * cts;
+		cRW[0] = wptr[j] * ieta1 * isigma * cts * prefac;
 		cRW[1] = log(f1prod) + getOffsetInner(f1prod);
 		cRW[2] = -0.5 * isigma * isigma;
-	      } else cRW[0] = 0;
-	    } else cRW[0] = 0;
+	      } else cRW[0] = 0; // Mark as no-use
+	    } else cRW[0] = 0; // Same
 	  }
 	} else {
-	  // No beam hist
+	  // No beam hist; same basic plan, but no weights
 	  for (unsigned int j = 0; j < curr_n; ++j) {
 	    ieta1 = iparr1[j];
 	    f1prod = f1val * ieta1;
@@ -1589,7 +1603,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 	      cts = exp2(gsl_spline_eval(splinelog, log2(f1prod), acc));
 	      if (cts > 0) {
 		isigma = 1.0 / getSigmaInner(f1prod);
-		cRW[0] = cts * ieta1 * isigma;
+		cRW[0] = cts * ieta1 * isigma * prefac;
 		cRW[1] = log(f1prod) + getOffsetInner(f1prod);
 		cRW[2] = -0.5 * isigma * isigma;
 	      } else cRW[0] = 0;
@@ -1597,13 +1611,19 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 	  }
 	}
       } else {
-	// Zero out Rwork[:,0] to mark as not valid
-	for (unsigned int k = 0; k < (npsf[sgn1] + npsf[sgn1+1]); ++k)
-	  RWork[3*k] = 0.0;
+	// Zero out Rwork[:,0] to mark as not valid, but only the
+	//  part for this sign component
+	unsigned int minidx = (k == 0) ? 0 : np;
+	unsigned int maxidx = (k == 0) ? np : (np+nn);
+	for (unsigned int j = minidx; j < maxidx; ++j)
+	  RWork[3 * j] = 0.0;
       }
     }
 
-    //Now loop over flux 2 values
+    // Now that we have pre-computed all the things that only
+    //  depend on the flux in band 1, do the band 2 loop, writing
+    //  the final values into R.
+    rowptr = R + i * n2; // row pointer into R
     double cRW0;
     for (unsigned int j = 0; j < n2; ++j) {
       f2val = f2[j];
@@ -1622,7 +1642,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 	curr_n = npsf[sgn];
 	iparr2 = ibmptr2[sgn];
 	if2 = 1.0 / f2val;
-	RWptr = RWork + sgnoff * sgnbreak * 3; //&RWork[sgnoff*sgnbreak, 0]
+	RWptr = RWork + sgnoff * np * 3; //&RWork[sgnoff*sgnbreak, 0]
 	for (unsigned int k = 0; k < curr_n; ++k) {
 	  cRW = RWptr + k * 3; //&RWork[sgnoff*sgnbreak + k, 0]
 	  cRW0 = cRW[0]; //RWork[sgnoff*sgnbreak + k, 0]
@@ -1632,7 +1652,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 	    workval += cRW0 * exp(tfac * tfac * cRW[2]);
 	  }
 	}
-	rowptr[j] = prefac * workval * if2;
+	rowptr[j] = workval * if2;
       } // Recall that R was zeroed
     } // End loop over RFlux2
   } // End loop over RFlux1

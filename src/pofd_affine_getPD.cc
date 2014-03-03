@@ -18,8 +18,6 @@ static struct option long_options[] = {
   {"help", no_argument, 0, 'h'},
   {"double", no_argument, 0, 'd'},
   {"version", no_argument, 0, 'V'}, //Below here not parsed in main routine
-  {"fits", no_argument, 0, 'f'},
-  {"hdf5", no_argument, 0, '8'},
   {"histogram", no_argument, 0, 'H'},
   {"log", no_argument, 0, 'l'},
   {"nbins", required_argument, 0, '1'},
@@ -35,14 +33,13 @@ static struct option long_options[] = {
   {0, 0, 0, 0}
 };
 
-char optstring[] = "hdVfH8l1:n:N:r:s:vw:5:6:7:";
+char optstring[] = "hdVHl1:n:N:r:s:vw:5:6:7:";
 
 int getPDSingle(int argc, char **argv) {
 
   double sigma_noise; //Noise
   unsigned int nflux, ninterp, nbins;
-  bool has_wisdom, getLog, writeR;
-  bool histogram, verbose, write_to_fits, write_as_hdf5;
+  bool has_wisdom, getLog, writeR, histogram, verbose;
   double minflux, maxflux;
   std::string wisdom_file;
   
@@ -59,8 +56,6 @@ int getPDSingle(int argc, char **argv) {
   nbins               = 120;
   verbose             = false;
   histogram           = false;
-  write_to_fits       = false;
-  write_as_hdf5       = false;
   getLog              = false;
   writeR              = false;
 
@@ -70,12 +65,6 @@ int getPDSingle(int argc, char **argv) {
   while ((c = getopt_long(argc,argv,optstring,long_options,
 			  &option_index)) != -1) 
     switch(c) {
-    case 'f' :
-      write_to_fits = true;
-      break;
-    case '8':
-      write_as_hdf5 = true;
-      break;
     case 'H' :
       histogram = true;
       break;
@@ -143,8 +132,6 @@ int getPDSingle(int argc, char **argv) {
     std::cerr << "Invalid noise level: must be >= 0.0" << std::endl;
     return 1;
   }
-  if (write_as_hdf5 && write_to_fits)
-    std::cout << "WARNING: will only write as HDF5, not as FITS" << std::endl;
   if (writeR && rfile.empty()) {
     std::cerr << "Requested write of R to empty filename" << std::endl;
     return 1;
@@ -211,13 +198,18 @@ int getPDSingle(int argc, char **argv) {
     pfactory.getPD(sigma_noise, pd, getLog);
     
     // Write it
-    if (verbose) std::cout << "Writing P(D) to file " << outputfile 
-			   << std::endl;
-    if (write_as_hdf5) {
+    utility::outfiletype oft = utility::getOutputFileType(outputfile);
+    if (oft == utility::HDF5 || oft == utility::UNKNOWN) {
+      if (verbose) std::cout << "Writing P(D) to file " << outputfile 
+			     << " as HDF5" << std::endl;
       pd.writeToHDF5(outputfile);
-    } else if (write_to_fits) {
+    } else if (oft == utility::FITS) {
+      if (verbose) std::cout << "Writing P(D) to file " << outputfile 
+			     << " as FITS" << std::endl;
       pd.writeToFits(outputfile);
-    } else {
+    } else if (oft == utility::TXT) {
+      if (verbose) std::cout << "Writing P(D) to file " << outputfile 
+			     << " as text" << std::endl;
       std::ofstream ofs(outputfile.c_str());
       if (!ofs) {
 	std::cerr << "Error opening output file: " << outputfile
@@ -226,11 +218,16 @@ int getPDSingle(int argc, char **argv) {
       }
       ofs << pd;
       ofs.close();
+    } else {
+      std::cerr << "Unsupported output file type for " << outputfile
+		<< std::endl;
+      return 128;
     }
     
-    // Write R
+    // Write R as HDF5
     if (writeR) {
-      if (verbose) std::cout << "Writing R to: " << rfile << std::endl;
+      if (verbose) std::cout << "Writing R to: " << rfile 
+			     << " as HDF5" << std::endl;
       pfactory.writeRToHDF5(rfile);
     }
 
@@ -256,8 +253,7 @@ int getPDDouble(int argc, char** argv) {
 
   double sigma1, sigma2; //Noise
   unsigned int nflux, nedge, nbins;
-  bool has_wisdom, write_to_fits, write_as_hdf5;
-  bool histogram, verbose, getLog, doedge, writeR;
+  bool has_wisdom, histogram, verbose, getLog, doedge, writeR;
   double minflux1, maxflux1, minflux2, maxflux2;
   std::string wisdom_file;
   
@@ -274,8 +270,6 @@ int getPDDouble(int argc, char** argv) {
   verbose             = false;
   histogram           = false;
   nbins               = 150;
-  write_to_fits       = false;
-  write_as_hdf5       = false;
   nedge               = 256;
   getLog              = false;
   doedge              = true;
@@ -287,12 +281,6 @@ int getPDDouble(int argc, char** argv) {
   while ((c = getopt_long(argc,argv,optstring,long_options,
 			  &option_index)) != -1) 
     switch(c) {
-    case 'f':
-      write_to_fits = true;
-      break;
-    case '8':
-      write_as_hdf5 = true;
-      break;
     case 'H':
       histogram = true;
       break;
@@ -361,8 +349,6 @@ int getPDDouble(int argc, char** argv) {
     std::cerr << "Invalid noise level in band 2: must be >= 0.0" << std::endl;
     return 1;
   }
-  if (write_as_hdf5 && write_to_fits)
-    std::cout << "WARNING: will only write as HDF5, not as FITS" << std::endl;
   if (writeR && rfile.empty()) {
     std::cout << "Requested R be written to empty filename" << std::endl;
     return 1;
@@ -450,14 +436,19 @@ int getPDDouble(int argc, char** argv) {
     }    
     pfactory.getPD(sigma1, sigma2, pd, getLog);
 
-    //Write it
-    if (verbose) std::cout << "Writing P(D) to file " << outputfile 
-			   << std::endl;
-    if (write_as_hdf5) {
+    // Write PD
+    utility::outfiletype oft = utility::getOutputFileType(outputfile);
+    if (oft == utility::HDF5 || oft == utility::UNKNOWN) {
+      if (verbose) std::cout << "Writing P(D) to file " << outputfile 
+			     << " as HDF5" << std::endl;
       pd.writeToHDF5(outputfile);
-    } else if (write_to_fits) {
+    } else if (oft == utility::FITS) {
+      if (verbose) std::cout << "Writing P(D) to file " << outputfile 
+			     << " as FITS" << std::endl;
       pd.writeToFits(outputfile);
-    } else {
+    } else if (oft == utility::TXT) {
+      if (verbose) std::cout << "Writing P(D) to file " << outputfile 
+			     << " as text" << std::endl;
       std::ofstream ofs(outputfile.c_str());
       if (!ofs) {
 	std::cerr << "Error opening output file: " << outputfile
@@ -466,11 +457,16 @@ int getPDDouble(int argc, char** argv) {
       }
       ofs << pd;
       ofs.close();
+    } else {
+      std::cerr << "Unsupported output file type for " << outputfile
+		<< std::endl;
+      return 128;
     }
 
-    // Write R
+    // Write R as HDF5
     if (writeR) {
-      if (verbose) std::cout << "Writing R to: " << rfile << std::endl;
+      if (verbose) std::cout << "Writing R to: " << rfile 
+			     << " as HDF5" << std::endl;
       pfactory.writeRToHDF5(rfile);
     }
 
@@ -508,8 +504,8 @@ int main( int argc, char** argv ) {
       std::cerr << "NAME" << std::endl;
       std::cerr << "\tpofd_affine_getPD -- get the PD for a number counts "
 		<< "model. Both" << std::endl;
-      std::cerr << "\t one-dimensional and two-dimensional models are supported."
-		<< std::endl;
+      std::cerr << "\t one-dimensional and two-dimensional models are "
+		<< "supported." << std::endl;
       std::cerr << std::endl;
       std::cerr << "SYNOPSIS" << std::endl;
       std::cerr << "\tEither" << std::endl;
@@ -568,6 +564,11 @@ int main( int argc, char** argv ) {
       std::cerr << "\tknotpos value.  The sigmas and offsets are in log space."
 		<< std::endl;
       std::cerr << std::endl;
+      std::cerr << "\tThe format of outputfile is controlled by the file"
+		<< " extension," << std::endl;
+      std::cerr << "\twith HDF5, FITS and text supported.  The default is "
+		<< "HDF5." << std::endl;
+      std::cerr << std::endl;
       std::cerr << "\tbeamfile gives the name of a FITS file containing the "
 		<< "beam" << std::endl;
       std::cerr << "\tin the 1D case, and beamfile1, beamfile2 give the beam "
@@ -586,11 +587,6 @@ int main( int argc, char** argv ) {
       std::cerr << "OPTIONS" << std::endl;
       std::cerr << "\t-d, --double" << std::endl;
       std::cerr << "\t\tUse the 2D model." << std::endl;
-      std::cerr << "\t-f, --fits" << std::endl;
-      std::cerr << "\t\tWrite the output as a FITS file." << std::endl;
-      std::cerr << "\t--hdf5" << std::endl;
-      std::cerr << "\t\tWrite as HDF5 instead of FITS or text."
-		<< std::endl;
       std::cerr << "\t-H, --histogram" << std::endl;
       std::cerr << "\t\tUse beam histogramming." << std::endl;
       std::cerr << "\t-l, --log" << std::endl;

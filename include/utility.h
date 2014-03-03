@@ -11,6 +11,12 @@
 */
 namespace utility {
 
+  /*! \brief Output file types */
+  enum outfiletype { UNKNOWN=0, TXT=1, FITS=2, HDF5=3 };
+
+  /*! \brief Determine file type from extension */
+  outfiletype getOutputFileType(const std::string& str);
+
   /*! \brief Break input string up into words breaking on spaces */
   void stringwords(const std::string &ins,
 		   std::vector<std::string> &words);

@@ -25,12 +25,11 @@ static struct option long_options[] = {
   {"double",no_argument, 0, 'd'},
   {"verbose",no_argument, 0, 'v'},
   {"version",no_argument, 0, 'V'}, //Below here, not parsed in main routine
-  {"hdf5", no_argument, 0, '1'},
   {"histogram", no_argument, 0, 'H'},
   {"nhist", required_argument, 0, 'n'},
   {0, 0, 0, 0}
 };
-char optstring[] = "dh1Hn:vV";
+char optstring[] = "dhHn:vV";
 
 //One-D version
 int getRSingle( int argc, char** argv ) {
@@ -38,24 +37,20 @@ int getRSingle( int argc, char** argv ) {
   std::string initfile; //Init file (having model we want)
   std::string outfile; //File to write to
   std::string psffile; //Beam file
-  bool histogram, verbose, write_as_hdf5; 
+  bool histogram, verbose;
   double minflux, maxflux;
   unsigned int nflux, nhist;
 
   histogram     = false;
   verbose       = false;
-  write_as_hdf5 = false;
   nhist         = 120;
 
   int c;
   int option_index = 0;
   optind = 1; //!< Reset parse
-  while ((c = getopt_long(argc,argv,optstring,long_options,
+  while ((c = getopt_long(argc, argv, optstring, long_options,
 			  &option_index)) != -1) 
     switch(c) {
-    case '1':
-      write_as_hdf5 = true;
-      break;
     case 'H':
       histogram = true;
       break;
@@ -114,7 +109,9 @@ int getRSingle( int argc, char** argv ) {
 
     model.getR(nflux, fluxes, bm, R);
     
-    if (write_as_hdf5) {
+    // Write
+    utility::outfiletype oft = utility::getOutputFileType(outfile);
+    if (oft == utility::HDF5 || oft == utility::UNKNOWN) {
       if (verbose) std::cout << "Writing to: " << outfile 
 			     << " as HDF5" << std::endl;
       hid_t file_id;
@@ -160,9 +157,10 @@ int getRSingle( int argc, char** argv ) {
       H5Sclose(mems_id);
 
       H5Fclose(file_id);
-    } else {
+    } else if (oft == utility::TXT) {
       // Text file
-      if (verbose) std::cout << "Writing to: " << outfile << std::endl;
+      if (verbose) std::cout << "Writing to: " << outfile 
+			     << " as text" << std::endl;
       FILE *fp;
       fp = fopen(outfile.c_str(), "w");
       if (!fp) {
@@ -173,6 +171,9 @@ int getRSingle( int argc, char** argv ) {
       for (unsigned int i = 0; i < nflux; ++i) 
 	fprintf(fp, "%12.6e   %15.9e\n", fluxes[i], R[i]);
       fclose(fp);
+    } else if (oft == utility::FITS) {
+      std::cerr << "Output to FITS is not supported." << std::endl;
+      return 256;
     }
     delete[] fluxes;
     delete[] R; 
@@ -195,24 +196,20 @@ int getRDouble(int argc, char** argv) {
   std::string initfile; //Init file (having model we want)
   std::string outfile; //File to write to
   std::string psffile1, psffile2; //Beam file
-  bool histogram, verbose, write_as_hdf5;
+  bool histogram, verbose;
   double minflux1, maxflux1, minflux2, maxflux2;
   unsigned int nflux1, nflux2, nhist;
 
   histogram     = false;
   verbose       = false;
-  write_as_hdf5 = false;
   nhist         = 150;
 
   int c;
   int option_index = 0;
   optind = 1; //Reset parse
-  while ( ( c = getopt_long(argc,argv,optstring,long_options,
-			    &option_index ) ) != -1 ) 
+  while ((c = getopt_long(argc, argv, optstring, long_options,
+			  &option_index)) != -1) 
     switch(c) {
-    case '1':
-      write_as_hdf5 = true;
-      break;
     case 'H':
       histogram = true;
       break;
@@ -304,7 +301,9 @@ int getRDouble(int argc, char** argv) {
       CLOCKS_PER_SEC << "s" << std::endl;
 #endif
 
-    if (write_as_hdf5) {
+    // Write
+    utility::outfiletype oft = utility::getOutputFileType(outfile);
+    if (oft == utility::HDF5 || oft == utility::UNKNOWN) {
       if (verbose) std::cout << "Writing to: " << outfile 
 			     << " as HDF5" << std::endl;
       hid_t file_id;
@@ -366,9 +365,10 @@ int getRDouble(int argc, char** argv) {
       H5Sclose(mems_id);
 
       H5Fclose(file_id);
-    } else {
+    } else if (oft == utility::TXT) {
       // Text file
-      if (verbose) std::cout << "Writing to: " << outfile << std::endl;
+      if (verbose) std::cout << "Writing to: " << outfile 
+			     << " as text" << std::endl;
 
       FILE *fp;
       fp = fopen( outfile.c_str(),"w");
@@ -385,6 +385,9 @@ int getRDouble(int argc, char** argv) {
 	fprintf(fp, "%13.7e\n", R[nflux2*i+nflux2-1]);
       }
       fclose(fp);
+    } else if (oft == utility::FITS) {
+      std::cerr << "Output to FITS is not supported." << std::endl;
+      return 256;
     }
 
     delete[] fluxes1;
@@ -501,8 +504,11 @@ int main( int argc, char** argv ) {
 		<< "bands" << std::endl;
       std::cerr << "\tin the 2D case." << std::endl;
       std::cerr << std::endl;
-      std::cerr << "\tIn both cases the output R is written to outfile as"
-		<< " text." << std::endl;
+      std::cerr << "\tIn both cases the output R is written to outfile.  The"
+		<< " file" << std::endl;
+      std::cerr << "\tformat is based on the extension of outfile, with HDF5"
+		<< std::endl;
+      std::cerr << "\tas the default." << std::endl;
       std::cerr << std::endl;
       std::cerr << "OPTIONS" << std::endl;
       std::cerr << "\t-d, --double" << std::endl;
