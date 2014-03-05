@@ -62,6 +62,12 @@
 		  stdev expressed in the same flux and area units as the model.
 		  So if your model dN/dS is in Jy^-1 deg^-2,
 		  then your CFIRB prior should be in Jy deg^-2
+   poissonprior=  mean stdev
+                  This activates a Gaussian prior on the Poisson noise.
+		  It has a mean of mean and a standard deviation 
+		  stdev expressed in the same flux and area units as the model.
+		  So if your model dN/dS is in Jy^-1 deg^-2,
+		  then your Poisson prior should be in Jy^2 deg^-2
    wisdom_file= filename
                   Uses filename as a FFTW wisdom file		  
    verbose=     bool
@@ -102,6 +108,9 @@ struct specFile {
   bool has_cfirbprior; //!< Is cfirb prior on
   double cfirbprior_mean; //!< Mean value of prior
   double cfirbprior_stdev; //!< Stdev of prior
+  bool has_poissonprior; //!< Is poisson prior on
+  double poissonprior_mean; //!< Mean value of prior
+  double poissonprior_stdev; //!< Stdev of prior
   bool has_wisdom_file; //!< Has FFTW wisdom file
   std::string wisdom_file; //!< Name of wisdom file
   unsigned int verbosity; //!< Verbosity level

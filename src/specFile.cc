@@ -36,6 +36,9 @@ void specFile::init() {
   has_cfirbprior = false;
   cfirbprior_mean = 0.0;
   cfirbprior_stdev = 0.0;
+  has_poissonprior = false;
+  poissonprior_mean = 0.0;
+  poissonprior_stdev = 0.0;
   has_wisdom_file = false;
   wisdom_file.clear();
   verbosity = 0;
@@ -282,6 +285,32 @@ void specFile::readFile(const std::string& flname) {
 	throw affineExcept("specFile", "readFile", errstr.str());
       }
       cfirbprior_stdev = dblval;
+
+    } else if (words[0] == "poissonprior") {
+
+      if (words.size() < 3) {
+	errstr << "poissonprior line doesn't have right number of entries: "
+	       << line;
+	throw affineExcept("specFile", "readFile", errstr.str());
+      }
+
+      has_poissonprior = true;
+
+      str.str(words[1]); str.clear(); str >> dblval;
+      if (dblval <= 0.0) {
+	errstr << "Invalid (non positive) poisson prior mean " << dblval
+	       << " from line: " << line;
+	throw affineExcept("specFile", "readFile", errstr.str());
+      }
+      poissonprior_mean = dblval;
+
+      str.str(words[2]); str.clear(); str >> dblval;
+      if (dblval <= 0.0) {
+	errstr << "Invalid (non positive) poisson prior stdev " << dblval
+	       << " from line: " << line;
+	throw affineExcept("specFile", "readFile", errstr.str());
+      }
+      poissonprior_stdev = dblval;
 
     } else if (words[0] == "wisdom_file") {
       if (words.size() < 2) {

@@ -49,6 +49,12 @@ void specFileDouble::init() {
   has_cfirbprior2 = false;
   cfirbprior_mean2 = 0.0;
   cfirbprior_stdev2 = 0.0;
+  has_poissonprior1 = false;
+  poissonprior_mean1 = 0.0;
+  poissonprior_stdev1 = 0.0;
+  has_poissonprior2 = false;
+  poissonprior_mean2 = 0.0;
+  poissonprior_stdev2 = 0.0;
   has_wisdom_file = false;
   wisdom_file.clear();
   verbosity = 0;
@@ -266,6 +272,58 @@ void specFileDouble::readFile(const std::string& flname) {
 	throw affineExcept("specFileDouble", "readFile", errstr.str());
       }
       cfirbprior_stdev2 = dblval;
+
+    } else if (words[0] == "poissonprior1") {
+
+      if (words.size() < 3) {
+	errstr << "poissonprior1 line doesn't have right number of entries: "
+	       << line;
+	throw affineExcept("specFileDouble", "readFile", errstr.str());
+      }
+
+      has_poissonprior1 = true;
+
+      str.str(words[1]); str.clear(); str >> dblval;
+      if (dblval <= 0.0) {
+	errstr << "Invalid (non positive) poisson prior1 mean " << dblval
+	       << " from line: " << line;
+	throw affineExcept("specFileDouble", "readFile", errstr.str());
+      }
+      poissonprior_mean1 = dblval;
+
+      str.str(words[2]); str.clear(); str >> dblval;
+      if (dblval <= 0.0) {
+	errstr << "Invalid (non positive) poisson prior1 stdev " << dblval
+	       << " from line: " << line;
+	throw affineExcept("specFileDouble", "readFile", errstr.str());
+      }
+      poissonprior_stdev1 = dblval;
+
+    } else if (words[0] == "poissonprior2") {
+
+      if (words.size() < 3) {
+	errstr << "poissonprior2 line doesn't have right number of entries: "
+	       << line;
+	throw affineExcept("specFileDouble", "readFile", errstr.str());
+      }
+
+      has_poissonprior2 = true;
+
+      str.str(words[1]); str.clear(); str >> dblval;
+      if (dblval <= 0.0) {
+	errstr << "Invalid (non positive) poisson prior2 mean " << dblval
+	       << " from line: " << line;
+	throw affineExcept("specFileDouble", "readFile", errstr.str());
+      }
+      poissonprior_mean2 = dblval;
+
+      str.str(words[2]); str.clear(); str >> dblval;
+      if (dblval <= 0.0) {
+	errstr << "Invalid (non positive) poisson prior2 stdev " << dblval
+	       << " from line: " << line;
+	throw affineExcept("specFileDouble", "readFile", errstr.str());
+      }
+      poissonprior_stdev2 = dblval;
 
     } else if (words[0] == "bin_data") {
       if (words.size() < 2) {

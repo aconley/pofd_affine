@@ -75,6 +75,14 @@
 		  then your CFIRB prior should be in Jy deg^-2
    cfirbprior2= mean stdev
                   Same as cfirbprior1 but in band 2
+   poissonprior1=  mean stdev
+                  This activates a Gaussian prior on the Poisson noise in
+		  band 1. It has a mean of mean and a standard deviation 
+		  stdev expressed in the same flux and area units as 
+		  the model.  So if your model dN/dS is in Jy^-1 deg^-2,
+		  then your Poisson prior should be in Jy^2 deg^-2
+   poissonprior2= mean stdev
+                  Same as poissonprior1 but in band 2
    wisdom_file= filename
                   Uses filename as a FFTW wisdom file		  
    verbose=     bool
@@ -124,6 +132,12 @@ struct specFileDouble {
   bool has_cfirbprior2; //!< Is cfirb prior on, band 2
   double cfirbprior_mean2; //!< Mean value of prior, band 2
   double cfirbprior_stdev2; //!< Stdev of prior, band 2
+  bool has_poissonprior1; //!< Is poisson prior on, band 1
+  double poissonprior_mean1; //!< Mean value of prior, band 1
+  double poissonprior_stdev1; //!< Stdev of prior, band 1
+  bool has_poissonprior2; //!< Is poisson prior on, band 2
+  double poissonprior_mean2; //!< Mean value of prior, band 2
+  double poissonprior_stdev2; //!< Stdev of prior, band 2
   bool has_wisdom_file; //!< Has FFTW wisdom file
   std::string wisdom_file; //!< Name of wisdom file
   unsigned int verbosity; //!< Verbosity level

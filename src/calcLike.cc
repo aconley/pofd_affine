@@ -506,11 +506,13 @@ calcLike::calcLike(unsigned int FFTSIZE, unsigned int NINTERP,
   fftsize(FFTSIZE), ninterp(NINTERP), bin_data(BINNED),
   nbins(NBINS), has_cfirb_prior(false), cfirb_prior_mean(0.0),
   cfirb_prior_sigma(0.0), has_sigma_prior(false), sigma_prior_width(0.0),
-  verbose(false) {
+  has_poisson_prior(false), poisson_prior_mean(0.0),
+  poisson_prior_sigma(0.0), verbose(false) {
 
   nbeamsets = 0;
   beamsets  = NULL;
   mean_flux_per_area = std::numeric_limits<double>::quiet_NaN();
+  mean_fluxsq_per_area = std::numeric_limits<double>::quiet_NaN();
 }
 
 calcLike::~calcLike() {
@@ -703,6 +705,18 @@ void calcLike::setCFIRBPrior(double mn, double sg) {
 }
 
 /*!
+  \param[in] mn Mean value of Poisson prior 
+  \param[in] sg Sigma of Poisson prior
+  
+  The prior is assumed Gaussian; the prior is on \int S^2 dN/dS dS
+*/
+void calcLike::setPoissonPrior(double mn, double sg) {
+  has_poisson_prior = true;
+  poisson_prior_mean = mn;
+  poisson_prior_sigma = sg;
+}
+
+/*!
   \param[in] p Parameters to evaluate
   \param[out] pars_invalid True if parameters were not valid,
    otherwise False
@@ -739,8 +753,9 @@ double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
 
   if (pars_invalid) return LogLike; //!< Not much point in doing the priors...
 
-  //Add on cfirb prior and sigma prior if needed
-  //Only do this once for all data sets so as not to multi-count the prior
+  // Add on cfirb prior, poisson prior, and sigma priors if needed
+  //  Only do this once for all data sets so as not to multi-count the prior
+  // Sigma prior
   if (has_sigma_prior) {
     //Assume the mean is always at 1 -- otherwise, the
     // user would have specified different noise level
@@ -749,13 +764,23 @@ double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
       0.5*val*val;
   }
 
+  // CFIRB prior (<S>)
   // Compute this as bonus param, even if we aren't using the CFIRB
   //  prior; note that this is invalid if the params were invalid,
   //  but pofdMCMC::fillBonusParams won't be called in that case anyways.
   mean_flux_per_area = model.getFluxPerArea();
   if (has_cfirb_prior) {
     double val = (cfirb_prior_mean - mean_flux_per_area) / cfirb_prior_sigma;
-    LogLike -=  half_log_2pi + log(cfirb_prior_sigma) + 0.5*val*val;
+    LogLike -=  half_log_2pi + log(cfirb_prior_sigma) + 0.5 * val * val;
+  }
+
+  // Poisson prior (<S^2>)
+  // As for CFIRB prior -- store as bonus
+  mean_fluxsq_per_area = model.getFluxSqPerArea();
+  if (has_poisson_prior) {
+    double val = (poisson_prior_mean - mean_fluxsq_per_area) / 
+      poisson_prior_sigma;
+    LogLike -=  half_log_2pi + log(poisson_prior_sigma) + 0.5 * val * val;
   }
   return LogLike;
 }
@@ -806,7 +831,7 @@ void calcLike::writeToHDF5Handle(hid_t objid) const {
     H5Aclose(att_id);
   }
 
-  // CFIRB PRIOR
+  // CFIRB prior
   att_id = H5Acreate2(objid, "has_cfirb_prior", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   bl = static_cast<hbool_t>(has_cfirb_prior);
@@ -823,7 +848,24 @@ void calcLike::writeToHDF5Handle(hid_t objid) const {
     H5Aclose(att_id);
   }
 
-  // SIGMA PRIOR
+  // Poisson prior
+  att_id = H5Acreate2(objid, "has_poisson_prior", H5T_NATIVE_HBOOL,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  bl = static_cast<hbool_t>(has_poisson_prior);
+  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
+  H5Aclose(att_id);
+  if (has_poisson_prior) {
+    att_id = H5Acreate2(objid, "poisson_prior_mean", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    H5Awrite(att_id, H5T_NATIVE_DOUBLE, &poisson_prior_mean);
+    H5Aclose(att_id);
+    att_id = H5Acreate2(objid, "poisson_prior_sigma", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    H5Awrite(att_id, H5T_NATIVE_DOUBLE, &poisson_prior_sigma);
+    H5Aclose(att_id);
+  }
+
+  // Sigma prior
   att_id = H5Acreate2(objid, "has_sigma_prior", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   bl = static_cast<hbool_t>(has_sigma_prior);
@@ -881,6 +923,16 @@ void calcLike::sendSelf(MPI_Comm comm, int dest) const {
 	     pofd_mcmc::CLSENDCFIRBPRIORSIGMA, comm);
   }
 
+  //Poisson prior
+  MPI_Send(const_cast<bool*>(&has_poisson_prior), 1, MPI::BOOL, dest,
+	   pofd_mcmc::CLSENDHASPOISSONPRIOR, comm);
+  if (has_poisson_prior) {
+    MPI_Send(const_cast<double*>(&poisson_prior_mean), 1, MPI_DOUBLE, dest,
+	     pofd_mcmc::CLSENDPOISSONPRIORMEAN, comm);
+    MPI_Send(const_cast<double*>(&poisson_prior_sigma), 1, MPI_DOUBLE, dest,
+	     pofd_mcmc::CLSENDPOISSONPRIORSIGMA, comm);
+  }
+
   //Sigma prior
   MPI_Send(const_cast<bool*>(&has_sigma_prior), 1, MPI::BOOL, dest,
 	   pofd_mcmc::CLSENDHASSIGMAPRIOR, comm);
@@ -897,13 +949,13 @@ void calcLike::sendSelf(MPI_Comm comm, int dest) const {
 void calcLike::recieveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
 
-  //Transform
+  // Transform
   MPI_Recv(&fftsize, 1, MPI_UNSIGNED, src, pofd_mcmc::CLSENDFFTSIZE,
 	   comm, &Info);
   MPI_Recv(&ninterp, 1, MPI_UNSIGNED, src, pofd_mcmc::CLSENDNINTERP,
 	   comm, &Info);
 
-  //Data
+  // Data
   unsigned int newnbeamsets;
   MPI_Recv(&newnbeamsets, 1, MPI_UNSIGNED, src, pofd_mcmc::CLSENDNBEAM,
 	   comm, &Info);
@@ -925,10 +977,10 @@ void calcLike::recieveCopy(MPI_Comm comm, int src) {
   MPI_Recv(&nbins, 1, MPI_UNSIGNED, src, pofd_mcmc::CLSENDNBINS,
 	   comm, &Info);
 
-  //Model
+  // Model
   model.recieveCopy(comm, src);
 
-  //CFIRB prior
+  // CFIRB prior
   MPI_Recv(&has_cfirb_prior, 1, MPI::BOOL, src, pofd_mcmc::CLSENDHASCFIRBPRIOR,
 	   comm, &Info);
   if (has_cfirb_prior) {
@@ -937,7 +989,18 @@ void calcLike::recieveCopy(MPI_Comm comm, int src) {
     MPI_Recv(&cfirb_prior_sigma, 1, MPI_DOUBLE, src,
 	     pofd_mcmc::CLSENDCFIRBPRIORSIGMA, comm, &Info);
   }
-  //Sigma prior
+
+  // Poisson prior
+  MPI_Recv(&has_poisson_prior, 1, MPI::BOOL, src, 
+	   pofd_mcmc::CLSENDHASPOISSONPRIOR, comm, &Info);
+  if (has_poisson_prior) {
+    MPI_Recv(&poisson_prior_mean, 1, MPI_DOUBLE, src,
+	     pofd_mcmc::CLSENDPOISSONPRIORMEAN, comm, &Info);
+    MPI_Recv(&poisson_prior_sigma, 1, MPI_DOUBLE, src,
+	     pofd_mcmc::CLSENDPOISSONPRIORSIGMA, comm, &Info);
+  }
+
+  // Sigma prior
   MPI_Recv(&has_sigma_prior, 1, MPI::BOOL, src, 
 	   pofd_mcmc::CLSENDHASSIGMAPRIOR, comm, &Info);
   if (has_sigma_prior) 

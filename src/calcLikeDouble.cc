@@ -674,8 +674,11 @@ calcLikeDouble::calcLikeDouble(unsigned int FFTSIZE, unsigned int NEDGE,
   bin_data(BINNED), nbins(NBINS), 
   has_cfirb_prior1(false), cfirb_prior_mean1(0.0), cfirb_prior_sigma1(0.0), 
   has_cfirb_prior2(false), cfirb_prior_mean2(0.0), cfirb_prior_sigma2(0.0), 
-  has_sigma_prior1(false), sigma_prior_width1(0.0), has_sigma_prior2(false), 
-  sigma_prior_width2(0.0), verbose(false) {
+  has_sigma_prior1(false), sigma_prior_width1(0.0), 
+  has_sigma_prior2(false), sigma_prior_width2(0.0), 
+  has_poisson_prior1(false), poisson_prior_mean1(0.0), 
+  poisson_prior_sigma1(0.0), has_poisson_prior2(false), 
+  poisson_prior_mean2(0.0), poisson_prior_sigma2(0.0), verbose(false) {
 
   nbeamsets = 0;
   beamsets  = NULL;
@@ -910,6 +913,31 @@ void calcLikeDouble::setCFIRBPrior2(double mn, double sg) {
   cfirb_prior_sigma2 = sg;
 }
 
+
+/*!
+  \param[in] mn Mean value of Poisson prior, band 1
+  \param[in] sg Sigma of Poisson prior, band 1
+  
+  The prior is assumed Gaussian
+*/
+void calcLikeDouble::setPoissonPrior1(double mn, double sg) {
+  has_poisson_prior1   = true;
+  poisson_prior_mean1  = mn;
+  poisson_prior_sigma1 = sg;
+}
+
+/*!
+  \param[in] mn Mean value of Poisson prior, band 2
+  \param[in] sg Sigma of Poisson prior, band 2
+  
+  The prior is assumed Gaussian
+*/
+void calcLikeDouble::setPoissonPrior2(double mn, double sg) {
+  has_poisson_prior2   = true;
+  poisson_prior_mean2  = mn;
+  poisson_prior_sigma2 = sg;
+}
+
 /*!
   \param[in] ifile Object holding information from model initializaiton file
 */
@@ -940,7 +968,7 @@ double calcLikeDouble::getLogLike(const paramSet& p, bool& pars_invalid) const {
   //Do the datasets likelihood
   bool pinvalid;
   double sigmult1 = p[nmodelpars]; //Sigma multiplier is after knot values
-  double sigmult2 = p[nmodelpars+1];
+  double sigmult2 = p[nmodelpars + 1];
   pars_invalid = false;
   for (unsigned int i = 0; i < nbeamsets; ++i) {
     LogLike += beamsets[i].getLogLike(model, pinvalid, sigmult1, sigmult2, 
@@ -950,8 +978,9 @@ double calcLikeDouble::getLogLike(const paramSet& p, bool& pars_invalid) const {
 
   if (pars_invalid) return LogLike; //!< Not much point in doing the priors...
 
-  //Add on cfirb prior and sigma prior if needed
-  //Only do this once for all data sets so as not to multi-count the prior
+  // Add on priors if needed
+  //  Only do this once for all data sets so as not to multi-count the prior
+  // Sigma priors
   if (has_sigma_prior1) {
     //Assume the mean is always at 1 -- otherwise, the
     // user would have specified different noise level
@@ -963,15 +992,34 @@ double calcLikeDouble::getLogLike(const paramSet& p, bool& pars_invalid) const {
     LogLike -= half_log_2pi + log(sigma_prior_width2) + 0.5*val*val;
   }
 
+  // Compute mean flux per area values as bonus parameters, even
+  //  if the prior isn't active
+  // CFIRB (<S>) priors
+  mean_flux_per_area1 = model.getFluxPerArea(0);
+  mean_flux_per_area2 = model.getFluxPerArea(1);
   if (has_cfirb_prior1) {
-    double s_per_area = model.getFluxPerArea(0);
-    double val = (cfirb_prior_mean1 - s_per_area) / cfirb_prior_sigma1;
+    double val = (cfirb_prior_mean1 - mean_flux_per_area1) / 
+      cfirb_prior_sigma1;
     LogLike -=  half_log_2pi + log(cfirb_prior_sigma1) + 0.5*val*val;
   }
   if (has_cfirb_prior2) {
-    double s_per_area = model.getFluxPerArea(1);
-    double val = (cfirb_prior_mean2 - s_per_area) / cfirb_prior_sigma2;
+    double val = (cfirb_prior_mean2 - mean_flux_per_area2) / 
+      cfirb_prior_sigma2;
     LogLike -=  half_log_2pi + log(cfirb_prior_sigma2) + 0.5*val*val;
+  }
+
+  // Poisson priors, similar to CFIRB, but <S^2>.  Also bonus params
+  mean_fluxsq_per_area1 = model.getFluxSqPerArea(0);
+  mean_fluxsq_per_area2 = model.getFluxSqPerArea(1);
+  if (has_poisson_prior1) {
+    double val = (poisson_prior_mean1 - mean_fluxsq_per_area1) / 
+      poisson_prior_sigma1;
+    LogLike -=  half_log_2pi + log(poisson_prior_sigma1) + 0.5*val*val;
+  }
+  if (has_poisson_prior2) {
+    double val = (poisson_prior_mean2 - mean_fluxsq_per_area2) / 
+      poisson_prior_sigma2;
+    LogLike -=  half_log_2pi + log(poisson_prior_sigma2) + 0.5*val*val;
   }
 
   return LogLike;
@@ -1012,13 +1060,13 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
   H5Aclose(att_id);
 
-  // NBEAMSETS
+  // Nbeamsets
   att_id = H5Acreate2(objid, "nbeamsets", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nbeamsets);
   H5Aclose(att_id);
 
-  // DATA BINNING
+  // Data binning
   att_id = H5Acreate2(objid, "bin_data", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   bl = static_cast<hbool_t>(bin_data);
@@ -1031,7 +1079,7 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
     H5Aclose(att_id);
   }
 
-  // CFIRB PRIOR1
+  // CFIRB prior 1
   att_id = H5Acreate2(objid, "has_cfirb_prior1", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   bl = static_cast<hbool_t>(has_cfirb_prior1);
@@ -1048,7 +1096,7 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
     H5Aclose(att_id);
   }
 
-  // CFIRB PRIOR2
+  // CFIRB prior 2
   att_id = H5Acreate2(objid, "has_cfirb_prior2", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   bl = static_cast<hbool_t>(has_cfirb_prior2);
@@ -1065,7 +1113,41 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
     H5Aclose(att_id);
   }
 
-  // SIGMA PRIOR1
+  // Poisson prior 1
+  att_id = H5Acreate2(objid, "has_poisson_prior1", H5T_NATIVE_HBOOL,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  bl = static_cast<hbool_t>(has_poisson_prior1);
+  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
+  H5Aclose(att_id);
+  if (has_poisson_prior1) {
+    att_id = H5Acreate2(objid, "poisson_prior_mean1", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    H5Awrite(att_id, H5T_NATIVE_DOUBLE, &poisson_prior_mean1);
+    H5Aclose(att_id);
+    att_id = H5Acreate2(objid, "poisson_prior_sigma1", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    H5Awrite(att_id, H5T_NATIVE_DOUBLE, &poisson_prior_sigma1);
+    H5Aclose(att_id);
+  }
+
+  // Poisson prior 2
+  att_id = H5Acreate2(objid, "has_poisson_prior2", H5T_NATIVE_HBOOL,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  bl = static_cast<hbool_t>(has_poisson_prior2);
+  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
+  H5Aclose(att_id);
+  if (has_poisson_prior2) {
+    att_id = H5Acreate2(objid, "poisson_prior_mean2", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    H5Awrite(att_id, H5T_NATIVE_DOUBLE, &poisson_prior_mean1);
+    H5Aclose(att_id);
+    att_id = H5Acreate2(objid, "poisson_prior_sigma2", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    H5Awrite(att_id, H5T_NATIVE_DOUBLE, &poisson_prior_sigma2);
+    H5Aclose(att_id);
+  }
+
+  // SIGMA prior 2
   att_id = H5Acreate2(objid, "has_sigma_prior1", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   bl = static_cast<hbool_t>(has_sigma_prior1);
@@ -1078,7 +1160,7 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
     H5Aclose(att_id);
   }
 
-  // SIGMA PRIOR2
+  // SIGMA prior 1
   att_id = H5Acreate2(objid, "has_sigma_prior2", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   bl = static_cast<hbool_t>(has_sigma_prior2);
@@ -1102,7 +1184,7 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   \param[in] dest Destination of messages
 */
 void calcLikeDouble::sendSelf(MPI_Comm comm, int dest) const { 
-  //Transform
+  // Transform
   MPI_Send(const_cast<unsigned int*>(&fftsize), 1, MPI_UNSIGNED, dest,
 	   pofd_mcmc::CLDSENDFFTSIZE, comm);
   MPI_Send(const_cast<bool*>(&edgeInteg), 1, MPI::BOOL, dest,
@@ -1110,7 +1192,7 @@ void calcLikeDouble::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<unsigned int*>(&nedge), 1, MPI_UNSIGNED, dest,
 	   pofd_mcmc::CLDSENDNEDGE, comm);
 
-  //Data
+  // Data
   MPI_Send(const_cast<unsigned int*>(&nbeamsets), 1, MPI_UNSIGNED, dest,
 	   pofd_mcmc::CLDSENDNBEAM, comm);
   if (nbeamsets > 0) 
@@ -1124,10 +1206,10 @@ void calcLikeDouble::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<unsigned int*>(&nbins), 1, MPI_UNSIGNED, dest,
 	   pofd_mcmc::CLDSENDNBINS, comm);
 
-  //Model
+  // Model
   model.sendSelf(comm, dest);
 
-  //CFIRB prior
+  // CFIRB priors
   MPI_Send(const_cast<bool*>(&has_cfirb_prior1), 1, MPI::BOOL, dest,
 	   pofd_mcmc::CLDSENDHASCFIRBPRIOR1, comm);
   if (has_cfirb_prior1) {
@@ -1142,6 +1224,24 @@ void calcLikeDouble::sendSelf(MPI_Comm comm, int dest) const {
     MPI_Send(const_cast<double*>(&cfirb_prior_mean2), 1, MPI_DOUBLE, dest,
 	     pofd_mcmc::CLDSENDCFIRBPRIORMEAN2, comm);
     MPI_Send(const_cast<double*>(&cfirb_prior_sigma2), 1, MPI_DOUBLE, dest,
+	     pofd_mcmc::CLDSENDCFRIBPRIORSIGMA2, comm);
+  }
+
+  // Poisson priors
+  MPI_Send(const_cast<bool*>(&has_poisson_prior1), 1, MPI::BOOL, dest,
+	   pofd_mcmc::CLDSENDHASPOISSONPRIOR1, comm);
+  if (has_poisson_prior1) {
+    MPI_Send(const_cast<double*>(&poisson_prior_mean1), 1, MPI_DOUBLE, dest,
+	     pofd_mcmc::CLDSENDPOISSONPRIORMEAN1, comm);
+    MPI_Send(const_cast<double*>(&poisson_prior_sigma1), 1, MPI_DOUBLE, dest,
+	     pofd_mcmc::CLDSENDCFRIBPRIORSIGMA1, comm);
+  }
+  MPI_Send(const_cast<bool*>(&has_poisson_prior2), 1, MPI::BOOL, dest,
+	   pofd_mcmc::CLDSENDHASPOISSONPRIOR2, comm);
+  if (has_poisson_prior2) {
+    MPI_Send(const_cast<double*>(&poisson_prior_mean2), 1, MPI_DOUBLE, dest,
+	     pofd_mcmc::CLDSENDPOISSONPRIORMEAN2, comm);
+    MPI_Send(const_cast<double*>(&poisson_prior_sigma2), 1, MPI_DOUBLE, dest,
 	     pofd_mcmc::CLDSENDCFRIBPRIORSIGMA2, comm);
   }
 
@@ -1166,7 +1266,7 @@ void calcLikeDouble::sendSelf(MPI_Comm comm, int dest) const {
 void calcLikeDouble::recieveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
 
-  //Transform
+  // Transform
   MPI_Recv(&fftsize, 1, MPI_UNSIGNED, src, pofd_mcmc::CLDSENDFFTSIZE,
 	   comm, &Info);
   MPI_Recv(&edgeInteg, 1, MPI::BOOL, src, pofd_mcmc::CLDSENDEDGEINTEG,
@@ -1174,7 +1274,7 @@ void calcLikeDouble::recieveCopy(MPI_Comm comm, int src) {
   MPI_Recv(&nedge, 1, MPI_UNSIGNED, src, pofd_mcmc::CLDSENDNEDGE,
 	   comm, &Info);
 
-  //Data
+  // Data
   unsigned int newnbeamsets;
   MPI_Recv(&newnbeamsets, 1, MPI_UNSIGNED, src, pofd_mcmc::CLDSENDNBEAM,
 	   comm, &Info);
@@ -1196,10 +1296,10 @@ void calcLikeDouble::recieveCopy(MPI_Comm comm, int src) {
   MPI_Recv(&nbins, 1, MPI_UNSIGNED, src, pofd_mcmc::CLDSENDNBINS,
 	   comm, &Info);
 
-  //Model
+  // Model
   model.recieveCopy(comm, src);
 
-  //CFIRB prior
+  // CFIRB priors
   MPI_Recv(&has_cfirb_prior1, 1, MPI::BOOL, src, 
 	   pofd_mcmc::CLDSENDHASCFIRBPRIOR1, comm, &Info);
   if (has_cfirb_prior1) {
@@ -1217,7 +1317,25 @@ void calcLikeDouble::recieveCopy(MPI_Comm comm, int src) {
 	     pofd_mcmc::CLDSENDCFRIBPRIORSIGMA2, comm, &Info);
   }
 
-  //Sigma prior
+  // Poisson priors
+  MPI_Recv(&has_poisson_prior1, 1, MPI::BOOL, src, 
+	   pofd_mcmc::CLDSENDHASPOISSONPRIOR1, comm, &Info);
+  if (has_poisson_prior1) {
+    MPI_Recv(&poisson_prior_mean1, 1, MPI_DOUBLE, src,
+	     pofd_mcmc::CLDSENDPOISSONPRIORMEAN1, comm, &Info);
+    MPI_Recv(&poisson_prior_sigma1, 1, MPI_DOUBLE, src,
+	     pofd_mcmc::CLDSENDCFRIBPRIORSIGMA1, comm, &Info);
+  }
+  MPI_Recv(&has_poisson_prior2, 1, MPI::BOOL, src, 
+	   pofd_mcmc::CLDSENDHASPOISSONPRIOR2, comm, &Info);
+  if (has_poisson_prior2) {
+    MPI_Recv(&poisson_prior_mean2, 1, MPI_DOUBLE, src,
+	     pofd_mcmc::CLDSENDPOISSONPRIORMEAN2, comm, &Info);
+    MPI_Recv(&poisson_prior_sigma2, 1, MPI_DOUBLE, src,
+	     pofd_mcmc::CLDSENDCFRIBPRIORSIGMA2, comm, &Info);
+  }
+
+  // Sigma prior
   MPI_Recv(&has_sigma_prior1, 1, MPI::BOOL, src,
 	   pofd_mcmc::CLDSENDHASSIGMAPRIOR1, comm, &Info);
   if (has_sigma_prior1) 

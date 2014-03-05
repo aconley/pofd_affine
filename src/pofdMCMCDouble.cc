@@ -52,7 +52,7 @@ bool pofdMCMCDouble::initChainsMaster() {
 
   //Model initialization file
   ifile.readFile(initfile, true, true);
-  unsigned int ntot = ifile.getNTot();
+  ntot = ifile.getNTot();
   if (ntot == 0)
     throw affineExcept("pofdMCMCDouble", "initChainsMaster",
 		       "No model parameters read in");
@@ -63,9 +63,11 @@ bool pofdMCMCDouble::initChainsMaster() {
       throw affineExcept("pofdMCMCDouble", "initChainsMaster",
 			 "No data files read");
 
-  //Number of parameters is number of knots (ntot) + 2 for the
-  // sigma in each band -- although some may be fixed
-  unsigned int npar = ntot + 2;
+  //Number of parameters is number of knots (ntot) 
+  // + 2 for the sigmas in each band -- although some may be fixed
+  // + 2 for the bonus mean flux per area
+  // + 2 for the bonus mean flux^2 per area
+  unsigned int npar = ntot + 6;
   setNParams(npar);
 
   //Set up parameter names
@@ -90,12 +92,18 @@ bool pofdMCMCDouble::initChainsMaster() {
   }
   setParamName(ntot, "SigmaMult1");
   setParamName(ntot + 1, "SigmaMult2");
+  setParamName(ntot + 2, "<S1>area");
+  setParamName(ntot + 3, "<S2>area");
+  setParamName(ntot + 4, "<S1^2>area");
+  setParamName(ntot + 5, "<S2^2>area");
 
   // Set which parameters are fixed
   for (unsigned int i = 0; i < ntot; ++i)
     if (ifile.isKnotFixed(i)) this->fixParam(i);
   if (!spec_info.fit_sigma1) this->fixParam(ntot);
   if (!spec_info.fit_sigma2) this->fixParam(ntot + 1);
+  for (unsigned int i = ntot + 2; i < npar; ++i)
+    this->setParamBonus(i);
 
   //Initialize likelihood information -- priors, data, etc.
   likeSet.setPositions(ifile);
@@ -117,6 +125,12 @@ bool pofdMCMCDouble::initChainsMaster() {
   if (spec_info.has_cfirbprior2)
     likeSet.setCFIRBPrior2(spec_info.cfirbprior_mean2,
 			   spec_info.cfirbprior_stdev2);
+  if (spec_info.has_poissonprior1)
+    likeSet.setPoissonPrior1(spec_info.poissonprior_mean1,
+			     spec_info.poissonprior_stdev1);
+  if (spec_info.has_poissonprior2)
+    likeSet.setPoissonPrior2(spec_info.poissonprior_mean2,
+			     spec_info.poissonprior_stdev2);
   if (spec_info.fit_sigma1 && spec_info.has_sigprior1)
     likeSet.setSigmaPrior1(spec_info.sigprior_stdev1);
   if (spec_info.fit_sigma2 && spec_info.has_sigprior2)
@@ -136,9 +150,11 @@ bool pofdMCMCDouble::initChainsMaster() {
   // Set up R init ranges using initial model 
   paramSet p(npar); //Generated parameter
   ifile.getParams(p); //Get central values from initialization file
-  p[npar - 2] = 1.0; // Sigma mult, band 1
-  p[npar - 1] = 1.0; // Sigma mult, band 2
+  p[ntot] = 1.0; // Sigma mult, band 1
+  p[ntot + 1] = 1.0; // Sigma mult, band 2
   ifile.getParams(p); // Sets to central (initial) values
+  for (unsigned int i = ntot + 2; i < npar; ++i) // Bonus params
+    p[i] = std::numeric_limits<double>::quiet_NaN();
   likeSet.setRRanges(p);
 
   // Verbosity
@@ -221,13 +237,12 @@ bool pofdMCMCDouble::initChainsMaster() {
 
 
 bool pofdMCMCDouble::areParamsValid(const paramSet& p) const {
-  unsigned int nparams = getNParams();
   if (!is_init)
     throw affineExcept("pofdMCMCDouble", "areParamsValid",
 		       "Can't check params without initialization");
   if (!ifile.isValid(p)) return false; //Doesn't check sigma multipliers
-  if (p[nparams-2] <= 0.0) return false;
-  if (p[nparams-1] <= 0.0) return false;
+  if (p[ntot] <= 0.0) return false; // Sigma mult 1
+  if (p[ntot + 1] <= 0.0) return false; // Sigma mult 2
   return true;
 }
 
@@ -237,7 +252,6 @@ void pofdMCMCDouble::generateInitialPosition(const paramSet& p) {
   //Generate initial parameters for each walker
   if (rank != 0) return;
 
-  unsigned int ntot = ifile.getNTot();
   if (ntot == 0)
     throw affineExcept("pofdMCMCDouble", "generateInitialPosition",
 		       "No model info read in");
@@ -304,6 +318,10 @@ void pofdMCMCDouble::generateInitialPosition(const paramSet& p) {
       pnew[ntot + 1] = trialval;
     } else pnew[ntot + 1] = 1.0;
     
+    // Bonus params
+    for (unsigned int j = ntot + 2; j < npar; ++j)
+      pnew[j] = std::numeric_limits<double>::quiet_NaN();
+
     //Add to chain
     //It's possible that -infinity will not be available on some
     // architectures -- the c++ standard is oddly quiet about this.
@@ -370,6 +388,22 @@ double pofdMCMCDouble::getLogLike(const paramSet& p, bool& pars_invalid) {
     throw affineExcept("pofdMCMC", "getLogLike",
 		       "Called on unitialized object");
   return likeSet.getLogLike(p, pars_invalid);
+}
+
+void pofdMCMCDouble::fillBonusParams(paramSet& par, bool rej) {
+  if (rej) {
+    unsigned int npar = getNParams();
+    for (unsigned int i = ntot + 2; i < npar; ++i)
+      par[i] = std::numeric_limits<double>::quiet_NaN(); // <flux>
+  } else {
+    dblpair p;
+    p = likeSet.getMeanFluxPerArea();
+    par[ntot + 2] = p.first;
+    par[ntot + 3] = p.second;
+    p = likeSet.getMeanFluxSqPerArea();
+    par[ntot + 4] = p.first;
+    par[ntot + 5] = p.second;
+  }
 }
 
 /*!

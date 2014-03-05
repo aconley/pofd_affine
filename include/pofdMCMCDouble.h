@@ -16,6 +16,8 @@ private:
   initFileDoubleLogNormal ifile; //!< Stores initial values and limits on parameters
   specFileDouble spec_info; //!< Controls how fit is done
 
+  unsigned int ntot; //!< Number of total knots in model; useful to keep around
+
   calcLikeDouble likeSet; //!< Does likelihood calculation
   
   bool initChainsMaster(); //!< Initialization routine for master node
@@ -36,6 +38,7 @@ public:
   bool areParamsValid(const paramSet&) const; //!< Test against limits
   void generateInitialPosition(const paramSet&); //!< Sets up initial position
   double getLogLike(const paramSet&, bool&); //!< Evaluates log likelihood
+  void fillBonusParams(paramSet& par, bool rej);
 
   void writeToHDF5Handle(hid_t) const; //!< Serialize to HDF5 handle
 };

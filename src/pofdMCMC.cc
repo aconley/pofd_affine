@@ -51,7 +51,7 @@ bool pofdMCMC::initChainsMaster() {
 
   //Model initialization file
   ifile.readFile(initfile, true, true);
-  unsigned int nknots = ifile.getNKnots();
+  nknots = ifile.getNKnots();
   if (nknots == 0)
     throw affineExcept("pofdMCMC", "initChainsMaster",
 		       "No model knots read in");
@@ -63,11 +63,12 @@ bool pofdMCMC::initChainsMaster() {
 			 "No data files read");
 
 
-  //Number of parameters is number of knots + 2;
+  //Number of parameters is number of knots + 3;
   // nknots for the actual model params
   // 1 for the instrument sigma multiplier (possibly fixed)
-  // 1 for the mean flux per unit area (bonus)
-  unsigned int npar = nknots + 2;
+  // 1 for the mean flux per area (bonus)
+  // 1 for the mean flux^2 per area (bonus)
+  unsigned int npar = nknots + 3;
   this->setNParams(npar);
 
   //Set up parameter names
@@ -79,12 +80,14 @@ bool pofdMCMC::initChainsMaster() {
   }
   this->setParamName(nknots, "SigmaMult");
   this->setParamName(nknots + 1, "<S>area");
+  this->setParamName(nknots + 2, "<S^2>area");
 
   // Set which parameters are fixed
   for (unsigned int i = 0; i < nknots; ++i)
     if (ifile.isKnotFixed(i)) this->fixParam(i);
   if (!spec_info.fit_sigma) this->fixParam(nknots);
   this->setParamBonus(nknots + 1);
+  this->setParamBonus(nknots + 2);
 
   //Initialize likelihood information -- priors, data, etc.
   likeSet.setKnotPositions(ifile);
@@ -94,10 +97,13 @@ bool pofdMCMC::initChainsMaster() {
   likeSet.setNBins(spec_info.nbins);
   if (spec_info.has_wisdom_file) likeSet.addWisdom(spec_info.wisdom_file);
 
-  // Set priors 
+  // Set priors
   if (spec_info.has_cfirbprior)
     likeSet.setCFIRBPrior(spec_info.cfirbprior_mean,
 			  spec_info.cfirbprior_stdev);
+  if (spec_info.has_poissonprior)
+    likeSet.setPoissonPrior(spec_info.poissonprior_mean,
+			    spec_info.poissonprior_stdev);
   if (spec_info.fit_sigma && spec_info.has_sigprior)
     likeSet.setSigmaPrior(spec_info.sigprior_stdev);
 
@@ -114,8 +120,9 @@ bool pofdMCMC::initChainsMaster() {
   paramSet p(npar); // Generated parameter
   ifile.getParams(p); // Get central values from initialization file
   p[nknots] = 1.0; // Sigma mult
-  // flux per area value
+  // flux per area and flux^2 per area initial values
   p[nknots + 1] = std::numeric_limits<double>::quiet_NaN();
+  p[nknots + 2] = std::numeric_limits<double>::quiet_NaN();
   likeSet.setRRanges(p);
 
   // Verbosity
@@ -198,12 +205,11 @@ bool pofdMCMC::initChainsMaster() {
 }
 
 bool pofdMCMC::areParamsValid(const paramSet& p) const {
-  unsigned int nparams = getNParams();
   if (!is_init)
     throw affineExcept("pofdMCMC", "areParamsValid",
 		       "Can't check params without initialization");
   if (!ifile.isValid(p)) return false; //Doesn't check sigma multiplier or bonus
-  if (p[nparams-2] <= 0.0) return false; // Sigma multiplier
+  if (p[nknots] <= 0.0) return false; // Sigma multiplier
   return true;
 }
 
@@ -211,7 +217,6 @@ void pofdMCMC::generateInitialPosition(const paramSet& p) {
   //Generate initial parameters for each walker
   if (rank != 0) return;
 
-  unsigned int nknots = ifile.getNKnots();
   if (nknots == 0)
     throw affineExcept("pofdMCMC", "generateInitialPosition",
 		       "No model knots read in");
@@ -262,7 +267,9 @@ void pofdMCMC::generateInitialPosition(const paramSet& p) {
       pnew[nknots] = trialval;
     } else pnew[nknots] = 1.0;
     
+    // Bonus params
     pnew[nknots + 1] = std::numeric_limits<double>::quiet_NaN();
+    pnew[nknots + 2] = std::numeric_limits<double>::quiet_NaN();
 
     //Add to chain
     //It's possible that -infinity will not be available on some
@@ -335,11 +342,13 @@ double pofdMCMC::getLogLike(const paramSet& p, bool& pars_invalid) {
 }
 
 void pofdMCMC::fillBonusParams(paramSet& par, bool rej) {
-  unsigned int npar = getNParams();
-  if (rej)
-    par[npar-1] = std::numeric_limits<double>::quiet_NaN();
-  else
-    par[npar-1] = likeSet.getMeanFluxPerArea();
+  if (rej) {
+    par[nknots + 1] = std::numeric_limits<double>::quiet_NaN(); // <flux>
+    par[nknots + 2] = std::numeric_limits<double>::quiet_NaN(); // <flux^2>
+  } else {
+    par[nknots + 1] = likeSet.getMeanFluxPerArea();
+    par[nknots + 2] = likeSet.getMeanFluxSqPerArea();
+  }
 }
 
 /*!

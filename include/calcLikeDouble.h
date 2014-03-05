@@ -171,18 +171,25 @@ struct doublebeam_group {
 */
 class calcLikeDouble {
  private :
-  //Transform stuff
+  // Transform stuff
   unsigned int fftsize; //!< Size of FFT (on each dim)
   unsigned int nedge; //!< R edge size
   bool edgeInteg; //!< Do edge integration
 
-  //Data
+  // Data
   unsigned int nbeamsets; //!< Number of beam sets
   calcLikeDoubleSingle* beamsets; //!< Sets of data grouped by beam
   bool bin_data; //!< Bin the data
   unsigned int nbins; //!< Number of bins (if bin_data)
 
-  //Priors
+  // Mean flux per area from model and flux^2; used in cfirb 
+  //  and poisson priors, but also as bonus parameters
+  mutable double mean_flux_per_area1; //!< Mean flux per area, band 1
+  mutable double mean_fluxsq_per_area1; //!< Mean flux^2 per area, band 1
+  mutable double mean_flux_per_area2; //!< Mean flux per area, band 2
+  mutable double mean_fluxsq_per_area2; //!< Mean flux^2 per area, band 2
+
+  // Priors
   bool has_cfirb_prior1; //!< Are we using CFIRB prior, band 1
   double cfirb_prior_mean1; //!< Value of CFIRB prior mean, band 1
   double cfirb_prior_sigma1; //!< Value of CFIRB prior error, band 1
@@ -193,8 +200,14 @@ class calcLikeDouble {
   double sigma_prior_width1; //!< Sigma multiplier width, band 1
   bool has_sigma_prior2; //!< Sigma multiplier value, band 2
   double sigma_prior_width2; //!< Sigma multiplier width, band 2
+  bool has_poisson_prior1; //!< Do we have prior on Poisson noise, band 1?
+  double poisson_prior_mean1; //!< Value of Poisson prior mean, band 1
+  double poisson_prior_sigma1; //!< Value of Poisson prior sigma, band 1
+  bool has_poisson_prior2; //!< Do we have prior on Poisson noise, band 2?
+  double poisson_prior_mean2; //!< Value of Poisson prior mean, band 2
+  double poisson_prior_sigma2; //!< Value of Poisson prior sigma, band 2
 
-  //Model
+  // Model
   mutable numberCountsDoubleLogNormal model; //!< Number counts model
 
   bool verbose; //!< Output informational messages while running
@@ -263,33 +276,53 @@ class calcLikeDouble {
   /*! \brief Set positions of all knots */
   void setPositions(const initFileDoubleLogNormal&);
 
-  //Sigma prior
+  // Sigma priors
   /*! \brief Activates the sigma prior with width set to value, band 1*/
-  void setSigmaPrior1( double val) { 
+  void setSigmaPrior1(double val) { 
     has_sigma_prior1 = true; sigma_prior_width1 = val;}
   /*! \brief De-activate the sigma prior, band 1*/
   void unsetSigmaPrior1() { has_sigma_prior1 = false; }
   /*! \brief Activates the sigma prior with width set to value, band 2*/
-  void setSigmaPrior2( double val) { 
+  void setSigmaPrior2(double val) { 
     has_sigma_prior2 = true; sigma_prior_width2 = val;}
   /*! \brief De-activate the sigma prior, band 2*/
   void unsetSigmaPrior2() { has_sigma_prior2 = false; }
 
-  //CFIRB prior
+  // CFIRB priors
   /*! \brief Activates the CFIRB prior with the specified values, band 1 */
-  void setCFIRBPrior1( double, double);
-  /*! \brief De-activated CFIRB prior, band 1 */
-  void unsetCFIRBPrior() { has_cfirb_prior1 = false; }
+  void setCFIRBPrior1(double, double);
+  /*! \brief De-activate CFIRB prior, band 1 */
+  void unsetCFIRBPrior1() { has_cfirb_prior1 = false; }
   /*! \brief Activates the CFIRB prior with the specified values, band 2 */
-  void setCFIRBPrior2( double, double);
-  /*! \brief De-activated CFIRB prior, band 2 */
+  void setCFIRBPrior2(double, double);
+  /*! \brief De-activate CFIRB prior, band 2 */
   void unsetCFIRBPrior2() { has_cfirb_prior2 = false; }
+
+  // Poisson priors
+  /*! \brief Activates the Poisson prior with the specified values, band 1 */
+  void setPoissonPrior1( double, double);
+  /*! \brief De-activates Poisson prior, band 1 */
+  void unsetPoissonPrior1() { has_poisson_prior1 = false; }
+  /*! \brief Activates the Poisson prior with the specified values, band 2 */
+  void setPoissonPrior2(double, double);
+  /*! \brief De-activates Poisson prior, band 2 */
+  void unsetPoissonPrior2() { has_poisson_prior2 = false; }
 
   /*! \brief Get number of beam sets */
   unsigned int getNBeamSets() const { return nbeamsets; }
 
   /*! \brief Get Log-Likelihood of data for a set of parameters */
   double getLogLike(const paramSet&, bool&) const;
+
+  /*! \brief Assuming getLogLike already called, get mean flux per area */
+  dblpair getMeanFluxPerArea() const { 
+    return std::make_pair(mean_flux_per_area1, mean_flux_per_area2); 
+  }
+
+  /*! \brief Assuming getLogLike already called, get mean flux^2 per area */
+  dblpair getMeanFluxSqPerArea() const { 
+    return std::make_pair(mean_fluxsq_per_area1, mean_fluxsq_per_area2); 
+  }
 
   /*! \brief Write to HDF5 handle */
   void writeToHDF5Handle(hid_t) const;

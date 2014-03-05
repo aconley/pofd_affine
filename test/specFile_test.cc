@@ -86,6 +86,9 @@ TEST(specFile1DTest, ReadCheck) {
       "Expected cfirb prior stdev to be 0.1, but it is " <<
       spec_info.cfirbprior_stdev;
     
+    EXPECT_FALSE(spec_info.has_poissonprior) << 
+      "Expected to not have Poisson prior";
+
     ASSERT_TRUE(spec_info.has_wisdom_file) << "Expected to have wisdom file";
     EXPECT_EQ(spec_info.wisdom_file, std::string("a_wisdom_file.txt")) <<
       "Expected wisdom file name 'a_wisdom_file.txt', got " << 
@@ -197,6 +200,16 @@ TEST(specFile2DTest, ReadCheck) {
     "Expected cfirb prior2 mean to be 1.05";
   EXPECT_NEAR(spec_info.cfirbprior_stdev2, 0.1, 0.0000001) << 
     "Expected cfirb prior2 stdev to be 0.1";
+
+  ASSERT_TRUE(spec_info.has_poissonprior1) << 
+    "Expected band 1 poisson prior";
+  EXPECT_NEAR(spec_info.poissonprior_mean1, 0.5, 0.000001) <<
+    "Expected poisson prior1 mean to be 0.5";
+  EXPECT_NEAR(spec_info.poissonprior_stdev1, 0.2, 0.0000001) << 
+    "Expected poisson prior1 stdev to be 0.2";
+  EXPECT_FALSE(spec_info.has_poissonprior2) << 
+    "Expected no band 2 poisson prior";
+  
 
   ASSERT_TRUE(spec_info.has_wisdom_file) << "Expected to have wisdom file";
   EXPECT_EQ(spec_info.wisdom_file, std::string("a_wisdom_file.txt")) <<

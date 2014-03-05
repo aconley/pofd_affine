@@ -16,6 +16,8 @@ private:
   initFileKnots ifile; //!< Stores initial values and limits on parameters
   specFile spec_info; //!< Controls how fit is done
 
+  unsigned int nknots; //!/ Number of knots in model; useful to keep around
+
   calcLike likeSet; //!< Does likelihood calculation
 
   bool initChainsMaster(); //!< Initialization routine for master node

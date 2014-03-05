@@ -163,9 +163,10 @@ class calcLike {
   bool bin_data; //!< Bin the data
   unsigned int nbins; //!< Number of bins (if bin_data)
 
-  // Mean flux per area from model; used in cfirb prior
-  //  but also used as a bonus parameter
+  // Mean flux per area from model and flux^2; used in cfirb 
+  //  and poisson priors, but also as bonus parameters
   mutable double mean_flux_per_area; //!< Mean flux per area
+  mutable double mean_fluxsq_per_area; //!< Mean flux^2 per area
 
   //Priors
   bool has_cfirb_prior; //!< Are we using CFIRB prior
@@ -173,6 +174,9 @@ class calcLike {
   double cfirb_prior_sigma; //!< Value of CFIRB prior error
   bool has_sigma_prior; //!< Sigma multiplier value
   double sigma_prior_width; //!< Sigma multiplier width
+  bool has_poisson_prior; //!< Do we have prior on Poisson noise?
+  double poisson_prior_mean; //!< Value of Poisson prior mean
+  double poisson_prior_sigma; //!< Value of Poisson prior sigma
 
   //Model
   mutable numberCountsKnotsSpline model; //!< Holds number counts model
@@ -231,9 +235,15 @@ class calcLike {
   // CFIRB prior
   /*! \brief Activates the CFIRB prior with the specified values */
   void setCFIRBPrior(double, double);
-  /*! \brief De-activated CFIRB prior */
+  /*! \brief De-activate CFIRB prior */
   void unsetCFIRBPrior() { has_cfirb_prior = false; }
   
+  // Poisson prior
+  /*! \brief Activates the Poisson prior with the specified values */
+  void setPoissonPrior(double, double);
+  /*! \brief De-activate Poisson prior */
+  void unsetPoissonPrior() { has_poisson_prior = false; }
+
   /*! \brief Get number of beam sets */
   unsigned int getNBeamSets() const { return nbeamsets; }
 
@@ -242,6 +252,9 @@ class calcLike {
 
   /*! \brief Assuming getLogLike already called, get mean flux per area */
   double getMeanFluxPerArea() const { return mean_flux_per_area; }
+
+  /*! \brief Assuming getLogLike already called, get mean flux^2 per area */
+  double getMeanFluxSqPerArea() const { return mean_fluxsq_per_area; }
   
   /*! \brief Write to HDF5 handle */
   void writeToHDF5Handle(hid_t) const;
