@@ -282,16 +282,57 @@ bool numberCountsKnots::isValid() const {
   return true;
 }
 
+/*!
+  \param[in] p1 First parameter set
+  \param[in] p2 Second parameter set
+  \returns Relative distance between p1, p2 over entries this model cares 
+     about.  This is defined as the sqrt of the sum differences
+     between the two parameter sets divided by the sqrt of the
+     length of the first parameter (or, if the lenght is 0, just
+     the sqrt of the sum of the squared differences).
+*/
+float numberCountsKnots::paramRelativeDistance(const paramSet& p1, 
+					       const paramSet& p2) 
+  const throw(affineExcept) {
+
+  if (nknots == 0) return std::numeric_limits<double>::quiet_NaN();
+  if (p1.getNParams() < nknots)
+    throw affineExcept("numberCountsKnots", "paramRelativeDistance",
+		       "paramSet 1 doesn't have enough entries");
+  if (p2.getNParams() < nknots)
+    throw affineExcept("numberCountsKnots", "paramRelativeDistance",
+		       "paramSet 2 doesn't have enough entries");
+  if (&p1 == &p2) return 0.0; // Same object!
+  float val = p1[0];
+  float diffval = val - p2[0];
+  float lensum = val * val;
+  float diffsum = diffval * diffval;
+  for (unsigned int i = 1; i < nknots; ++i) {
+    val = p1[i];
+    lensum += val * val;
+    diffval = val - p2[i];
+    diffsum += diffval * diffval;
+  }
+  if (lensum == 0)
+    return sqrt(diffsum);
+  return sqrt(diffsum / lensum);
+}
+
+/*!
+  \returns Minimum flux density model is non-zero at
+*/
 double numberCountsKnots::getMinFlux() const {
   if (nknots == 0) return std::numeric_limits<double>::quiet_NaN();
   return knots[0];
 }
 
+/*!
+  \returns Maximum flux density model is non-zero at
+*/
 double numberCountsKnots::getMaxFlux() const {
   if (nknots == 0) return std::numeric_limits<double>::quiet_NaN();
   return knots[nknots-1];
 }
-
 
 /*!
   \param[in] bm Beam to compute range for

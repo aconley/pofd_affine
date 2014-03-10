@@ -395,15 +395,8 @@ void pofdMCMCDouble::fillBonusParams(paramSet& par, bool rej) {
     unsigned int npar = getNParams();
     for (unsigned int i = ntot + 2; i < npar; ++i)
       par[i] = std::numeric_limits<double>::quiet_NaN(); // <flux>
-  } else {
-    dblpair p;
-    p = likeSet.getMeanFluxPerArea();
-    par[ntot + 2] = p.first;
-    par[ntot + 3] = p.second;
-    p = likeSet.getMeanFluxSqPerArea();
-    par[ntot + 4] = p.first;
-    par[ntot + 5] = p.second;
-  }
+  } else 
+    likeSet.fillBonusParams(par);
 }
 
 /*!

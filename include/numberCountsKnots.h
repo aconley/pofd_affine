@@ -68,6 +68,10 @@ class numberCountsKnots : public numberCounts {
 
   virtual bool isValid() const; //!< Are model parameters valid
 
+  /*! \brief Distance between two parameter sets over params model cares about*/
+  virtual float paramRelativeDistance(const paramSet& p1, const paramSet& p2) 
+    const throw(affineExcept);
+
   double getMaxFlux() const; //!< Maximum flux supported by model
   double getMinFlux() const; //!< Minimum flux supported by model
 

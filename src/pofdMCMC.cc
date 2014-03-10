@@ -345,10 +345,8 @@ void pofdMCMC::fillBonusParams(paramSet& par, bool rej) {
   if (rej) {
     par[nknots + 1] = std::numeric_limits<double>::quiet_NaN(); // <flux>
     par[nknots + 2] = std::numeric_limits<double>::quiet_NaN(); // <flux^2>
-  } else {
-    par[nknots + 1] = likeSet.getMeanFluxPerArea();
-    par[nknots + 2] = likeSet.getMeanFluxSqPerArea();
-  }
+  } else 
+    likeSet.fillBonusParams(par);
 }
 
 /*!

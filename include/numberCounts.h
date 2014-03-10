@@ -29,6 +29,10 @@ class numberCounts {
   virtual void setParams(const paramSet& params)=0; //!< Set parameters  
   virtual bool isValid() const = 0; //!< See if model params are valid
 
+  /*! \brief Distance between two parameter sets over params model cares about*/
+  virtual float paramRelativeDistance(const paramSet& p1, const paramSet& p2) 
+    const throw(affineExcept) = 0;
+
   /*! \brief Minimum flux model is defined for */
   virtual double getMinFlux() const = 0;
 

@@ -165,6 +165,7 @@ class calcLike {
 
   // Mean flux per area from model and flux^2; used in cfirb 
   //  and poisson priors, but also as bonus parameters
+  mutable paramSet meanParams; //!< Mean fluxes computed using this
   mutable double mean_flux_per_area; //!< Mean flux per area
   mutable double mean_fluxsq_per_area; //!< Mean flux^2 per area
 
@@ -250,12 +251,9 @@ class calcLike {
   /*! \brief Get Log Likelihood for set of parameters */
   double getLogLike(const paramSet&, bool&) const;
 
-  /*! \brief Assuming getLogLike already called, get mean flux per area */
-  double getMeanFluxPerArea() const { return mean_flux_per_area; }
+  /*! \brief Fills bonus params (mean flux per area values) */
+  void fillBonusParams(paramSet& p) const;
 
-  /*! \brief Assuming getLogLike already called, get mean flux^2 per area */
-  double getMeanFluxSqPerArea() const { return mean_fluxsq_per_area; }
-  
   /*! \brief Write to HDF5 handle */
   void writeToHDF5Handle(hid_t) const;
 

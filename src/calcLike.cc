@@ -738,7 +738,9 @@ double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
 
   //Set the model
   model.setParams(p);
-
+  meanParams = p;
+  mean_flux_per_area = mean_fluxsq_per_area = 
+    std::numeric_limits<double>::quiet_NaN();
   double LogLike = 0.0;
 
   //Do the datasets likelihood
@@ -759,7 +761,7 @@ double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
   if (has_sigma_prior) {
     //Assume the mean is always at 1 -- otherwise, the
     // user would have specified different noise level
-    double val = (sigmult-1.0) / sigma_prior_width;
+    double val = (sigmult - 1.0) / sigma_prior_width;
     LogLike -= half_log_2pi + log(sigma_prior_width) + 
       0.5*val*val;
   }
@@ -783,6 +785,31 @@ double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
     LogLike -=  half_log_2pi + log(poisson_prior_sigma) + 0.5 * val * val;
   }
   return LogLike;
+}
+
+
+void calcLike::fillBonusParams(paramSet& par) const {
+  unsigned int nknots = model.getNKnots();
+  // Make sure it's the same parameters!
+  float dist = model.paramRelativeDistance(meanParams, par);
+  if (dist > 1e-4) {
+    // Have to recompute!
+    unsigned int npar = par.getNParams();
+   if (npar < (nknots + 3))
+      throw affineExcept("calcLike", "fillBonusParams",
+			 "Not enough room to fill");
+    model.setParams(par);
+    meanParams = par;
+    if (!model.isValid()) {
+      mean_flux_per_area = std::numeric_limits<double>::quiet_NaN();
+      mean_fluxsq_per_area = std::numeric_limits<double>::quiet_NaN();
+    } else {
+      mean_flux_per_area = model.getFluxPerArea();
+      mean_fluxsq_per_area = model.getFluxSqPerArea();
+    }
+  } 
+  par[nknots + 1] = mean_flux_per_area;
+  par[nknots + 2] = mean_fluxsq_per_area;
 }
 
 /*!						

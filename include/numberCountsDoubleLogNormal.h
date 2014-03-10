@@ -145,6 +145,10 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
 
   bool isValid() const; //!< Are model settings loaded and valid?
 
+  /*! \brief Relative distance between two sets of params over model params*/
+  float paramRelativeDistance(const paramSet& p1, const paramSet& p2)
+    const throw(affineExcept);
+
   void setNKnots(unsigned int n); //!< Sets number of knots in band 1
   unsigned int getNKnots() const { return nknots; } //!< Number of knots in band 1 spline
   /*! \brief Sets knot positions, band 1, vector version */
@@ -186,7 +190,7 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   double getOffsetPosition(unsigned int i) const; //!< Get offset knot position (unchecked)
 
   /*! \brief Gets total number of parameters */
-  unsigned int getNParams() const { return nknots+nsigmaknots+noffsetknots; }
+  unsigned int getNParams() const { return nknots + nsigmaknots + noffsetknots; }
   /*! \brief Gets positions of all knots */
   void getPositions(std::vector<double>&, std::vector<double>&,
 		    std::vector<double>&) const;

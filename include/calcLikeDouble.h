@@ -184,6 +184,7 @@ class calcLikeDouble {
 
   // Mean flux per area from model and flux^2; used in cfirb 
   //  and poisson priors, but also as bonus parameters
+  mutable paramSet meanParams; //!< params used to compute mean flux values
   mutable double mean_flux_per_area1; //!< Mean flux per area, band 1
   mutable double mean_fluxsq_per_area1; //!< Mean flux^2 per area, band 1
   mutable double mean_flux_per_area2; //!< Mean flux per area, band 2
@@ -271,7 +272,7 @@ class calcLikeDouble {
   /*! \brief Set positions of all knots */
   void setPositions(std::vector<double>& K, std::vector<double>& S,
 		    std::vector<double>& O) {
-    model.setPositions(K,S,O);
+    model.setPositions(K, S, O);
   }
   /*! \brief Set positions of all knots */
   void setPositions(const initFileDoubleLogNormal&);
@@ -314,15 +315,8 @@ class calcLikeDouble {
   /*! \brief Get Log-Likelihood of data for a set of parameters */
   double getLogLike(const paramSet&, bool&) const;
 
-  /*! \brief Assuming getLogLike already called, get mean flux per area */
-  dblpair getMeanFluxPerArea() const { 
-    return std::make_pair(mean_flux_per_area1, mean_flux_per_area2); 
-  }
-
-  /*! \brief Assuming getLogLike already called, get mean flux^2 per area */
-  dblpair getMeanFluxSqPerArea() const { 
-    return std::make_pair(mean_fluxsq_per_area1, mean_fluxsq_per_area2); 
-  }
+  /*! \brief Fill bonus params (mean fluxes) */
+  void fillBonusParams(paramSet& par) const;
 
   /*! \brief Write to HDF5 handle */
   void writeToHDF5Handle(hid_t) const;

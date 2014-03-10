@@ -29,6 +29,10 @@ class numberCountsDouble {
   
   virtual bool isValid() const = 0; //!< See if model params are valid
 
+  /*! \brief Relative distance between two sets of params over model params*/
+  virtual float paramRelativeDistance(const paramSet& p1, const paramSet& p2)
+    const throw(affineExcept) = 0;
+
   /*! \brief Get Mean Flux per unit area */
   virtual double getFluxPerArea(unsigned int) const = 0;
 

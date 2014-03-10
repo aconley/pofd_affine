@@ -956,13 +956,17 @@ double calcLikeDouble::getLogLike(const paramSet& p, bool& pars_invalid) const {
   if (nbeamsets == 0) return std::numeric_limits<double>::quiet_NaN();
   unsigned int npar = p.getNParams();
   unsigned int nmodelpars = model.getNParams();
-  if (npar < (nmodelpars+2)) //+2 for the sigma multiplier in each band
+  if (npar < (nmodelpars+2)) //+2 for the sigma multipliers
     throw affineExcept("calcLikeDouble", "getLogLike",
 		       "Not enough elements in params");
 
   //Set the model
   model.setParams(p);
-
+  meanParams = p;
+  mean_flux_per_area1 = mean_flux_per_area2 =
+    std::numeric_limits<double>::quiet_NaN();
+  mean_fluxsq_per_area1 = mean_fluxsq_per_area2 =
+    std::numeric_limits<double>::quiet_NaN();
   double LogLike = 0.0;
 
   //Do the datasets likelihood
@@ -1024,6 +1028,37 @@ double calcLikeDouble::getLogLike(const paramSet& p, bool& pars_invalid) const {
 
   return LogLike;
 }
+
+void calcLikeDouble::fillBonusParams(paramSet& par) const {
+  unsigned int nmodelpars = model.getNParams();
+  // Make sure it's the same parameters!
+  float dist = model.paramRelativeDistance(meanParams, par);
+  if (dist > 1e-4) {
+    // Have to recompute!
+    unsigned int npar = par.getNParams();
+    if (npar < (nmodelpars + 6))
+      throw affineExcept("calcLikeDouble", "fillBonusParams",
+			 "Not enough room to fill");
+    model.setParams(par);
+    meanParams = par;
+    if (!model.isValid()) {
+      mean_flux_per_area1 = mean_flux_per_area2 = 
+	std::numeric_limits<double>::quiet_NaN();
+      mean_fluxsq_per_area1 = mean_fluxsq_per_area2 = 
+	std::numeric_limits<double>::quiet_NaN();
+    } else {
+      mean_flux_per_area1 = model.getFluxPerArea(0);
+      mean_flux_per_area2 = model.getFluxPerArea(1);
+      mean_fluxsq_per_area1 = model.getFluxSqPerArea(0);
+      mean_fluxsq_per_area2 = model.getFluxSqPerArea(1);
+    }
+  } // Otherwise we can re-use prev values
+  par[nmodelpars + 2] = mean_flux_per_area1;
+  par[nmodelpars + 3] = mean_flux_per_area2;
+  par[nmodelpars + 4] = mean_fluxsq_per_area1;
+  par[nmodelpars + 5] = mean_fluxsq_per_area2;
+}
+
 
 /*!						
   \param[in] objid HDF5 handle to write information to.  Must already be
