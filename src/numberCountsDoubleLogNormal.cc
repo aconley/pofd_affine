@@ -1,6 +1,9 @@
 #include<cmath>
 #include<iomanip>
-#include<sstream> 
+#include<sstream>
+#include<limits>
+#include<cstring>
+
 #include<fftw3.h>
 
 #include "../include/numberCountsDoubleLogNormal.h"

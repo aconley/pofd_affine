@@ -1,4 +1,7 @@
 #include<sstream>
+#include<limits>
+#include<algorithm>
+
 #include<unistd.h>
 
 #include "../include/pofdMCMCDouble.h"

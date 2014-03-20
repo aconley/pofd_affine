@@ -1,7 +1,8 @@
 #include<limits>
+#include<cstring>
 
-#include <fitsio.h>
-#include <fftw3.h>
+#include<fitsio.h>
+#include<fftw3.h>
 
 #include "../include/fitsData.h"
 #include "../include/affineExcept.h"

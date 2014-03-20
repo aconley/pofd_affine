@@ -4,6 +4,7 @@
 #include<iostream>
 #include<cmath>
 #include<sstream>
+#include<cstring>
 
 #include<fitsio.h>
 
