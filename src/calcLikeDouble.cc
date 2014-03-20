@@ -416,7 +416,7 @@ void calcLikeDoubleSingle::setSigmaBase2(unsigned int n,const double* const s) {
   moving the R ranges around causes numerical jitter in the likelihoods.
 */
 void calcLikeDoubleSingle::setRRange(const numberCountsDouble& model) { 
-  const double safetyfac = 1.01;
+  const double safetyfac = 1.05;
 
   if (std::isnan(maxsigma_base1) || std::isnan(maxsigma_base2))
     throw affineExcept("calcLikeDoubleSingle", "setRRange", 
@@ -983,7 +983,7 @@ double calcLikeDouble::getLogLike(const paramSet& p, bool& pars_invalid) const {
     }
   } catch (const affineExcept& ex) {
     // We build a new exception with more information
-    std::string errstr = ex.getErrstr();
+    std::string errstr = ex.getErrStr();
     std::stringstream newerrstr("");
     newerrstr << errstr
 	      << "; error encountered while processing model parameters"

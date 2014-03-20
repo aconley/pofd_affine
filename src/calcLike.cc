@@ -302,7 +302,7 @@ void calcLikeSingle::setSigmaBase(unsigned int n, const double* const s) {
   moving the R ranges around causes numerical jitter in the likelihoods.
 */
 void calcLikeSingle::setRRange(const numberCounts& model) { 
-  const double safetyfac = 1.01;
+  const double safetyfac = 1.05;
 
   if (std::isnan(maxsigma_base))
     throw affineExcept("calcLikeSingle", "setRRange", "Sigma base not yet set");
@@ -759,7 +759,7 @@ double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
     }
   } catch (const affineExcept& ex) {
     // We build a new exception with more information
-    std::string errstr = ex.getErrstr();
+    std::string errstr = ex.getErrStr();
     std::stringstream newerrstr("");
     newerrstr << errstr
 	      << "; error encountered while processing model parameters"

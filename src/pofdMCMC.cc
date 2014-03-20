@@ -361,10 +361,17 @@ void pofdMCMC::writeToHDF5Handle(hid_t objid) const {
 
   // To top level
   affineEnsemble::writeToHDF5Handle(objid);
-  ifile.writeToHDF5Handle(objid);
 
-  // To subgroup
+  // To ParamInfo group
   hid_t groupid;
+  groupid = H5Gopen(objid, "ParamInfo", H5P_DEFAULT);
+  if (H5Iget_ref(groupid) < 0)
+    throw affineExcept("pofdMCMC", "writeToHDF5Handle",
+		       "Can't open ParamInfo group");
+  ifile.writeToHDF5Handle(groupid);
+  H5Gclose(groupid);
+
+  // To LikelihoodParams subgroup
   groupid = H5Gcreate(objid, "LikelihoodParams", H5P_DEFAULT, H5P_DEFAULT, 
 		      H5P_DEFAULT);
   if (H5Iget_ref(groupid) < 0)
