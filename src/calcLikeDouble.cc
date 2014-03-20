@@ -969,15 +969,26 @@ double calcLikeDouble::getLogLike(const paramSet& p, bool& pars_invalid) const {
     std::numeric_limits<double>::quiet_NaN();
   double LogLike = 0.0;
 
-  //Do the datasets likelihood
+  // Do the datasets likelihood.  Wrap in try so as to be able to provide
+  //  better error message
   bool pinvalid;
   double sigmult1 = p[nmodelpars]; //Sigma multiplier is after knot values
   double sigmult2 = p[nmodelpars + 1];
   pars_invalid = false;
-  for (unsigned int i = 0; i < nbeamsets; ++i) {
-    LogLike += beamsets[i].getLogLike(model, pinvalid, sigmult1, sigmult2, 
-				      fftsize, edgeInteg);
-    pars_invalid &= pinvalid;
+  try {
+    for (unsigned int i = 0; i < nbeamsets; ++i) {
+      LogLike += beamsets[i].getLogLike(model, pinvalid, sigmult1, sigmult2, 
+					fftsize, edgeInteg);
+      pars_invalid &= pinvalid;
+    }
+  } catch (const affineExcept& ex) {
+    // We build a new exception with more information
+    std::string errstr = ex.getErrstr();
+    std::stringstream newerrstr("");
+    newerrstr << errstr
+	      << "; error encountered while processing model parameters"
+	      << model;
+    throw affineExcept(ex.getErrClass(), ex.getErrMethod(), newerrstr.str());
   }
 
   if (pars_invalid) return LogLike; //!< Not much point in doing the priors...

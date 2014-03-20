@@ -354,6 +354,8 @@ double calcLikeSingle::getLogLike(const numberCounts& model, bool& pars_invalid,
     throw affineExcept("calcLikeSingle", "getNegLogLike",
 		       "Beam not read");
 
+  double LogLike = 0.0;
+
   //Maximum noise value with multiplier 
   double max_sigma = maxsigma_base * sigmult;
   if (max_sigma < 0.0) return calcLikeSingle::bad_like;
@@ -365,21 +367,21 @@ double calcLikeSingle::getLogLike(const numberCounts& model, bool& pars_invalid,
 		       "R range not set");
   pars_invalid = ! pdfac.initPD(fftsize, minRFlux, maxRFlux, model, bm);
   if (pars_invalid) return 0.0; // No point in continuing
-
+  
   //Compute likelihood of each bit of data
-  double curr_LogLike, LogLike;
-  LogLike = 0.0;
+  double curr_LogLike;
+  
   for (unsigned int i = 0; i < ndatasets; ++i) {
     // Get PD for this particuar set of sigmas
     pdfac.getPD(sigmult * sigma_base[i], pd, true);
-
+    
     // Get log like
     curr_LogLike = pd.getLogLike(data[i]);
-
+    
     // Apply beam and zero offset factor
     LogLike += (curr_LogLike - like_offset[i]) / like_norm[i];
   }
-  
+
   return LogLike;
 }
 
@@ -736,22 +738,35 @@ double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
     throw affineExcept("calcLike", "getLogLike",
 		       "Not enough elements in paramSet");
 
-  //Set the model
+  // Set the model
   model.setParams(p);
   meanParams = p;
   mean_flux_per_area = mean_fluxsq_per_area = 
     std::numeric_limits<double>::quiet_NaN();
   double LogLike = 0.0;
 
-  //Do the datasets likelihood
-  pars_invalid = false;
-  double sigmult = p[nknots]; //Sigma multiplier is after knot values
+  // Do the datasets likelihood
+  //  Wrap in a try so as to be able to provide more detail
+  //  if there is an error (like the model parameters!)
   bool pinvalid;
-  for (unsigned int i = 0; i < nbeamsets; ++i) {
-    LogLike += beamsets[i].getLogLike(model, pinvalid, sigmult, 
-				      fftsize);
-    pars_invalid &= pinvalid;
+  double sigmult = p[nknots]; //Sigma multiplier is after knot values
+  pars_invalid = false;
+  try {
+    for (unsigned int i = 0; i < nbeamsets; ++i) {
+      LogLike += beamsets[i].getLogLike(model, pinvalid, sigmult, 
+					fftsize);
+      pars_invalid &= pinvalid;
+    }
+  } catch (const affineExcept& ex) {
+    // We build a new exception with more information
+    std::string errstr = ex.getErrstr();
+    std::stringstream newerrstr("");
+    newerrstr << errstr
+	      << "; error encountered while processing model parameters"
+	      << model;
+    throw affineExcept(ex.getErrClass(), ex.getErrMethod(), newerrstr.str());
   }
+  
 
   if (pars_invalid) return LogLike; //!< Not much point in doing the priors...
 

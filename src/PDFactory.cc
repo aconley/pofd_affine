@@ -926,7 +926,7 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog) {
   // R values, adding in noise and all that fun stuff, filling pd
   // for output
 
-  if (!initialized )
+  if (!initialized)
     throw affineExcept("PDFactory", "getPD", "Must call initPD first");
 
   //Output array from 2D FFT is n/2+1
