@@ -29,6 +29,10 @@ class affineExcept : public std::exception {
 			const std::string& errstr); 
   ~affineExcept() throw() {}
 
+  std::string getErrClass() const { return errclass; }
+  std::string getErrMethod() const { return errmethod; }
+  std::string getErrStr() const { return errstr; }
+
   const char* what() const throw();
 };
 
