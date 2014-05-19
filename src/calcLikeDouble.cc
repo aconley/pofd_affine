@@ -678,7 +678,8 @@ calcLikeDouble::calcLikeDouble(unsigned int FFTSIZE, unsigned int NEDGE,
   has_sigma_prior2(false), sigma_prior_width2(0.0), 
   has_poisson_prior1(false), poisson_prior_mean1(0.0), 
   poisson_prior_sigma1(0.0), has_poisson_prior2(false), 
-  poisson_prior_mean2(0.0), poisson_prior_sigma2(0.0), verbose(false) {
+  poisson_prior_mean2(0.0), poisson_prior_sigma2(0.0), 
+  regularization_alpha(0.0), verbose(false) {
 
   nbeamsets = 0;
   beamsets  = NULL;
@@ -897,6 +898,12 @@ void calcLikeDouble::setRRanges(const paramSet& p) {
 */
 void calcLikeDouble::setCFIRBPrior1(double mn, double sg) {
   has_cfirb_prior1   = true;
+  if (mn < 0.0)
+    throw affineExcept("calcLike", "setCFIRBPrior2",
+		       "Invalid (negative) CFIRB prior mean");
+  if (sg < 0.0)
+    throw affineExcept("calcLike", "setCFIRBPrior2",
+		       "Invalid (negative) CFIRB prior sigma");
   cfirb_prior_mean1  = mn;
   cfirb_prior_sigma1 = sg;
 }
@@ -909,6 +916,12 @@ void calcLikeDouble::setCFIRBPrior1(double mn, double sg) {
 */
 void calcLikeDouble::setCFIRBPrior2(double mn, double sg) {
   has_cfirb_prior2   = true;
+  if (mn < 0.0)
+    throw affineExcept("calcLike", "setCFIRBPrior2",
+		       "Invalid (negative) CFIRB prior mean");
+  if (sg < 0.0)
+    throw affineExcept("calcLike", "setCFIRBPrior2",
+		       "Invalid (negative) CFIRB prior sigma");
   cfirb_prior_mean2  = mn;
   cfirb_prior_sigma2 = sg;
 }
@@ -922,6 +935,12 @@ void calcLikeDouble::setCFIRBPrior2(double mn, double sg) {
 */
 void calcLikeDouble::setPoissonPrior1(double mn, double sg) {
   has_poisson_prior1   = true;
+  if (mn < 0.0)
+    throw affineExcept("calcLike", "setPoissonPrior1",
+		       "Invalid (negative) Poisson prior mean");
+  if (sg < 0.0)
+    throw affineExcept("calcLike", "setPoissonPrior1",
+		       "Invalid (negative) Poisson prior sigma");
   poisson_prior_mean1  = mn;
   poisson_prior_sigma1 = sg;
 }
@@ -934,8 +953,24 @@ void calcLikeDouble::setPoissonPrior1(double mn, double sg) {
 */
 void calcLikeDouble::setPoissonPrior2(double mn, double sg) {
   has_poisson_prior2   = true;
+  if (mn < 0.0)
+    throw affineExcept("calcLike", "setPoissonPrior2",
+		       "Invalid (negative) Poisson prior mean");
+  if (sg < 0.0)
+    throw affineExcept("calcLike", "setPoissonPrior2",
+		       "Invalid (negative) Poisson prior sigma");
   poisson_prior_mean2  = mn;
   poisson_prior_sigma2 = sg;
+}
+
+/*!
+  \param[in] alpha Regularization multiplier
+*/
+void calcLikeDouble::setRegularizationAlpha(double alpha) {
+  if (alpha < 0.0)
+    throw affineExcept("calcLike", "setRegularizationAlpha",
+		       "Invalid (negative) regularization alpha");
+  regularization_alpha = alpha;
 }
 
 /*!
@@ -1036,6 +1071,10 @@ double calcLikeDouble::getLogLike(const paramSet& p, bool& pars_invalid) const {
       poisson_prior_sigma2;
     LogLike -=  half_log_2pi + log(poisson_prior_sigma2) + 0.5*val*val;
   }
+
+  // Regularization penalty (return value is negative)
+  if (regularization_alpha > 0.0) 
+    LogLike += model.differenceRegularize(regularization_alpha);
 
   return LogLike;
 }
@@ -1193,7 +1232,7 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
     H5Aclose(att_id);
   }
 
-  // SIGMA prior 2
+  // SIGMA prior 1
   att_id = H5Acreate2(objid, "has_sigma_prior1", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   bl = static_cast<hbool_t>(has_sigma_prior1);
@@ -1206,7 +1245,7 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
     H5Aclose(att_id);
   }
 
-  // SIGMA prior 1
+  // SIGMA prior 2
   att_id = H5Acreate2(objid, "has_sigma_prior2", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   bl = static_cast<hbool_t>(has_sigma_prior2);
@@ -1216,6 +1255,19 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
     att_id = H5Acreate2(objid, "sigma_prior_width2", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(att_id, H5T_NATIVE_DOUBLE, &sigma_prior_width2);
+    H5Aclose(att_id);
+  }
+
+  // Regularization penalty
+  att_id = H5Acreate2(objid, "did_regularize", H5T_NATIVE_HBOOL,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  bl = static_cast<hbool_t>(regularization_alpha > 0.0);
+  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
+  H5Aclose(att_id);
+  if (regularization_alpha > 0.0) {
+    att_id = H5Acreate2(objid, "regularization_alpha", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    H5Awrite(att_id, H5T_NATIVE_DOUBLE, &regularization_alpha);
     H5Aclose(att_id);
   }
 
@@ -1303,6 +1355,9 @@ void calcLikeDouble::sendSelf(MPI_Comm comm, int dest) const {
     MPI_Send(const_cast<double*>(&sigma_prior_width2), 1, MPI_DOUBLE, dest,
 	     pofd_mcmc::CLDSENDSIGMAPRIORWIDTH2, comm);
 
+  // Regularization alpha
+  MPI_Send(const_cast<double*>(&regularization_alpha), 1, MPI_DOUBLE, dest,
+	   pofd_mcmc::CLDSENDREGULARIZATIONALPHA, comm);
 }
 
 /*!
@@ -1393,4 +1448,7 @@ void calcLikeDouble::recieveCopy(MPI_Comm comm, int src) {
     MPI_Recv(&sigma_prior_width2, 1, MPI_DOUBLE, src,
 	     pofd_mcmc::CLDSENDSIGMAPRIORWIDTH2, comm, &Info);
 
+  // Regularization alpha
+  MPI_Recv(&regularization_alpha, 1, MPI_DOUBLE, src,
+	   pofd_mcmc::CLDSENDREGULARIZATIONALPHA, comm, &Info);
 }

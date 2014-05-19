@@ -83,6 +83,9 @@
 		  then your Poisson prior should be in Jy^2 deg^-2
    poissonprior2= mean stdev
                   Same as poissonprior1 but in band 2
+   regularize_alpha= value
+                  Sets regularization multiplier for difference operator
+		  penalty in log likelihood for band one model (def: 0).
    wisdom_file= filename
                   Uses filename as a FFTW wisdom file		  
    verbose=     bool
@@ -138,6 +141,7 @@ struct specFileDouble {
   bool has_poissonprior2; //!< Is poisson prior on, band 2
   double poissonprior_mean2; //!< Mean value of prior, band 2
   double poissonprior_stdev2; //!< Stdev of prior, band 2
+  double regularization_alpha; //!< Regularization multiplier
   bool has_wisdom_file; //!< Has FFTW wisdom file
   std::string wisdom_file; //!< Name of wisdom file
   unsigned int verbosity; //!< Verbosity level

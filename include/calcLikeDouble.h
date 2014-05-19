@@ -208,6 +208,9 @@ class calcLikeDouble {
   double poisson_prior_mean2; //!< Value of Poisson prior mean, band 2
   double poisson_prior_sigma2; //!< Value of Poisson prior sigma, band 2
 
+  // Regularization
+  double regularization_alpha; //!< Regularization multiplier
+
   // Model
   mutable numberCountsDoubleLogNormal model; //!< Number counts model
 
@@ -308,6 +311,9 @@ class calcLikeDouble {
   void setPoissonPrior2(double, double);
   /*! \brief De-activates Poisson prior, band 2 */
   void unsetPoissonPrior2() { has_poisson_prior2 = false; }
+
+  /*! \brief Set Regularization Alpha*/
+  void setRegularizationAlpha(double);
 
   /*! \brief Get number of beam sets */
   unsigned int getNBeamSets() const { return nbeamsets; }

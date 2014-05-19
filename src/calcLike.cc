@@ -509,7 +509,7 @@ calcLike::calcLike(unsigned int FFTSIZE, unsigned int NINTERP,
   nbins(NBINS), has_cfirb_prior(false), cfirb_prior_mean(0.0),
   cfirb_prior_sigma(0.0), has_sigma_prior(false), sigma_prior_width(0.0),
   has_poisson_prior(false), poisson_prior_mean(0.0),
-  poisson_prior_sigma(0.0), verbose(false) {
+  poisson_prior_sigma(0.0), regularization_alpha(0.0), verbose(false) {
 
   nbeamsets = 0;
   beamsets  = NULL;
@@ -702,6 +702,12 @@ void calcLike::setRRanges(const paramSet& p) {
 */
 void calcLike::setCFIRBPrior(double mn, double sg) {
   has_cfirb_prior = true;
+  if (mn < 0.0)
+    throw affineExcept("calcLike", "setCFIRBPrior",
+		       "Invalid (negative) CFIRB mean");
+  if (sg < 0.0)
+    throw affineExcept("calcLike", "setCFIRBPrior",
+		       "Invalid (negative) CFIRB sigma");
   cfirb_prior_mean = mn;
   cfirb_prior_sigma = sg;
 }
@@ -714,8 +720,24 @@ void calcLike::setCFIRBPrior(double mn, double sg) {
 */
 void calcLike::setPoissonPrior(double mn, double sg) {
   has_poisson_prior = true;
+  if (mn < 0.0)
+    throw affineExcept("calcLike", "setPoissonPrior",
+		       "Invalid (negative) Poisson prior mean");
+  if (sg < 0.0)
+    throw affineExcept("calcLike", "setPoissonPrior",
+		       "Invalid (negative) Poisson prior sigma");
   poisson_prior_mean = mn;
   poisson_prior_sigma = sg;
+}
+
+/*!
+  \param[in] alpha Regularization multiplier
+*/
+void calcLike::setRegularizationAlpha(double alpha) {
+  if (alpha < 0.0)
+    throw affineExcept("calcLike", "setRegularizationAlpha",
+		       "Invalid (negative) regularization alpha");
+  regularization_alpha = alpha;
 }
 
 /*!
@@ -767,7 +789,6 @@ double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
     throw affineExcept(ex.getErrClass(), ex.getErrMethod(), newerrstr.str());
   }
   
-
   if (pars_invalid) return LogLike; //!< Not much point in doing the priors...
 
   // Add on cfirb prior, poisson prior, and sigma priors if needed
@@ -799,6 +820,11 @@ double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
       poisson_prior_sigma;
     LogLike -=  half_log_2pi + log(poisson_prior_sigma) + 0.5 * val * val;
   }
+
+  // Regularization penalty (return value is negative)
+  if (regularization_alpha > 0.0) 
+    LogLike += model.differenceRegularize(regularization_alpha);
+
   return LogLike;
 }
 
@@ -919,6 +945,20 @@ void calcLike::writeToHDF5Handle(hid_t objid) const {
     H5Awrite(att_id, H5T_NATIVE_DOUBLE, &sigma_prior_width);
     H5Aclose(att_id);
   }
+
+  // Regularization penalty
+  att_id = H5Acreate2(objid, "did_regularize", H5T_NATIVE_HBOOL,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  bl = static_cast<hbool_t>(regularization_alpha > 0.0);
+  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
+  H5Aclose(att_id);
+  if (regularization_alpha > 0.0) {
+    att_id = H5Acreate2(objid, "regularization_alpha", H5T_NATIVE_DOUBLE,
+			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+    H5Awrite(att_id, H5T_NATIVE_DOUBLE, &regularization_alpha);
+    H5Aclose(att_id);
+  }
+
   H5Sclose(mems_id);
 
   // Model info
@@ -982,6 +1022,9 @@ void calcLike::sendSelf(MPI_Comm comm, int dest) const {
     MPI_Send(const_cast<double*>(&sigma_prior_width), 1, MPI_DOUBLE, dest,
 	     pofd_mcmc::CLSENDSIGMAPRIORWIDTH, comm);
 
+  // Regularization alpha
+  MPI_Send(const_cast<double*>(&regularization_alpha), 1, MPI_DOUBLE, dest,
+	   pofd_mcmc::CLSENDREGULARIZATIONALPHA, comm);
 }
 
 /*!
@@ -1048,5 +1091,9 @@ void calcLike::recieveCopy(MPI_Comm comm, int src) {
   if (has_sigma_prior) 
     MPI_Recv(&sigma_prior_width, 1, MPI_DOUBLE, src,
 	     pofd_mcmc::CLSENDSIGMAPRIORWIDTH, comm, &Info);
+
+  // Regularization alpha
+  MPI_Recv(&regularization_alpha, 1, MPI_DOUBLE, src,
+	   pofd_mcmc::CLSENDREGULARIZATIONALPHA, comm, &Info);
 }
 

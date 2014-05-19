@@ -157,7 +157,7 @@ class calcLike {
   unsigned int fftsize; //!< Size of FFT (on each dim)
   unsigned int ninterp; //!< R interpolation size
 
-  //Data
+  // Data
   unsigned int nbeamsets; //!< Number of beam sets 
   calcLikeSingle* beamsets; //!< Sets of data grouped by beam
   bool bin_data; //!< Bin the data
@@ -179,7 +179,10 @@ class calcLike {
   double poisson_prior_mean; //!< Value of Poisson prior mean
   double poisson_prior_sigma; //!< Value of Poisson prior sigma
 
-  //Model
+  // Regularization
+  double regularization_alpha; //!< Regularization multiplier
+
+  // Model
   mutable numberCountsKnotsSpline model; //!< Holds number counts model
 
   bool verbose; //!< Output informational messages while running
@@ -244,6 +247,9 @@ class calcLike {
   void setPoissonPrior(double, double);
   /*! \brief De-activate Poisson prior */
   void unsetPoissonPrior() { has_poisson_prior = false; }
+
+  /*! \brief Set Regularization Alpha*/
+  void setRegularizationAlpha(double);
 
   /*! \brief Get number of beam sets */
   unsigned int getNBeamSets() const { return nbeamsets; }

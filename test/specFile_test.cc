@@ -89,6 +89,9 @@ TEST(specFile1DTest, ReadCheck) {
     EXPECT_FALSE(spec_info.has_poissonprior) << 
       "Expected to not have Poisson prior";
 
+    EXPECT_FLOAT_EQ(spec_info.regularization_alpha, 0.0) <<
+      "Expected zero regularization alpha";
+
     ASSERT_TRUE(spec_info.has_wisdom_file) << "Expected to have wisdom file";
     EXPECT_EQ(spec_info.wisdom_file, std::string("a_wisdom_file.txt")) <<
       "Expected wisdom file name 'a_wisdom_file.txt', got " << 
@@ -210,6 +213,8 @@ TEST(specFile2DTest, ReadCheck) {
   EXPECT_FALSE(spec_info.has_poissonprior2) << 
     "Expected no band 2 poisson prior";
   
+  EXPECT_FLOAT_EQ(spec_info.regularization_alpha, 0.0) <<
+    "Expected zero regularization alpha";
 
   ASSERT_TRUE(spec_info.has_wisdom_file) << "Expected to have wisdom file";
   EXPECT_EQ(spec_info.wisdom_file, std::string("a_wisdom_file.txt")) <<

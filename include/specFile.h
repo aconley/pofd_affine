@@ -68,6 +68,9 @@
 		  stdev expressed in the same flux and area units as the model.
 		  So if your model dN/dS is in Jy^-1 deg^-2,
 		  then your Poisson prior should be in Jy^2 deg^-2
+   regularize_alpha= value
+                  Sets regularization multiplier for difference operator
+		  penalty in log likelihood (def: 0).
    wisdom_file= filename
                   Uses filename as a FFTW wisdom file		  
    verbose=     bool
@@ -111,6 +114,7 @@ struct specFile {
   bool has_poissonprior; //!< Is poisson prior on
   double poissonprior_mean; //!< Mean value of prior
   double poissonprior_stdev; //!< Stdev of prior
+  double regularization_alpha; //!< Regularization multiplier
   bool has_wisdom_file; //!< Has FFTW wisdom file
   std::string wisdom_file; //!< Name of wisdom file
   unsigned int verbosity; //!< Verbosity level

@@ -55,6 +55,7 @@ void specFileDouble::init() {
   has_poissonprior2 = false;
   poissonprior_mean2 = 0.0;
   poissonprior_stdev2 = 0.0;
+  regularization_alpha = 0.0;
   has_wisdom_file = false;
   wisdom_file.clear();
   verbosity = 0;
@@ -412,7 +413,7 @@ void specFileDouble::readFile(const std::string& flname) {
 
       str.str(words[1]); str.clear(); str >> dblval;
       if (dblval < 0.0) {
-	errstr << "Invalid (non-negative) minbeamval value " << dblval
+	errstr << "Invalid (non-positive) minbeamval value " << dblval
 	       << " from line: " << line;
 	throw affineExcept("specFileDouble", "readFile", errstr.str());
       }
@@ -443,7 +444,21 @@ void specFileDouble::readFile(const std::string& flname) {
       }
 
       nbeamhist = static_cast<unsigned int>(ival);
+    } else if (words[0] == "regularize_alpha") {
+      if (words.size() < 2) {
+	errstr << "regularize_alpha line doesn't have right number of entries: "
+	       << line;
+	throw affineExcept("specFile", "readFile", errstr.str());
+      }
 
+      str.str(words[1]); str.clear(); str >> dblval;
+      if (dblval < 0.0) {
+	errstr << "Invalid (negative) regularize_alpha value " << dblval
+	       << " from line: " << line;
+	throw affineExcept("specFile", "readFile", errstr.str());
+      }
+
+      regularization_alpha = dblval;
     } else if (words[0] == "wisdom_file") {
       if (words.size() < 2) {
 	errstr << "wisdom_file line doesn't have right number of entries: "

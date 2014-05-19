@@ -107,6 +107,10 @@ bool pofdMCMC::initChainsMaster() {
   if (spec_info.fit_sigma && spec_info.has_sigprior)
     likeSet.setSigmaPrior(spec_info.sigprior_stdev);
 
+  // Regularization
+  if (spec_info.regularization_alpha > 0.0)
+    likeSet.setRegularizationAlpha(spec_info.regularization_alpha);
+
   // Read in data files
   if (spec_info.verbosity >= 2)
       std::cout << "Reading in data files" << std::endl;

@@ -139,6 +139,10 @@ bool pofdMCMCDouble::initChainsMaster() {
   if (spec_info.fit_sigma2 && spec_info.has_sigprior2)
     likeSet.setSigmaPrior2(spec_info.sigprior_stdev2);
 
+  // Regularization
+  if (spec_info.regularization_alpha > 0.0)
+    likeSet.setRegularizationAlpha(spec_info.regularization_alpha);
+
   //Read in data files
   if (spec_info.verbosity >= 2)
       std::cout << "Reading in data files" << std::endl;
