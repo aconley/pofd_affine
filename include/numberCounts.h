@@ -56,6 +56,8 @@ class numberCounts {
   /*! \brief Get number of source responses, single value version */
   virtual double getR(double, const beam&) const = 0;
   
+  virtual double differenceRegularize(double) const; //!< Tikhonov regularization log Likelihood penalty
+
   /*! \brief Get number of source responses, array version*/
   virtual void getR(unsigned int n, const double* const,
 		    const beam&, double*) const = 0;

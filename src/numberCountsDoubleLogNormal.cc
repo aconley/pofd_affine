@@ -1834,6 +1834,29 @@ void numberCountsDoubleLogNormal::recieveCopy(MPI_Comm comm, int src) {
 
 }
 
+/*!
+  \param[in] alpha Regularization multiplier.  Must be positive (not checked)
+  \returns log Likelhood penalty
+
+  Computes difference operator Tikhonov regularization penalty
+  on model, where the derivative is taken in log/log space.  It is
+  only applied to the band 1 model.
+ */
+double numberCountsDoubleLogNormal::differenceRegularize(double alpha) const {
+  if (!knots_valid) return std::numeric_limits<double>::quiet_NaN();
+  if (nknots == 0 || nknots == 1) return 0.0;
+
+  double log_penalty = 0.0;
+  double deriv, delta_logknotpos, delta_logknotval;
+  for (unsigned int i = 1; i < nknots; ++i) {
+    delta_logknotpos = logknots[i] - logknots[i - 1];
+    delta_logknotval = logknotvals[i] - logknotvals[i - 1];
+    deriv = delta_logknotval / delta_logknotpos;
+    log_penalty -= deriv * deriv;
+  }
+  return alpha * log_penalty;
+}
+
 
 /*!
   \param[inout] objid HDF5 handle to write to

@@ -234,6 +234,8 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   void getR(unsigned int n1, const double* const, unsigned int n2,
 	    const double* const, const doublebeam&, double*) const;
   
+  double differenceRegularize(double) const; //!< Tikhonov regularization log Likelihood penalty
+
   void writeToHDF5Handle(hid_t) const; //!< Write to HDF5 handle
   bool writeToStream(std::ostream& os) const; //<! Output to stream
   

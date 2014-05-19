@@ -64,6 +64,8 @@ class numberCountsKnotsSpline : public numberCountsKnots {
   void getR(unsigned int n, const double* const,
 	    const beam&, double*) const;
 
+  double differenceRegularize(double) const; //!< Tikhonov regularization log Likelihood penalty
+
   void writeToHDF5Handle(hid_t) const; //!< Write to HDF5 handle
 
   virtual void sendSelf(MPI_Comm, int dest) const; //!< Send self

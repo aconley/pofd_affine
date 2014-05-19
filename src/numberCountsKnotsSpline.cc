@@ -298,7 +298,7 @@ double numberCountsKnotsSpline::getNumberCounts(double fdens) const {
 */
 double numberCountsKnotsSpline::splineInt(double alpha) const {
   if (nknots < 2) return std::numeric_limits<double>::quiet_NaN();
-  if (! isValid()) return std::numeric_limits<double>::quiet_NaN();
+  if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
   double result, error;
   void *params;
   gsl_function F;
@@ -524,6 +524,28 @@ void numberCountsKnotsSpline::getR(unsigned int n, const double* const flux,
     }
     R[i] = prefac * workval;
   }
+}
+
+/*!
+  \param[in] alpha Regularization multiplier.  Must be positive (not checked)
+  \returns log Likelhood penalty
+
+  Computes difference operator Tikhonov regularization penalty
+  on model, where the derivative is taken in log/log space
+ */
+double numberCountsKnotsSpline::differenceRegularize(double alpha) const {
+  if (!knotvals_loaded) return std::numeric_limits<double>::quiet_NaN();
+  if (nknots == 0 || nknots == 1) return 0.0;
+
+  double log_penalty = 0.0;
+  double deriv, delta_logknotpos, delta_logknotval;
+  for (unsigned int i = 1; i < nknots; ++i) {
+    delta_logknotpos = logknots[i] - logknots[i - 1];
+    delta_logknotval = logknotvals[i] - logknotvals[i - 1];
+    deriv = delta_logknotval / delta_logknotpos;
+    log_penalty -= deriv * deriv;
+  }
+  return alpha * log_penalty;
 }
 
 /*!
