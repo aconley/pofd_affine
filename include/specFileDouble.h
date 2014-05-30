@@ -15,9 +15,9 @@
   The format is: identifier= values
   The appropriate entries for values depends upon identifier=
 
-  The valid values for identifier= and their associated values are:
-   dataset=      datafile1 datafile2 inst_sigma1 inst_sigma2 psffile1 \
-                   psffile2 [like_norm]
+  The valid values for identifier= and their associated values are:\n\n
+   -dataset=      datafile1 datafile2 inst_sigma1 inst_sigma2 psffile1 \
+                   psffile2 [like_norm]\n
                     datafile1 and datafile2 are the names of fits data files,
 	              in band 1 and band 2, respectively
 	            inst_sigma1, inst_sigma2 are the instrumental noise 
@@ -27,75 +27,76 @@
                       band
 	            like_norm is an optional input controlling how the
 	              likelihood is normalized for the beam area. The likelihood
-		      is divided by this number (def: 1.0).
-   bin_data=    nbins
+		      is divided by this number (def: 1.0).\n
+   -bin_data=    nbins (int)\n
                   Turns on binning of data files with specified number 
-                  of bins.
-   mean_sub=    bool
-                  Do mean subtraction on input data if value is true
-   ignore_mask= bool
-                  Ignore mask information in data files
-   fftsize=     nfft
-                  Sets fft transform length along each dimension (def: 4096)
-   edge_set=    bool
+                  of bins.\n
+   -mean_sub=    bool\n
+                  Do mean subtraction on input data if value is true\n
+   -ignore_mask= bool\n
+                  Ignore mask information in data files\n
+   -fftsize=     nfft (int)\n
+                  Sets fft transform length along each dimension (def: 4096)\n
+   -edge_set=    bool\n
                   Turn on R edge integration if true (on by default, so this
-                  is only useful for turning it off)
-   nedge=       value
-                  Set size of edge interpolation (def: 256).
-   minbeamval=  value
+                  is only useful for turning it off)\n
+   -nedge=       value (int)\n
+                  Set size of edge interpolation (def: 256).\n
+   -minbeamval=  value (float)\n
                   Minimum beam value used.  Everything with an absolute
 		  value <= than this is ignored.  This can be zero if you
 		  are not histogramming, but with histogramming a non-zero
 		  value is advisable.  You should look at your
-		  beam to decide a reasonable cutoff (def: 1e-6)
-   beam_histogram= bool
-                  Activates beam histogramming.  On by default.
-   nbeamhist= value
+		  beam to decide a reasonable cutoff (def: 1e-6)\n
+   -beam_histogram= bool\n
+                  Activates beam histogramming.  On by default.\n
+   -nbeamhist= value (int)\n
                   If beam histogramming, number of bins in histogram (def: 150)
-   fit_sigma1=  value
+   -fit_sigma1=  bool\n
                   If value is true, this turns on fitting for sigma in band 1
-   fit_sigma2=  value
+   -fit_sigma2=  bool\n
                   If value is true, this turns on fitting for sigma in band 2
-   sigmaprior1=  stdev
+   -sigmaprior1=  stdev (float)\n
                   This activates the Gaussian prior on the instrumental noise
 		  multiplier in band 1.  It has mean one and standard 
-		  deviation stdev.  Will automatically set fit_sigma1
-   sigmaprior2=  stdev
-                  Same as sigmaprior1, but in band 2
-   exp_conf1=    value
+		  deviation stdev.  Will automatically set fit_sigma1\n
+   -sigmaprior2=  stdev (float)\n
+                  Same as sigmaprior1, but in band 2\n
+   -exp_conf1=    value (float)\n
                   Sets the expected confusion noise value in Jy in band 1; 
-		  used to set the expected likelihood values.
-   exp_conf2=    value
-                  Same as exp_conf1, but in the other band
-   cfirbprior1=  mean stdev
+		  used to set the expected likelihood values.\n
+   -exp_conf2=    value (float)\n
+                  Same as exp_conf1, but in the other band\n
+   -cfirbprior1=  mean stdev (floats)\n
                   This activates a Gaussian prior on the integrated CFIRB 
 		  luminoisty in band 1. It has a mean of mean and a standard 
                   deviation stdev expressed in the same flux and area units as 
 		  the model.  So if your model dN/dS is in Jy^-1 deg^-2,
-		  then your CFIRB prior should be in Jy deg^-2
-   cfirbprior2= mean stdev
-                  Same as cfirbprior1 but in band 2
-   poissonprior1=  mean stdev
+		  then your CFIRB prior should be in Jy deg^-2\n
+   -cfirbprior2= mean stdev (floats)\n
+                  Same as cfirbprior1 but in band 2\n
+   -poissonprior1=  mean stdev (floats)\n
                   This activates a Gaussian prior on the Poisson noise in
 		  band 1. It has a mean of mean and a standard deviation 
 		  stdev expressed in the same flux and area units as 
 		  the model.  So if your model dN/dS is in Jy^-1 deg^-2,
-		  then your Poisson prior should be in Jy^2 deg^-2
-   poissonprior2= mean stdev
-                  Same as poissonprior1 but in band 2
-   regularize_alpha= value
+		  then your Poisson prior should be in Jy^2 deg^-2\n
+   -poissonprior2= mean stdev (floats)\n
+                  Same as poissonprior1 but in band 2\n
+   -regularize_alpha= value (float)\n
                   Sets regularization multiplier for difference operator
-		  penalty in log likelihood for band one model (def: 0).
-   wisdom_file= filename
-                  Uses filename as a FFTW wisdom file		  
-   verbose=     bool
-                  Turns on verbose mode (verbosity = 1)
-   ultraverbose= bool
-                  Turns on ultraverbose mode (verbosity = 2)
-   verbosity=    value		  
-                  Sets verbosity to this level.
-   seed=         value
-                  Sets random number generator seed
+		  penalty in log likelihood for band one model (def: 0).\n
+   -wisdom_file= filename (string)\n
+                  Uses filename as a FFTW wisdom file\n
+   -verbose=     bool\n
+                  Turns on verbose mode (verbosity = 1)\n
+   ultraverbose= bool\n
+                  Turns on ultraverbose mode (verbosity = 2)\n
+   -verbosity=    value	(int)\n
+                  Sets verbosity to this level.\n
+   -seed=         value (int)\n
+                  Sets random number generator seed\n
+
   Having multiple lines with dataset= is additive.
   Having multiple lines of the others results in only
   the values from the final such line being used.

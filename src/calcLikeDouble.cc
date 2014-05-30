@@ -720,7 +720,7 @@ void calcLikeDouble::addWisdom(const std::string& filename) {
   \param[in] IGNOREMASK Ignore any mask in data files
   \param[in] MEANSUB Mean subtract the data
   \param[in] MINBEAMVAL Minimum beam value used
-  \param[in] HISTOGRAMBEAMS Histogram the beams
+  \param[in] HISTOGRAM Histogram the beams
   \param[in] NBEAMHIST Number of beam histogram bins to use
   \param[in] EXPCONF1 Expected confusion noise value, band 1
   \param[in] EXPCONF2 Expected confusion noise value, band 2

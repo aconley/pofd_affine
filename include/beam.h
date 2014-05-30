@@ -17,7 +17,9 @@
 /*!
   \brief Represents beam in 1D case.
 
-  Note that zero beam values are not stored
+  Note that zero beam values are not stored, and the absolute
+  value is stored in all cases.  The negative and positive beam
+  are stored separately due to the way they are used in P(D).
 
   Can also store the histogrammed inverse beam.
 
@@ -73,7 +75,7 @@ class beam {
   void makeHistogram(unsigned int NBINS=120); //!< Prepare the histogram
   bool hasData() const { return haspos || hasneg; } //!< has data been loaded
 
-  double getMinval() const { return minval; }
+  double getMinval() const { return minval; } //!< Get beam minimum abs value
 
   double getEffectiveArea() const; //!< Get effective area of beam in sq deg
   double getEffectiveAreaPos() const; //!< Get effective area of positive beam in sq deg
@@ -109,7 +111,9 @@ class beam {
   const double* const getPosHistWeights() const { return posweights; }
   /*! \brief Access negative pixel weight array */
   const double* const getNegHistWeights() const { return negweights; }
+  /*! \brief Access positive pixel histogrammed beam*/
   const double* const getPosHist() const { return poshistval; }
+  /*! \brief Access abs negative pixel histogrammed beam*/
   const double* const getNegHist() const { return neghistval; }
   
   dblpair getMinMaxPos() const; //!< Min and max positive beam value

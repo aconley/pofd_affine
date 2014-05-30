@@ -95,8 +95,8 @@ class doublebeam {
   unsigned int getNPix(unsigned int i) const { return npix[i]; } //!< Number of pixels in pp, pn, np, nn beams
   unsigned int getMaxNPix() const; //!< Largest number of pix
   unsigned int getTotalNPix() const; //!< Total number of pix
-  double getMinval() const { return minval; }
-  double getPixSize() const { return pixsize; }
+  double getMinval() const { return minval; } //!< Get minimum abs value
+  double getPixSize() const { return pixsize; } //!< Return pixel size
 
   /*! \brief Get max values for pp,pn,np,nn pieces of beam 1*/
   dblpair getMinMax1(unsigned int) const;
@@ -111,13 +111,18 @@ class doublebeam {
   const double* const getInvPixArr2(unsigned int idx) const { return invpixarr2[idx]; }
 
   // Histogram information
-  unsigned int getNBins() const { return nbins; }
+  unsigned int getNBins() const { return nbins; } //!< Get number of bins
+  /*! \brief Is the beam histogrammed? */
   bool isHistogrammed(unsigned int i) const { return ishistogrammed[i]; }
+  /*! \brief Get number of histogram bins per sign component */
   unsigned int getNHist(unsigned int i) const { return nhist[i]; }
   
   // More direct acess 
+  /*! \brief Access to histogram bin weights */
   const double* const getBinWeights(unsigned int i) const { return binweights[i]; }
+  /*! \brief Access to histogram bin values, band 1 */
   const double* const getBinVals1(unsigned int i) const { return binvals1[i]; }
+  /*! \brief Access to histogram bin values, band 2 */
   const double* const getBinVals2(unsigned int i) const { return binvals2[i]; }
   
 

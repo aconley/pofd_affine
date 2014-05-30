@@ -915,8 +915,6 @@ bool PDFactory::initPD(unsigned int n, double minflux, double maxflux,
   \param[out] pd Holds P(D) on output
   \param[in] setLog If true, pd is log(P(D) on output; convenient
               for likelihood evaluation.
-  \param[in] edgeFix  Apply a fix to the lower edges to minimize wrapping
-                      effects using a Gaussian to each row/col
 
   You must call initPD first.
 */
