@@ -10,7 +10,7 @@
 
 fitsData::fitsData() {
   n = 0;
-  data=NULL;
+  data = NULL;
   is_binned = false;
   nbins = 0;
   bincent0 = bindelta = 0.0;
@@ -24,12 +24,12 @@ fitsData::fitsData() {
 */
 fitsData::fitsData(const std::string& file, bool ignoremask, bool meansub) {
   n = 0;
-  data=NULL;
+  data = NULL;
   is_binned = false;
   nbins = 0;
   bincent0 = bindelta = 0.0;
   binval = NULL;
-  readData(file,ignoremask,meansub);
+  readData(file, ignoremask, meansub);
 }
 
 fitsData::~fitsData() {
@@ -44,6 +44,11 @@ fitsData::~fitsData() {
 
   The mean subtraction is based on unmasked pixels.
   This will blow away any binning.
+
+  Note that the mask is assumed to be stored as an unsigned integer.
+  This is important because the FITS standard doesn't properly support
+  unsigned values, so if you give it a file with signed integers
+  odd things will happen.
 */
 void fitsData::readData(const std::string& file,
 			bool ignore_mask, bool meansub) {
@@ -57,9 +62,9 @@ void fitsData::readData(const std::string& file,
 
   //Read data into temporary arrays so we can apply mask
   bool has_mask;
-  unsigned int ndat_;
+  long ndat_;
   double *data_;
-  int *mask;
+  unsigned int *mask;
   data_ = NULL;
   mask  = NULL;
 
@@ -133,22 +138,22 @@ void fitsData::readData(const std::string& file,
 
     fits_get_img_size(fptr, 2, masknaxes, &status);
     if (status) {
-      fits_close_file(fptr,&status);
+      fits_close_file(fptr, &status);
       throw affineExcept("fitsData", "readData",
 			 "Mask failure getting mask extents");
     }
     
     nmask = masknaxes[0] * masknaxes[1];
     if (nmask == 0) {
-      fits_close_file(fptr,&status);
+      fits_close_file(fptr, &status);
       throw affineExcept("fitsData", "readData",
 			 "Mask present zero extent");
     } 
 
     //The actual read.  Man fitsio takes a lot of code...
-    mask = (int*) fftw_malloc(sizeof(int) * nmask);
-    fpixel[0] = 1; fpixel[1] = 1;
-    fits_read_pix(fptr, TINT, fpixel, nmask, 0, mask, 0, &status);
+    mask = (unsigned int*) fftw_malloc(sizeof(unsigned int) * nmask);
+    fpixel[0] = fpixel[1] = 1;
+    fits_read_pix(fptr, TUINT, fpixel, nmask, 0, mask, 0, &status);
     if (status) {
       fits_report_error(stderr, status);
       fits_close_file(fptr, &status);
@@ -218,21 +223,6 @@ void fitsData::readData(const std::string& file,
     throw affineExcept("fitsData", "readData", 
 		       "Error getting image dimensions");
   }
-  if (has_mask) {
-    if (naxes[0] != masknaxes[0] ) {
-      fits_close_file(fptr, &status);
-      fftw_free(mask);
-      throw affineExcept("fitsData", "readData",
-			 "Image does not match mask extent along first dimension");
-    }
-    if (naxes[1] != masknaxes[1] ) {
-      fits_close_file(fptr, &status);
-      fftw_free(mask);
-      throw affineExcept("fitsData", "readData",
-			 "Image does not match mask extent along second dimension");
-    }
-  }
-
   ndat_ = static_cast<unsigned int>(naxes[0] * naxes[1]);
   if (ndat_ == 0) {
     fits_close_file(fptr, &status);
@@ -240,12 +230,34 @@ void fitsData::readData(const std::string& file,
     throw affineExcept("fitsData", "readData", "Image is of zero extent");
   }
 
+  // Test sizes
+  if (has_mask) {
+    if (ndat_ != nmask) {
+      fits_close_file(fptr, &status);
+      fftw_free(mask);
+      throw affineExcept("fitsData", "readData",
+			 "Image does not match mask size");
+    }
+    if (naxes[0] != masknaxes[0]) {
+      fits_close_file(fptr, &status);
+      fftw_free(mask);
+      throw affineExcept("fitsData", "readData",
+			 "Image does not match mask extent along first dimension");
+    }
+    if (naxes[1] != masknaxes[1]) {
+      fits_close_file(fptr, &status);
+      fftw_free(mask);
+      throw affineExcept("fitsData", "readData",
+			 "Image does not match mask extent along second dimension");
+    }
+  }
+
   //Read
-  data_ = (double*) fftw_malloc(sizeof(double)*ndat_);
-  fpixel[0] = 1; fpixel[1] = 1;
+  data_ = (double*) fftw_malloc(sizeof(double) * ndat_);
+  fpixel[0] = fpixel[1] = 1;
   fits_read_pix(fptr, TDOUBLE, fpixel, ndat_, 0, data_, 0, &status);
   if (status) {
-    fits_report_error(stderr,status);
+    fits_report_error(stderr, status);
     fits_close_file(fptr, &status);
     if (has_mask) fftw_free(mask);
     fftw_free(data_);
@@ -253,7 +265,7 @@ void fitsData::readData(const std::string& file,
   }
 
   //Close out
-  fits_close_file(fptr,&status);
+  fits_close_file(fptr, &status);
   if (status) {
     fits_report_error(stderr, status);
     if (has_mask) fftw_free(mask);
@@ -262,7 +274,7 @@ void fitsData::readData(const std::string& file,
   }
 
   //If there is no mask, easy cakes
-  if ( ! has_mask ) {
+  if (!has_mask) {
     data = data_;
     n = ndat_;
   } else {
@@ -280,7 +292,7 @@ void fitsData::readData(const std::string& file,
     data = (double*) fftw_malloc(sizeof(double) * nkeep);
     unsigned int cntr = 0;
     for (unsigned int i = 0; i < ndat_; ++i)
-      if (mask[i] == 0) data[++cntr] = data_[i];
+      if (mask[i] == 0) data[cntr++] = data_[i];
     
     fftw_free(data_);
     n = nkeep;

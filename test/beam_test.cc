@@ -253,12 +253,12 @@ TEST(beam2DTest, Histogram) {
   for (unsigned int i = 1; i < 4; ++i)
     EXPECT_FALSE(bm.isHistogrammed(i)) 
       << "Beam should not be histogrammed for component: " << i;
-  EXPECT_EQ(150, bm.getNBins()) << "Unexpected number of histogram bins";
-  EXPECT_EQ(45, bm.getNHist(0)) << "Unexpected number of hist bins in 0 (pp)"
-				<< " component";
+  EXPECT_EQ(150U, bm.getNBins()) << "Unexpected number of histogram bins";
+  EXPECT_EQ(45U, bm.getNHist(0)) << "Unexpected number of hist bins in 0 (pp)"
+				 << " component";
   for (unsigned int i = 1; i < 4; ++i)
-    EXPECT_EQ(0, bm.getNHist(i)) << "Unexpected number of hist bins in "
-				 << "component " << i;
+    EXPECT_EQ(0U, bm.getNHist(i)) << "Unexpected number of hist bins in "
+				  << "component " << i;
 }
 
 

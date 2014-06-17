@@ -31,7 +31,7 @@ class fitsData {
 	   bool meansub=false); //!< Constructor from file
   ~fitsData();
 
-  void readData(const std::string&, bool igmore_mask=false, 
+  void readData(const std::string&, bool ignore_mask=false, 
 		bool domeansub=false); //!< Read data from file
 
   bool isBinned() const { return is_binned; } //!< Is data binned?

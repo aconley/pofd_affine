@@ -46,6 +46,40 @@ TEST(fitsDataTest, Read) {
 
 }
 
+// Test reading SMAP fits map example
+TEST(fitsDataTest, ReadSMAP) {
+  const std::string testfile="testdata/test_PSW.fits";
+  fitsData dat;
+
+  EXPECT_FALSE(dat.hasData()) << "Not expected to have data";
+  EXPECT_FALSE(dat.isBinned()) << "Data should not be binned";
+  
+  // Read without mask
+  dat.readData(testfile, true);
+  EXPECT_TRUE(dat.hasData()) << "After read, should have data";
+  EXPECT_FALSE(dat.isBinned()) << "Data should not be binned after read";
+  EXPECT_EQ(8100U, dat.getN()) << "Unexpected number of data points";
+
+  EXPECT_NEAR(-0.0063209710, dat.getMin(), 1e-5) << "Didn't get expected minimum";
+  EXPECT_NEAR(0.052431226, dat.getMax(), 1e-5) << "Didn't get expected maximum";
+
+  dblpair minmax = dat.getMinMax();
+  EXPECT_NEAR(-0.0063209710, minmax.first, 1e-5) << "Didn't get expected minimum";
+  EXPECT_NEAR(0.052431226, minmax.second, 1e-5) << "Didn't get expected maximum";
+
+  //Same, but with masking
+  dat.readData(testfile, false);
+  EXPECT_TRUE(dat.hasData()) << "After re read, should have data";
+  EXPECT_FALSE(dat.isBinned()) << "Data should not be binned after re read";
+  EXPECT_EQ(5355U, dat.getN()) << "Unexpected number of data points with mask";
+
+  EXPECT_NEAR(-0.0063209710, dat.getMin(), 1e-5) 
+    << "Didn't get expected minimum after masking";
+  EXPECT_NEAR(0.046583797, dat.getMax(), 1e-5) 
+    << "Didn't get expected maximum after masking";
+
+}
+
 TEST(fitsDataDoubleTest, Read) {
   const std::string testfile1="testdata/testmodel2D_band1.fits";
   const std::string testfile2="testdata/testmodel2D_band2.fits";

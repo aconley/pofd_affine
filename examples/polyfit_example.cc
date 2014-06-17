@@ -4,6 +4,7 @@
 #include<sstream>
 #include<cstdlib>
 #include<ios>
+#include<limits>
 
 #include<getopt.h>
 

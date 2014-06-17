@@ -39,7 +39,8 @@ endif
 
 EXTRA_DIST=testdata/testvec.txt testdata/testinvcov.txt \
 	testdata/fiducial_1Dmodel.txt testdata/initfile_test1D.txt \
-	testdata/specfile_test1D.txt testdata/specfile_test2D.txt \
+	testdata/specfile_test1D.txt testdata/initfile_test2D.txt \
+	testdata/specfile_test2D.txt \
 	testdata/band1_beam.fits testdata/band2_beam.fits \
 	testdata/testmodel2D_band1.fits testdata/testmodel2D_band2.fits \
-	testdata/band12_beam_f100.fits
+	testdata/band12_beam_f100.fits testdata/test_PSW.fits

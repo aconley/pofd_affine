@@ -32,8 +32,8 @@ class fitsDataDouble {
   unsigned int* binval; //!< Number of elements in each bin, row major array
 
   /*! \brief Reads data from single file*/
-  bool readFile(const std::string&,unsigned int&,double*&, 
-		int*&,bool=false);
+  bool readFile(const std::string&, long&, double*&, 
+		unsigned int*&, bool=false);
 
 
  public:

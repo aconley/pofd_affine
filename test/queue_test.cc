@@ -34,7 +34,6 @@ TEST(queueTest, InsertRecover) {
     "Trying to add another element to a full queue should throw an exception";
 
   //Pop first few
-  unsigned int val;
   for (unsigned int i = 0; i < 5; ++i)
     EXPECT_EQ(i, queue.pop()) << "Didn't get expected pop value on " <<
       i << "th pop";
@@ -43,7 +42,7 @@ TEST(queueTest, InsertRecover) {
   EXPECT_EQ(20U, queue.size()) << "Queue should have 20 elements after 5 pops";
 
   //Pop the rest
-  for (unsigned int i = 5; i < cap; ++i) val = queue.pop();
+  for (unsigned int i = 5; i < cap; ++i) queue.pop();
   EXPECT_EQ(0U, queue.size()) << "Queue should have 0 elements now";
   EXPECT_TRUE(queue.empty()) << "Queue should now be empty";
   EXPECT_EQ(cap, queue.capacity()) << "Unexpected capacity after full pop";

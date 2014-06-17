@@ -22,17 +22,22 @@ fitsDataDouble::fitsDataDouble() {
   \param[in] file2  Name of data file, band 2
   \param[in] ignoremask Don't consider MASK information from files
   \param[in] meansub Do a mean subtraction
+
+  Like the 1D code, this assumes that any mask is stored in unsigned
+  integer form -- important because the FITS standard doesn't fully
+  support this.  So the code will not work correctly if your mask
+  is stored as integers
 */
 fitsDataDouble::fitsDataDouble(const std::string& file1, 
 			       const std::string& file2,
 			       bool ignoremask, bool meansub) {
   n = 0;
-  data1 = data2 =NULL;
+  data1 = data2 = NULL;
   is_binned = false;
   nbins1 = nbins2 = 0;
   bincent01 = bindelta1 = bincent02 = bindelta2 = 0.0;
   binval = NULL;
-  readData(file1,file2,ignoremask,meansub);
+  readData(file1, file2, ignoremask, meansub);
 }
 
 fitsDataDouble::~fitsDataDouble() {
@@ -55,8 +60,8 @@ fitsDataDouble::~fitsDataDouble() {
   It's up to the caller to not have stuff in data or mask before
   calling, or a memory leak will result
 */
-bool fitsDataDouble::readFile(const std::string& file,unsigned int& ndata,
-			      double*& data, int*& mask,
+bool fitsDataDouble::readFile(const std::string& file, long& ndata,
+			      double*& data, unsigned int*& mask,
 			      bool ignore_mask) {
   //Lots of fits reading fun
   fitsfile *fptr;
@@ -145,14 +150,14 @@ bool fitsDataDouble::readFile(const std::string& file,unsigned int& ndata,
     } 
 
     //Read the mask, after allocating
-    mask = (int*) fftw_malloc(sizeof(int) * nmask);
+    mask = (unsigned int*) fftw_malloc(sizeof(unsigned int) * nmask);
     fpixel[0] = 1; fpixel[1] = 1;
-    fits_read_pix(fptr, TINT, fpixel, nmask, 0, mask, 0, &status);
+    fits_read_pix(fptr, TUINT, fpixel, nmask, 0, mask, 0, &status);
     if (status) {
       fits_report_error(stderr, status);
       fits_close_file(fptr, &status);
       fftw_free(mask);
-      throw affineExcept("fitsDataDouble","readFile",
+      throw affineExcept("fitsDataDouble", "readFile",
 			 "Error reading mask data");
     }
   }
@@ -292,9 +297,9 @@ void fitsDataDouble::readData(const std::string& file1,
 
   //Read data into temporary arrays
   bool hasmask1_, hasmask2_;
-  unsigned int ndat1_, ndat2_;
+  long ndat1_, ndat2_;
   double *data1_, *data2_;
-  int *mask1_, *mask2_;
+  unsigned int *mask1_, *mask2_;
   data1_ = data2_ = NULL;
   mask1_ = mask2_ = NULL;
   hasmask1_ = readFile(file1, ndat1_, data1_, mask1_, ignore_mask);
@@ -343,7 +348,7 @@ void fitsDataDouble::readData(const std::string& file1,
       n = nkeep;
     } else {
       //Only one has a mask
-      int *msk;
+      unsigned int *msk;
       if (hasmask1_) msk = mask1_; else msk=mask2_;
       unsigned int nkeep = 0;
       for (unsigned int i = 0; i < ndat1_; ++i)

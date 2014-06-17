@@ -75,7 +75,7 @@ TEST(specFile1DTest, ReadCheck) {
     EXPECT_FLOAT_EQ(spec_info.minbeamval, 1e-6) <<
       "Unexpected minimum beam value";
     
-    EXPECT_EQ(spec_info.nbeamhist, 120) <<
+    EXPECT_EQ(spec_info.nbeamhist, 120U) <<
       "Unexpected number of beam histogram bins";
     
     ASSERT_TRUE(spec_info.has_cfirbprior) << "Expected to have CFIRB prior";
@@ -97,7 +97,7 @@ TEST(specFile1DTest, ReadCheck) {
       "Expected wisdom file name 'a_wisdom_file.txt', got " << 
       spec_info.wisdom_file;
     
-    EXPECT_EQ(1, spec_info.verbosity) << "Expected level 1 verbosity";
+    EXPECT_EQ(1U, spec_info.verbosity) << "Expected level 1 verbosity";
   } catch (const affineExcept& ex) {
     std::cout << "Error processing specFile1D" << std::endl;
     std::cout << ex << std::endl;
@@ -193,7 +193,7 @@ TEST(specFile2DTest, ReadCheck) {
   EXPECT_EQ(spec_info.exp_conf2, 0.006) <<
     "Expected non-zero expected confusion noise, band 2";
 
-  EXPECT_EQ(spec_info.nbeamhist, 150) <<
+  EXPECT_EQ(spec_info.nbeamhist, 150U) <<
     "Unexpected number of beam histogram bins";
 
   EXPECT_FALSE(spec_info.has_cfirbprior1) << "Expected no band 1 cfirb prior";
@@ -221,7 +221,7 @@ TEST(specFile2DTest, ReadCheck) {
     "Expected wisdom file name 'a_wisdom_file.txt', got " << 
     spec_info.wisdom_file;
 
-  EXPECT_EQ(1, spec_info.verbosity) << "Expected level 1 verbosity";
+  EXPECT_EQ(1U, spec_info.verbosity) << "Expected level 1 verbosity";
 }
 
 GTEST_API_ int main(int argc, char **argv) {

@@ -7,6 +7,7 @@
 #include<utility>
 #include<sstream>
 #include<cmath>
+#include<limits>
 
 #include "../include/affineEnsemble.h"
 #include "../include/affineExcept.h"
