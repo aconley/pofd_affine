@@ -378,8 +378,8 @@ double numberCountsKnotsSpline::getR(double fluxdensity, const beam& bm) const {
     if (bm.isPosHist()) {
       // Histogrammed beam
       unsigned int nposhist = bm.getNHistPos();
-      const double* warr = bm.getPosHistWeights();
-      const double *ipixarr = bm.getPosHist();
+      const double *__restrict__ warr = bm.getPosHistWeights();
+      const double *__restrict__ ipixarr = bm.getPosHist();
       for (unsigned int i = 0; i < nposhist; ++i) {
 	ieta = ipixarr[i];
 	currarg = fluxdensity * ieta;
@@ -390,7 +390,7 @@ double numberCountsKnotsSpline::getR(double fluxdensity, const beam& bm) const {
     } else {
       // Raw beam
       unsigned int npsf = bm.getNPos();
-      const double *ipixarr = bm.getPosInvPixArr();
+      const double *__restrict__ ipixarr = bm.getPosInvPixArr();
       for (unsigned int i = 0; i < npsf; ++i) {
 	ieta = ipixarr[i];
 	currarg = fluxdensity * ieta;
@@ -401,8 +401,8 @@ double numberCountsKnotsSpline::getR(double fluxdensity, const beam& bm) const {
   } else if (fluxdensity < 0) {
     if (bm.isNegHist()) {
       unsigned int nneghist = bm.getNHistNeg();
-      const double* warr = bm.getNegHistWeights();
-      const double *ipixarr = bm.getNegHist();
+      const double *__restrict__ warr = bm.getNegHistWeights();
+      const double *__restrict__ ipixarr = bm.getNegHist();
       for (unsigned int i = 0; i < nneghist; ++i) {
 	ieta = ipixarr[i];
 	currarg = - fluxdensity * ieta; // Note the -
@@ -412,7 +412,7 @@ double numberCountsKnotsSpline::getR(double fluxdensity, const beam& bm) const {
       }
     } else {
       unsigned int npsf = bm.getNNeg();
-      const double *ipixarr = bm.getNegInvPixArr();
+      const double *__restrict__ ipixarr = bm.getNegInvPixArr();
       for (unsigned int i = 0; i < npsf; ++i) {
 	ieta = ipixarr[i];
 	currarg = - fluxdensity * ieta;
@@ -433,7 +433,8 @@ double numberCountsKnotsSpline::getR(double fluxdensity, const beam& bm) const {
                    (or more) by caller.  Only the first n values are set.
 */
 void numberCountsKnotsSpline::getR(unsigned int n, const double* const flux,
-				   const beam& bm, double* R) const {
+				   const beam& bm, 
+				   double *__restrict__ R) const {
   if (n == 0) return;
   if (!isValid()) {
     for (unsigned int i = 0; i < n; ++i)
@@ -456,10 +457,10 @@ void numberCountsKnotsSpline::getR(unsigned int n, const double* const flux,
   bool haspos = bm.hasPos();
   bool hasneg = bm.hasNeg();
   bool poshist = false, neghist = false;
-  const double* wtptr_pos = NULL;
-  const double* wtptr_neg = NULL;
-  const double* ibmptr_pos = NULL;
-  const double* ibmptr_neg = NULL;
+  const double *__restrict__ wtptr_pos = NULL;
+  const double *__restrict__ wtptr_neg = NULL;
+  const double *__restrict__ ibmptr_pos = NULL;
+  const double *__restrict__ ibmptr_neg = NULL;
   if (haspos) {
     poshist = bm.isPosHist();
     npos = poshist ? bm.getNHistPos() : bm.getNPos();
@@ -528,22 +529,30 @@ void numberCountsKnotsSpline::getR(unsigned int n, const double* const flux,
 
 /*!
   \param[in] alpha Regularization multiplier.  Must be positive (not checked)
-  \returns log Likelhood penalty
+  \returns log Likelhood penalty (negative)
 
   Computes difference operator Tikhonov regularization penalty
-  on model, where the derivative is taken in log/log space
- */
+  on model, where the derivative is taken in log/log space.
+  The penalty is on the sum of the squares of the differences
+  between the slopes and the mean slope.
+*/
 double numberCountsKnotsSpline::differenceRegularize(double alpha) const {
   if (!knotvals_loaded) return std::numeric_limits<double>::quiet_NaN();
   if (nknots == 0 || nknots == 1) return 0.0;
 
-  double log_penalty = 0.0;
-  double deriv, delta_logknotpos, delta_logknotval;
+  double log_penalty=0.0, mean_deriv=0.0;
+  double delta_logknotpos, delta_logknotval, delta;
   for (unsigned int i = 1; i < nknots; ++i) {
     delta_logknotpos = logknots[i] - logknots[i - 1];
     delta_logknotval = logknotvals[i] - logknotvals[i - 1];
-    deriv = delta_logknotval / delta_logknotpos;
-    log_penalty -= deriv * deriv;
+    mean_deriv += delta_logknotval / delta_logknotpos;
+  }
+  mean_deriv /= static_cast<double>(nknots-1);
+  for (unsigned int i = 1; i < nknots; ++i) {
+    delta_logknotpos = logknots[i] - logknots[i - 1];
+    delta_logknotval = logknotvals[i] - logknotvals[i - 1];
+    delta = delta_logknotval / delta_logknotpos - mean_deriv;
+    log_penalty -= delta * delta;
   }
   return alpha * log_penalty;
 }

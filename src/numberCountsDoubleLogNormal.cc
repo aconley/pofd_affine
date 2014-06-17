@@ -1470,9 +1470,9 @@ double numberCountsDoubleLogNormal::getR(double f1, double f2,
   af2 = fabs(f2);
   if (bm.isHistogrammed(sgn)) {
     unsigned int npsf = bm.getNHist(sgn);
-    const double* warr = bm.getBinWeights(sgn);
-    const double* iparr1 = bm.getBinVals1(sgn);
-    const double* iparr2 = bm.getBinVals2(sgn);
+    const double *__restrict__ warr = bm.getBinWeights(sgn);
+    const double *__restrict__ iparr1 = bm.getBinVals1(sgn);
+    const double *__restrict__ iparr2 = bm.getBinVals2(sgn);
     for (unsigned int i = 0; i < npsf; ++i) {
       ieta1 = iparr1[i];
       ieta2 = iparr2[i];
@@ -1481,8 +1481,8 @@ double numberCountsDoubleLogNormal::getR(double f1, double f2,
     } 
   } else {
     unsigned int npsf = bm.getNPix(sgn);
-    const double* iparr1 = bm.getInvPixArr1(sgn);
-    const double* iparr2 = bm.getInvPixArr2(sgn);
+    const double *__restrict__ iparr1 = bm.getInvPixArr1(sgn);
+    const double *__restrict__ iparr2 = bm.getInvPixArr2(sgn);
     for (unsigned int i = 0; i < npsf; ++i) {
       ieta1 = iparr1[i];
       ieta2 = iparr2[i];
@@ -1509,7 +1509,8 @@ double numberCountsDoubleLogNormal::getR(double f1, double f2,
 */
 void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 				       unsigned int n2, const double* const f2,
-				       const doublebeam& bm, double* R) const {
+				       const doublebeam& bm, 
+				       double *__restrict__ R) const {
 
   // Quick return
   if ((!isValid()) || (!bm.hasData()) || (n1 == 0) || (n2 == 0)) {
@@ -1535,7 +1536,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
       npsf[i] = ishist[i] ? bm.getNHist(i) : bm.getNPix(i);
     else
       npsf[i] = 0;
-  const double *wtptr[4];
+  const double* wtptr[4];
   for (unsigned int i = 0; i < 4; ++i) 
     wtptr[i] = ishist[i] ? bm.getBinWeights(i) : NULL;
   const double* ibmptr1[4];
@@ -1580,11 +1581,13 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
   //   RWork[*,2] = -0.5 / sigma(f1/eta1)^2
   //  We only test for out of range (R always 0) on the first flux density
   //   because the model doesn't actually terminate sharply in the other band
-  double *RWptr, *cRW; // Pointers into RWork array for sgn components
-  double *rowptr; // Row pointer into output (R)
-  const double *wptr; // Weights 
-  const double *iparr1; // Inverse beam 1
-  const double *iparr2; // Inverse beam 2
+
+  // Pointers into RWork array for sgn components
+  double *__restrict__ RWptr, *__restrict__ cRW;
+  double *__restrict__ rowptr; // Row pointer into output (R)
+  const double *__restrict__ wptr; // Weights 
+  const double *__restrict__ iparr1; // Inverse beam 1
+  const double *__restrict__ iparr2; // Inverse beam 2
   unsigned int sgn1, sgnoff, sgn; // Sign index for this component
   unsigned int curr_n; // Number of beam elements for current component
   double f1val, f2val, f1prod, f2prod, ieta1, workval, isigma, tfac, if2, cts;
@@ -1836,27 +1839,33 @@ void numberCountsDoubleLogNormal::recieveCopy(MPI_Comm comm, int src) {
 
 /*!
   \param[in] alpha Regularization multiplier.  Must be positive (not checked)
-  \returns log Likelhood penalty
+  \returns log Likelhood penalty (negative)
 
-  Computes difference operator Tikhonov regularization penalty
-  on model, where the derivative is taken in log/log space.  It is
-  only applied to the band 1 model.
- */
+  Computes difference operator Tikhonov regularization penalty on
+  model, where the derivative is taken in log/log space.  The penalty
+  is on the sum of the squares of the differences between the slopes
+  and the mean slope. It is only applied to the band 1 model.
+*/
 double numberCountsDoubleLogNormal::differenceRegularize(double alpha) const {
   if (!knots_valid) return std::numeric_limits<double>::quiet_NaN();
   if (nknots == 0 || nknots == 1) return 0.0;
 
-  double log_penalty = 0.0;
-  double deriv, delta_logknotpos, delta_logknotval;
+  double log_penalty=0.0, mean_deriv=0.0;
+  double delta_logknotpos, delta_logknotval, delta;
   for (unsigned int i = 1; i < nknots; ++i) {
     delta_logknotpos = logknots[i] - logknots[i - 1];
     delta_logknotval = logknotvals[i] - logknotvals[i - 1];
-    deriv = delta_logknotval / delta_logknotpos;
-    log_penalty -= deriv * deriv;
+    mean_deriv += delta_logknotval / delta_logknotpos;
+  }
+  mean_deriv /= static_cast<double>(nknots-1);
+  for (unsigned int i = 1; i < nknots; ++i) {
+    delta_logknotpos = logknots[i] - logknots[i - 1];
+    delta_logknotval = logknotvals[i] - logknotvals[i - 1];
+    delta = delta_logknotval / delta_logknotpos - mean_deriv;
+    log_penalty -= delta * delta;
   }
   return alpha * log_penalty;
 }
-
 
 /*!
   \param[inout] objid HDF5 handle to write to
