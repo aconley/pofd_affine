@@ -1005,7 +1005,7 @@ void affineEnsemble::calcLastLikelihood() {
       MPI_Recv(&parrej, 1, MPI::BOOL, this_rank, mcmc_affine::SENDINGPARREJ,
 	       MPI_COMM_WORLD, &Info);
       // And get the actual step
-      pstep.recieveCopy(MPI_COMM_WORLD, this_rank);
+      pstep.receiveCopy(MPI_COMM_WORLD, this_rank);
       
       if (parrej) {
 	// If step was rejected, treat this as an error and crash
@@ -1282,7 +1282,7 @@ void affineEnsemble::emptyMasterQueue(double temp) throw (affineExcept) {
       MPI_Recv(&parrej, 1, MPI::BOOL, this_rank, mcmc_affine::SENDINGPARREJ,
 	       MPI_COMM_WORLD, &Info);
       // And get the actual step
-      pstep.recieveCopy(MPI_COMM_WORLD, this_rank);
+      pstep.receiveCopy(MPI_COMM_WORLD, this_rank);
       
       if (parrej) {
 	// Parameters were invalid in some way, so automatically reject
@@ -1388,7 +1388,7 @@ void affineEnsemble::slaveSample() {
       int tag = Info.MPI_TAG;
       if (tag == mcmc_affine::STOP) return; //Master says -- we're done!
       else if (tag == mcmc_affine::SENDINGPOINT) {
-	pstep.recieveCopy(MPI_COMM_WORLD, 0);
+	pstep.receiveCopy(MPI_COMM_WORLD, 0);
 	
 	// Compute likelihood
 	pstep.newLogLike = getLogLike(pstep.newStep, parrej);

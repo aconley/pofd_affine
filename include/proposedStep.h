@@ -29,8 +29,8 @@ struct proposedStep {
 
   /*! MPI copy send operation */
   void sendSelf(MPI_Comm comm, int dest) const;
-  /*! MPI copy recieve operation */
-  void recieveCopy(MPI_Comm comm, int src);
+  /*! MPI copy receive operation */
+  void receiveCopy(MPI_Comm comm, int src);
 };
 
 std::ostream& operator<<(std::ostream& os, const proposedStep& p);

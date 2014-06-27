@@ -240,7 +240,7 @@ void paramSet::sendSelf(MPI_Comm comm, int dest) const {
   \param[in] comm Communicator
   \param[in] src Source of messages
 */
-void paramSet::recieveCopy(MPI_Comm comm, int src) {
+void paramSet::receiveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
   unsigned int newpars;
   MPI_Recv(&newpars, 1, MPI_UNSIGNED, src, mcmc_affine::PSSENDNPARS, 

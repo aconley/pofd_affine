@@ -61,12 +61,12 @@ void proposedStep::sendSelf(MPI_Comm comm, int dest) const {
 	   mcmc_affine::PSTSENDZ, comm);
 }
 
-void proposedStep::recieveCopy(MPI_Comm comm, int src) {
+void proposedStep::receiveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
   MPI_Recv(&update_idx, 1, MPI_UNSIGNED, src, mcmc_affine::PSTSENDIDX, 
 	   comm, &Info);
-  oldStep.recieveCopy(comm, src);
-  newStep.recieveCopy(comm, src);
+  oldStep.receiveCopy(comm, src);
+  newStep.receiveCopy(comm, src);
   MPI_Recv(&oldLogLike, 1, MPI_DOUBLE, src, mcmc_affine::PSTSENDOLIKE, 
 	   comm, &Info);
   MPI_Recv(&newLogLike, 1, MPI_DOUBLE, src, mcmc_affine::PSTSENDNLIKE, 
