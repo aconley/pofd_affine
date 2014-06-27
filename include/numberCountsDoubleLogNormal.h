@@ -240,7 +240,7 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   bool writeToStream(std::ostream& os) const; //<! Output to stream
   
   void sendSelf(MPI_Comm, int dest) const; //!< Send self
-  void recieveCopy(MPI_Comm, int src); //!< Recieve
+  void receiveCopy(MPI_Comm, int src); //!< Receive
 };
 
 //////////////////////////////
@@ -320,7 +320,7 @@ class initFileDoubleLogNormal {
   void writeToHDF5Handle(hid_t) const; //!< Write to HDF5 handle
 
   void sendSelf(MPI_Comm, int dest) const; //!< Send self
-  void recieveCopy(MPI_Comm, int src); //!< Recieve
+  void receiveCopy(MPI_Comm, int src); //!< Receive
 };
 
 #endif

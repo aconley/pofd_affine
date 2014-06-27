@@ -1760,7 +1760,7 @@ void numberCountsDoubleLogNormal::sendSelf(MPI_Comm comm, int dest) const {
   \param[inout] comm MPI communicator
   \param[in] src Where messages will come from
 */
-void numberCountsDoubleLogNormal::recieveCopy(MPI_Comm comm, int src) {
+void numberCountsDoubleLogNormal::receiveCopy(MPI_Comm comm, int src) {
   unsigned int n;
   bool loaded;
 
@@ -2904,7 +2904,7 @@ void initFileDoubleLogNormal::sendSelf(MPI_Comm comm, int dest) const {
   \param[inout] comm MPI communicator
   \param[in] src Where messages will come from
 */
-void initFileDoubleLogNormal::recieveCopy(MPI_Comm comm, int src) {
+void initFileDoubleLogNormal::receiveCopy(MPI_Comm comm, int src) {
   //Delete everything for simplicity
   if (knotpos != NULL) delete[] knotpos;
   if (knotval != NULL) delete[] knotval;

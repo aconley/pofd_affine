@@ -443,7 +443,7 @@ void calcLikeSingle::sendSelf(MPI_Comm comm, int dest) const {
   \param[in] comm Communicator
   \param[in] src Source of messages
 */
-void calcLikeSingle::recieveCopy(MPI_Comm comm, int src) {
+void calcLikeSingle::receiveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
 
   //Data
@@ -456,7 +456,7 @@ void calcLikeSingle::recieveCopy(MPI_Comm comm, int src) {
 	   comm, &Info);
   if (newread) {
     for (unsigned int i = 0; i < newn; ++i)
-      data[i].recieveCopy(comm,src);
+      data[i].receiveCopy(comm,src);
     MPI_Recv(sigma_base, newn, MPI_DOUBLE, src, pofd_mcmc::CLSENDSIGMABASE,
 	     comm, &Info);
     MPI_Recv(&maxsigma_base, 1, MPI_DOUBLE, src, pofd_mcmc::CLSENDMAXSIGMABASE,
@@ -486,12 +486,12 @@ void calcLikeSingle::recieveCopy(MPI_Comm comm, int src) {
   MPI_Recv(&hsbm, 1, MPI::BOOL, src, pofd_mcmc::CLSENDHASBEAM,
 	   comm, &Info);
   if (hsbm) {
-    bm.recieveCopy(comm, src);
+    bm.receiveCopy(comm, src);
     has_beam = true;
   } else has_beam = false;
   
   //PDFactory
-  pdfac.recieveCopy(comm, src);
+  pdfac.receiveCopy(comm, src);
 
 }
 
@@ -1031,7 +1031,7 @@ void calcLike::sendSelf(MPI_Comm comm, int dest) const {
   \param[in] comm Communicator
   \param[in] src Source of messages
 */
-void calcLike::recieveCopy(MPI_Comm comm, int src) {
+void calcLike::receiveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
 
   // Transform
@@ -1054,7 +1054,7 @@ void calcLike::recieveCopy(MPI_Comm comm, int src) {
   for (unsigned int i = 0; i < nbeamsets; ++i) {
     MPI_Recv(&idx, 1, MPI_UNSIGNED, src, pofd_mcmc::CLSENDSETNUM,
 	     comm, &Info);
-    beamsets[idx].recieveCopy(comm, src);
+    beamsets[idx].receiveCopy(comm, src);
   }
 
   MPI_Recv(&bin_data, 1, MPI::BOOL, src, pofd_mcmc::CLSENDBINDATA,
@@ -1063,7 +1063,7 @@ void calcLike::recieveCopy(MPI_Comm comm, int src) {
 	   comm, &Info);
 
   // Model
-  model.recieveCopy(comm, src);
+  model.receiveCopy(comm, src);
 
   // CFIRB prior
   MPI_Recv(&has_cfirb_prior, 1, MPI::BOOL, src, pofd_mcmc::CLSENDHASCFIRBPRIOR,

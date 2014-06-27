@@ -737,7 +737,7 @@ void doublebeam::sendSelf(MPI_Comm comm, int dest) const {
   \param[in] comm MPI communicator
   \param[in] src Source of messages
 */
-void doublebeam::recieveCopy(MPI_Comm comm, int src) {
+void doublebeam::receiveCopy(MPI_Comm comm, int src) {
 
   cleanup(); // Get rid of all info.
 

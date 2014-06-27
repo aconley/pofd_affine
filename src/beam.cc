@@ -635,7 +635,7 @@ void beam::sendSelf(MPI_Comm comm, int dest) const {
   \param[in] comm MPI communicator
   \param[in] src Source for messages
 */
-void beam::recieveCopy(MPI_Comm comm, int src) {
+void beam::receiveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
   cleanup(); // Just easier to clear it all
 

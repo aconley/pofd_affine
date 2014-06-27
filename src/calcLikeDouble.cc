@@ -267,6 +267,8 @@ void calcLikeDoubleSingle::removeBinning() {
 /*!
   \param[in] lnorm Vector of likelihood normalization.  Must have
     ndatasets number of elements.
+
+  Sets the Likelihood normalization to the provided values
 */
 void calcLikeDoubleSingle::setLikeNorm(const std::vector<double>& lnorm) {
   unsigned int n = lnorm.size();
@@ -280,7 +282,9 @@ void calcLikeDoubleSingle::setLikeNorm(const std::vector<double>& lnorm) {
 
 /*!
   \param[in] n Length of lnorm.  Must be equal to the number of datasets.
-  \param[in] lnorm Array of likelihood normalization. 
+  \param[in] lnorm Array of likelihood normalization.
+
+  Sets the Likelihood normalization to the provided values
 */
 void calcLikeDoubleSingle::setLikeNorm(unsigned int n, 
 				       const double* const lnorm) {
@@ -416,6 +420,7 @@ void calcLikeDoubleSingle::setSigmaBase2(unsigned int n,const double* const s) {
   moving the R ranges around causes numerical jitter in the likelihoods.
 */
 void calcLikeDoubleSingle::setRRange(const numberCountsDouble& model) { 
+  //Hardcoded safety factor to expand range by
   const double safetyfac = 1.05;
 
   if (std::isnan(maxsigma_base1) || std::isnan(maxsigma_base2))
@@ -591,7 +596,7 @@ void calcLikeDoubleSingle::sendSelf(MPI_Comm comm, int dest) const {
   \param[in] comm MPI communicator
   \param[in] src Source of messages
 */
-void calcLikeDoubleSingle::recieveCopy(MPI_Comm comm, int src) {
+void calcLikeDoubleSingle::receiveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
   //Data
   unsigned int newn;
@@ -604,7 +609,7 @@ void calcLikeDoubleSingle::recieveCopy(MPI_Comm comm, int src) {
 	   comm, &Info);
   if (newread) {
     for (unsigned int i = 0; i < newn; ++i)
-      data[i].recieveCopy(comm, src);
+      data[i].receiveCopy(comm, src);
     MPI_Recv(sigma_base1, newn, MPI_DOUBLE, src, 
 	     pofd_mcmc::CLDSENDSIGMABASE1, comm, &Info);
     MPI_Recv(sigma_base2, newn, MPI_DOUBLE, src, pofd_mcmc::CLDSENDSIGMABASE2,
@@ -648,12 +653,12 @@ void calcLikeDoubleSingle::recieveCopy(MPI_Comm comm, int src) {
   bool hsbm;
   MPI_Recv(&hsbm, 1, MPI::BOOL, src, pofd_mcmc::CLDSENDHASBEAM, comm, &Info);
   if (hsbm) {
-    bm.recieveCopy(comm, src);
+    bm.receiveCopy(comm, src);
     has_beam = true;
   } else has_beam = false;
   
   //PDFactory
-  pdfac.recieveCopy(comm, src);
+  pdfac.receiveCopy(comm, src);
 
 }
 
@@ -1364,7 +1369,7 @@ void calcLikeDouble::sendSelf(MPI_Comm comm, int dest) const {
   \param[in] comm Communicator
   \param[in] src Source of messages
 */
-void calcLikeDouble::recieveCopy(MPI_Comm comm, int src) {
+void calcLikeDouble::receiveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
 
   // Transform
@@ -1389,7 +1394,7 @@ void calcLikeDouble::recieveCopy(MPI_Comm comm, int src) {
   for (unsigned int i = 0; i < nbeamsets; ++i) {
     MPI_Recv(&idx, 1, MPI_UNSIGNED, src, pofd_mcmc::CLDSENDSETNUM,
 	     comm, &Info);
-    beamsets[idx].recieveCopy(comm, src);
+    beamsets[idx].receiveCopy(comm, src);
   }
 
   MPI_Recv(&bin_data, 1, MPI::BOOL, src, pofd_mcmc::CLDSENDBINDATA, 
@@ -1398,7 +1403,7 @@ void calcLikeDouble::recieveCopy(MPI_Comm comm, int src) {
 	   comm, &Info);
 
   // Model
-  model.recieveCopy(comm, src);
+  model.receiveCopy(comm, src);
 
   // CFIRB priors
   MPI_Recv(&has_cfirb_prior1, 1, MPI::BOOL, src, 

@@ -460,7 +460,7 @@ void fitsData::sendSelf(MPI_Comm comm, int dest) const {
   \param[in] comm MPI communicator
   \param[in] src Source of messages
 */
-void fitsData::recieveCopy(MPI_Comm comm, int src) {
+void fitsData::receiveCopy(MPI_Comm comm, int src) {
   unsigned int newn;
   MPI_Status Info;
   MPI_Recv(&newn, 1, MPI_UNSIGNED, src, pofd_mcmc::FDSENDN, comm, &Info);

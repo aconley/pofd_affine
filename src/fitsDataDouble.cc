@@ -648,7 +648,7 @@ void fitsDataDouble::sendSelf(MPI_Comm comm, int dest) const {
   \param[in] comm MPI communicator
   \param[in] src Source of messages
 */
-void fitsDataDouble::recieveCopy(MPI_Comm comm, int src) {
+void fitsDataDouble::receiveCopy(MPI_Comm comm, int src) {
   unsigned int newn;
   MPI_Status Info;
   MPI_Recv(&newn, 1, MPI_UNSIGNED, src, pofd_mcmc::FDDSENDN, comm, &Info);
@@ -664,7 +664,7 @@ void fitsDataDouble::recieveCopy(MPI_Comm comm, int src) {
     n = newn;
   }
   if (n > 0) {
-    //Data to recieve
+    //Data to receive
     MPI_Recv(data1, n, MPI_DOUBLE, src, pofd_mcmc::FDDSENDDATA1, comm, &Info);
     MPI_Recv(data2, n, MPI_DOUBLE, src, pofd_mcmc::FDDSENDDATA2, comm, &Info);
 

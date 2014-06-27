@@ -82,7 +82,7 @@ class numberCountsKnots : public numberCounts {
   virtual bool writeToStream(std::ostream& os) const; //<! Output to stream
 
   virtual void sendSelf(MPI_Comm, int dest) const; //!< Send self
-  virtual void recieveCopy(MPI_Comm, int src); //!< Recieve
+  virtual void receiveCopy(MPI_Comm, int src); //!< Receive
 };
 
 /*! \brief Write to stream operator */
@@ -150,7 +150,7 @@ class initFileKnots {
   void writeToHDF5Handle(hid_t objid) const; //!< Writes parameter limits to HDF5 handle
 
   void sendSelf(MPI_Comm, int dest) const; //!< Send self
-  void recieveCopy(MPI_Comm, int src); //!< Recieve
+  void receiveCopy(MPI_Comm, int src); //!< Receive
 };
 
 #endif

@@ -402,7 +402,7 @@ void numberCountsKnots::sendSelf(MPI_Comm comm, int dest) const {
   \param[inout] comm MPI communicator
   \param[in] src Where messages will come from
 */
-void numberCountsKnots::recieveCopy(MPI_Comm comm, int src) {
+void numberCountsKnots::receiveCopy(MPI_Comm comm, int src) {
   unsigned int n;
   MPI_Status Info;
   MPI_Recv(&n, 1, MPI_UNSIGNED, src, pofd_mcmc::NCKSENDNKNOTS, comm, &Info);
@@ -1210,7 +1210,7 @@ void initFileKnots::sendSelf(MPI_Comm comm, int dest) const {
   \param[inout] comm MPI communicator
   \param[in] src Where messages will come from
 */
-void initFileKnots::recieveCopy(MPI_Comm comm, int src) {
+void initFileKnots::receiveCopy(MPI_Comm comm, int src) {
   //Delete everything for simplicity
   if (knotpos != NULL) delete[] knotpos;
   if (knotval != NULL) delete[] knotval;

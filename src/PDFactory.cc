@@ -1119,14 +1119,14 @@ void PDFactory::sendSelf(MPI_Comm comm, int dest) const {
 }
 
 //Note this doesn't copy over interal variables
-void PDFactory::recieveCopy(MPI_Comm comm, int src) {
+void PDFactory::receiveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
   MPI_Recv(&fftw_plan_style, 1, MPI_UNSIGNED, src, 
 	   pofd_mcmc::PDFSENDPLANSTYLE, comm, &Info);
   MPI_Recv(&has_wisdom, 1, MPI::BOOL, src, pofd_mcmc::PDFHASWISDOM,
 	   comm, &Info);
   if (has_wisdom) {
-    //Recieve wisdom file name
+    //Receive wisdom file name
     unsigned int nstr;
     MPI_Recv(&nstr, 1, MPI_UNSIGNED, src, pofd_mcmc::PDFWISLEN, comm, &Info);
     char *cstr = new char[nstr];

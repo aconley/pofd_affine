@@ -599,10 +599,10 @@ void numberCountsKnotsSpline::sendSelf(MPI_Comm comm, int dest) const {
   \param[in] comm Communicator
   \param[in] src Source of messages
 */
-void numberCountsKnotsSpline::recieveCopy(MPI_Comm comm, int src) {
+void numberCountsKnotsSpline::receiveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
   unsigned int oldnknots = nknots;
-  numberCountsKnots::recieveCopy(comm, src);
+  numberCountsKnots::receiveCopy(comm, src);
 
   if (nknots != oldnknots) {
     if (splinelog != NULL) gsl_spline_free(splinelog);

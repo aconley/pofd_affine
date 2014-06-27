@@ -58,7 +58,7 @@ class fitsData {
   double getMean() const; //!< Get mean flux
 
   void sendSelf(MPI_Comm, int dest) const; //!< Send self
-  void recieveCopy(MPI_Comm, int src); //!< Recieve
+  void receiveCopy(MPI_Comm, int src); //!< Receive
 };
 
 #endif

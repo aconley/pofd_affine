@@ -500,7 +500,7 @@ void slave() {
   //First, beam
   try {
     beam bm;
-    bm.recieveCopy(MPI_COMM_WORLD, 0);
+    bm.receiveCopy(MPI_COMM_WORLD, 0);
 
     unsigned int n;
     MPI_Recv(&n, 1, MPI_UNSIGNED, 0, SENDUIVAL, MPI_COMM_WORLD, &Info);
@@ -543,7 +543,7 @@ void slave() {
   //Doublebeam, same story
   try {
     doublebeam bm;
-    bm.recieveCopy(MPI_COMM_WORLD, 0);
+    bm.receiveCopy(MPI_COMM_WORLD, 0);
     MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
@@ -562,7 +562,7 @@ void slave() {
   //fitsData
   try {
     fitsData data;
-    data.recieveCopy(MPI_COMM_WORLD, 0);
+    data.receiveCopy(MPI_COMM_WORLD, 0);
 
     //Image statistics
     unsigned int n;
@@ -603,7 +603,7 @@ void slave() {
   //fitsDataDouble, same story
   try {
     fitsDataDouble data;
-    data.recieveCopy(MPI_COMM_WORLD, 0);
+    data.receiveCopy(MPI_COMM_WORLD, 0);
 
     //Image statistics
     unsigned int n;
@@ -660,7 +660,7 @@ void slave() {
   //paramSet
   try {
     paramSet pars;
-    pars.recieveCopy(MPI_COMM_WORLD, 0);
+    pars.receiveCopy(MPI_COMM_WORLD, 0);
     if (pars.getNParams() != 9)
       throw affineExcept("test_copy", "slave", "paramSet should have 9 params");
     MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
@@ -683,7 +683,7 @@ void slave() {
   //proposedStep
   try {
     proposedStep pr(0);
-    pr.recieveCopy(MPI_COMM_WORLD, 0);
+    pr.receiveCopy(MPI_COMM_WORLD, 0);
     if (pr.oldStep.getNParams() != 5)
       throw affineExcept("test_copy", "slave",
 			 "proposedStep.oldStep should have 5 params");
@@ -725,7 +725,7 @@ void slave() {
     const double kval[] = {10, 5, 3};
     numberCountsKnotsSpline model;
     double nkval, nkval_this;
-    model.recieveCopy(MPI_COMM_WORLD, 0);
+    model.receiveCopy(MPI_COMM_WORLD, 0);
     MPI_Recv(&nkval, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
     if (model.getNKnots() != 3)
       throw affineExcept("test_copy", "slave", 
@@ -769,7 +769,7 @@ void slave() {
   //initFileKnots
   try {
     initFileKnots ifile;
-    ifile.recieveCopy(MPI_COMM_WORLD, 0);
+    ifile.receiveCopy(MPI_COMM_WORLD, 0);
     MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
@@ -788,7 +788,7 @@ void slave() {
   //numberCountsDoubleLogNormal
   try {
     numberCountsDoubleLogNormal model;
-    model.recieveCopy(MPI_COMM_WORLD, 0);
+    model.receiveCopy(MPI_COMM_WORLD, 0);
     if (model.getNKnots() != 8)
       throw affineExcept("test_copy", "slave", 
 			 "numberCountsDoubleLogNormal.getNKnots() should be 8");
@@ -816,7 +816,7 @@ void slave() {
   //initFileDoubleLogNormal
   try {
     initFileDoubleLogNormal ifile;
-    ifile.recieveCopy(MPI_COMM_WORLD, 0);
+    ifile.receiveCopy(MPI_COMM_WORLD, 0);
     MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
@@ -835,7 +835,7 @@ void slave() {
   //PDFactory
   try {
     PDFactory pfactory;
-    pfactory.recieveCopy(MPI_COMM_WORLD, 0);
+    pfactory.receiveCopy(MPI_COMM_WORLD, 0);
     if (pfactory.getNInterp() != 100)
       throw affineExcept("test_copy", "slave", 
 			 "PDFactory.getNInterp() should be 100");
@@ -858,7 +858,7 @@ void slave() {
   //PDFactoryDouble
   try {
     PDFactoryDouble pfactory;
-    pfactory.recieveCopy(MPI_COMM_WORLD, 0);
+    pfactory.receiveCopy(MPI_COMM_WORLD, 0);
     if (pfactory.getNEdge() != 110)
       throw affineExcept("test_copy", "slave", 
 			 "PDFactoryDouble.getNEdge() should be 110");
@@ -880,7 +880,7 @@ void slave() {
   //calcLikeSingle
   try {
     calcLikeSingle like;
-    like.recieveCopy(MPI_COMM_WORLD, 0);
+    like.receiveCopy(MPI_COMM_WORLD, 0);
     if (like.getNInterp() != 50)
       throw affineExcept("test_copy", "slave", 
 			 "calcLikeSingle.getNInterp() should be 50");
@@ -902,7 +902,7 @@ void slave() {
   //calcLike
   try {
     calcLike like;
-    like.recieveCopy(MPI_COMM_WORLD, 0);
+    like.receiveCopy(MPI_COMM_WORLD, 0);
     if (like.getFFTSize() != 2048)
       throw affineExcept("test_copy", "slave", 
 			 "calcLike.getFFTSize() should be 2048");
@@ -930,7 +930,7 @@ void slave() {
   //calcLikeDoubleSingle
   try {
     calcLikeDoubleSingle like;
-    like.recieveCopy(MPI_COMM_WORLD, 0);
+    like.receiveCopy(MPI_COMM_WORLD, 0);
     if (like.getNEdge() != 12)
       throw affineExcept("test_copy", "slave", 
 			 "calcLikeDoubleSingle.getNEdge() should be 12");
@@ -952,7 +952,7 @@ void slave() {
   //calcLikeDouble
   try {
     calcLikeDouble like;
-    like.recieveCopy(MPI_COMM_WORLD, 0);
+    like.receiveCopy(MPI_COMM_WORLD, 0);
     if (like.getFFTSize() != 4096)
       throw affineExcept("test_copy", "slave", 
 			 "calcLikeDouble.getFFTSize() should be 4096");

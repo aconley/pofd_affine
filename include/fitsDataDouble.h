@@ -72,7 +72,7 @@ class fitsDataDouble {
   dblpair getMean() const; //!< Gets mean value in each band
 
   void sendSelf(MPI_Comm, int dest) const; //!< Send self
-  void recieveCopy(MPI_Comm, int src); //!< Recieve
+  void receiveCopy(MPI_Comm, int src); //!< Receive
 };
 
 #endif

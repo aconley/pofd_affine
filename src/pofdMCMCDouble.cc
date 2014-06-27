@@ -374,8 +374,8 @@ bool pofdMCMCDouble::initChainsSlave() {
       MPI_Recv(&npar, 1, MPI_UNSIGNED, 0, pofd_mcmc::PMCMCSENDNPAR,
 	       MPI_COMM_WORLD, &Info);
       this->setNParams(npar);
-      ifile.recieveCopy(MPI_COMM_WORLD, 0);
-      likeSet.recieveCopy(MPI_COMM_WORLD, 0);
+      ifile.receiveCopy(MPI_COMM_WORLD, 0);
+      likeSet.receiveCopy(MPI_COMM_WORLD, 0);
 
       MPI_Send(&jnk, 1, MPI_INT, 0, pofd_mcmc::PMCMCISREADY,
 	       MPI_COMM_WORLD);
