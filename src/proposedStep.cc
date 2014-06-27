@@ -14,7 +14,7 @@ proposedStep::proposedStep(unsigned int npar) : oldStep(npar), newStep(npar) {
 }
 
 /*!
-  \param[in] other proposedStep to copy from
+  \param[in] other Other proposed step to initialize from
 */
 proposedStep::proposedStep(const proposedStep& other) :
   update_idx(other.update_idx),
@@ -44,8 +44,7 @@ void proposedStep::setNParams(unsigned int n) {
 }
 
 /*!
-  \param[in] other proposedStep to copy from
-  \returns Reference to self after copy
+  \param[in] other proposedStep to copy
 */
 proposedStep& proposedStep::operator=(const proposedStep& other) {
   if (this == &other) return *this; //Self copy
@@ -59,7 +58,7 @@ proposedStep& proposedStep::operator=(const proposedStep& other) {
 }
 
 /*!
-  \param[in] comm MPI communicator
+  \param[in] comm Communicator
   \param[in] dest Destination of messages
 */
 void proposedStep::sendSelf(MPI_Comm comm, int dest) const {
@@ -75,6 +74,10 @@ void proposedStep::sendSelf(MPI_Comm comm, int dest) const {
 	   mcmc_affine::PSTSENDZ, comm);
 }
 
+/*!
+  \param[in] comm Communicator
+  \param[in] src Source of messages
+*/
 void proposedStep::receiveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
   MPI_Recv(&update_idx, 1, MPI_UNSIGNED, src, mcmc_affine::PSTSENDIDX, 
@@ -90,8 +93,10 @@ void proposedStep::receiveCopy(MPI_Comm comm, int src) {
 }
 
 /*!
-  \param[inout] os Stream to write to
-  \param[in] p proposedStep to write
+  \param[in] os Output stream to write to
+  \param[in] p Step to write to output stream
+
+  \returns A reference to the modifed output stream
 */
 std::ostream& operator<<(std::ostream& os, const proposedStep& p) {
   os << "Update idx: " << p.update_idx << std::endl;
