@@ -120,9 +120,11 @@ paramSet& paramSet::operator=(const paramSet& other) {
   \param[in] other paramSet to check equality against
   \returns True if they have the same number of parameters and same values
 
-  Floating point equals, always dangerous.  Returns true if no
-  parameters.
- */
+  Uses floating point equals, which is always dangerous.  For something
+  safer, use getDist.
+
+  Returns true if no parameters.  
+*/
 bool paramSet::operator==(const paramSet& other) const {
   if (this == &other) return true;
   if (nparams != other.nparams) return false;

@@ -102,7 +102,7 @@ bool affineEnsemble::isValid() const {
 }
 
 /*!
-  \returns z value
+  \returns A new z value
 */
 float affineEnsemble::generateZ() const {
   //Don't check isValid or if master for speed
