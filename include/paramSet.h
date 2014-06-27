@@ -62,7 +62,7 @@ class paramSet {
   /*! \brief MPI copying, send operation */
   void sendSelf(MPI_Comm comm, int dest) const;
   /*! \brief MPI copying, recieving operation */
-  void recieveCopy(MPI_Comm comm, int src);
+  void receiveCopy(MPI_Comm comm, int src);
 
 };
 
