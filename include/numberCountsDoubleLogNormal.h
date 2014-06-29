@@ -138,7 +138,7 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
 			      unsigned int, const double* const);
   /*! \brief Copy constructor */
   numberCountsDoubleLogNormal(const numberCountsDoubleLogNormal& other);
-  ~numberCountsDoubleLogNormal(); //!< Destructor
+  virtual ~numberCountsDoubleLogNormal(); //!< Destructor
 
   /*! \brief Copy operator */
   numberCountsDoubleLogNormal& operator=(const numberCountsDoubleLogNormal&);
