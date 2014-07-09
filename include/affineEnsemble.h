@@ -89,7 +89,7 @@ public:
   affineEnsemble(unsigned int, unsigned int, unsigned int,
 		 unsigned int=0, double=2.0, unsigned int=50, 
 		 bool=false, float=5, float=2);
-  ~affineEnsemble(); //!< Destructor
+  virtual ~affineEnsemble(); //!< Destructor
 
   bool isValid() const; //!< Are params valid?
 
