@@ -29,7 +29,7 @@ public:
 	   unsigned int INIT_STEPS=50, double INIT_TEMP=2.0,
 	   unsigned int MIN_BURN=50, bool FIXED_BURN=false, 
 	   float BURN_MULTIPLE=5.0, float SCALEFAC=2.0); //!< Constructor
-  ~pofdMCMC() {}; //!< Destructor
+  virtual ~pofdMCMC() {}; //!< Destructor
 
   void setVerbosity(unsigned int);
 

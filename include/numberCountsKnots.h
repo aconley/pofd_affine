@@ -42,7 +42,7 @@ class numberCountsKnots : public numberCounts {
   numberCountsKnots(unsigned int, const float* const); //!< C array constructor
   numberCountsKnots(unsigned int, const double* const); //!< C array constructor
   numberCountsKnots(const numberCountsKnots&); //!< Copy constructor
-  ~numberCountsKnots(); //!< Destructor
+  virtual ~numberCountsKnots(); //!< Destructor
 
   /*! \brief Load knot positions into vector */
   virtual void getKnotPositions(std::vector<double>&) const; 

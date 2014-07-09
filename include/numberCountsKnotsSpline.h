@@ -40,7 +40,7 @@ class numberCountsKnotsSpline : public numberCountsKnots {
   numberCountsKnotsSpline(unsigned int, const float* const); //!< C array constructor
   numberCountsKnotsSpline(unsigned int, const double* const); //!< C array constructor
   numberCountsKnotsSpline(const numberCountsKnotsSpline&); //!< Copy constructor
-  ~numberCountsKnotsSpline(); //!< Destructor
+  virtual ~numberCountsKnotsSpline(); //!< Destructor
 
   /*! \brief copy operator */
   numberCountsKnotsSpline& operator=(const numberCountsKnotsSpline&);
