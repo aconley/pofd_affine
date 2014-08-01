@@ -211,7 +211,12 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   
   /*! \brief Evaluates number counts model */
   double getNumberCounts(double, double) const;
-  
+
+  /*! Evaluates band 1 number counts model at specified value of S_1 */
+  double getBand1NumberCounts(double) const;
+  /*! Evaluates band 2 number counts model at specified value of S_2 */
+  double getBand2NumberCounts(double) const;
+
   /*! \brief Minimum flux model is defined for */
   dblpair getMinFlux() const;
   

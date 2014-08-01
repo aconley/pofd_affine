@@ -678,7 +678,8 @@ TEST(model2DTest, NumberCounts) {
   }
 }
 
-TEST(model2DTest, Integration) {
+// Integration of model times flux
+TEST(model2DTest, PowerIntegration) {
   const unsigned int nknots = 5;
   const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
   const unsigned int nsigmas = 2;
@@ -700,6 +701,59 @@ TEST(model2DTest, Integration) {
     "Flux per area in band 1 not as expected";
   EXPECT_NEAR(148.585, model.getFluxPerArea(1), 0.1) <<
     "Flux per area in band 2 not as expected";
+}
+
+// Projection into single band
+TEST(model2DTest, Projection) {
+  const unsigned int nknots = 5;
+  const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
+  const unsigned int nsigmas = 2;
+  const float sigmapos[nsigmas] = { 0.003, 0.05 };
+  const unsigned int noffsets = 1;
+  const float offsetpos[noffsets] = { 0.03 };
+  const unsigned int ntot = nknots + nsigmas + noffsets;
+  const float pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, 0.15, -0.03 };
+
+  numberCountsDoubleLogNormal model(nknots, knotpos, nsigmas, sigmapos,
+				    noffsets, offsetpos);
+  paramSet p(ntot, pvals);
+  model.setParams(p);
+  ASSERT_TRUE(model.isValid()) << "Model should be valid";
+
+  // Test projection to band 1
+
+  // Test at knots; do the comparison in log space
+  //  Note we skip the first and last because of the way the model is defined
+  for (unsigned int i = 1; i < nknots-1; ++i) 
+    EXPECT_NEAR(pvals[i], log10(model.getBand1NumberCounts(knotpos[i])), 1e-4) <<
+      "Didn't get band 1 expected number counts at " << knotpos[i];
+
+  // Now test on a grid. The 2D model should project into band 1 as just 
+  //  numberCountsKnotsSpline, so this test compares them against each other.
+  //  First, set up the band 1 model
+  numberCountsKnotsSpline model_b1(nknots, knotpos);
+  paramSet p_b1(nknots, pvals);
+  model_b1.setParams(p_b1);
+  ASSERT_TRUE(model_b1.isValid()) << "Band 1 comparison model should be valid";
+  // Now compare
+  const unsigned int ngrid = 100;
+  double df1 = (knotpos[nknots-1] - knotpos[0]) / static_cast<double>(ngrid - 1);
+  for (unsigned int i = 1; i < ngrid - 1; ++i) {  // Avoid ends again
+    double f1val = knotpos[0] + df1 * static_cast<double>(i);
+    EXPECT_NEAR(log10(model_b1.getNumberCounts(f1val)), 
+		log10(model.getBand1NumberCounts(f1val)), 1e-4) <<
+      "Didn't get band 1 expected number counts in grid test at " << f1val;
+  }
+    
+  // Now the band 2 projection, where it's harder to compute the value
+  //  we -should- get.
+  const unsigned int ns2 = 7;
+  double s2[ns2] = { 0.003, 0.006, 0.01, 0.015, 0.03, 0.038, 0.06 };
+  double expected_b2[ns2] = { 4.69166, 3.20205, 2.01069, 1.72144, 1.07328, 
+			      0.52892, -2.63367 };
+  for (unsigned int i = 0; i < ns2; ++i)
+    EXPECT_NEAR(expected_b2[i], log10(model.getBand2NumberCounts(s2[i])), 1e-3) 
+      << "Didn't get band 2 expected number counts at s2 = " << s2[i];
 }
 
 TEST(model2DTest, getR) {

@@ -56,6 +56,11 @@ class numberCountsDouble {
   /*! Evaluates number counts model */
   virtual double getNumberCounts(double, double) const = 0; 
 
+  /*! Evaluates band 1 number counts model at specified value of S_1 */
+  virtual double getBand1NumberCounts(double) const = 0;
+  /*! Evaluates band 2 number counts model at specified value of S_2 */
+  virtual double getBand2NumberCounts(double) const = 0;
+  
   /*! \brief Get number of source responses, single value version */
   virtual double getR(double, double, const doublebeam&) const = 0;
   

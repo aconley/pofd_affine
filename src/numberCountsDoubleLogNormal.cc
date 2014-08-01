@@ -21,9 +21,12 @@ inline unsigned int signComp(double x1, double x2) {
   }
 }
 
-//Function to pass to GSL integrator
+//Functions to pass to GSL integrator
 /*! \brief Evaluates flux1^power1 * exp(const1*mu + const2*sigma^2) dN/dS1 */
 static double evalPowfNDoubleLogNormal(double, void*); 
+
+/*! \brief Evaluates sqrt(2 pi) dN / dS1 dS2 with S1 as an argument and S2 a parameter*/
+static double evalCounts(double, void*); 
 
 /*! \brief Number of elements in varr (lots of model params!) */
 const unsigned int numberCountsDoubleLogNormal::nvarr = 17; 
@@ -1209,7 +1212,82 @@ double numberCountsDoubleLogNormal::getNumberCounts(double f1, double f2)
     return std::numeric_limits<double>::quiet_NaN();
   if (std::isnan(f2) || std::isinf(f2)) 
     return std::numeric_limits<double>::quiet_NaN();
-  return getNumberCountsInner(f1,f2);
+  return getNumberCountsInner(f1, f2);
+}
+
+/*!
+  \param[in] f1 Flux density in band 1
+  \returns Number counts in band 1 at f1: \f$dN / dS_1 \left(f1\right) \f$
+*/
+double numberCountsDoubleLogNormal::getBand1NumberCounts(double f1) const {
+  if ((nknots < 2) || (nsigmaknots < 1) || (noffsetknots < 1))
+    return std::numeric_limits<double>::quiet_NaN();
+  if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
+  if (std::isnan(f1) || std::isinf(f1)) 
+    return std::numeric_limits<double>::quiet_NaN();
+  if (f1 < knots[0] || f1 >= knots[nknots-1]) 
+    return 0.0; //Out of range
+  
+  // The model is set up so that dN / dS_1 is just n1
+  return exp2(gsl_spline_eval(splinelog, log2(f1), acc)); 
+}
+
+/*!
+  \param[in] f2 Flux density in band 2
+  \returns Number counts in band 2 at f2: \f$dN / dS_2 \left(f2\right) \f$
+*/
+double numberCountsDoubleLogNormal::getBand2NumberCounts(double f2) const {
+
+  const double normfac = 1.0 / sqrt(2 * M_PI);
+
+  if ((nknots < 2) || (nsigmaknots < 1) || (noffsetknots < 1))
+    return std::numeric_limits<double>::quiet_NaN();
+  if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
+  if (std::isnan(f2) || std::isinf(f2)) 
+    return std::numeric_limits<double>::quiet_NaN();
+  if (f2 <= 0.0) return 0.0; // Out of range
+
+  // dN / dS_1 was simple, but dN / dS_2 is not.  We have to integrate numerically
+  //  and that means the actual computation is done in another function (evalCounts)
+  //  that can be passed to the GSL integration routines.  This is just the nice(r)
+  //  user interface to that
+
+  double result, error;
+  void *params;
+  gsl_function F;
+  double minknot = knots[0];
+  double maxknot = knots[nknots-1];
+  unsigned int noff = noffsetknots;
+  unsigned int nsig = nsigmaknots;
+  double f2_internal = f2; // Avoid compiler warning!
+  //  We use the same varr as splineInt, but pack stuff in differently
+  varr[0] = static_cast<void*>(&f2_internal);
+  varr[1] = static_cast<void*>(splinelog);
+  varr[2] = static_cast<void*>(acc);
+  varr[3] = static_cast<void*>(&minknot);
+  varr[4] = static_cast<void*>(&maxknot);
+  varr[5]  = static_cast<void*>(offsetinterp);
+  varr[6]  = static_cast<void*>(accoffset);
+  varr[7]  = static_cast<void*>(&noff);
+  varr[8] = static_cast<void*>(offsetknots);
+  varr[9] = static_cast<void*>(offsetvals);
+  varr[10] = static_cast<void*>(sigmainterp);
+  varr[11] = static_cast<void*>(accsigma);
+  varr[12] = static_cast<void*>(&nsig);
+  varr[13] = static_cast<void*>(sigmaknots);
+  varr[14] = static_cast<void*>(sigmavals);
+
+  params = static_cast<void*>(varr);
+
+  F.function = &evalCounts;
+  F.params = params;
+  // This integrates dN / dS1 dS2 over S1 for a specific value of S2 
+  //  (which is stored in params[0])
+  gsl_integration_qag(&F, minknot, maxknot, 0, 1e-5, 1000,
+		      GSL_INTEG_GAUSS41, gsl_work, &result, &error); 
+
+  // The 1 / sqrt(2 pi) bit isn't included in evalCounts, so add it here
+  return result * normfac;
 }
 
 /*
@@ -1961,6 +2039,91 @@ bool numberCountsDoubleLogNormal::writeToStream(std::ostream& os) const {
   return true;
 }
 
+/*!
+  \param[in] s1 Flux in band 1
+  \param[in] params Model information jammed into something the GSL
+     can work with.
+  Internal function for use in band 2 number counts projection.
+  This is just the number counts with some constants removed,
+  and the idea is to integrate this over S_1
+*/
+static double evalCounts(double s1, void* params) {
+  // Model is: n1(s1) / s1 * LogNormal(s2 / s1; mu(s1), sigma(s1))
+  //  where s1 is the flux in the first band and n1 is the number
+  // counts in band 1 -- see splineInt.  However, the constant 1 / sqrt(2 * pi)
+  //  of LogNorm is left out, since it can be applied outside the integral
+  //Params are:
+  // params[0]  s_2
+  // params[1]  knot interpolant (log)
+  // params[2]  knot accelerator
+  // params[3]  minknot
+  // params[4]  maxknot
+  // params[5]  offset interpolant (log)
+  // params[6]  offset accelerator
+  // params[7]  noffsets
+  // params[8]  offset positions
+  // params[9]  offset values
+  // params[10] sigma interpolant (log)
+  // params[11] sigma accelerator
+  // params[12] nsigmas
+  // params[13] sigma positions
+  // params[14] sigma values
+  //But this really has to be an array of pointers to void to work
+  void** vptr = static_cast<void**>(params);
+
+  // s2 quick check
+  double s2 = *static_cast<double*>(vptr[0]);
+  if (s2 <= 0.0) return 0.0;
+
+  // min/max knot in band 1 for quick return if s1 is outside that
+  double minknot = *static_cast<double*>(vptr[3]);
+  double maxknot = *static_cast<double*>(vptr[4]);
+  if (s1 < minknot || s1 >= maxknot) return 0.0;
+
+  // Evaluate n_1(s1)
+  gsl_spline* spl = static_cast<gsl_spline*>(vptr[1]);
+  gsl_interp_accel* acc = static_cast<gsl_interp_accel*>(vptr[2]);
+  double n1bit = exp2(gsl_spline_eval(spl, log2(s1), acc));
+
+  // Log normal part
+  // Offset
+  unsigned int noffsets = *static_cast<unsigned int*>(vptr[7]);
+  double *offsetpos = static_cast<double*>(vptr[8]);
+  double *offsetval = static_cast<double*>(vptr[9]);
+  double mu;
+  if (noffsets == 1) mu = offsetval[0];
+  else if (s1 <= offsetpos[0]) mu = offsetval[0];
+  else if (s1 >= offsetpos[noffsets - 1]) mu = offsetval[noffsets - 1];
+  else {
+    gsl_interp* ospl = static_cast<gsl_interp*>(vptr[5]);
+    gsl_interp_accel* oacc = static_cast<gsl_interp_accel*>(vptr[6]);
+    mu = gsl_interp_eval(ospl, offsetpos, offsetval, s1, oacc);
+  }
+
+  // Sigma
+  double isigma;
+  unsigned int nsigmas = *static_cast<unsigned int*>(vptr[12]);
+  double *sigmapos = static_cast<double*>(vptr[13]);
+  double *sigmaval = static_cast<double*>(vptr[14]);
+  if (nsigmas == 1) isigma = 1.0 / sigmaval[0];
+  else if (s1 <= sigmapos[0]) isigma = 1.0 / sigmaval[0];
+  else if (s1 >= sigmapos[nsigmas - 1]) isigma = 1.0 / sigmaval[nsigmas - 1];
+  else {
+    gsl_interp* sspl = static_cast<gsl_interp*>(vptr[10]);
+    gsl_interp_accel* sacc = static_cast<gsl_interp_accel*>(vptr[11]);
+    isigma = 1.0 / gsl_interp_eval(sspl, sigmapos, sigmaval, s1, sacc);
+  }
+
+  // Log normal evaluation; note that s2 and s1 are both required to be
+  // positive because we explicitly check that above (for s1, that is because
+  // minknot must be > 0 in this model)
+  // using log(s2/s1) = - log(s1/s2) and the fact we sqr
+  double s1overs2 = s1 / s2;
+  double exparg = (log(s1overs2) + mu) * isigma;  
+  double lnorm = isigma * s1overs2 * exp(-0.5 * exparg * exparg);
+  
+  return n1bit * lnorm;
+}
 
 /*!
   \param[in] s1 Flux in band 1
@@ -1969,8 +2132,8 @@ bool numberCountsDoubleLogNormal::writeToStream(std::ostream& os) const {
   Internal function for use in model integrations.
 */
 static double evalPowfNDoubleLogNormal(double s1, void* params) {
-  //Model is: ( f^power * exp( const1*mu + const2*sigma^2 ) ) * n1(f)
-  // where f is the flux in the first band and n1 is the number
+  //Model is: ( s1^power * exp( const1*mu + const2*sigma^2 ) ) * n1(s1)
+  // where s1 is the flux in the first band and n1 is the number
   // counts in band 1 -- see splineInt.
   //Params are:
   // params[0]  power
@@ -2058,7 +2221,7 @@ static double evalPowfNDoubleLogNormal(double s1, void* params) {
   //Now multiply in n(band1)
   gsl_spline* spl = static_cast<gsl_spline*>(vptr[3]);
   gsl_interp_accel* acc = static_cast<gsl_interp_accel*>(vptr[4]);
-  double splval = exp2(gsl_spline_eval(spl,log2(s1),acc));
+  double splval = exp2(gsl_spline_eval(spl, log2(s1), acc));
   return prefac * splval;
 }
 
