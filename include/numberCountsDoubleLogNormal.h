@@ -32,7 +32,7 @@
   \f[
     \mathrm{L}\left( x ; \mu, \sigma \right) =
     \frac{1}{\sqrt{2 \pi} \sigma} \frac{1}{x}
-    \exp\left[ \frac{ - \left(\log x - \mu\right)^2 }{ \sigma^2 } \right] .
+    \exp\left[ \frac{ - \left(\log x - \mu\right)^2 }{ 2 \sigma^2 } \right] .
   \f]
   \f$\sigma\f$ and \f$\mu\f$ are stored as splines as functions of
   \f$S_1\f$.  Note that \f$\sigma\f$ and \f$\mu\f$ (the actual parameters 

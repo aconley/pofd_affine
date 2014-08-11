@@ -705,14 +705,16 @@ TEST(model2DTest, PowerIntegration) {
 
 // Projection into single band
 TEST(model2DTest, Projection) {
+  // This is done against a simple model with single mu and sigma
+  // values because that is what we can compute by hand.
   const unsigned int nknots = 5;
   const float knotpos[nknots] = { 0.002, 0.005, 0.010, 0.020, 0.040 };
-  const unsigned int nsigmas = 2;
-  const float sigmapos[nsigmas] = { 0.003, 0.05 };
+  const unsigned int nsigmas = 1;
+  const float sigmapos[nsigmas] = { 0.003 };
   const unsigned int noffsets = 1;
   const float offsetpos[noffsets] = { 0.03 };
   const unsigned int ntot = nknots + nsigmas + noffsets;
-  const float pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, 0.15, -0.03 };
+  const float pvals[ntot] = { 8.0, 6.0, 4.0, 3.3, 2.0, 0.1, -0.03 };
 
   numberCountsDoubleLogNormal model(nknots, knotpos, nsigmas, sigmapos,
 				    noffsets, offsetpos);
@@ -721,7 +723,6 @@ TEST(model2DTest, Projection) {
   ASSERT_TRUE(model.isValid()) << "Model should be valid";
 
   // Test projection to band 1
-
   // Test at knots; do the comparison in log space
   //  Note we skip the first and last because of the way the model is defined
   for (unsigned int i = 1; i < nknots-1; ++i) 
@@ -746,11 +747,13 @@ TEST(model2DTest, Projection) {
   }
     
   // Now the band 2 projection, where it's harder to compute the value
-  //  we -should- get.
+  //  we -should- get.  The comparison was done using output
+  //  from this 1D code but the color space part and integration
+  //  done in IDL
   const unsigned int ns2 = 7;
-  double s2[ns2] = { 0.003, 0.006, 0.01, 0.015, 0.03, 0.038, 0.06 };
-  double expected_b2[ns2] = { 4.69166, 3.20205, 2.01069, 1.72144, 1.07328, 
-			      0.52892, -2.63367 };
+  double s2[ns2] = { 0.003, 0.006, 0.01, 0.015, 0.03, 0.038, 0.045 };
+  double expected_b2[ns2] = { 7.2151361, 5.4347358, 4.0063469, 3.5325367,
+			      2.6030295, 1.9627610, 0.87816460 };
   for (unsigned int i = 0; i < ns2; ++i)
     EXPECT_NEAR(expected_b2[i], log10(model.getBand2NumberCounts(s2[i])), 1e-3) 
       << "Didn't get band 2 expected number counts at s2 = " << s2[i];

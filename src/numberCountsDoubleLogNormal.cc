@@ -2122,7 +2122,7 @@ static double evalCounts(double s1, void* params) {
   double exparg = (log(s1overs2) + mu) * isigma;  
   double lnorm = isigma * s1overs2 * exp(-0.5 * exparg * exparg);
   
-  return n1bit * lnorm;
+  return n1bit * lnorm / s1;
 }
 
 /*!
