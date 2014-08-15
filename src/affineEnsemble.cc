@@ -44,7 +44,7 @@ affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
   parnames.resize(nparams);
 
   //Set number of steps per walker, which won't quite match nsamples
-  nsteps = static_cast<unsigned int>(NSAMPLES/static_cast<float>(nwalkers)
+  nsteps = static_cast<unsigned int>(NSAMPLES / static_cast<float>(nwalkers)
 				     + 0.999999999999);
 
   acor_set = false;
@@ -130,7 +130,7 @@ void affineEnsemble::setNWalkers(unsigned int n) {
   chains.setNWalkers(n);
   
   unsigned int nsamples = nsteps * nwalkers;
-  nsteps = static_cast<unsigned int>(nsamples/static_cast<float>(n)
+  nsteps = static_cast<unsigned int>(nsamples / static_cast<float>(n)
 				     + 0.999999999999);
 
   if (rank == 0) {
@@ -307,8 +307,8 @@ bool affineEnsemble::isParamBonus(unsigned int idx) const {
   \param[in] parnm Name of parameter
 */
 void affineEnsemble::setParamName(unsigned int idx, const std::string& parnm) {
-  if (idx >= nparams) throw affineExcept("affineEnsemble", "setParamName",
-					 "Invalid index");
+  if (idx >= nparams) 
+    throw affineExcept("affineEnsemble", "setParamName", "Invalid index");
   has_any_names = true;
   has_name[idx] = true;
   parnames[idx] = parnm;
@@ -318,8 +318,8 @@ void affineEnsemble::setParamName(unsigned int idx, const std::string& parnm) {
   \param[in] idx Parameter index to remove name for
 */
 void affineEnsemble::unsetParamName(unsigned int idx) {
-  if (idx >= nparams) throw affineExcept("affineEnsemble", "unsetParamName",
-					 "Invalid index");
+  if (idx >= nparams) 
+    throw affineExcept("affineEnsemble", "unsetParamName", "Invalid index");
   if (!has_name[idx]) return; //Wasn't set anyways
   has_name[idx] = false;
   has_any_names = has_name[idx];
@@ -332,8 +332,8 @@ void affineEnsemble::unsetParamName(unsigned int idx) {
   \returns Name of parameter, or empty string if there is none
 */
 std::string affineEnsemble::getParamName(unsigned int idx) const {
-  if (idx >= nparams) throw affineExcept("affineEnsemble", "getParamName",
-					 "Invalid index");
+  if (idx >= nparams) 
+    throw affineExcept("affineEnsemble", "getParamName", "Invalid index");
   if (!has_name[idx]) return std::string();
   return parnames[idx];
 }
@@ -1257,7 +1257,7 @@ void affineEnsemble::emptyMasterQueue(double temp) throw (affineExcept) {
     // sleep for 1/100th of a second and try again
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     while (ismsg == 0) {
-      usleep(mcmc_affine::usleeplen); //Sleep for 1/100th of a second
+      usleep(mcmc_affine::usleeplen); //Sleep and then check again
       MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     }
 

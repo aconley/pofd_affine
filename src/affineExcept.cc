@@ -54,7 +54,6 @@ const char* affineExcept::what() const throw() {
   if (!errstr.empty()) {
     if (!first) str << std::endl;
     str << "Error Message: " << errstr;
-    std::cout << "Added error message" << std::endl;
   }
   whatmsg = str.str();
   return whatmsg.c_str();
