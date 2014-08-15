@@ -466,9 +466,10 @@ void fitsData::receiveCopy(MPI_Comm comm, int src) {
   MPI_Recv(&newn, 1, MPI_UNSIGNED, src, pofd_mcmc::FDSENDN, comm, &Info);
 
   if (newn != n) {
+    // Must resize
     if (data != NULL) fftw_free(data);
     if (newn > 0)
-      data = (double*) fftw_malloc( sizeof(double)*newn );
+      data = (double*) fftw_malloc(sizeof(double) * newn);
     else data = NULL;
     n = newn;
   }

@@ -564,7 +564,7 @@ void calcLikeDoubleSingle::sendSelf(MPI_Comm comm, int dest) const {
     MPI_Send(like_norm, ndatasets, MPI_DOUBLE, dest,
 	     pofd_mcmc::CLDSENDLIKENORM, comm);
     MPI_Send(const_cast<double*>(&minDataFlux1), 1, MPI_DOUBLE, dest,
-	     pofd_mcmc::CLDSENDMAXDATAFLUX1, comm);
+	     pofd_mcmc::CLDSENDMINDATAFLUX1, comm);
     MPI_Send(const_cast<double*>(&minDataFlux1), 1, MPI_DOUBLE, dest,
 	     pofd_mcmc::CLDSENDMAXDATAFLUX1, comm);
     MPI_Send(const_cast<double*>(&minDataFlux2), 1, MPI_DOUBLE, dest,
@@ -572,8 +572,8 @@ void calcLikeDoubleSingle::sendSelf(MPI_Comm comm, int dest) const {
     MPI_Send(const_cast<double*>(&maxDataFlux2), 1, MPI_DOUBLE, dest,
 	     pofd_mcmc::CLDSENDMAXDATAFLUX2, comm);
     MPI_Send(const_cast<double*>(&minRFlux1), 1, MPI_DOUBLE, dest,
-	     pofd_mcmc::CLDSENDMAXRFLUX1, comm);
-    MPI_Send(const_cast<double*>(&minRFlux1), 1, MPI_DOUBLE, dest,
+	     pofd_mcmc::CLDSENDMINRFLUX1, comm);
+    MPI_Send(const_cast<double*>(&maxRFlux1), 1, MPI_DOUBLE, dest,
 	     pofd_mcmc::CLDSENDMAXRFLUX1, comm);
     MPI_Send(const_cast<double*>(&minRFlux2), 1, MPI_DOUBLE, dest,
 	     pofd_mcmc::CLDSENDMINRFLUX2, comm);
@@ -598,6 +598,7 @@ void calcLikeDoubleSingle::sendSelf(MPI_Comm comm, int dest) const {
 */
 void calcLikeDoubleSingle::receiveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
+
   //Data
   unsigned int newn;
   MPI_Recv(&newn, 1, MPI_UNSIGNED, src, pofd_mcmc::CLDSENDNDATA,
@@ -659,7 +660,6 @@ void calcLikeDoubleSingle::receiveCopy(MPI_Comm comm, int src) {
   
   //PDFactory
   pdfac.receiveCopy(comm, src);
-
 }
 
 
@@ -1456,4 +1456,5 @@ void calcLikeDouble::receiveCopy(MPI_Comm comm, int src) {
   // Regularization alpha
   MPI_Recv(&regularization_alpha, 1, MPI_DOUBLE, src,
 	   pofd_mcmc::CLDSENDREGULARIZATIONALPHA, comm, &Info);
+
 }

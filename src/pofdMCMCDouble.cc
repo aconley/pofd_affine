@@ -53,19 +53,21 @@ bool pofdMCMCDouble::initChainsMaster() {
     throw affineExcept("pofdMCMCDouble", "initChainsMaster",
 		       "Should not be called except on master node");
 
-  //Model initialization file
-  ifile.readFile(initfile, true, true);
-  ntot = ifile.getNTot();
-  if (ntot == 0)
-    throw affineExcept("pofdMCMCDouble", "initChainsMaster",
-		       "No model parameters read in");
-  
   //Data/fit initialization file
   spec_info.readFile(specfile);
   if (spec_info.datafiles1.size() == 0)
       throw affineExcept("pofdMCMCDouble", "initChainsMaster",
 			 "No data files read");
 
+  //Model initialization file
+  if (spec_info.verbosity >= 3)
+    std::cout << " Reading in initialization file: " << initfile << std::endl;
+  ifile.readFile(initfile, true, true);
+  ntot = ifile.getNTot();
+  if (ntot == 0)
+    throw affineExcept("pofdMCMCDouble", "initChainsMaster",
+		       "No model parameters read in");
+  
   //Number of parameters is number of knots (ntot) 
   // + 2 for the sigmas in each band -- although some may be fixed
   // + 2 for the bonus mean flux per area
@@ -109,6 +111,8 @@ bool pofdMCMCDouble::initChainsMaster() {
     this->setParamBonus(i);
 
   //Initialize likelihood information -- priors, data, etc.
+  if (spec_info.verbosity >= 3)
+    std::cout << " Initializing likelihood information" << std::endl;
   likeSet.setPositions(ifile);
   likeSet.setFFTSize(spec_info.fftsize);
   if (spec_info.edge_set) {
@@ -145,7 +149,7 @@ bool pofdMCMCDouble::initChainsMaster() {
 
   //Read in data files
   if (spec_info.verbosity >= 2)
-      std::cout << "Reading in data files" << std::endl;
+      std::cout << " Reading in data files" << std::endl;
   likeSet.readDataFromFiles(spec_info.datafiles1, spec_info.datafiles2,
 			    spec_info.psffiles1, spec_info.psffiles2, 
 			    spec_info.sigmas1, spec_info.sigmas2,
@@ -203,6 +207,10 @@ bool pofdMCMCDouble::initChainsMaster() {
       // notified all others of failure
       return false; 
     } else if (this_tag == pofd_mcmc::PMCMCSENDINIT) {
+      if (verbosity >= 3)
+	std::cout << " Sending initialization info to " << this_rank
+		  << std::endl;
+
       MPI_Send(&jnk, 1, MPI_INT, this_rank, pofd_mcmc::PMCMCSENDINGINIT,
 	       MPI_COMM_WORLD);
       MPI_Send(&npar, 1, MPI_UNSIGNED, this_rank, pofd_mcmc::PMCMCSENDNPAR,
@@ -341,7 +349,7 @@ void pofdMCMCDouble::generateInitialPosition(const paramSet& p) {
 
 bool pofdMCMCDouble::initChainsSlave() {
   if (rank == 0)
-    throw affineExcept("pofdMCMCDouble","initChainsSlave",
+    throw affineExcept("pofdMCMCDouble", "initChainsSlave",
 		       "Should not be called on master node");
   //Send message to master saying we are ready
   int jnk;

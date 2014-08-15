@@ -879,19 +879,24 @@ bool PDFactory::initPD(unsigned int n, double minflux, double maxflux,
 		       const numberCounts& model, const beam& bm) {
 
   if (n == 0)
-    throw affineExcept("PDFactory", "initPD", "Invalid (non-positive) n");  
+    throw affineExcept("PDFactory", "initPD", "Invalid (zero) n");  
   if (n == 1)
     throw affineExcept("PDFactory", "initPD", "Invalid (==0) n");  
-  if (maxflux <= 0.0)
-    throw affineExcept("PDFactory", "initPD", "Invalid (non-positive) maxflux");
-  if (minflux == maxflux)
-    throw affineExcept("PDFactory", "initPD", 
-		       "Invalid (0) range between min/max flux");
+  if (maxflux <= 0.0) {
+    std::stringstream errstr;
+    errstr << "Invalid (non-positive) maxflux (" << maxflux << ")";
+    throw affineExcept("PDFactory", "initPD", errstr.str());
+  }
+  if (minflux == maxflux) {
+    std::stringstream errstr;
+    errstr << "Invalid (0) range between min/max flux with value "
+	   << minflux;
+    throw affineExcept("PDFactory", "initPD", errstr.str());
+  }
   if (!model.isValid())
     throw affineExcept("PDFactory", "initPD", "Invalid model");
   if (!bm.hasData())
     throw affineExcept("PDFactory", "initPD", "Empty beam");
-
 
   // We are about to nuke these
   rinitialized = false;

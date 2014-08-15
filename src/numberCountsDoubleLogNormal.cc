@@ -1828,7 +1828,7 @@ void numberCountsDoubleLogNormal::sendSelf(MPI_Comm comm, int dest) const {
 	     pofd_mcmc::NCDCSENDOFFSETKNOTS, comm);
   MPI_Send(const_cast<bool*>(&offsetvals_loaded), 1, MPI::BOOL, dest,
 	   pofd_mcmc::NCDCSENDOVLOADED, comm);
-  if (sigmapos_loaded && offsetvals_loaded && noffsetknots > 0) 
+  if (offsetpos_loaded && offsetvals_loaded && noffsetknots > 0) 
     MPI_Send(offsetvals, noffsetknots, MPI_DOUBLE, dest,
 	     pofd_mcmc::NCDCSENDOFFSETVALS, comm);
 
@@ -1897,22 +1897,21 @@ void numberCountsDoubleLogNormal::receiveCopy(MPI_Comm comm, int src) {
 	   comm, &Info);
   setNOffsets(n);
   if (loaded && noffsetknots > 0) {
-    MPI_Recv(offsetknots, n, MPI_DOUBLE, src, pofd_mcmc::NCDCSENDOFFSETKNOTS,
-	     comm, &Info);
+    MPI_Recv(offsetknots, noffsetknots, MPI_DOUBLE, src, 
+	     pofd_mcmc::NCDCSENDOFFSETKNOTS, comm, &Info);
     offsetpos_loaded = loaded;
   }
   MPI_Recv(&loaded, 1, MPI::BOOL, src, pofd_mcmc::NCDCSENDOVLOADED,
 	   comm, &Info);
   if (offsetpos_loaded & loaded && noffsetknots > 0) {
-    MPI_Recv(offsetvals, n, MPI_DOUBLE, src, pofd_mcmc::NCDCSENDSIGMAVALS,
-	     comm, &Info);
+    MPI_Recv(offsetvals, noffsetknots, MPI_DOUBLE, src, 
+	     pofd_mcmc::NCDCSENDOFFSETVALS, comm, &Info);
     if (n > 1)
       gsl_interp_init(sigmainterp, sigmaknots, sigmavals,
 		      static_cast<size_t>(nsigmaknots));
     offsetvals_loaded = loaded;
   }
   checkOffsetsValid();
-
 }
 
 /*!

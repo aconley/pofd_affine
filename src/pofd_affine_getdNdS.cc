@@ -776,7 +776,8 @@ int main( int argc, char** argv ) {
       std::cerr << "\t\tUse the 2D model, but project out the band 1 counts."
 		<< " In" << std::endl;
       std::cerr << "\t\tother words, produce the band 2 counts from the 2-band"
-		<< "\t\tmodel." << std::endl;
+		<< std::endl;
+      std::cerr << "\t\tmodel." << std::endl;
       std::cerr << "\t-v, --verbose" << std::endl;
       std::cerr << "\t\tRun in verbose mode" << std::endl;
       std::cerr << "\t-V, --version" << std::endl;
@@ -828,7 +829,9 @@ int main( int argc, char** argv ) {
 		<< "knot)." << std::endl;
       std::cerr << "\t--minflux1 value" << std::endl;
       std::cerr << "\t\tThe minimum flux to calculate dN/dS for in band 1. "
-		<< "(def: lowest knot)" << std::endl;
+		<< "(def:" << std::endl;
+      std::cerr << "\t\tlowest band 1 knot specified in initfile)" 
+		<< std::endl;
       std::cerr << "\t--minflux2 value" << std::endl;
       std::cerr << "\t\tThe minimum flux to calculate dN/dS for in band 2. "
 		<< "(def: 0)" << std::endl;

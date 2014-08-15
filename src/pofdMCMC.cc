@@ -49,20 +49,21 @@ bool pofdMCMC::initChainsMaster() {
     throw affineExcept("pofdMCMC", "initChainsMaster",
 		       "Should not be called except on master node");
 
-  //Model initialization file
-  ifile.readFile(initfile, true, true);
-  nknots = ifile.getNKnots();
-  if (nknots == 0)
-    throw affineExcept("pofdMCMC", "initChainsMaster",
-		       "No model knots read in");
-  
   //Data/fit initialization file
   spec_info.readFile(specfile);
   if (spec_info.datafiles.size() == 0)
       throw affineExcept("pofdMCMC", "initChainsMaster",
 			 "No data files read");
 
-
+  //Model initialization file
+  if (spec_info.verbosity >= 3)
+    std::cout << " Reading in initialization file: " << initfile << std::endl;
+  ifile.readFile(initfile, true, true);
+  nknots = ifile.getNKnots();
+  if (nknots == 0)
+    throw affineExcept("pofdMCMC", "initChainsMaster",
+		       "No model knots read in");
+  
   //Number of parameters is number of knots + 3;
   // nknots for the actual model params
   // 1 for the instrument sigma multiplier (possibly fixed)
@@ -90,6 +91,8 @@ bool pofdMCMC::initChainsMaster() {
   this->setParamBonus(nknots + 2);
 
   //Initialize likelihood information -- priors, data, etc.
+  if (spec_info.verbosity >= 3)
+    std::cout << " Initializing likelihood information" << std::endl;
   likeSet.setKnotPositions(ifile);
   likeSet.setFFTSize(spec_info.fftsize);
   likeSet.setNInterp(spec_info.ninterp);
@@ -169,6 +172,9 @@ bool pofdMCMC::initChainsMaster() {
       // notified all others of failure
       return false; 
     } else if (this_tag == pofd_mcmc::PMCMCSENDINIT) {
+      if (verbosity >= 3)
+	std::cout << " Sending initialization info to " << this_rank
+		  << std::endl;
       MPI_Send(&jnk, 1, MPI_INT, this_rank, pofd_mcmc::PMCMCSENDINGINIT,
 	       MPI_COMM_WORLD);
       MPI_Send(&npar, 1, MPI_UNSIGNED, this_rank, pofd_mcmc::PMCMCSENDNPAR,

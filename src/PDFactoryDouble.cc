@@ -1028,24 +1028,32 @@ bool PDFactoryDouble::initPD(unsigned int n, double minflux1, double maxflux1,
 			     const doublebeam& bm, bool setEdge) {
 
   if (n == 0)
-    throw affineExcept("PDFactoryDouble", "initPD", 
-		       "Invalid (non-positive) n");
+    throw affineExcept("PDFactoryDouble", "initPD", "Invalid (zero) n");
   if (n == 1)
-    throw affineExcept("PDFactoryDouble", "initPD", 
-		       "Invalid n (==1)");
-  if (maxflux1 <= 0.0)
-    throw affineExcept("PDFactoryDouble", "initPD",
-		       "Invalid (non-positive) maxflux1");
-  if (maxflux2 <= 0.0)
-    throw affineExcept("PDFactoryDouble", "initPD",
-		       "Invalid (non-positive) maxflux2");
-  if (maxflux1 == minflux1)
-    throw affineExcept("PDFactoryDouble", "initPD",
-		       "Invalid range (0) between min/max flux in band 1");
-  if (maxflux2 == minflux2)
-    throw affineExcept("PDFactoryDouble", "initPD",
-		       "Invalid range (0) between min/max flux in band 2");
-
+    throw affineExcept("PDFactoryDouble", "initPD", "Invalid n (==1)");
+  if (maxflux1 <= 0.0) {
+    std::stringstream errstr;
+    errstr << "Invalid (non-positive) maxflux1 (" << maxflux1 << ")";
+    throw affineExcept("PDFactoryDouble", "initPD", errstr.str());
+  }
+  if (maxflux2 <= 0.0) {
+    std::stringstream errstr;
+    errstr << "Invalid (non-positive) maxflux2 (" << maxflux2 << ")";
+    throw affineExcept("PDFactoryDouble", "initPD", errstr.str());
+  }
+  if (maxflux1 == minflux1) {
+    std::stringstream errstr;
+    errstr << "Invalid range (0) between min/max flux in band 1 with value: "
+	   << maxflux1;
+    throw affineExcept("PDFactoryDouble", "initPD", errstr.str());
+  }
+  if (maxflux2 == minflux2) {
+    std::stringstream errstr;
+    errstr << "Invalid range (0) between min/max flux in band 2 with value: "
+	   << maxflux2;
+    throw affineExcept("PDFactoryDouble", "initPD", errstr.str());
+  }
+  
   initialized = false;
 
   //Make the plans, or keep the old ones if possible

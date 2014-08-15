@@ -651,6 +651,7 @@ void fitsDataDouble::sendSelf(MPI_Comm comm, int dest) const {
 void fitsDataDouble::receiveCopy(MPI_Comm comm, int src) {
   unsigned int newn;
   MPI_Status Info;
+
   MPI_Recv(&newn, 1, MPI_UNSIGNED, src, pofd_mcmc::FDDSENDN, comm, &Info);
 
   if (newn != n) {
@@ -658,8 +659,8 @@ void fitsDataDouble::receiveCopy(MPI_Comm comm, int src) {
     if (data1 != NULL) fftw_free(data1);
     if (data2 != NULL) fftw_free(data2);
     if (newn > 0) {
-      data1 = (double*) fftw_malloc( sizeof(double)*newn );
-      data2 = (double*) fftw_malloc( sizeof(double)*newn );
+      data1 = (double*) fftw_malloc(sizeof(double) * newn);
+      data2 = (double*) fftw_malloc(sizeof(double) * newn);
     } else data1 = data2 = NULL;
     n = newn;
   }
@@ -678,7 +679,7 @@ void fitsDataDouble::receiveCopy(MPI_Comm comm, int src) {
       MPI_Recv(&newnbins2, 1, MPI_UNSIGNED, src, pofd_mcmc::FDDSENDNBINS2, 
 	       comm, &Info);
       //Realloc if needed
-      if ( (newnbins1 != nbins1) || (newnbins2 != nbins2) ) {
+      if ((newnbins1 != nbins1) || (newnbins2 != nbins2)) {
 	if (binval != NULL) fftw_free(binval);
 	if ( (newnbins1 > 0) && (newnbins2 > 0) ) {
 	  binval = (unsigned int*) 
@@ -687,7 +688,7 @@ void fitsDataDouble::receiveCopy(MPI_Comm comm, int src) {
 	  nbins2 = newnbins2;
 	} else binval = NULL;
       }
-      if ( (nbins1 > 0) && (nbins2 > 0) ) {
+      if ((nbins1 > 0) && (nbins2 > 0)) {
 	MPI_Recv(binval, nbins1*nbins2, MPI_UNSIGNED, src,
 		 pofd_mcmc::FDDSENDBINVAL, comm, &Info);
 	MPI_Recv(&bincent01, 1, MPI_DOUBLE, src, pofd_mcmc::FDDSENDBINCENT01,
