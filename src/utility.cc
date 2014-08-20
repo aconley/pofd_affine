@@ -3,15 +3,17 @@
 #include<limits>
 #include<cstdlib>
 #include<algorithm>
+#include<sstream>
 
 #include "../include/utility.h"
 
 /*!
-  Use extension to figure out what file type.
+  \param[in] str File name
+  \returns File type as determined by extension.
 
   This should only be expected to work for ASCII text, possibly
-  not on all compilers.  Ah, the benefits of coding for pretty much
-  your own use.
+  not on all compilers.  Ah, the benefits of coding for yourself,
+  and only really yourself.
 */
 utility::outfiletype utility::getOutputFileType(const std::string& str) {
   size_t pos = str.find_last_of('.');
@@ -71,7 +73,7 @@ void utility::stringwords(const std::string &ins,
 /*!
   \param[in] ins Input string
   \param[out] words String split up into substrings
- */
+*/
 void utility::stringwords_eq(const std::string &ins,
 			     std::vector<std::string> &words) {
   std::string s,tmp;
@@ -108,7 +110,7 @@ void utility::stringwords_eq(const std::string &ins,
   \param[in] ins String to check
   \returns True if lowercase(ins) is 'true', 't', 'yes', or 'y'.
     Otherwise false.
- */
+*/
 bool utility::string_true(const std::string& ins) {
   std::string strlow(ins); //Lowercase version of string
   std::transform(strlow.begin(), strlow.end(),
@@ -123,7 +125,7 @@ bool utility::string_true(const std::string& ins) {
   Finds the position in a sorted array of the last element
   less than a specified value. ndata is returned if a problem is
   encountered.
- */
+*/
 unsigned int utility::binary_search_lt(double value, double* data, 
 				       unsigned int ndata) {
   unsigned int l, u; //Lower and upper bounds of current box
@@ -154,7 +156,7 @@ unsigned int utility::binary_search_lt(double value, double* data,
   Finds the position in a sorted array of the last element
   less than a specified value. ndata is returned if a problem is
   encountered.
- */
+*/
 unsigned int utility::binary_search_lt(double value, 
 				       const std::vector<double>& data) {
   unsigned int l, u; //Lower and upper bounds of current box
@@ -192,7 +194,7 @@ unsigned int utility::binary_search_lte(double value, double* data,
   Finds the position in a sorted array of the first element
   greater than a specified value. ndata is returned if a problem is
   encountered.
- */
+*/
 unsigned int utility::binary_search_gt(double value, double* data, 
 				       unsigned int ndata) {
   unsigned int l, u; //Lower and upper bounds of current box
@@ -251,10 +253,14 @@ unsigned int utility::binary_search_gt(double value,std::vector<double> data){
 }
 
 /*!
-  Finds the position in a reverse sorted array of the last element
-  greater than a specified value. ndata is returned if a problem is
-  encountered.
- */
+  \param[in] value  Value to search on
+  \param[in] data   Data to search in (length ndata).
+                     Assumed to be reverse sorted.
+  \param[in] ndata  Number of elements in data
+  \returns The position in a reverse sorted array of the last element
+    greater than a specified value. ndata is returned if a problem is
+    encountered.
+*/
 int utility::binary_search_rev(double value, double* data, 
 			       unsigned int ndata) {
   unsigned int l, u; //Lower and upper bounds of current box
@@ -282,11 +288,14 @@ int utility::binary_search_rev(double value, double* data,
 }
 
 /*!
+  \param[in] val Argument
+  \returns log_2 (value)
+
   Not for the faint of heart, and assumes unsigned int is
   32 bits.
 
   From http://graphics.stanford.edu/~seander/bithacks.html#IntegerLog
- */
+*/
 unsigned int utility::log2(unsigned int val) {
   if (val == 1) {
     return 0;
@@ -314,14 +323,18 @@ unsigned int utility::log2(unsigned int val) {
   }
 }
 
+/*!
+  \param[in] value   Argument
+  \returns Log (value!)
+ */
 double utility::logfactorial(double value) {
-  //Lanzcos (1964), SIAM Journal on Numerical Analysis, ser B, vol 1., p 86
+  // Lanzcos (1964), SIAM Journal on Numerical Analysis, ser B, vol 1., p 86
   if (value < 0) return std::numeric_limits<double>::quiet_NaN();
   if (value == 0 || value == 1) return 0.0;
   const unsigned int nterms = 14;
   double vp1, temp, y, series;
-  const double coeffs[nterms] = {57.1562356658629235,-59.5979603554754915,
-				 14.1360979747417471,-0.491913816097620199,
+  const double coeffs[nterms] = {57.1562356658629235, -59.5979603554754915,
+				 14.1360979747417471, -0.491913816097620199,
 				 0.339946499848118887e-4,
 				 0.465236289270485756e-4,
 				 -0.983744753048795646e-4,
@@ -337,6 +350,7 @@ double utility::logfactorial(double value) {
   temp = (vp1+0.5)*log(temp)-temp;
   series = 0.999999999999997092;
   y = vp1;
-  for (unsigned int i = 0; i < nterms; ++i) series += coeffs[i]/++y;
-  return temp + log(2.5066282746310005*series/vp1);
+  for (unsigned int i = 0; i < nterms; ++i) 
+    series += coeffs[i] / ++y;
+  return temp + log(2.5066282746310005 * series / vp1);
 }

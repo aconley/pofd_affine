@@ -100,7 +100,11 @@ class PDFactoryDouble {
   /*! \brief Get P(D) statistics from R computation (so without inst. noise) */
   void getRStats();
 
-  void unwrapPD(PDDouble& pd) const; //!< Moves computed P(D) to output var
+  /*! \brief Helper function for unwrapAndNormalizePD */
+  unsigned int findSplitPoint(const double* const, double,
+			      double) const;
+
+  void unwrapAndNormalizePD(PDDouble& pd) const; //!< Moves computed P(D) to output var
 
   void setupTransforms(unsigned int); //!< Sets up FFTW plans and resizes
 #ifdef TIMING

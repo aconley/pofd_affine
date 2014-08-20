@@ -697,6 +697,103 @@ void PDFactoryDouble::setupTransforms(unsigned int n) {
 }
 
 /*!
+  \param[in] data Marginalized P(D) to find split point at
+  \param[in] dflux Flux step
+  \param[in] sigma Estimated sigma for marginalized data
+  \returns Split point index
+
+  This is a utility function for finding the split point to 'unwrap' a P(D).
+  The user will call this once for each dimension, and is responsible
+  for doing the marginalization.
+*/
+unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
+					     double dflux, double sigma) const {
+  // This is basically the same thing as PDFactory::findSplitPoint,
+  //  but because some of the internal details of how things
+  //  are stored differ, it is implemented both here and in PDFactory.
+  //  See that for a much more detailed explanation of what this
+  //  is trying to do.
+
+  // These are are control constants for accepting points
+  const double n1 = 3.0; // Minimum number of sigma away from mean
+  const double f1 = 1e-10; // Values smaller than f1 * peak considered noise
+  const double f2 = 1e-5; // Split must be less than f2 * peak
+
+  if (sigma <= 0)
+    throw affineExcept("PDFactory", "findSplitPoint", 
+		       "Invalid (non-positive) sigma");
+
+  double fluxrange = currsize * dflux;
+  double n1sig = n1 * sigma;
+
+  // Step 1
+  if (fluxrange < 2 * n1sig) {
+    std::stringstream errstr;
+    errstr << "Not enough flux range; range is: "
+	   << fluxrange << " sigma is: " << sigma
+	   << " so required flux range is: "
+	   << 2 * n1sig;
+    throw affineExcept("PDFactoryDouble", "findSplitPoint", 
+		       errstr.str());
+  }
+
+  // Step 2 and 3
+  unsigned int splitidx;
+  double peak, minval, currval;
+  splitidx = 0;
+  peak = minval = data[0];
+  for (unsigned int i = 1; i < currsize; ++i) {
+    currval = data[i];
+    if (currval > peak) peak = currval;
+    if (currval < minval) {
+      splitidx = i;
+      minval = currval;
+    }
+  }
+
+  // Step 4
+  // First we check minval <= f2 * peak.  If this
+  //  isn't true at the minimum, there is no way
+  //  to split this.
+  double targval = f2 * peak;
+  if (minval > targval) {
+    std::stringstream errstr;
+    errstr << "Minimum in margianlized pd is too large "
+	   << " relative to peak; can't find split point "
+	   << "with minimum: " << minval << " peak value: " 
+	   << peak << " Required split value < " << targval;
+    throw affineExcept("PDFactoryDouble", "findSplitPoint", 
+		       errstr.str());
+  }
+  // Now see if this point satisfies our criteria 1 and 2
+  //  These are the flux densities of the proposed splitidx
+  //  in postive and negative space (abs of the latter)
+  double fwrap_pos = static_cast<double>(splitidx) * dflux;
+  double fwrap_neg = static_cast<double>(currsize - splitidx) * dflux;
+  if ((minval > f1 * peak) && (fwrap_pos >= n1sig) && (fwrap_neg >= n1sig))
+    return splitidx;
+  
+  // Step 5
+  // Figure out the search index range from -n1sig to +n1sig
+  unsigned int topidx = 
+    static_cast<unsigned int>(n1sig / dflux) + currsize - 1;
+  unsigned int botidx = static_cast<unsigned int>(n1sig / dflux);
+  for (unsigned int i = topidx; i > botidx; --i) {
+    currval = data[i];
+    if (currval <= targval) return i; // Success!
+  }
+
+  // Step 6
+  // Didn't find one -- throw exception
+  std::stringstream errstr;
+  errstr << "Unable to find split point in range "
+	 << topidx << " down to " << botidx
+	 << " with value less than " << targval;
+  throw affineExcept("PDFactoryDouble", "findSplitPoint", 
+		     errstr.str());
+}
+
+/*!
   \param[out] pd Holds P(D) on output, normalized, mean subtracted,
                  and with positivity enforced.
 
@@ -704,21 +801,7 @@ void PDFactoryDouble::setupTransforms(unsigned int n) {
 */
 // This should only ever be called by getPD, so we don't really
 // check the inputs
-void PDFactoryDouble::unwrapPD(PDDouble& pd) const {
-  // This is similar to the 1D case -- we want to unwrap the PD where
-  //  the negative and positive bits overlap.  But using the minimum
-  //  is unstable due to numeric 'noise' so we instead look for the PD
-  //  being down by a certain amount relative to peak.
-  const double peakfrac = 1e-12; // How far down from the peak we want
-
-  // Our acceptance testing is a bit complicated.
-  // If the split point is more than nsig1 away from the expected mean (0)
-  //  then we just accept it.  If it is more than nsig2 away, we make sure
-  //  that the min/max ratio of the P(D) along that axis is more than
-  //  maxminratio.  If it is less than nsig2, we just flat out reject.
-  const double nsig1 = 4.0; 
-  const double nsig2 = 2.0;
-  const double minmaxratio = 1e-5;
+void PDFactoryDouble::unwrapAndNormalizePD(PDDouble& pd) const {
 
   //Enforce positivity
 #ifdef TIMING
@@ -731,18 +814,11 @@ void PDFactoryDouble::unwrapPD(PDDouble& pd) const {
 #endif
 
   // Figure out the indices of the minimum in each dimension
-  // Rather than find the 2D index, which would be noisier, 
-  //  intergrate out each axis to find the minimum.
-  // Start from the top and move down -- if there is a tie for
-  //  some reason we prefer the index be high because that is more
-  //  likely to be right in practice
-  // Start with min along the first index.  We also find the max, but
-  // don't keep track of its index
+  // Do index 1 first
 #ifdef TIMING
   starttime = std::clock();
 #endif
   // Sum into rsum, making this a 1D problem
-  int nm1 = static_cast<int>(currsize - 1);
   double cval, *rowptr;
   for (unsigned int i = 0; i < currsize; ++i) {
     rowptr = pofd + i * currsize;
@@ -752,98 +828,19 @@ void PDFactoryDouble::unwrapPD(PDDouble& pd) const {
     cval += 0.5 * rowptr[currsize-1];
     rsum[i] = cval;
   }
-  int mdx = nm1; // Curr min index
-  double minval, maxval;
-  minval = maxval = rsum[nm1];
-  for (int i = currsize - 2; i >= 0; --i) {
-    cval = rsum[i];
-    if (cval < minval) {
-      minval = cval;
-      mdx = i;
-    } else if (cval > maxval) maxval = cval;
-  }
-  unsigned int splitidx1 = static_cast<unsigned int>(mdx);
-  double splitval1 = minval;
-  if (minval / maxval < peakfrac) {
-    // There should therefore be a more robust point that isn't so
-    //  far down -- look for it from the top again
-    // There is such a point -- look for it again from the top
-    double targval = peakfrac * maxval;
-    for (int i = currsize - 1; i >= 0; --i)
-      if (rsum[i] <= targval) {
-	splitidx1 = static_cast<unsigned int>(i);
-	splitval1 = rsum[i];
-	break;
-      }
+  unsigned int splitidx1;
+  try {
+    splitidx1 = findSplitPoint(rsum, dflux1, sg1);
+  } catch (const affineExcept& ex) {
+    // Add information to the exception about which band we were in.
+    std::stringstream newerrstr("");
+    newerrstr << "In dimension one, problem with split point: " 
+	      << ex.getErrStr();
+    throw affineExcept(ex.getErrClass(), ex.getErrMethod(), 
+		       newerrstr.str());
   }
 
-  // Sanity check, possibly tweak edges
-  double fwrap_plus = 
-    static_cast<double>(splitidx1) * dflux1; // Wrap in pos flux
-  double fwrap_minus = 
-    static_cast<double>(currsize - splitidx1) * dflux1; // Abs neg wrap
-  double cs1, cs2;
-  cs1 = nsig1 * sg1;
-  cs2 = nsig2 * sg1;
-
-  // If fwrap_plus/minus are within cs2 of the peak, we will always
-  //  fail the tests below.  So, in that case, we try to adjust the
-  //  split point out.  This can work because the minimum of the P(D)
-  //  is very flat in some cases, and so it doesn't cost us to try it.
-  //  We do the same in the 1D code (PDFactory::unwrapPD)
-  if (fwrap_plus < cs2) {
-    unsigned int splitidx1_trial = 
-      static_cast<unsigned int>((cs2 - fwrap_plus) / dflux1) + 1 + splitidx1;
-    // Can only go up to currsize
-    if (splitidx1_trial >= currsize) splitidx1_trial = currsize - 1;
-    double splitval1_trial = rsum[splitidx1_trial];
-    if ((splitval1_trial / maxval) < minmaxratio) {
-      // Worth doing as an attempt to save things
-      splitidx1 = splitidx1_trial;
-      splitval1 = splitval1_trial;
-      fwrap_plus = static_cast<double>(splitidx1) * dflux1; // Wrap in pos flux
-      fwrap_minus = static_cast<double>(currsize - splitidx1) * dflux1;
-    }
-  } else if (fwrap_minus < cs2) {
-    unsigned int splitidx1_delta = 
-      static_cast<unsigned int>((cs2 - fwrap_minus) / dflux1) + 1;
-    if (splitidx1_delta > splitidx1) splitidx1_delta = splitidx1;
-    unsigned int splitidx1_trial = splitidx1 - splitidx1_delta;
-    double splitval1_trial = rsum[splitidx1_trial];
-    if ((splitval1_trial / maxval) < minmaxratio) {
-      splitidx1 = splitidx1_trial;
-      splitval1 = splitval1_trial;
-      fwrap_plus = static_cast<double>(splitidx1) * dflux1; // Wrap in pos flux
-      fwrap_minus = static_cast<double>(currsize - splitidx1) * dflux1;
-    }
-  }
-  if ((fwrap_plus < cs1) || (fwrap_minus < cs1)) {
-    // Worth further investigation
-    if (fwrap_plus < cs2) {
-      std::stringstream errstr;
-      errstr << "Top wrapping problem dim 1; wrapping point at "
-	     << fwrap_plus << " which is only " << fwrap_plus / sg1
-	     << " sigma away from expected (0) mean with sigma " << sg1;
-      throw affineExcept("PDFactoryDouble", "unwrapPD", errstr.str());
-    }
-    if (fwrap_minus < cs2) {
-      std::stringstream errstr;
-      errstr << "Bottom wrapping problem dim 1; wrapping point at "
-	     << -fwrap_minus << " which is only " << fwrap_minus / sg1
-	     << " sigma away from expected (0) mean, with sigma " << sg1;
-      throw affineExcept("PDFactoryDouble", "unwrapPD", errstr.str());
-    } 
-    // Min/max ratio test
-    if (splitval1 / maxval > minmaxratio) {
-      std::stringstream errstr;
-      errstr << "Dim 1 wrapping problem with wrapping fluxes: "
-	     << fwrap_plus << " and " << -fwrap_minus << " with min/max ratio: "
-	     << splitval1 / maxval << " and sigma: " << sg1;
-      throw affineExcept("PDFactoryDouble", "unwrapPD", errstr.str());
-    }
-  }
-  
-  // Now second dimension.  This one is slower due to stride issues.
+  // Now second dimension.  This one is slower due to stride issues,
   //  but otherwise is the same
   for (unsigned int j = 0; j < currsize; ++j) {
     cval = 0.5 * pofd[j];
@@ -852,79 +849,16 @@ void PDFactoryDouble::unwrapPD(PDDouble& pd) const {
     cval += 0.5 * pofd[(currsize - 1) * currsize + j];
     rsum[j] = cval;
   }
-  mdx = nm1; // Curr min index
-  minval = maxval = rsum[nm1];
-  for (int i = currsize - 2; i >= 0; --i) {
-    cval = rsum[i];
-    if (cval < minval) {
-      minval = cval;
-      mdx = i;
-    } else if (cval > maxval) maxval = cval;
-  }
-  unsigned int splitidx2 = static_cast<unsigned int>(mdx);
-  double splitval2 = minval;
-  if (minval / maxval < peakfrac) {
-    double targval = peakfrac * maxval;
-    for (int i = currsize - 1; i >= 0; --i)
-      if (rsum[i] <= targval) {
-	splitidx2 = static_cast<unsigned int>(i);
-	splitval2 = rsum[i];
-	break;
-      }
-  }
-
-  // Same sanity checks/tweaks
-  fwrap_plus = static_cast<double>(splitidx2) * dflux2;
-  fwrap_minus = static_cast<double>(currsize - splitidx2) * dflux2;
-  cs1 = nsig1 * sg2;
-  cs2 = nsig2 * sg2;
-  if (fwrap_plus < cs2) {
-    unsigned int splitidx2_trial = 
-      static_cast<unsigned int>((cs2 - fwrap_plus) / dflux2) + 1 + splitidx2;
-    if (splitidx2_trial >= currsize) splitidx2_trial = currsize - 1;
-    double splitval2_trial = rsum[splitidx2_trial];
-    if ((splitval2_trial / maxval) < minmaxratio) {
-      splitidx2 = splitidx2_trial;
-      splitval2 = splitval2_trial;
-      fwrap_plus = static_cast<double>(splitidx2) * dflux2;
-      fwrap_minus = static_cast<double>(currsize - splitidx2) * dflux2;
-    }
-  } else if (fwrap_minus < cs2) {
-    unsigned int splitidx2_delta = 
-      static_cast<unsigned int>((cs2 - fwrap_minus) / dflux2) + 1;
-    if (splitidx2_delta > splitidx2) splitidx2_delta = splitidx2;
-    unsigned int splitidx2_trial = splitidx2 - splitidx2_delta;
-    double splitval2_trial = rsum[splitidx2_trial];
-    if ((splitval2_trial / maxval) < minmaxratio) {
-      splitidx2 = splitidx2_trial;
-      splitval2 = splitval2_trial;
-      fwrap_plus = static_cast<double>(splitidx2) * dflux2;
-      fwrap_minus = static_cast<double>(currsize - splitidx2) * dflux2;
-    }
-  }
-  if ((fwrap_plus < cs1) || (fwrap_minus < cs1)) {
-    if (fwrap_plus < cs2) {
-      std::stringstream errstr;
-      errstr << "Top wrapping problem dim 2; wrapping point at "
-	     << fwrap_plus << " which is only " << fwrap_plus / sg2
-	     << " sigma away from expected (0) mean with sigma " << sg2;
-      throw affineExcept("PDFactoryDouble", "unwrapPD", errstr.str());
-    }
-    if (fwrap_minus < cs2) {
-      std::stringstream errstr;
-      errstr << "Bottom wrapping problem dim 2; wrapping point at "
-	     << -fwrap_minus << " which is only " << fwrap_minus / sg2
-	     << " sigma away from expected (0) mean, with sigma " << sg2;
-      throw affineExcept("PDFactoryDouble", "unwrapPD", errstr.str());
-    } 
-    if (splitval2 / maxval > minmaxratio) {
-      std::stringstream errstr;
-      errstr << "Dim 2 wrapping problem with wrapping fluxes: "
-	     << fwrap_plus << " and " << -fwrap_minus << " with min/max ratio: "
-	     << splitval2 / maxval << " and sigma: " << sg2;
-      throw affineExcept("PDFactoryDouble", "unwrapPD", errstr.str());
-
-    }
+  unsigned int splitidx2;
+  try {
+    splitidx2 = findSplitPoint(rsum, dflux2, sg2);
+  } catch (const affineExcept& ex) {
+    // Add information to the exception about which band we were in.
+    std::stringstream newerrstr("");
+    newerrstr << "In dimension two, problem with split point: " 
+	      << ex.getErrStr();
+    throw affineExcept(ex.getErrClass(), ex.getErrMethod(), 
+		       newerrstr.str());
   }
 
   // Now the actual copying, which is an exercise in index gymnastics
@@ -991,7 +925,8 @@ void PDFactoryDouble::unwrapPD(PDDouble& pd) const {
         << tmn.second << std::endl;
     str << "At length: " << currsize << " with sigma: " << sg1 << " "
         << sg2;
-    throw affineExcept("PDFactoryDouble", "unwrapPD", str.str());
+    throw affineExcept("PDFactoryDouble", "unwrapAndNormalizePD", 
+		       str.str());
   }
   pd.minflux1 = -tmn.first;
   pd.minflux2 = -tmn.second;
@@ -1326,10 +1261,10 @@ void PDFactoryDouble::getPD(double sigma1, double sigma2,
 #endif
 
   // Copy into output variable, also normalizing, mean subtracting, 
-  // making positive
-  sg1 = sqrt(var_noi1 + sigma1 * sigma1); // Used in unwrapPD
+  // making positive.  Need sigma estimates for unwrapAndNormalize
+  sg1 = sqrt(var_noi1 + sigma1 * sigma1);
   sg2 = sqrt(var_noi2 + sigma2 * sigma2);
-  unwrapPD(pd);
+  unwrapAndNormalizePD(pd);
 
   //Turn PD to log for more efficient log computation of likelihood
 #ifdef TIMING

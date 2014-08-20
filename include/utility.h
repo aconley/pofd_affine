@@ -54,7 +54,6 @@ namespace utility {
 
   /*! \brief Log of factorial of argument */
   double logfactorial(double);
-
 }
 
 #endif

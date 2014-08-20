@@ -100,8 +100,11 @@ class PDFactory {
 
   void getMeanVarFromR(); //!< Compute mean and variance from R
 
+  /*! \brief Helper function for unwrapAndNormalizePD */
+  unsigned int findSplitPoint() const;
+
   /*! \brief Moves P(D) over to output variable inside getPD */
-  void unwrapPD(PD& pd) const;
+  void unwrapAndNormalizePD(PD& pd) const;
 
 #ifdef TIMING
   mutable std::clock_t RTime, p0Time, fftTime, posTime, copyTime;
