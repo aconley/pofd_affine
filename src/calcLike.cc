@@ -372,6 +372,7 @@ double calcLikeSingle::getLogLike(const numberCounts& model, bool& pars_invalid,
   double curr_LogLike;
   
   for (unsigned int i = 0; i < ndatasets; ++i) {
+    try {
     // Get PD for this particuar set of sigmas
     pdfac.getPD(sigmult * sigma_base[i], pd, true);
     
@@ -380,6 +381,20 @@ double calcLikeSingle::getLogLike(const numberCounts& model, bool& pars_invalid,
     
     // Apply beam and zero offset factor
     LogLike += (curr_LogLike - like_offset[i]) / like_norm[i];
+    } catch (const affineExcept& ex) {
+      // We build a new exception with more information about what we were doing
+      std::string errstr = ex.getErrStr();
+      std::stringstream newerrstr("");
+      newerrstr << errstr << std::endl
+		<< "Error encountered while processing model parameters: " 
+		<< std::endl << model
+		<< "While analyzing dataset " << i << " of " << ndatasets << " using:"
+		<< std::endl
+		<< " fftsize: " << fftsize << std::endl
+		<< " RFlux range: " << minRFlux << " to " << maxRFlux << std::endl
+		<< " sigmult: " << sigmult;
+      throw affineExcept(ex.getErrClass(), ex.getErrMethod(), newerrstr.str());
+    }
   }
 
   return LogLike;
@@ -773,22 +788,12 @@ double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
   bool pinvalid;
   double sigmult = p[nknots]; //Sigma multiplier is after knot values
   pars_invalid = false;
-  try {
-    for (unsigned int i = 0; i < nbeamsets; ++i) {
-      LogLike += beamsets[i].getLogLike(model, pinvalid, sigmult, 
-					fftsize);
-      pars_invalid &= pinvalid;
-    }
-  } catch (const affineExcept& ex) {
-    // We build a new exception with more information
-    std::string errstr = ex.getErrStr();
-    std::stringstream newerrstr("");
-    newerrstr << errstr
-	      << "; error encountered while processing model parameters"
-	      << model;
-    throw affineExcept(ex.getErrClass(), ex.getErrMethod(), newerrstr.str());
+  for (unsigned int i = 0; i < nbeamsets; ++i) {
+    LogLike += beamsets[i].getLogLike(model, pinvalid, sigmult, 
+				      fftsize);
+    pars_invalid &= pinvalid;
   }
-  
+
   if (pars_invalid) return LogLike; //!< Not much point in doing the priors...
 
   // Add on cfirb prior, poisson prior, and sigma priors if needed

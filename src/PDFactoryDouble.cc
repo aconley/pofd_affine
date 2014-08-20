@@ -801,9 +801,9 @@ void PDFactoryDouble::unwrapPD(PDDouble& pd) const {
       // Worth doing as an attempt to save things
       splitidx1 = splitidx1_trial;
       splitval1 = splitval1_trial;
+      fwrap_plus = static_cast<double>(splitidx1) * dflux1; // Wrap in pos flux
+      fwrap_minus = static_cast<double>(currsize - splitidx1) * dflux1;
     }
-    fwrap_plus = static_cast<double>(splitidx1) * dflux1; // Wrap in pos flux
-    fwrap_minus = static_cast<double>(currsize - splitidx1) * dflux1;
   } else if (fwrap_minus < cs2) {
     unsigned int splitidx1_delta = 
       static_cast<unsigned int>((cs2 - fwrap_minus) / dflux1) + 1;
@@ -813,11 +813,10 @@ void PDFactoryDouble::unwrapPD(PDDouble& pd) const {
     if ((splitval1_trial / maxval) < minmaxratio) {
       splitidx1 = splitidx1_trial;
       splitval1 = splitval1_trial;
+      fwrap_plus = static_cast<double>(splitidx1) * dflux1; // Wrap in pos flux
+      fwrap_minus = static_cast<double>(currsize - splitidx1) * dflux1;
     }
-    fwrap_plus = static_cast<double>(splitidx1) * dflux1; // Wrap in pos flux
-    fwrap_minus = static_cast<double>(currsize - splitidx1) * dflux1;
   }
-
   if ((fwrap_plus < cs1) || (fwrap_minus < cs1)) {
     // Worth further investigation
     if (fwrap_plus < cs2) {
@@ -887,9 +886,9 @@ void PDFactoryDouble::unwrapPD(PDDouble& pd) const {
     if ((splitval2_trial / maxval) < minmaxratio) {
       splitidx2 = splitidx2_trial;
       splitval2 = splitval2_trial;
+      fwrap_plus = static_cast<double>(splitidx2) * dflux2;
+      fwrap_minus = static_cast<double>(currsize - splitidx2) * dflux2;
     }
-    fwrap_plus = static_cast<double>(splitidx2) * dflux2;
-    fwrap_minus = static_cast<double>(currsize - splitidx2) * dflux2;
   } else if (fwrap_minus < cs2) {
     unsigned int splitidx2_delta = 
       static_cast<unsigned int>((cs2 - fwrap_minus) / dflux2) + 1;
@@ -899,9 +898,9 @@ void PDFactoryDouble::unwrapPD(PDDouble& pd) const {
     if ((splitval2_trial / maxval) < minmaxratio) {
       splitidx2 = splitidx2_trial;
       splitval2 = splitval2_trial;
+      fwrap_plus = static_cast<double>(splitidx2) * dflux2;
+      fwrap_minus = static_cast<double>(currsize - splitidx2) * dflux2;
     }
-    fwrap_plus = static_cast<double>(splitidx2) * dflux2;
-    fwrap_minus = static_cast<double>(currsize - splitidx2) * dflux2;
   }
   if ((fwrap_plus < cs1) || (fwrap_minus < cs1)) {
     if (fwrap_plus < cs2) {

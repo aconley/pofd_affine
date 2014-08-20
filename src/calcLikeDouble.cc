@@ -511,14 +511,30 @@ calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
   LogLike = 0.0;
   for (unsigned int i = 0; i < ndatasets; ++i) {
     // Get PD for this particuar set of sigmas
-    pdfac.getPD(sigmult1 * sigma_base1[i], sigmult2 * sigma_base2[i],
-		pd, true);
+    try {
+      pdfac.getPD(sigmult1 * sigma_base1[i], sigmult2 * sigma_base2[i],
+		  pd, true);
 
-    // Get log like
-    curr_LogLike = pd.getLogLike(data[i]);
-
-    // Apply beam norm and zero offset factor
-    LogLike += (curr_LogLike - like_offset[i]) / like_norm[i];
+      // Get log like
+      curr_LogLike = pd.getLogLike(data[i]);
+      
+      // Apply beam norm and zero offset factor
+      LogLike += (curr_LogLike - like_offset[i]) / like_norm[i];
+    } catch (const affineExcept& ex) {
+      // We build a new exception with more information about what we were doing
+      std::string errstr = ex.getErrStr();
+      std::stringstream newerrstr("");
+      newerrstr << errstr << std::endl
+		<< "Error encountered while processing model parameters: " 
+		<< std::endl << model
+		<< "While analyzing dataset " << i << " of " << ndatasets << " using:"
+		<< std::endl
+		<< " fftsize: " << fftsize << std::endl
+		<< " RFlux1 range: " << minRFlux1 << " to " << maxRFlux1 << std::endl
+		<< " RFlux2 range: " << minRFlux2 << " to " << maxRFlux2 << std::endl
+		<< " sigmult1: " << sigmult1 << " sigmult2: " << sigmult2;
+      throw affineExcept(ex.getErrClass(), ex.getErrMethod(), newerrstr.str());
+    }
   }
   
   return LogLike;
@@ -1015,20 +1031,10 @@ double calcLikeDouble::getLogLike(const paramSet& p, bool& pars_invalid) const {
   double sigmult1 = p[nmodelpars]; //Sigma multiplier is after knot values
   double sigmult2 = p[nmodelpars + 1];
   pars_invalid = false;
-  try {
-    for (unsigned int i = 0; i < nbeamsets; ++i) {
-      LogLike += beamsets[i].getLogLike(model, pinvalid, sigmult1, sigmult2, 
-					fftsize, edgeInteg);
-      pars_invalid &= pinvalid;
-    }
-  } catch (const affineExcept& ex) {
-    // We build a new exception with more information
-    std::string errstr = ex.getErrStr();
-    std::stringstream newerrstr("");
-    newerrstr << errstr
-	      << "; error encountered while processing model parameters"
-	      << model;
-    throw affineExcept(ex.getErrClass(), ex.getErrMethod(), newerrstr.str());
+  for (unsigned int i = 0; i < nbeamsets; ++i) {
+    LogLike += beamsets[i].getLogLike(model, pinvalid, sigmult1, sigmult2, 
+				      fftsize, edgeInteg);
+    pars_invalid &= pinvalid;
   }
 
   if (pars_invalid) return LogLike; //!< Not much point in doing the priors...

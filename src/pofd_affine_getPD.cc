@@ -114,11 +114,6 @@ int getPDSingle(int argc, char **argv) {
 	      << std::endl;
     return 1;
   }
-  if (nflux & (nflux-1)) {
-    std::cerr << "nflux must be power of 2" << std::endl;
-    std::cerr << " yours is: " << nflux << std::endl;
-    return 1;
-  }
   if (ninterp == 0) {
     std::cerr << "Error -- ninterp is zero." << std::endl;
       return 1;
@@ -334,11 +329,6 @@ int getPDDouble(int argc, char** argv) {
   if (nflux == 0) {
     std::cerr << "Error -- number of fluxes requested is zero."
 	      << std::endl;
-    return 1;
-  }
-  if (nflux & (nflux-1)) {
-    std::cerr << "nflux must be power of 2" << std::endl;
-    std::cerr << " yours is: " << nflux << std::endl;
     return 1;
   }
   if (sigma1 < 0.0) {
