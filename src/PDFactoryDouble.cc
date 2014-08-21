@@ -715,9 +715,11 @@ unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
   //  is trying to do.
 
   // These are are control constants for accepting points
-  const double n1 = 3.0; // Minimum number of sigma away from mean
+  //  We use slightly more forgiving values here than in PDFactory
+  //  because 2D is hard, and not as well sampled in practice.
+  const double n1 = 2.5; // Minimum number of sigma away from mean
   const double f1 = 1e-10; // Values smaller than f1 * peak considered noise
-  const double f2 = 1e-5; // Split must be less than f2 * peak
+  const double f2 = 1.5e-5; // Split must be less than f2 * peak
 
   if (sigma <= 0)
     throw affineExcept("PDFactory", "findSplitPoint", 
@@ -776,7 +778,7 @@ unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
   // Step 5
   // Figure out the search index range from -n1sig to +n1sig
   unsigned int topidx = 
-    static_cast<unsigned int>(n1sig / dflux) + currsize - 1;
+    currsize - static_cast<unsigned int>(n1sig / dflux) - 1;
   unsigned int botidx = static_cast<unsigned int>(n1sig / dflux);
   for (unsigned int i = topidx; i > botidx; --i) {
     currval = data[i];
@@ -784,11 +786,16 @@ unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
   }
 
   // Step 6
-  // Didn't find one -- throw exception
+  // Didn't find one -- throw exception.  But first find minimum
+  //  so that error message is more useful
+  minval = data[topidx];
+  for (unsigned int i = topidx - 1; i > botidx; --i) 
+    if (data[i] < minval) minval = data[topidx];
   std::stringstream errstr;
   errstr << "Unable to find split point in range "
 	 << topidx << " down to " << botidx
-	 << " with value less than " << targval;
+	 << " with value less than " << targval
+	 << "; minimum value found: " << minval;
   throw affineExcept("PDFactoryDouble", "findSplitPoint", 
 		     errstr.str());
 }

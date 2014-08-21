@@ -421,7 +421,7 @@ void calcLikeDoubleSingle::setSigmaBase2(unsigned int n,const double* const s) {
 */
 void calcLikeDoubleSingle::setRRange(const numberCountsDouble& model) { 
   //Hardcoded safety factor to expand range by
-  const double safetyfac = 1.05;
+  const double safetyfac = 1.1;
 
   if (std::isnan(maxsigma_base1) || std::isnan(maxsigma_base2))
     throw affineExcept("calcLikeDoubleSingle", "setRRange", 

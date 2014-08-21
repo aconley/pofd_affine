@@ -1309,7 +1309,7 @@ dblpair numberCountsDoubleLogNormal::getMinFlux() const {
   above the top value.  It is well defined for band 1.
  */
 dblpair numberCountsDoubleLogNormal::getMaxFlux() const {
-  const double sigmult = 3.0; //Number of sigma above
+  const double sigmult = 3.25; //Number of sigma above in band 2
   if (nknots == 0)     
     return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
 			  std::numeric_limits<double>::quiet_NaN());
