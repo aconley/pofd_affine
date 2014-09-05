@@ -61,25 +61,13 @@ namespace mcmc_affine {
   \brief P(D) convenience variables
 */
 namespace pofd_mcmc {
-  const char version[] = "0.3.4"; //!<Version number of P(D) library
-  const double n_zero_pad = 8.0; //!< Zero padding size in sigma
+  const char version[] = "0.3.5"; //!<Version number of P(D) library
+  const double n_zero_pad = 7.5; //!< Zero padding size in sigma
   const double logfac = log2(10.0); //!< Conversion to base 2 from base 10
   const double ilogfac = 1.0 / logfac; //!< Inverse conversion factor
-  const double smalllogval = -30; //!< Log2 of small number
+  const double smalllogval = -30.; //!< Log2 of small number
   const double smallval = exp2(smalllogval); //!< Log of small number (base 2)
-  const double log2toe = log(2); //!< Multiply by this to go from log2 to ln
-
-  /*! \brief Maximum transform size.  Make sure it's a power of 2*/
-  const unsigned int nmax = 16777216;
-
-  //Powers of 2
-  const int npow2 = 24; //!< Number of powers of 2 in pow2
-  /*! \brief Powers of 2 */
-  const int pow2[npow2+1] = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 
-			      2048, 4096, 8192, 16384, 32768, 65536, 131072, 
-			      262144, 524288, 1048576, 2097152, 4194304,
-			      8388608, 16777216 }; 
-
+  const double log2toe = log(2.); //!< Multiply by this to go from log2 to ln
 
   // All 1000 or more to avoid overlap with affine_messages
   // Why do this?  Purely for debugging purposes, so if there is a problem

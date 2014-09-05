@@ -7,6 +7,7 @@
 #include<gsl/gsl_spline.h>
 #include<gsl/gsl_interp.h>
 #include<gsl/gsl_integration.h>
+#include<gsl/gsl_roots.h>
 
 #include "../include/global_settings.h"
 #include "../include/numberCountsDouble.h"
@@ -95,6 +96,7 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
 
   //Workspace
   gsl_integration_workspace *gsl_work; //!< Integration workspace for QAG
+  mutable gsl_root_fsolver *fslv; //!< Root solver for use in finding model max flux
   mutable unsigned int nRWork; //!< Number of elements in R working arrays
   mutable double* RWork; //!< R working array; for pre-computing R bits
   void setRWorkSize(unsigned int) const; //!< Controls R working arrays
@@ -103,6 +105,9 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   double getSigmaInner(double) const; //!< Inner sigma computation
   double getOffsetInner(double) const; //!< Inner offset computation
   double getNumberCountsInner(double,double) const; //!< Inner number counts computation
+
+  // Finds value where Log Normal value goes to specified value down from peak
+  double logNormalSolver(double mu, double sig, double nsig) const;
 
   /*! \brief Get range over which R is expected to be nonzero, unchecked version */
   std::pair<dblpair, dblpair> getRRangeInternal(const doublebeam&) const 

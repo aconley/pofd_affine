@@ -6,6 +6,9 @@
 
 #include<fftw3.h>
 
+#include<gsl/gsl_errno.h>
+#include<gsl/gsl_math.h>
+
 #include "../include/numberCountsDoubleLogNormal.h"
 #include "../include/global_settings.h"
 #include "../include/affineExcept.h"
@@ -25,6 +28,13 @@ inline unsigned int signComp(double x1, double x2) {
 /*! \brief Evaluates flux1^power1 * exp(const1*mu + const2*sigma^2) dN/dS1 */
 static double evalPowfNDoubleLogNormal(double, void*); 
 
+// Function for root solving to find maximum band 2 flux
+struct lognorm_params {
+  // Some repetition here in params for efficiency
+  double mu, sig2, isig, isig2, target;
+};
+static double lognorm(double, void*);
+
 /*! \brief Evaluates sqrt(2 pi) dN / dS1 dS2 with S1 as an argument and S2 a parameter*/
 static double evalCounts(double, void*); 
 
@@ -37,7 +47,8 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal() :
   noffsetknots(0), offsetknots(NULL), offsetvals(NULL), offsetinterp(NULL),
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
-  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false) {
+  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
+  fslv(NULL) {
   
   nRWork = 0;
   RWork = NULL;
@@ -355,6 +366,7 @@ numberCountsDoubleLogNormal::~numberCountsDoubleLogNormal() {
   gsl_integration_workspace_free(gsl_work);
   delete[] varr;
 
+  if (fslv != NULL) gsl_root_fsolver_free(fslv);
   if (RWork != NULL) fftw_free(RWork);
 }
 
@@ -1309,18 +1321,112 @@ dblpair numberCountsDoubleLogNormal::getMinFlux() const {
   above the top value.  It is well defined for band 1.
  */
 dblpair numberCountsDoubleLogNormal::getMaxFlux() const {
-  const double sigmult = 3.25; //Number of sigma above in band 2
+  const double nsig = 3.0; // Gaussian equivalent sigma for band 2 solver
   if (nknots == 0)     
     return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
 			  std::numeric_limits<double>::quiet_NaN());
   double kv = knots[nknots - 1];
-  //Get the expectation and variance in S2/S1 at the top S1 knot
+
+  //Get the S2/S1 at the top S1 knot that represents nsig down
+  // in equivalent Gaussian terms
   double sg = getSigmaInner(kv);
   double mu = getOffsetInner(kv);
-  double sg2 = sg * sg;
-  double mn = exp(mu + 0.5 * sg2);
-  double var = exp(2 * mu + sg2) * (exp(sg2) - 1.0);
-  return std::make_pair(kv, kv * (mn + sigmult * sqrt(var)));
+  double m2 = logNormalSolver(mu, sg, nsig);
+
+  return std::make_pair(kv, kv * m2);
+}
+
+/*!
+  \param[in] mu Mean parameter of Log-Normal distribution (not the actual mean)
+  \param[in] sig Sigma parameter of Log-Normal distribution (not the actual 
+                  sigma)
+  \param[in] nsig Number of Gaussian equivalent sigma down from peak
+  \returns Value of log Normal argument that is the required amount
+            down from the peak.  On the positive side of the mode.
+*/
+double numberCountsDoubleLogNormal::logNormalSolver(double mu, double sig, 
+						    double nsig) const {
+
+  const unsigned int max_bracket_iters = 20;
+  const double prefac = 1.0 / sqrt(mcmc_affine::two_pi);
+  const double tol = 1e-3; // Bracket tolerance
+
+  // Argument checks
+  if (sig <= 0.0)
+    throw affineExcept("numberCountsDoubleLogNormal", "logNormalSolver",
+		       "Invalid (non-positive) sigma");
+  if (nsig < 0.0)
+    throw affineExcept("numberCountsDoubleLogNormal", "logNormalSolver",
+		       "Invalid (negative) nsig");
+  double sig2 = sig * sig;
+    
+  // We work in terms of u = log(x) to avoid issues of negative x
+  // First, find the peak
+  double mode_u = mu - sig2;
+  // Quick return if asking for peak
+  if (nsig == 0) return exp(mode_u);
+  double isig = 1.0 / sig;
+  double val_mode = prefac * isig * exp(0.5 * sig2 - mu);
+  
+  // Now find the target value, which is the equivalent of nsig
+  //  sigma from the peak for a Gaussian
+  double target = val_mode * exp(-0.5 * nsig * nsig);
+
+  // Set up interface to GSL solver -- first, the GSL function
+  gsl_function F;
+  lognorm_params params = {mu, sig2, isig, isig * isig, target};
+  F.function = &lognorm;
+  F.params = &params;
+
+  // Set up bracket.  Lower limit is the mode, upper limit has
+  // to be iterated too.
+  void *p = static_cast<void*>(&params);
+  double u_low = mode_u;
+  double delta_u = log(exp(mode_u) + 2 * sig) - mode_u;
+  double fval = lognorm(u_low + delta_u, p);
+  if (fval >= 0.0) {
+    // Haven't bracketed yet, must increase search size
+    for (unsigned int i = 0; i < max_bracket_iters; ++i) {
+      delta_u *= 1.5;
+      fval = lognorm(u_low + delta_u, p);
+      if (fval < 0.0) break;
+    }
+    if (fval >= 0.0) {
+      std::stringstream errstr;
+      errstr << "Unable to bracket Log Normal with mu: " << mu
+	     << " sigma: " << sig << " mode: " << exp(mode_u)
+	     << " target value: " << target;
+      throw affineExcept("numberCountsDoubleLogNormal", "logNormalSolver",
+			 errstr.str());
+    }
+  }
+  double u_high = u_low + delta_u;
+
+  // Allocate solver if not previously allocated
+  if (fslv == NULL) fslv = gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
+  gsl_root_fsolver_set (fslv, &F, u_low, u_high);
+  
+  // Solve
+  int status = GSL_CONTINUE;
+  double u;
+  for (unsigned int i = 0; i < max_bracket_iters; ++i) {
+    gsl_root_fsolver_iterate(fslv);
+    u = gsl_root_fsolver_root(fslv);
+    u_low = gsl_root_fsolver_x_lower(fslv);
+    u_high = gsl_root_fsolver_x_upper(fslv);
+    status = gsl_root_test_interval(u_low, u_high, 0, tol);
+    if (status == GSL_SUCCESS) break;
+  }
+  if (status != GSL_SUCCESS) {
+    std::stringstream errstr;
+    errstr << "Unable to brent bracket Log Normal with mu: " << mu
+	   << " sigma: " << sig << " mode: " << exp(mode_u)
+	   << " target value: " << target;
+    throw affineExcept("numberCountsDoubleLogNormal", "logNormalSolver",
+		       errstr.str());
+  }
+
+  return exp(u);
 }
 
 /*!
@@ -2223,6 +2329,34 @@ static double evalPowfNDoubleLogNormal(double s1, void* params) {
   double splval = exp2(gsl_spline_eval(spl, log2(s1), acc));
   return prefac * splval;
 }
+
+/*!
+  \param[in] u Log of log-Normal argument
+  \param[in] params Parameters of log Normal
+  
+  This is used for root finding on a Log Normal distribution.
+  It works in terms of u = log x instead of x to avoid any
+  delicate issues with the LogNormal only being defined for positive x.
+
+  The derivative is not supported because the GSL root finders that
+  use derivatives are much less stable.
+*/
+static double lognorm(double u, void* params) {
+  const double prefac = 1.0 / sqrt(2 * M_PI);
+
+  struct lognorm_params *p = (struct lognorm_params *) params;
+
+  double mu = p->mu;
+  double isig = p->isig;
+  double isig2 = p->isig2;
+  double target = p->target;  // We are trying to solve L(x) == target
+
+  double eu = exp(-u);
+  double arg = u - mu;
+  double L = prefac * exp(-0.5 * arg * arg * isig2) * isig * eu; // Log Norm
+  return L - target;
+}
+
 
 /////////////////////////////////////
 

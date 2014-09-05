@@ -165,6 +165,10 @@ int getPDSingle(int argc, char **argv) {
 	     model.getFluxPerArea());
       printf("  Nknots:               %u\n",model_info.getNKnots());
       printf("  Sigma:                %0.5f [Jy]\n",sigma_noise);
+      printf("  Requesting R range:   %0.3f-%0.3f [Jy]\n",
+	     minflux, maxflux);
+      double modelMax = model.getMaxFlux();
+      printf("  Model range est:      %0.3f-%0.3f [Jy]\n", 0., modelMax);
       if (histogram)
 	printf("  Using beam histogramming to reduce beam size to: %u %u\n",
 	       bm.getNPos(), bm.getNNeg());
@@ -386,6 +390,11 @@ int getPDDouble(int argc, char** argv) {
       printf("  Noffset:                 %u\n", model_info.getNOffsets());
       printf("  Sigma, band 1:           %0.5f [Jy]\n", sigma1);
       printf("  Sigma, band 2:           %0.5f [Jy]\n", sigma2);
+      printf("  Requesting R ranges:     %0.3f-%0.3f %0.3f-%0.3f [Jy]\n",
+	     minflux1, maxflux1, minflux2, maxflux2);
+      dblpair modelMax = model.getMaxFlux();
+      printf("  Model range est:         %0.3f-%0.3f %0.3f-%0.3f [Jy]\n",
+	     0., modelMax.first, 0., modelMax.second);
       if (histogram)
 	printf("  Using beam histogramming to reduce beam size to %u %u %u %u\n",
 	       bm.getNHist(0), bm.getNHist(1), bm.getNHist(2), bm.getNHist(3));
