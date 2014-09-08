@@ -164,7 +164,7 @@ int getPDSingle(int argc, char **argv) {
       printf("  Flux per area:        %0.3f [Jy deg^-2]\n",
 	     model.getFluxPerArea());
       printf("  Nknots:               %u\n",model_info.getNKnots());
-      printf("  Sigma:                %0.5f [Jy]\n",sigma_noise);
+      printf("  Inst Sigma:           %0.5f [Jy]\n",sigma_noise);
       printf("  Requesting R range:   %0.3f-%0.3f [Jy]\n",
 	     minflux, maxflux);
       double modelMax = model.getMaxFlux();
@@ -388,8 +388,8 @@ int getPDDouble(int argc, char** argv) {
       printf("  Nknots:                  %u\n", model_info.getNKnots());
       printf("  Nsigma:                  %u\n", model_info.getNSigmas());
       printf("  Noffset:                 %u\n", model_info.getNOffsets());
-      printf("  Sigma, band 1:           %0.5f [Jy]\n", sigma1);
-      printf("  Sigma, band 2:           %0.5f [Jy]\n", sigma2);
+      printf("  Inst Sigma, band 1:      %0.5f [Jy]\n", sigma1);
+      printf("  Inst Sigma, band 2:      %0.5f [Jy]\n", sigma2);
       printf("  Requesting R ranges:     %0.3f-%0.3f %0.3f-%0.3f [Jy]\n",
 	     minflux1, maxflux1, minflux2, maxflux2);
       dblpair modelMax = model.getMaxFlux();

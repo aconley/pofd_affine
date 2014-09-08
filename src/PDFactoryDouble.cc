@@ -1,4 +1,5 @@
 #include<sstream>
+#include<cstdlib>
 #include<cmath>
 #include<cstring>
 #include<limits>
@@ -697,7 +698,8 @@ void PDFactoryDouble::setupTransforms(unsigned int n) {
 }
 
 /*!
-  \param[in] data Marginalized P(D) to find split point at
+  \param[in] data Marginalized P(D) to find split point at.  Must be 
+                  purly non-negative.
   \param[in] dflux Flux step
   \param[in] sigma Estimated sigma for marginalized data
   \returns Split point index
@@ -717,9 +719,10 @@ unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
   // These are are control constants for accepting points
   //  We use slightly more forgiving values here than in PDFactory
   //  because 2D is hard, and not as well sampled in practice.
-  const double n1 = 2.5; // Minimum number of sigma away from mean
-  const double f1 = 1e-10; // Values smaller than f1 * peak considered noise
-  const double f2 = 1.5e-5; // Split must be less than f2 * peak
+  const double n1 = 2.5; 
+  const double f1 = 1e-13;   // Jitter estimate #1 factor
+  const double f2 = 1.5e-5;  // Peak relative estimate
+  const double f3 = 5;       // Jitter estimate #2
 
   if (sigma <= 0)
     throw affineExcept("PDFactory", "findSplitPoint", 
@@ -739,62 +742,103 @@ unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
 		       errstr.str());
   }
 
-  // Step 2 and 3
-  unsigned int splitidx;
-  double peak, minval, currval;
-  splitidx = 0;
-  peak = minval = data[0];
+  // Step 2
+  double peak, currval;
+  peak = data[0];
   for (unsigned int i = 1; i < currsize; ++i) {
     currval = data[i];
     if (currval > peak) peak = currval;
+  }
+
+  // Step 3
+  // Figure out the search index range from -n1sig to +n1sig
+  unsigned int topidx = 
+    currsize - static_cast<unsigned int>(n1sig / dflux) - 1;
+  unsigned int botidx = static_cast<unsigned int>(n1sig / dflux);
+  // Find minimum value
+  unsigned int minidx;
+  double minval;
+  minidx = botidx;
+  minval = data[minidx];
+  for (unsigned int i = botidx + 1; i < topidx; ++i) {
+    currval = data[i];
     if (currval < minval) {
-      splitidx = i;
+      minidx = i;
       minval = currval;
     }
   }
 
   // Step 4
-  // First we check minval <= f2 * peak.  If this
-  //  isn't true at the minimum, there is no way
-  //  to split this.
   double targval = f2 * peak;
   if (minval > targval) {
     std::stringstream errstr;
-    errstr << "Minimum in margianlized pd is too large "
+    errstr << "Minimum in marginalized pd is too large "
 	   << " relative to peak; can't find split point "
 	   << "with minimum: " << minval << " peak value: " 
-	   << peak << " Required split value < " << targval;
+	   << peak << " Required split value < " << targval
+	   << " in index range " << botidx << " to " << topidx
+	   << " in P(D) of size: " << currsize;
     throw affineExcept("PDFactoryDouble", "findSplitPoint", 
 		       errstr.str());
   }
-  // Now see if this point satisfies our criteria 1 and 2
-  //  These are the flux densities of the proposed splitidx
-  //  in postive and negative space (abs of the latter)
-  double fwrap_pos = static_cast<double>(splitidx) * dflux;
-  double fwrap_neg = static_cast<double>(currsize - splitidx) * dflux;
-  if ((minval > f1 * peak) && (fwrap_pos >= n1sig) && (fwrap_neg >= n1sig))
-    return splitidx;
-  
+
   // Step 5
-  // Figure out the search index range from -n1sig to +n1sig
-  unsigned int topidx = 
-    currsize - static_cast<unsigned int>(n1sig / dflux) - 1;
-  unsigned int botidx = static_cast<unsigned int>(n1sig / dflux);
-  for (unsigned int i = topidx; i > botidx; --i) {
-    currval = data[i];
-    if (currval <= targval) return i; // Success!
-  }
+  double jitter = f1 * peak; // First estimate of jitter
+  if (minval > jitter) return minidx; // Success!
 
   // Step 6
+  // Update jitter estimate.  Beware of minimum being zero!
+  if (minval <= 0.0) {
+    // Try to use some neighboring points to get nicer estimate
+    const unsigned int nminup = 3;
+    unsigned int bi, ti;
+    if (minidx < botidx) bi = botidx; else bi = minidx - nminup;
+    if (minidx > topidx - nminup ) ti = topidx - nminup; else ti = minidx + nminup;
+    for (unsigned int i = bi; i < ti; ++i) {
+      currval = data[i];
+      if (currval > minval) minval = currval;
+    }
+  }
+  if (minval > 0)
+    jitter = (f3 * minval) < jitter ? (f3 * minval) : jitter;
+
+  // Step 7
+  // Make sure there's a range to search
+  if ((botidx >= topidx) || (abs(topidx - botidx) < 1)) {
+    std::stringstream errstr;
+    errstr << "Topidx (" << topidx << ") vs. botidx ("
+	   << botidx << ") search issue -- can't find range"
+	   << " to search";
+    throw affineExcept("PDFactoryDouble", "findSplitPoint", 
+		       errstr.str());
+  }
+  // Recall we search down.  We want to find the first
+  //  point below the jitter estimate and return the point above
+  //  that (which must be above the jitter value).  First make
+  //  sure that's true for the first point.
+  if (data[topidx] < jitter) {
+    std::stringstream errstr;
+    errstr << "Topidx (" << topidx << ") is already below jitter"
+	   << " estimate (" << jitter << ") with value "
+	   << pofd[topidx] << "; can't find split";
+    throw affineExcept("PDFactoryDouble", "findSplitPoint", 
+		       errstr.str());
+  }
+  // Now search
+  for (unsigned int i = topidx - 1; i >= botidx; --i)
+    if (data[i] < jitter) return (i + 1); // Success
+
+
+  // Step 8
   // Didn't find one -- throw exception.  But first find minimum
   //  so that error message is more useful
   minval = data[topidx];
-  for (unsigned int i = topidx - 1; i > botidx; --i) 
-    if (data[i] < minval) minval = data[topidx];
+  for (unsigned int i = topidx - 1; i >= botidx; --i) 
+    if (data[i] < minval) minval = data[i];
   std::stringstream errstr;
   errstr << "Unable to find split point in range "
 	 << topidx << " down to " << botidx
-	 << " with value less than " << targval
+	 << " with value less than " << jitter
 	 << "; minimum value found: " << minval;
   throw affineExcept("PDFactoryDouble", "findSplitPoint", 
 		     errstr.str());
@@ -835,6 +879,7 @@ void PDFactoryDouble::unwrapAndNormalizePD(PDDouble& pd) const {
     cval += 0.5 * rowptr[currsize-1];
     rsum[i] = cval;
   }
+
   unsigned int splitidx1;
   try {
     splitidx1 = findSplitPoint(rsum, dflux1, sg1);

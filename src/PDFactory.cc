@@ -1,5 +1,6 @@
 #include<sstream>
 #include<cmath>
+#include<cstdlib>
 #include<cstring>
 #include<limits>
 
@@ -707,37 +708,41 @@ unsigned int PDFactory::findSplitPoint() const {
   //  that third requirement makes things rather more difficult.  Without
   //  that we just split on the smallest value that is far enough away.
   //  But that isn't numerically stable because we frequently have really
-  //  tiny values in pd that are just numeric noise.
-  // The steps used here to achieve these goals is:
+  //  tiny values in pd that are just numeric noise.  And, unfortunately,
+  //  the level where numeric noise sets in doesn't really have to do with
+  //  the precision of, say, doubles, but rather with how well we can compute
+  //  R and what FFTW does.  So we don't just know that level a priori.
+  //  Furthermore, not all P(D)s reach the level where there is jitter, so
+  //  we can't just assume the minimum is a decent estimate of the jitter.
+  // The steps used here to achieve these goals are:
   //  1) Make sure that the total flux density range is larger than 
   //      n1 * sigma.  If it isn't, we can never satisfy point 1,
   //      so throw an exception.
-  //  2) Find the minimum location and value.
-  //  3) Find the maximum (peak) value.
-  //  4) If that location satisfies:
-  //       a) value > f1 * peak
-  //       b) value <= f2 * peak
-  //       c) more than n1 * sigma away from edges
-  //     then accept that as the split point.  b and c are
-  //     just requirements 1 and 2, but a is about requirement 3.
-  //     If the min is < f1 * peak (where f1 is some small number),
-  //     then the min point is just noise, so we have to do something
-  //     else.
-  //  5) Now start at n1 * sigma from the top and go down to n1 * sigma
-  //      from the bottom.  Return the first point encountered that
-  //      is less than f2 * peak.
-  //  6) If no point is found, throw an exception.
+  //  2) Find the maximum (peak) value.
+  //  3) Find the minimum location and value from the range n1 * sigma from
+  //      the bottom up to n1 * sigma from the top (this avoids the split being
+  //      too close to the peak).  This enforces requirement 1.
+  //  4) If the min satisfies value >= f2 * peak, then the smallest value
+  //     is not an acceptable split, so throw an error.  This is requirement 2.
+  //  5) If min > f1 * peak  (first estimate of jitter level) accept this as the split.
+  //     This is requirement 3, because f1 is meant to be a rough estimate of
+  //     the jitter point. f1 is set by comparing with example models.
+  //  6) Form a new estimate of the jitter level, the lesser of f1 * peak or f3 * min.
+  //  7) Search the -n1 * sigma to n1 * sigma range (from the top, with wrapping),
+  //      and look for a point that is above the jitter estimate, but the next one
+  //      down is below the jitter floor.
+  //  8) If no such point is found, throw an exception.
   // Here we are taking advantage of the assumption that the P(D) will
   //  have much more power in its positive tail than its negative tail.
   //  This is not true in general, but is true for the data we are
   //  planning on using this code on because the beam is mostly positive.
-  //  For data sets where the beam is not like that, this code will
-  //  be non-optimal.
+  //  For data sets where the beam is not like that, this code may have issues.
 
   // These are are control constants for accepting points
   const double n1 = 3.0; // Minimum number of sigma away from mean
-  const double f1 = 1e-10; // Values smaller than f1 * peak considered noise
+  const double f1 = 1e-13; // Values smaller than f1 * peak considered noise
   const double f2 = 1e-5; // Split must be less than f2 * peak
+  const double f3 = 5; // Another jitter estimate: f3 * min
 
   if (sg <= 0)
     throw affineExcept("PDFactory", "findSplitPoint", 
@@ -757,60 +762,90 @@ unsigned int PDFactory::findSplitPoint() const {
 		       errstr.str());
   }
 
-  // Step 2 and 3
-  unsigned int splitidx;
-  double peak, minval, currval;
-  splitidx = 0;
-  peak = minval = pofd[0];
+  // Step 2
+  double peak, currval;
+  peak = pofd[0];
   for (unsigned int i = 1; i < currsize; ++i) {
     currval = pofd[i];
     if (currval > peak) peak = currval;
+  }
+
+  // Step 3
+  // Range we are searching
+  unsigned int topidx = 
+    static_cast<unsigned int>((n1sig - minflux_R) / dflux) + wrapRidx;
+  unsigned int botidx = static_cast<unsigned int>(n1sig / dflux);
+  unsigned int minidx;
+  double minval;
+  minidx = botidx;
+  minval = pofd[minidx];
+  for (unsigned int i = botidx + 1; i < topidx; ++i) {
+    currval = pofd[i];
     if (currval < minval) {
-      splitidx = i;
+      minidx = i;
       minval = currval;
     }
   }
 
   // Step 4
-  // First we check minval <= f2 * peak.  If this
-  //  isn't true at the minimum, there is no way
-  //  to split this.
   double targval = f2 * peak;
   if (minval > targval) {
     std::stringstream errstr;
     errstr << "Minimum in pd is too large relative to peak;"
 	   << " can't find split point with minimum: "
 	   << minval << " peak value: " << peak
-	   << " Required split value < " << targval;
+	   << " Required split value < " << targval
+	   << " in index range " << botidx << " to " << topidx
+	   << " in P(D) of size: " << currsize;
     throw affineExcept("PDFactory", "findSplitPoint", 
 		       errstr.str());
   }
-  // Now see if this point satisfies our criteria 1 and 2
-  //  These are the flux densities of the proposed splitidx
-  //  in postive and negative space (abs of the latter)
-  double fwrap_pos = static_cast<double>(splitidx) * dflux;
-  double fwrap_neg = 
-    fabs(static_cast<double>(splitidx - wrapRidx - 1) * dflux +
-	 minflux_R);
-  if ((minval > f1 * peak) && (fwrap_pos >= n1sig) && (fwrap_neg >= n1sig))
-    return splitidx;
-  
+
   // Step 5
-  // Figure out the search index range from -n1sig to +n1sig
-  unsigned int topidx = 
-    static_cast<unsigned int>((n1sig - minflux_R) / dflux) + wrapRidx;
-  unsigned int botidx = static_cast<unsigned int>(n1sig / dflux);
-  for (unsigned int i = topidx; i > botidx; --i) {
-    currval = pofd[i];
-    if (currval <= targval) return i; // Success!
-  }
+  double jitter = f1 * peak; // First estimate of jitter
+  if (minval > jitter) // Success!
+    return minidx;
 
   // Step 6
-  // Didn't find one -- throw exception
+  jitter = (f3 * minval) < jitter ? (f3 * minval) : jitter; // Update jitter estimate
+
+  // Step 7
+  // Make sure there's a range to search
+  if ((botidx >= topidx) || (abs(topidx - botidx) < 1)) {
+    std::stringstream errstr;
+    errstr << "Topidx (" << topidx << ") vs. botidx ("
+	   << botidx << ") search issue -- can't find range"
+	   << " to search";
+    throw affineExcept("PDFactory", "findSplitPoint", 
+		       errstr.str());
+  }
+  // Recall we search down.  We want to find the first
+  //  point below the jitter estimate and return the point above
+  //  that (which must be above the jitter value).  First make
+  //  sure that's true for the first point.
+  if (pofd[topidx] < jitter) {
+    std::stringstream errstr;
+    errstr << "Topidx (" << topidx << ") is already below jitter"
+	   << " estimate (" << jitter << ") with value "
+	   << pofd[topidx] << "; can't find split";
+    throw affineExcept("PDFactory", "findSplitPoint", 
+		       errstr.str());
+  }
+  // Now search
+  for (unsigned int i = topidx - 1; i >= botidx; --i)
+    if (pofd[i] < jitter) return (i + 1);
+
+  // Didn't find one -- throw exception.
+  //  But find the smallest value we encountered
+  //  to make a more useful error message
+  minval = pofd[topidx];
+  for (unsigned int i = topidx - 1; i >= botidx; --i)
+    if (pofd[i] < minval) minval = pofd[i];
   std::stringstream errstr;
   errstr << "Unable to find split point in range "
 	 << topidx << " down to " << botidx
-	 << " with value less than " << targval;
+	 << " with value less than " << jitter
+	 << "; minimum value encountered: " << minval;
   throw affineExcept("PDFactory", "findSplitPoint", 
 		     errstr.str());
 }
