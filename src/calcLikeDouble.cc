@@ -5,6 +5,7 @@
 
 #include "../include/calcLikeDouble.h"
 #include "../include/affineExcept.h"
+#include "../include/hdf5utils.h"
 
 const double calcLikeDoubleSingle::bad_like = 1e25;
 const double calcLikeDoubleSingle::flux_safety = 1.1;
@@ -42,7 +43,10 @@ calcLikeDoubleSingle::~calcLikeDoubleSingle() {
 }
 
 // This deallocates large arrays, but does keep around things
-//  like the min/max fluxes, etc.
+//  like the min/max fluxes, filenames, etc.  The idea is more
+//  or less for the master node to be able to call this after copying
+//  data over to the slave nodes in the mcmc, but keeping some data
+//  that we might like to write out.
 void calcLikeDoubleSingle::free() {
   if (data != NULL) { delete[] data; data = NULL; }
   ndatasets = 0;
@@ -95,6 +99,14 @@ void calcLikeDoubleSingle::resize(unsigned int n) {
     sigma_base2 = new double[n];
     like_offset = new double[n];
     like_norm   = new double[n];
+    for (unsigned int i = 0; i < n; ++i) filenames1[i] = "";
+    for (unsigned int i = 0; i < n; ++i) filenames2[i] = "";
+    for (unsigned int i = 0; i < n; ++i) dataext1[i] = 0;
+    for (unsigned int i = 0; i < n; ++i) dataext2[i] = 0;
+    for (unsigned int i = 0; i < n; ++i) hasmask1[i] = false;
+    for (unsigned int i = 0; i < n; ++i) hasmask2[i] = false;
+    for (unsigned int i = 0; i < n; ++i) maskext1[i] = 0;
+    for (unsigned int i = 0; i < n; ++i) maskext2[i] = 0;
     for (unsigned int i = 0; i < n; ++i)
       sigma_base1[i] = std::numeric_limits<double>::quiet_NaN();
     for (unsigned int i = 0; i < n; ++i)
@@ -149,9 +161,13 @@ void calcLikeDoubleSingle::readDataFromFile(const std::string& datafile1,
   hasmask1[0] = data[0].hasMask().first;
   if (hasmask1[0])
     maskext1[0] = data[0].getMaskExt().first;
+  else
+    maskext1[0] = 0;
   hasmask2[0] = data[0].hasMask().second;
   if (hasmask2[0])
     maskext2[0] = data[0].getMaskExt().second;
+  else
+    maskext2[0] = 0;
   unsigned int nd = data[0].getN();
   if (nd == 0)
     throw affineExcept("calcLikeDoubleSingle", "readDataFromFile",
@@ -218,9 +234,13 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
     hasmask1[i] = data[i].hasMask().first;
     if (hasmask1[i])
       maskext1[i] = data[i].getMaskExt().first;
+    else
+      maskext1[i] = 0;
     hasmask2[i] = data[i].hasMask().second;
     if (hasmask2[i])
       maskext2[i] = data[i].getMaskExt().second;
+    else
+      maskext2[i] = 0;
     unsigned int nd = data[i].getN();
     if (nd == 0) {
       std::stringstream errstr("");
@@ -620,6 +640,70 @@ void calcLikeDoubleSingle::writePDToStream(std::ostream& os) const {
   PDDouble cpy(pd);
   cpy.deLog();
   os << cpy;
+}
+
+/*!						
+  \param[in] objid HDF5 handle to write information to.  Must already be
+    open.
+*/
+void calcLikeDoubleSingle::writeToHDF5Handle(hid_t objid) const {
+  hsize_t adims;
+  hid_t mems_id, att_id;
+
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("calcLikeDoubleSingle", "writeToHDF5Handle",
+		       "Input handle is not valid");
+
+  // Number of files
+  adims = 1;
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  att_id = H5Acreate2(objid, "nfiles", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  H5Awrite(att_id, H5T_NATIVE_UINT, &ndatasets);
+  H5Aclose(att_id);
+  H5Sclose(mems_id);
+  
+  // Write files, extensions, etc.  We use the non-null, non-empty string
+  //  in the filenames as an indicator there are things to write
+  if ((filenames1 != NULL) && (filenames1[0] != "")) {
+    hdf5utils::writeAttStrings(objid, "filenames1", ndatasets, filenames1);
+    hdf5utils::writeAttUnsignedInts(objid, "dataext1", ndatasets, dataext1);
+    hdf5utils::writeAttBools(objid, "hasmask1", ndatasets, hasmask1);
+    hdf5utils::writeAttUnsignedInts(objid, "maskext1", ndatasets, maskext1);
+  }
+  if ((filenames2 != NULL) && (filenames2[0] != "")) {
+    hdf5utils::writeAttStrings(objid, "filenames2", ndatasets, filenames2);
+    hdf5utils::writeAttUnsignedInts(objid, "dataext2", ndatasets, dataext2);
+    hdf5utils::writeAttBools(objid, "hasmask2", ndatasets, hasmask2);
+    hdf5utils::writeAttUnsignedInts(objid, "maskext2", ndatasets, maskext2);
+  }  
+
+  if (beamfile1 != "") 
+    hdf5utils::writeAttString(objid, "beamfile1", beamfile1);
+  if (beamfile2 != "") 
+    hdf5utils::writeAttString(objid, "beamfile2", beamfile2);
+}
+
+/*!
+  \param[in] objid HDF5 handle to write information to.  Must already be
+    open.
+  \param[in] groupname Name of subgroup to create in objid
+*/
+void calcLikeDoubleSingle::writeToNewHDF5Group(hid_t objid, 
+					       const std::string& groupname) 
+  const {
+
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("calcLikeDoubleSingle", "writeToNewHDF5Group",
+		       "Input handle is not valid");
+
+  hid_t groupid;
+  groupid = H5Gopen(objid, groupname.c_str(), H5P_DEFAULT);
+  if (H5Iget_ref(groupid) < 0)
+    throw affineExcept("calcLikeDoubleSingle", "writeToNewHDF5Group",
+		       "Can't open new group with name " + groupname);
+  writeToHDF5Handle(groupid);
+  H5Gclose(groupid);
 }
 
 /*!
@@ -1204,7 +1288,7 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   hid_t mems_id, att_id;
 
   if (H5Iget_ref(objid) < 0)
-    throw affineExcept("calcLikeDouble", "writeToHDF5",
+    throw affineExcept("calcLikeDouble", "writeToHDF5Handle",
 		       "Input handle is not valid");
 
   // FFTSIZE
@@ -1222,12 +1306,7 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   H5Aclose(att_id);
 
   // Edge integrate
-  hbool_t bl;
-  att_id = H5Acreate2(objid, "edge_integrate", H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  bl = static_cast<hbool_t>(edgeInteg);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
-  H5Aclose(att_id);
+  hdf5utils::writeAttBool(objid, "edge_integrate", edgeInteg);
 
   // Nbeamsets
   att_id = H5Acreate2(objid, "nbeamsets", H5T_NATIVE_UINT,
@@ -1236,11 +1315,7 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   H5Aclose(att_id);
 
   // Data binning
-  att_id = H5Acreate2(objid, "bin_data", H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  bl = static_cast<hbool_t>(bin_data);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
-  H5Aclose(att_id);
+  hdf5utils::writeAttBool(objid, "bin_data", bin_data);
   if (bin_data) {
     att_id = H5Acreate2(objid, "ndatabins", H5T_NATIVE_UINT,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
@@ -1249,11 +1324,7 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   }
 
   // CFIRB prior 1
-  att_id = H5Acreate2(objid, "has_cfirb_prior1", H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  bl = static_cast<hbool_t>(has_cfirb_prior1);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
-  H5Aclose(att_id);
+  hdf5utils::writeAttBool(objid, "has_cfirb_prior1", has_cfirb_prior1);
   if (has_cfirb_prior1) {
     att_id = H5Acreate2(objid, "cfirb_prior_mean1", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
@@ -1266,11 +1337,7 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   }
 
   // CFIRB prior 2
-  att_id = H5Acreate2(objid, "has_cfirb_prior2", H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  bl = static_cast<hbool_t>(has_cfirb_prior2);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
-  H5Aclose(att_id);
+  hdf5utils::writeAttBool(objid, "has_cfirb_prior2", has_cfirb_prior2);
   if (has_cfirb_prior2) {
     att_id = H5Acreate2(objid, "cfirb_prior_mean2", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
@@ -1283,11 +1350,7 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   }
 
   // Poisson prior 1
-  att_id = H5Acreate2(objid, "has_poisson_prior1", H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  bl = static_cast<hbool_t>(has_poisson_prior1);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
-  H5Aclose(att_id);
+  hdf5utils::writeAttBool(objid, "has_poisson_prior1", has_poisson_prior1);
   if (has_poisson_prior1) {
     att_id = H5Acreate2(objid, "poisson_prior_mean1", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
@@ -1300,11 +1363,7 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   }
 
   // Poisson prior 2
-  att_id = H5Acreate2(objid, "has_poisson_prior2", H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  bl = static_cast<hbool_t>(has_poisson_prior2);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
-  H5Aclose(att_id);
+  hdf5utils::writeAttBool(objid, "has_poisson_prior2", has_poisson_prior2);
   if (has_poisson_prior2) {
     att_id = H5Acreate2(objid, "poisson_prior_mean2", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
@@ -1317,11 +1376,7 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   }
 
   // SIGMA prior 1
-  att_id = H5Acreate2(objid, "has_sigma_prior1", H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  bl = static_cast<hbool_t>(has_sigma_prior1);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
-  H5Aclose(att_id);
+  hdf5utils::writeAttBool(objid, "has_sigma_prior1", has_sigma_prior1);
   if (has_sigma_prior1) {
     att_id = H5Acreate2(objid, "sigma_prior_width1", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
@@ -1330,11 +1385,7 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   }
 
   // SIGMA prior 2
-  att_id = H5Acreate2(objid, "has_sigma_prior2", H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  bl = static_cast<hbool_t>(has_sigma_prior2);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
-  H5Aclose(att_id);
+  hdf5utils::writeAttBool(objid, "has_sigma_prior2", has_sigma_prior2);
   if (has_sigma_prior1) {
     att_id = H5Acreate2(objid, "sigma_prior_width2", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
@@ -1343,11 +1394,7 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   }
 
   // Regularization penalty
-  att_id = H5Acreate2(objid, "did_regularize", H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  bl = static_cast<hbool_t>(regularization_alpha > 0.0);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
-  H5Aclose(att_id);
+  hdf5utils::writeAttBool(objid, "did_regularize", regularization_alpha > 0.0);
   if (regularization_alpha > 0.0) {
     att_id = H5Acreate2(objid, "regularization_alpha", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
@@ -1359,6 +1406,15 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
 
   // Model info
   model.writeToHDF5Handle(objid);
+
+  // Write each beam set to a subgroup
+  for (unsigned int i = 0; i < nbeamsets; ++i) {
+    // Generate group name
+    std::stringstream name;
+    name << "BeamSet" << i;
+    beamsets[i].writeToNewHDF5Group(objid, name.str());
+  }
+
 }
 
 /*!

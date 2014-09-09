@@ -8,6 +8,7 @@
 
 #include "../include/global_settings.h"
 #include "../include/PD.h"
+#include "../include/hdf5utils.h"
 #include "../include/affineExcept.h"
 
 const double PD::lowsigval = 2.5;
@@ -460,17 +461,12 @@ void PD::writeToHDF5(const std::string& outputfile) const {
   }
 
   hsize_t adims;
-  hbool_t bl;
   hid_t mems_id, att_id, dat_id;
   
   // Properties
+  hdf5utils::writeAttBool(file_id, "isLog", logflat);
+
   adims = 1;
-  mems_id = H5Screate_simple(1, &adims, NULL);
-  att_id = H5Acreate2(file_id, "isLog", H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  bl = static_cast<hbool_t>(logflat);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
-  H5Aclose(att_id);
   att_id = H5Acreate2(file_id, "dflux", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux);

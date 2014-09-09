@@ -4,6 +4,7 @@
 #include<sstream>
 
 #include "../include/calcLike.h"
+#include "../include/hdf5utils.h"
 #include "../include/affineExcept.h"
 
 const double calcLikeSingle::bad_like = 1e25;
@@ -891,12 +892,7 @@ void calcLike::writeToHDF5Handle(hid_t objid) const {
   H5Aclose(att_id);
 
   // DATA BINNING
-  hbool_t bl;
-  att_id = H5Acreate2(objid, "bin_data", H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  bl = static_cast<hbool_t>(bin_data);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
-  H5Aclose(att_id);
+  hdf5utils::writeAttBool(objid, "bin_data", bin_data);
   if (bin_data) {
     att_id = H5Acreate2(objid, "ndatabins", H5T_NATIVE_UINT,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
@@ -905,11 +901,7 @@ void calcLike::writeToHDF5Handle(hid_t objid) const {
   }
 
   // CFIRB prior
-  att_id = H5Acreate2(objid, "has_cfirb_prior", H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  bl = static_cast<hbool_t>(has_cfirb_prior);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
-  H5Aclose(att_id);
+  hdf5utils::writeAttBool(objid, "has_cfirb_prior", has_cfirb_prior);
   if (has_cfirb_prior) {
     att_id = H5Acreate2(objid, "cfirb_prior_mean", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
@@ -922,11 +914,7 @@ void calcLike::writeToHDF5Handle(hid_t objid) const {
   }
 
   // Poisson prior
-  att_id = H5Acreate2(objid, "has_poisson_prior", H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  bl = static_cast<hbool_t>(has_poisson_prior);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
-  H5Aclose(att_id);
+  hdf5utils::writeAttBool(objid, "has_poisson_prior", has_poisson_prior);
   if (has_poisson_prior) {
     att_id = H5Acreate2(objid, "poisson_prior_mean", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
@@ -939,11 +927,7 @@ void calcLike::writeToHDF5Handle(hid_t objid) const {
   }
 
   // Sigma prior
-  att_id = H5Acreate2(objid, "has_sigma_prior", H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  bl = static_cast<hbool_t>(has_sigma_prior);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
-  H5Aclose(att_id);
+  hdf5utils::writeAttBool(objid, "has_sigma_prior", has_sigma_prior);
   if (has_sigma_prior) {
     att_id = H5Acreate2(objid, "sigma_prior_width", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
@@ -952,11 +936,8 @@ void calcLike::writeToHDF5Handle(hid_t objid) const {
   }
 
   // Regularization penalty
-  att_id = H5Acreate2(objid, "did_regularize", H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  bl = static_cast<hbool_t>(regularization_alpha > 0.0);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
-  H5Aclose(att_id);
+  hdf5utils::writeAttBool(objid, "did_regularize", 
+			  regularization_alpha > 0.0);
   if (regularization_alpha > 0.0) {
     att_id = H5Acreate2(objid, "regularization_alpha", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);

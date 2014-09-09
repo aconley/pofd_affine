@@ -3,6 +3,7 @@
 
 #include "../include/numberCountsKnotsSpline.h"
 #include "../include/global_settings.h"
+#include "../include/hdf5utils.h"
 #include "../include/affineExcept.h"
 
 //Function to pass to GSL integrator
@@ -561,25 +562,14 @@ double numberCountsKnotsSpline::differenceRegularize(double alpha) const {
   \param[inout] objid HDF5 handle to write to
 */
 void numberCountsKnotsSpline::writeToHDF5Handle(hid_t objid) const {
-  hsize_t adims;
-  hid_t mems_id, att_id;
-
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("numberCountsKnotsSpline", "writeToHDF5Handle",
 		       "Input handle is not valid");
 
   // Name of model
-  const char modeltype[] = "numberCountsKnotsSpline";
-  hid_t datatype = H5Tcopy(H5T_C_S1);
-  H5Tset_size(datatype, strlen(modeltype)); 
-  adims = 1;
-  mems_id = H5Screate_simple(1, &adims, NULL);
-  att_id = H5Acreate1(objid, "model_type", datatype,
-		      mems_id, H5P_DEFAULT);
-  H5Awrite(att_id, datatype, modeltype);
-  H5Aclose(att_id);
-  H5Sclose(mems_id);
-  
+  const std::string modeltype("numberCountsKnotsSpline");
+  hdf5utils::writeAttString(objid, "model_type", modeltype);
+
   // Other writes
   numberCountsKnots::writeToHDF5Handle(objid);
 }

@@ -10,6 +10,7 @@
 #include "../include/global_settings.h"
 #include "../include/numberCountsKnots.h"
 #include "../include/utility.h"
+#include "../include/hdf5utils.h"
 #include "../include/affineExcept.h"
 
 numberCountsKnots::numberCountsKnots() {
@@ -439,13 +440,7 @@ void numberCountsKnots::writeToHDF5Handle(hid_t objid) const {
   H5Sclose(mems_id);
 
   // Knot positions
-  adims = nknots;
-  mems_id = H5Screate_simple(1, &adims, NULL);
-  att_id = H5Acreate2(objid, "knotpos", H5T_NATIVE_DOUBLE,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  H5Awrite(att_id, H5T_NATIVE_DOUBLE, knots);
-  H5Aclose(att_id);
-  H5Sclose(mems_id);
+  hdf5utils::writeAttDoubles(objid, "knotpos", nknots, knots);
 }
 
 /*!

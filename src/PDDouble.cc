@@ -9,6 +9,7 @@
 #include "../include/global_settings.h"
 #include "../include/PDDouble.h"
 #include "../include/affineExcept.h"
+#include "../include/hdf5utils.h"
 
 const double PDDouble::lowsigval = 2.5;
 
@@ -876,13 +877,10 @@ void PDDouble::writeToHDF5(const std::string& outputfile) const {
   hbool_t bl;
   
   // Properties
+  hdf5utils::writeAttBool(file_id, "isLog", logflat);
+
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, NULL);
-  att_id = H5Acreate2(file_id, "isLog", H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  bl = static_cast<hbool_t>(logflat);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
-  H5Aclose(att_id);
   att_id = H5Acreate2(file_id, "dflux1", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux1);

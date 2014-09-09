@@ -11,6 +11,7 @@
 
 #include "../include/numberCountsDoubleLogNormal.h"
 #include "../include/global_settings.h"
+#include "../include/hdf5utils.h"
 #include "../include/affineExcept.h"
 
 // Determines sign component of fluxes (pp, pn, np, nn)
@@ -2068,17 +2069,13 @@ void numberCountsDoubleLogNormal::writeToHDF5Handle(hid_t objid) const {
 		       "Input handle is not valid");
 
   // Name of model
-  const char modeltype[] = "numberCountsDoubleLogNormal";
-  hid_t datatype = H5Tcopy(H5T_C_S1);
-  H5Tset_size(datatype, strlen(modeltype)); 
+  // Name of model
+  const std::string modeltype("numberCountsDoubleLogNormal");
+  hdf5utils::writeAttString(objid, "model_type", modeltype);
+
+  // Number of knots
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, NULL);
-  att_id = H5Acreate1(objid, "model_type", datatype,
-		      mems_id, H5P_DEFAULT);
-  H5Awrite(att_id, datatype, modeltype);
-  H5Aclose(att_id);
-  
-  // Number of knots
   att_id = H5Acreate2(objid, "nknots", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nknots);
@@ -2095,27 +2092,10 @@ void numberCountsDoubleLogNormal::writeToHDF5Handle(hid_t objid) const {
   H5Sclose(mems_id);
 
   // Knot positions
-  adims = nknots;
-  mems_id = H5Screate_simple(1, &adims, NULL);
-  att_id = H5Acreate2(objid, "knotpos", H5T_NATIVE_DOUBLE,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  H5Awrite(att_id, H5T_NATIVE_DOUBLE, knots);
-  H5Aclose(att_id);
-  H5Sclose(mems_id);
-  adims = nsigmaknots;
-  mems_id = H5Screate_simple(1, &adims, NULL);
-  att_id = H5Acreate2(objid, "sigmaknotpos", H5T_NATIVE_DOUBLE,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  H5Awrite(att_id, H5T_NATIVE_DOUBLE, sigmaknots);
-  H5Aclose(att_id);
-  H5Sclose(mems_id);
-  adims = noffsetknots;
-  mems_id = H5Screate_simple(1, &adims, NULL);
-  att_id = H5Acreate2(objid, "offsetknotpos", H5T_NATIVE_DOUBLE,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  H5Awrite(att_id, H5T_NATIVE_DOUBLE, offsetknots);
-  H5Aclose(att_id);
-  H5Sclose(mems_id);
+  hdf5utils::writeAttDoubles(objid, "knotpos", nknots, knots);
+  hdf5utils::writeAttDoubles(objid, "sigmaknotpos", nsigmaknots, sigmaknots);
+  hdf5utils::writeAttDoubles(objid, "offsetknotpos", noffsetknots, 
+			     offsetknots);
 }
 
 /*!
