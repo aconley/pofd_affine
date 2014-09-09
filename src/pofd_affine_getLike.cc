@@ -40,6 +40,20 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
     calcLike likeSet(spec_info.fftsize, spec_info.ninterp, 
 		     spec_info.bin_data, spec_info.nbins);
 
+    // Set priors
+    if (spec_info.has_cfirbprior)
+      likeSet.setCFIRBPrior(spec_info.cfirbprior_mean,
+			    spec_info.cfirbprior_stdev);
+    if (spec_info.has_poissonprior)
+      likeSet.setPoissonPrior(spec_info.poissonprior_mean,
+			      spec_info.poissonprior_stdev);
+    if (spec_info.fit_sigma && spec_info.has_sigprior)
+      likeSet.setSigmaPrior(spec_info.sigprior_stdev);
+    
+    // Regularization
+    if (spec_info.regularization_alpha > 0.0)
+      likeSet.setRegularizationAlpha(spec_info.regularization_alpha);
+
     //Read data
     if (spec_info.verbosity >= 2)
       std::cout << "Reading in data files" << std::endl;
@@ -50,14 +64,6 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
 			      spec_info.nbeamhist, spec_info.exp_conf);
     
     if (spec_info.has_wisdom_file) likeSet.addWisdom(spec_info.wisdom_file);
-
-    likeSet.setRRanges(pars);
-
-    //Set prior -- ignore sigmult prior, since we aren't really fitting
-    if (spec_info.has_cfirbprior)
-      likeSet.setCFIRBPrior(spec_info.cfirbprior_mean,
-			    spec_info.cfirbprior_stdev);
-
     if (spec_info.verbosity >= 2) likeSet.setVerbose();
       
     if (spec_info.verbosity >= 1) {
@@ -78,6 +84,7 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
   
     //And, get that likelihood
     likeSet.setKnotPositions(model_info);
+    likeSet.setRRanges(pars);
     bool pars_rejected;
     double LogLike = likeSet.getLogLike(pars, pars_rejected);
     if (pars_rejected) {
@@ -115,9 +122,13 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
       throw affineExcept("pofd_affine_getLike", "getLikeDouble",
 			 "No info read in");
 
-    paramSet pars(ntot + 2);
+    // Number of params is number of knots (ntot)
+    // + 2 for the sigmas in each band -- although some may be fixed
+    // + 2 for the bonus mean flux per area
+    // + 2 for the bonus mean flux^2 per area
+    paramSet pars(ntot + 6);
     model_info.getParams(pars);
-    pars[ntot] = 1.0;
+    pars[ntot] = 1.0;  // Sigma multipliers
     pars[ntot+1] = 1.0;
 
     //Make sure we got some data
@@ -129,6 +140,27 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
 			   spec_info.edge_set, spec_info.bin_data, 
 			   spec_info.nbins);
 
+    //Set priors 
+    if (spec_info.has_cfirbprior1)
+      likeSet.setCFIRBPrior1(spec_info.cfirbprior_mean1,
+			     spec_info.cfirbprior_stdev1);
+    if (spec_info.has_cfirbprior2)
+      likeSet.setCFIRBPrior2(spec_info.cfirbprior_mean2,
+			     spec_info.cfirbprior_stdev2);
+    if (spec_info.has_poissonprior1)
+      likeSet.setPoissonPrior1(spec_info.poissonprior_mean1,
+			       spec_info.poissonprior_stdev1);
+    if (spec_info.has_poissonprior2)
+      likeSet.setPoissonPrior2(spec_info.poissonprior_mean2,
+			       spec_info.poissonprior_stdev2);
+    if (spec_info.fit_sigma1 && spec_info.has_sigprior1)
+      likeSet.setSigmaPrior1(spec_info.sigprior_stdev1);
+    if (spec_info.fit_sigma2 && spec_info.has_sigprior2)
+      likeSet.setSigmaPrior2(spec_info.sigprior_stdev2);
+
+    if (spec_info.regularization_alpha > 0.0)
+      likeSet.setRegularizationAlpha(spec_info.regularization_alpha);
+
     //Read data
     likeSet.readDataFromFiles(spec_info.datafiles1, spec_info.datafiles2, 
 			      spec_info.psffiles1, spec_info.psffiles2,
@@ -139,47 +171,37 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
 			      spec_info.exp_conf1, spec_info.exp_conf2);
 
     if (spec_info.has_wisdom_file) likeSet.addWisdom(spec_info.wisdom_file);
-
-    likeSet.setRRanges(pars);
-
-    //Set prior -- ignore sigmult prior, since we aren't really fitting
-    if (spec_info.has_cfirbprior1)
-      likeSet.setCFIRBPrior1(spec_info.cfirbprior_mean1,
-			     spec_info.cfirbprior_stdev1);
-    if (spec_info.has_cfirbprior2)
-      likeSet.setCFIRBPrior2(spec_info.cfirbprior_mean2,
-			     spec_info.cfirbprior_stdev2);
-
-
     if (spec_info.verbosity >= 2) likeSet.setVerbose();
       
     if (spec_info.verbosity >= 1) {
-      printf("  FFTsize:       %u\n",spec_info.fftsize);
+      printf("  FFTsize:       %u\n", spec_info.fftsize);
       if (spec_info.beam_histogram)
 	printf("  Using histogramming to reduce beam size\n");  
       if (spec_info.bin_data)
 	printf("  Using histogramming to reduce data size to: %u by %u\n",
-	       spec_info.nbins,spec_info.nbins);  
+	       spec_info.nbins, spec_info.nbins);  
       printf("  Knot Positions and initial values:\n");
       std::pair<double,double> pr;
       for (unsigned int i = 0; i < model_info.getNKnots(); ++i) {
 	pr = model_info.getKnot(i);
-	printf("   %11.5e  %11.5e\n",pr.first,pr.second);
+	printf("   %11.5e  %11.5e\n", pr.first, pr.second);
       }
       printf("  Sigma Positions and initial values:\n");
       for (unsigned int i = 0; i < model_info.getNSigmas(); ++i) {
 	pr = model_info.getSigma(i);
-	printf("   %11.5e  %11.5e\n",pr.first,pr.second);
+	printf("   %11.5e  %11.5e\n", pr.first, pr.second);
       }
       printf("  Offset Positions and initial values:\n");
       for (unsigned int i = 0; i < model_info.getNOffsets(); ++i) {
 	pr = model_info.getOffset(i);
-	printf("   %11.5e  %11.5e\n",pr.first,pr.second);
+	printf("   %11.5e  %11.5e\n", pr.first, pr.second);
       }
     }
 
     //Get likelihood
     likeSet.setPositions(model_info);
+    likeSet.setRRanges(pars); // Have to set parameters first
+
     bool pars_rejected;
     double LogLike = likeSet.getLogLike(pars, pars_rejected);
     if (pars_rejected) {

@@ -32,10 +32,19 @@ class fitsDataDouble {
   unsigned int* binval; //!< Number of elements in each bin, row major array
 
   /*! \brief Reads data from single file*/
-  bool readFile(const std::string&, long&, double*&, 
-		unsigned int*&, bool=false);
+  bool readFile(const std::string&, long&, double*&, unsigned int&,
+		unsigned int*&, unsigned int&, bool=false);
 
-
+  // We want to keep the filenames and extensions we read data from
+  std::string file1; //!< File we read data 1 from
+  unsigned int dataext1; //!< File extension for data 1
+  bool has_mask1; //!< Did we have a mask from file 1?
+  unsigned int maskext1; //!< Mask 1 extension
+  std::string file2; //!< File we read data 2 from
+  unsigned int dataext2; //!< File extension for data 2
+  bool has_mask2; //!< Did we have a mask from file 2?
+  unsigned int maskext2; //!< Mask 2 extension
+  
  public:
   fitsDataDouble(); //!< Default constructor
   fitsDataDouble(const std::string&, const std::string&, 
@@ -71,6 +80,19 @@ class fitsDataDouble {
   std::pair<dblpair, dblpair> getMinMax() const; //!< Get minima and maxima for both bands
   dblpair getMean() const; //!< Gets mean value in each band
 
+  /*! \brief Get the filenames of the data */
+  std::pair<std::string, std::string> getFiles() const 
+    { return std::make_pair(file1, file2); }
+  /*! \brief Get the data extensions */
+  std::pair<unsigned int, unsigned int> getDataExt() const 
+    { return std::make_pair(dataext1, dataext2); }
+  /*! \brief Get whether masks were present */
+  std::pair<bool, bool> hasMask() const 
+    { return std::make_pair(has_mask1, has_mask2); }
+  /*! \brief Get mask extensions */
+  std::pair<unsigned int, unsigned int> getMaskExt() const 
+    { return std::make_pair(maskext1, maskext2); }
+  
   void sendSelf(MPI_Comm, int dest) const; //!< Send self
   void receiveCopy(MPI_Comm, int src); //!< Receive
 };

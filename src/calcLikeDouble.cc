@@ -14,36 +14,45 @@ const double NaN = std::numeric_limits<double>::quiet_NaN();
   \param[in] NEDGE Number of edge values if doing edge integration
 */
 calcLikeDoubleSingle::calcLikeDoubleSingle(unsigned int NEDGE) :
-  data_read(false), ndatasets(0), data(NULL), minDataFlux1(NaN),
+  data_read(false), ndatasets(0), filenames1(NULL), filenames2(NULL),
+  data(NULL), minDataFlux1(NaN),
   maxDataFlux1(NaN), minDataFlux2(NaN), maxDataFlux2(NaN),
+  dataext1(NULL), dataext2(NULL), hasmask1(NULL), hasmask2(NULL),
+  maskext1(NULL), maskext2(NULL),
   pdfac(NEDGE), minRFlux1(NaN), maxRFlux1(NaN), minRFlux2(NaN),
   maxRFlux2(NaN), sigma_base1(NULL), sigma_base2(NULL), maxsigma_base1(NaN),
   maxsigma_base2(NaN), exp_conf1(0.0), exp_conf2(0.0), 
-  like_norm(NULL), like_offset(NULL), has_beam(false), verbose(false) {}
+  like_norm(NULL), like_offset(NULL), has_beam(false), 
+  beamfile1(""), beamfile2(""), verbose(false) {}
 
 calcLikeDoubleSingle::~calcLikeDoubleSingle() {
+  if (filenames1 != NULL) delete[] filenames1;
+  if (filenames2 != NULL) delete[] filenames2;
   if (data != NULL) delete[] data;
+  if (dataext1 != NULL) delete[] dataext1;
+  if (dataext2 != NULL) delete[] dataext2;
+  if (hasmask1 != NULL) delete[] hasmask1;
+  if (hasmask2 != NULL) delete[] hasmask2;
+  if (maskext1 != NULL) delete[] maskext1;
+  if (maskext2 != NULL) delete[] maskext2;
   if (sigma_base1 != NULL) delete[] sigma_base1;
   if (sigma_base2 != NULL) delete[] sigma_base2;
   if (like_norm   != NULL) delete[] like_norm;
   if (like_offset != NULL) delete[] like_offset;
 }
 
+// This deallocates large arrays, but does keep around things
+//  like the min/max fluxes, etc.
 void calcLikeDoubleSingle::free() {
   if (data != NULL) { delete[] data; data = NULL; }
   ndatasets = 0;
   data_read = false;
-  minDataFlux1 = maxDataFlux1 = minDataFlux2 = maxDataFlux2 = NaN;
-  minRFlux1 = maxRFlux1 = minRFlux2 = maxRFlux2 = NaN;
 
   pd.strict_resize(0, 0);
   pdfac.free();
   
   if (sigma_base1 != NULL) { delete[] sigma_base1; sigma_base1 = NULL; }
-  maxsigma_base1 = NaN;
   if (sigma_base2 != NULL) { delete[] sigma_base2; sigma_base2 = NULL; }
-  maxsigma_base2 = NaN;
-  exp_conf1 = exp_conf2 = 0.0;
 
   if (like_norm != NULL) { delete[] like_norm; like_norm = NULL; }
   if (like_offset != NULL) { delete[] like_offset; like_offset = NULL; }
@@ -58,14 +67,30 @@ void calcLikeDoubleSingle::free() {
 void calcLikeDoubleSingle::resize(unsigned int n) {
   if (ndatasets == n) return;  //Don't have to do anything
 
+  if (filenames1 != NULL)  delete[] filenames1;
+  if (filenames2 != NULL)  delete[] filenames2;
   if (data != NULL)        delete[] data;
+  if (dataext1 != NULL)    delete[] dataext1;
+  if (dataext2 != NULL)    delete[] dataext2;
+  if (hasmask1 != NULL)    delete[] hasmask1;
+  if (hasmask2 != NULL)    delete[] hasmask2;
+  if (maskext1 != NULL)    delete[] maskext1;
+  if (maskext2 != NULL)    delete[] maskext2;
   if (sigma_base1 != NULL) delete[] sigma_base1;
   if (sigma_base2 != NULL) delete[] sigma_base2;
   if (like_offset != NULL) delete[] like_offset;
   if (like_norm   != NULL) delete[] like_norm;
 
   if (n > 0) {
+    filenames1  = new std::string[n];
+    filenames2  = new std::string[n];
     data        = new fitsDataDouble[n];
+    dataext1    = new unsigned int[n];
+    dataext2    = new unsigned int[n];
+    hasmask1    = new bool[n];
+    hasmask2    = new bool[n];
+    maskext1    = new unsigned int[n];
+    maskext2    = new unsigned int[n];
     sigma_base1 = new double[n];
     sigma_base2 = new double[n];
     like_offset = new double[n];
@@ -79,7 +104,15 @@ void calcLikeDoubleSingle::resize(unsigned int n) {
     for (unsigned int i = 0; i < n; ++i)
       like_norm[i]   = 1.0;
   } else {
+    filenames1  = NULL;
+    filenames2  = NULL;
     data        = NULL;
+    dataext1    = NULL;
+    dataext2    = NULL;
+    hasmask1    = NULL;
+    hasmask2    = NULL;
+    maskext1    = NULL;
+    maskext2    = NULL;
     sigma_base1 = NULL;
     sigma_base2 = NULL;
     like_offset = NULL;
@@ -108,8 +141,17 @@ void calcLikeDoubleSingle::readDataFromFile(const std::string& datafile1,
 					    bool IGNOREMASK, bool MEANSUB,
 					    bool BINDATA, unsigned int NBINS) {
   resize(1);
-
+  filenames1[0] = datafile1;
+  filenames2[0] = datafile2;
   data[0].readData(datafile1, datafile2, IGNOREMASK, MEANSUB);
+  dataext1[0] = data[0].getDataExt().first;
+  dataext2[0] = data[0].getDataExt().second;
+  hasmask1[0] = data[0].hasMask().first;
+  if (hasmask1[0])
+    maskext1[0] = data[0].getMaskExt().first;
+  hasmask2[0] = data[0].hasMask().second;
+  if (hasmask2[0])
+    maskext2[0] = data[0].getMaskExt().second;
   unsigned int nd = data[0].getN();
   if (nd == 0)
     throw affineExcept("calcLikeDoubleSingle", "readDataFromFile",
@@ -167,7 +209,18 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
   resize(n);
 
   for (unsigned int i = 0; i < n; ++i) {
+    filenames1[i] = datafiles1[i];
+    filenames2[i] = datafiles2[i];
     data[i].readData(datafiles1[i], datafiles2[i], IGNOREMASK, MEANSUB);
+
+    dataext1[i] = data[i].getDataExt().first;
+    dataext2[i] = data[i].getDataExt().second;
+    hasmask1[i] = data[i].hasMask().first;
+    if (hasmask1[i])
+      maskext1[i] = data[i].getMaskExt().first;
+    hasmask2[i] = data[i].hasMask().second;
+    if (hasmask2[i])
+      maskext2[i] = data[i].getMaskExt().second;
     unsigned int nd = data[i].getN();
     if (nd == 0) {
       std::stringstream errstr("");
@@ -246,6 +299,8 @@ void calcLikeDoubleSingle::readBeam(const std::string& fl1,
   bm.readFiles(fl1, fl2, MINVAL);
   if (histogram) bm.makeHistogram(NBINS);
   has_beam = true;
+  beamfile1 = fl1;
+  beamfile2 = fl2;
 }
 
 /*!
@@ -457,6 +512,11 @@ void calcLikeDoubleSingle::setRRange(const numberCountsDouble& model) {
     minRFlux2 = minDataFlux2;
   if (maxDataFlux2 > maxRFlux2 && (bm.hasSign(0) || bm.hasSign(2)))
     maxRFlux2 = maxDataFlux2;
+  
+  // HACK HACK HACK
+  // Hardwire for testing purposes
+  minRFlux1 = minRFlux2 = 0.0;
+  maxRFlux1 = maxRFlux2 = 0.25;
 }
 
 
@@ -514,10 +574,22 @@ calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
     try {
       pdfac.getPD(sigmult1 * sigma_base1[i], sigmult2 * sigma_base2[i],
 		  pd, true);
+      
+      // Dump individual data values
+      const double* flux1 = data->getData1();
+      const double* flux2 = data->getData2();
+      std::ofstream ofs("likecalc.txt");
+      for (unsigned int j = 0; j < data->getN(); ++j) {
+	ofs << flux1[j] << " " << flux2[j] << " "
+	    << pd.getPDVal(flux1[j], flux2[j], true)
+	    << std::endl;
+      }
+      ofs.close();
 
       // Get log like
       curr_LogLike = pd.getLogLike(data[i]);
-      
+      std::cerr << "Raw data likelihood: " << curr_LogLike << std::endl;
+
       // Apply beam norm and zero offset factor
       LogLike += (curr_LogLike - like_offset[i]) / like_norm[i];
     } catch (const affineExcept& ex) {
@@ -527,12 +599,13 @@ calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
       newerrstr << errstr << std::endl
 		<< "Error encountered while processing model parameters: " 
 		<< std::endl << model
-		<< "While analyzing dataset " << i << " of " << ndatasets << " using:"
-		<< std::endl
+		<< "While analyzing dataset " << i << " of " << ndatasets 
+		<< " using:" << std::endl
 		<< " fftsize: " << fftsize << std::endl
-		<< " RFlux1 range: " << minRFlux1 << " to " << maxRFlux1 << std::endl
-		<< " RFlux2 range: " << minRFlux2 << " to " << maxRFlux2 << std::endl
-		<< " sigmult1: " << sigmult1 << " sigmult2: " << sigmult2;
+		<< " RFlux1 range: " << minRFlux1 << " to " << maxRFlux1 
+		<< std::endl << " RFlux2 range: " << minRFlux2 << " to " 
+		<< maxRFlux2 << std::endl << " sigmult1: " << sigmult1 
+		<< " sigmult2: " << sigmult2;
       throw affineExcept(ex.getErrClass(), ex.getErrMethod(), newerrstr.str());
     }
   }

@@ -10,16 +10,20 @@
 
 fitsDataDouble::fitsDataDouble() {
   n = 0;
-  data1=data2=NULL;
+  data1 = data2 = NULL;
   is_binned = false;
   nbins1 = nbins2 = 0;
   bincent01 = bindelta1 = bincent02 = bindelta2 = 0.0;
   binval = NULL;
+  file1 = "";
+  file2 = "";
+  dataext1 = dataext2 = maskext1 = maskext2 = 0;
+  has_mask1 = has_mask2 = false;
 }
 
 /*!
-  \param[in] file1  Name of data file, band 1
-  \param[in] file2  Name of data file, band 2
+  \param[in] filename1  Name of data file, band 1
+  \param[in] filename2  Name of data file, band 2
   \param[in] ignoremask Don't consider MASK information from files
   \param[in] meansub Do a mean subtraction
 
@@ -28,8 +32,8 @@ fitsDataDouble::fitsDataDouble() {
   support this.  So the code will not work correctly if your mask
   is stored as integers
 */
-fitsDataDouble::fitsDataDouble(const std::string& file1, 
-			       const std::string& file2,
+fitsDataDouble::fitsDataDouble(const std::string& filename1, 
+			       const std::string& filename2,
 			       bool ignoremask, bool meansub) {
   n = 0;
   data1 = data2 = NULL;
@@ -37,7 +41,7 @@ fitsDataDouble::fitsDataDouble(const std::string& file1,
   nbins1 = nbins2 = 0;
   bincent01 = bindelta1 = bincent02 = bindelta2 = 0.0;
   binval = NULL;
-  readData(file1, file2, ignoremask, meansub);
+  readData(filename1, filename2, ignoremask, meansub);
 }
 
 fitsDataDouble::~fitsDataDouble() {
@@ -51,8 +55,10 @@ fitsDataDouble::~fitsDataDouble() {
   \param[in] file Name of file to read
   \param[out] ndata Number of data points
   \param[out] data  On output, holds image pixels
+  \param[out] dataext Data extension number
   \param[out] mask  On output, holds mask pixels
-  \param[out] ignore_mask Don't consider mask information from files
+  \param[out] maskext Mask extension number
+  \param[in] ignore_mask Don't consider mask information from files
   \returns True if a mask was read, false if not
 
   Internal reading function to avoid mass repetition
@@ -61,7 +67,8 @@ fitsDataDouble::~fitsDataDouble() {
   calling, or a memory leak will result
 */
 bool fitsDataDouble::readFile(const std::string& file, long& ndata,
-			      double*& data, unsigned int*& mask,
+			      double*& data, unsigned int& dataext, 
+			      unsigned int*& mask, unsigned int& maskext,
 			      bool ignore_mask) {
   //Lots of fits reading fun
   fitsfile *fptr;
@@ -74,7 +81,7 @@ bool fitsDataDouble::readFile(const std::string& file, long& ndata,
   data = NULL;
   mask = NULL;
   ndata = 0;
-  
+
   //Here we go -- start by trying to open file
   status = 0;
   fits_open_file(&fptr, file.c_str(), READONLY, &status);
@@ -84,7 +91,100 @@ bool fitsDataDouble::readFile(const std::string& file, long& ndata,
     throw affineExcept("fitsDataDouble", "readFile", "Problem opening file");
   }
 
-  //Try to find a mask extension
+  // Next, try to read in the data.  We do this before the mask
+  // because the user may have specified an extension, so we
+  // should start there.
+  if (file.find("[") == std::string::npos) {
+    // The caller did -not- specify an extension, so we
+    //  have to try to find the right one.
+    int hdutype = IMAGE_HDU;
+    fits_movnam_hdu(fptr, hdutype, const_cast<char*>("image"),
+		    0, &status);
+    if (status == BAD_HDU_NUM) {
+      status = 0;
+      fits_movnam_hdu(fptr, hdutype, const_cast<char*>("IMAGE"),
+		      0, &status);
+    }
+    if (status == BAD_HDU_NUM) {
+      status = 0;
+      fits_movabs_hdu(fptr, 1, &hdutype, &status);
+      if (hdutype != IMAGE_HDU) {
+	fits_close_file(fptr, &status);
+	if (has_mask) fftw_free(mask);
+	throw affineExcept("fitsDataDouble","readFile",
+			   "Couldn't find image");
+      }
+    }
+    if (status) {
+      fits_report_error(stderr, status);
+      fits_close_file(fptr, &status);
+      if (has_mask) fftw_free(mask);
+      throw affineExcept("fitsDataDouble", "readFile",
+			 "Error locating image data");
+    }
+  }
+  int st;
+  fits_get_hdu_num(fptr, &st);
+  dataext = static_cast<unsigned int>(st - 1);
+
+  //Check checksum if available
+  fits_verify_chksum(fptr, &dataok, &hduok, &status);
+  if (dataok == -1) {
+    fits_close_file(fptr, &status);
+    if (has_mask) fftw_free(mask);
+    throw affineExcept("fitsDataDouble", "readFile",
+		       "Image data fails checksum");
+  }
+  if (hduok == -1) {
+    fits_close_file(fptr, &status);
+    if (has_mask) fftw_free(mask);
+    throw affineExcept("fitsDataDouble", "readFile",
+		       "Image HDU fails checksum");
+  }
+
+  fits_get_img_dim(fptr, &naxis, &status);
+  if (status) {
+    fits_close_file(fptr, &status);
+    if (has_mask) fftw_free(mask);
+    throw affineExcept("fitsDataDouble", "readFile",
+		       "Error getting image dimensions");
+  }
+  if (naxis != 2) {
+    fits_close_file(fptr, &status);
+    if (has_mask) fftw_free(mask);
+    throw affineExcept("fitsDataDouble", "readFile",
+		       "Image is not 2D");
+  }
+
+
+  fits_get_img_size(fptr, 2, naxes, &status);
+  if (status) {
+    fits_close_file(fptr, &status);
+    if (has_mask) fftw_free(mask);
+    throw affineExcept("fitsDataDouble", "readFile",
+		       "Error getting image dimensions");
+  }
+
+  ndata = static_cast<unsigned int>(naxes[0] * naxes[1]);
+  if (ndata == 0) {
+    fits_close_file(fptr, &status);
+    if (has_mask) fftw_free(mask);
+    throw affineExcept("fitsDataDouble", "readFile", "Image is of zero extent");
+  }
+
+  //Read, after allocating
+  data = (double*) fftw_malloc(sizeof(double) * ndata);
+  fpixel[0] = 1; fpixel[1] = 1;
+  fits_read_pix(fptr, TDOUBLE, fpixel, ndata, 0, data, 0, &status);
+  if (status) {
+    fits_report_error(stderr, status);
+    fits_close_file(fptr, &status);
+    if (has_mask) fftw_free(mask);
+    fftw_free(data);
+    throw affineExcept("fitsDataDouble", "readFile", "Error reading image");
+  }
+
+  // Now try to find and read in the mask, if present
   if (!ignore_mask) {
     fits_movnam_hdu(fptr, IMAGE_HDU, const_cast<char*>("mask"),
 		    0, &status);
@@ -105,7 +205,9 @@ bool fitsDataDouble::readFile(const std::string& file, long& ndata,
 	  }
       }
     }
-  }
+    fits_get_hdu_num(fptr, &st);
+    maskext = static_cast<unsigned int>(st - 1);
+  } else maskext = 0;
 
   //Read in mask if present
   status = 0;
@@ -149,6 +251,19 @@ bool fitsDataDouble::readFile(const std::string& file, long& ndata,
 			 "Mask present zero extent");
     } 
 
+    if (naxes[0] != masknaxes[0]) {
+      fits_close_file(fptr, &status);
+      fftw_free(mask);
+      throw affineExcept("fitsDataDouble", "readFile",
+			 "Mask does not match image extent along first dimension");
+    }
+    if (masknaxes[1] != naxes[1]) {
+      fits_close_file(fptr, &status);
+      fftw_free(mask);
+      throw affineExcept("fitsDataDouble", "readFile",
+			 "Mask does not match image extent along second dimension");
+    }
+    
     //Read the mask, after allocating
     mask = (unsigned int*) fftw_malloc(sizeof(unsigned int) * nmask);
     fpixel[0] = 1; fpixel[1] = 1;
@@ -162,148 +277,45 @@ bool fitsDataDouble::readFile(const std::string& file, long& ndata,
     }
   }
 
-  //Now, read the image
-  //We look for image or IMAGE.  If we can't find it, just try to
-  // go to the primary and hope
-  int hdutype = IMAGE_HDU;
-  fits_movnam_hdu(fptr, hdutype, const_cast<char*>("image"),
-		  0, &status);
-  if (status == BAD_HDU_NUM) {
-    status = 0;
-    fits_movnam_hdu(fptr, hdutype, const_cast<char*>("IMAGE"),
-		    0, &status);
-  }
-  if (status == BAD_HDU_NUM) {
-    status = 0;
-    fits_movabs_hdu(fptr, 1, &hdutype, &status);
-    if (hdutype != IMAGE_HDU) {
-      fits_close_file(fptr, &status);
-      if (has_mask) fftw_free(mask);
-      throw affineExcept("fitsDataDouble","readFile",
-			 "Couldn't find image");
-    }
-  }
-  if (status) {
-    fits_report_error(stderr, status);
-    fits_close_file(fptr, &status);
-    if (has_mask) fftw_free(mask);
-    throw affineExcept("fitsDataDouble", "readFile",
-		       "Error locating image data");
-  }
-
-  //Check checksum if available
-  fits_verify_chksum(fptr, &dataok, &hduok, &status);
-  if (dataok == -1) {
-    fits_close_file(fptr, &status);
-    if (has_mask) fftw_free(mask);
-    throw affineExcept("fitsDataDouble", "readFile",
-		       "Image data fails checksum");
-  }
-  if (hduok == -1) {
-    fits_close_file(fptr, &status);
-    if (has_mask) fftw_free(mask);
-    throw affineExcept("fitsDataDouble", "readFile",
-		       "Image HDU fails checksum");
-  }
-
-  fits_get_img_dim(fptr, &naxis, &status);
-  if (status) {
-    fits_close_file(fptr, &status);
-    if (has_mask) fftw_free(mask);
-    throw affineExcept("fitsDataDouble", "readFile",
-		       "Error getting image dimensions");
-  }
-  if (naxis != 2) {
-    fits_close_file(fptr, &status);
-    if (has_mask) fftw_free(mask);
-    throw affineExcept("fitsDataDouble", "readFile",
-		       "Image is not 2D");
-  }
-
-
-  fits_get_img_size(fptr, 2, naxes, &status);
-  if (status) {
-    fits_close_file(fptr, &status);
-    if (has_mask) fftw_free(mask);
-    throw affineExcept("fitsDataDouble", "readFile",
-		       "Error getting image dimensions");
-  }
-  if (has_mask) {
-    if (naxes[0] != masknaxes[0]) {
-      fits_close_file(fptr, &status);
-      fftw_free(mask);
-      throw affineExcept("fitsDataDouble", "readFile",
-			 "Image does not match mask extent along first dimension");
-    }
-    if (naxes[1] != masknaxes[1]) {
-      fits_close_file(fptr, &status);
-      fftw_free(mask);
-      throw affineExcept("fitsDataDouble", "readFile",
-			 "Image does not match mask extent along second dimension");
-    }
-  }
-
-  ndata = static_cast<unsigned int>(naxes[0] * naxes[1]);
-  if (ndata == 0) {
-    fits_close_file(fptr, &status);
-    if (has_mask) fftw_free(mask);
-    throw affineExcept("fitsDataDouble", "readFile", "Image is of zero extent");
-  }
-
-  //Read, after allocating
-  data = (double*) fftw_malloc(sizeof(double) * ndata);
-  fpixel[0] = 1; fpixel[1] = 1;
-  fits_read_pix(fptr, TDOUBLE, fpixel, ndata, 0, data, 0, &status);
-  if (status) {
-    fits_report_error(stderr, status);
-    fits_close_file(fptr, &status);
-    if (has_mask) fftw_free(mask);
-    fftw_free(data);
-    throw affineExcept("fitsDataDouble", "readFile", "Error reading image");
-  }
-
-  //Close out
-  fits_close_file(fptr, &status);
-  if (status) {
-    fits_report_error(stderr, status);
-    if (has_mask) fftw_free(mask);
-    fftw_free(data);
-    throw affineExcept("fitsDataDouble", "readFile", "Error closing file");
-  }
-
   return has_mask;
 }
 
 
 
 /*!
-  \param[in] file1  Name of data file, band 1
-  \param[in] file2  Name of data file, band 2
+  \param[in] filename1  Name of data file, band 1
+  \param[in] filename2  Name of data file, band 2
   \param[in] ignore_mask Don't consider MASK information from files
   \param[in] meansub Do a mean subtraction
 
   The mean subtraction is based on unmasked pixels.
   This will blow away any binning.
 */
-void fitsDataDouble::readData(const std::string& file1,
-			      const std::string& file2,
+void fitsDataDouble::readData(const std::string& filename1,
+			      const std::string& filename2,
 			      bool ignore_mask, bool meansub) {
   //Free up old arrays
   if (data1 != NULL) fftw_free(data1);
   if (data2 != NULL) fftw_free(data2);
   if (binval != NULL) fftw_free(binval);
   is_binned = false;
+  has_mask1 = has_mask2 = false;
+  maskext1 = maskext2 = 0;
   n = 0;
 
+  file1 = filename1;
+  file2 = filename2;
+
   //Read data into temporary arrays
-  bool hasmask1_, hasmask2_;
   long ndat1_, ndat2_;
   double *data1_, *data2_;
   unsigned int *mask1_, *mask2_;
   data1_ = data2_ = NULL;
   mask1_ = mask2_ = NULL;
-  hasmask1_ = readFile(file1, ndat1_, data1_, mask1_, ignore_mask);
-  hasmask2_ = readFile(file2, ndat2_, data2_, mask2_, ignore_mask);
+  has_mask1 = readFile(file1, ndat1_, data1_, dataext1, mask1_, maskext1, 
+		       ignore_mask);
+  has_mask2 = readFile(file2, ndat2_, data2_, dataext2, mask2_, maskext2,
+		       ignore_mask);
 
   //Check to make sure they are the same size, etc.
   if (ndat1_ != ndat2_) {
@@ -316,12 +328,12 @@ void fitsDataDouble::readData(const std::string& file1,
   }
   
   //If neither has a mask, we can just copy directly
-  if (!(hasmask1_ || hasmask2_)) {
+  if (!(has_mask1 || has_mask2)) {
     n = ndat1_;
     data1 = data1_;
     data2 = data2_;
   } else {
-    if (hasmask1_ && hasmask2_) {
+    if (has_mask1 && has_mask2) {
       //Both have masks
       //First, count the number of bits to copy
       unsigned int nkeep = 0;
@@ -349,7 +361,7 @@ void fitsDataDouble::readData(const std::string& file1,
     } else {
       //Only one has a mask
       unsigned int *msk;
-      if (hasmask1_) msk = mask1_; else msk=mask2_;
+      if (has_mask1) msk = mask1_; else msk=mask2_;
       unsigned int nkeep = 0;
       for (unsigned int i = 0; i < ndat1_; ++i)
 	if (msk[i] == 0) ++nkeep;
@@ -378,6 +390,7 @@ void fitsDataDouble::readData(const std::string& file1,
   if (mask1_ != NULL) fftw_free(mask1_);
   if (mask2_ != NULL) fftw_free(mask2_);
   if (meansub) meanSubtract();
+
 }
 
 /*!

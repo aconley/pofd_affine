@@ -33,12 +33,20 @@ class calcLikeDoubleSingle { //Odd name...
   static const double flux_safety; //!< maxflux multiplier to ensure margin
   bool data_read; //!< Have we read data?
   unsigned int ndatasets; //!< Number of data sets
+  std::string* filenames1; //!< Names of files, band 1
+  std::string* filenames2; //!< Names of files, band 2
   fitsDataDouble* data; //!< Actual data sets -- len ndatasets
   double minDataFlux1; //!< Minimum flux density in actual data, band 1
   double maxDataFlux1; //!< Maximum flux density in actual data, band 1
   double minDataFlux2; //!< Minimum flux density in actual data, band 2
   double maxDataFlux2; //!< Maximum flux density in actual data, band 2
-
+  unsigned int* dataext1; //!< Data extension, band 1
+  unsigned int* dataext2; //!< Data extension, band 2
+  bool *hasmask1; //!< Had mask, band 1
+  bool *hasmask2; //!< Had mask, band 2
+  unsigned int* maskext1; //!< Mask extension, band 1
+  unsigned int* maskext2; //!< Mask extension, band 2
+  
   mutable PDDouble pd; //!< Holds PD; convenience variable
   mutable PDFactoryDouble pdfac; //!< Computes PD
   double minRFlux1; //!< Minimum flux for initPD call, band 1
@@ -60,6 +68,8 @@ class calcLikeDoubleSingle { //Odd name...
 
   //Beam
   bool has_beam; //!< Is beam loaded?
+  std::string beamfile1; //!< Filename for band 1 beam
+  std::string beamfile2; //!< Filename for band 2 beam
   doublebeam bm; //!< Beam for this data
 
   bool verbose; //!< Output informational messages while running
@@ -73,7 +83,7 @@ class calcLikeDoubleSingle { //Odd name...
   calcLikeDoubleSingle(unsigned int NEDGE=256); 
   ~calcLikeDoubleSingle(); //!< Destructor
 
-  void free(); //!< Frees all memory
+  void free(); //!< Frees memory for large structures, keeps some summary stats
 
   /*!\brief Add wisdom information */
   void addWisdom(const std::string& filename) { pdfac.addWisdom(filename); }

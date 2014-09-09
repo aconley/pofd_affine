@@ -733,11 +733,11 @@ double PDDouble::getPDVal(double x, double y, bool logval) const {
   } else {
     //Actual interpolation
     double u,t,omu,omt;
-    t = (x - minflux1)/dflux1 - static_cast<double>(idx1);
-    u = (y - minflux2)/dflux2 - static_cast<double>(idx2);
+    t = (x - minflux1) / dflux1 - static_cast<double>(idx1);
+    u = (y - minflux2) / dflux2 - static_cast<double>(idx2);
     omu = 1.0 - u; omt = 1.0-t;
     
-    unsigned int baseidx = n2idx1+idx2;
+    unsigned int baseidx = n2idx1 + idx2;
     interp_val = omt*(omu*pd_[baseidx] + u*pd_[baseidx+1]) +
       t*(omu*pd_[baseidx+n2] + u*pd_[baseidx+n2+1]);
   }
@@ -873,13 +873,15 @@ void PDDouble::writeToHDF5(const std::string& outputfile) const {
 
   hsize_t adims;
   hid_t mems_id, att_id, dat_id;
+  hbool_t bl;
   
   // Properties
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, NULL);
   att_id = H5Acreate2(file_id, "isLog", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &logflat);
+  bl = static_cast<hbool_t>(logflat);
+  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
   H5Aclose(att_id);
   att_id = H5Acreate2(file_id, "dflux1", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
@@ -964,19 +966,19 @@ double PDDouble::getLogLikeUnbinned(const fitsDataDouble& data) const {
   unsigned int ndata = data.getN();
 
   //Quantities for edge test
-  double maxflux1 = minflux1 + static_cast<double>(n1-1)*dflux1;
-  double maxflux2 = minflux2 + static_cast<double>(n2-1)*dflux2;
+  double maxflux1 = minflux1 + static_cast<double>(n1 - 1) * dflux1;
+  double maxflux2 = minflux2 + static_cast<double>(n2 - 1) * dflux2;
 
   int idx1, idx2, n2idx1; //!< Index look up
   unsigned int n2n1, baseidx;
-  n2n1 = n2*n1;
+  n2n1 = n2 * n1;
 
   const double* flux1;
   const double* flux2;
   double cflux1, cflux2, loglike, interp_val, delt1, delt2;
   double u, t, omu, omt;
-  double idflux1 = 1.0/dflux1;
-  double idflux2 = 1.0/dflux2;
+  double idflux1 = 1.0 / dflux1;
+  double idflux2 = 1.0 / dflux2;
 
   loglike = 0.0;
   flux1 = data.getData1();
@@ -991,11 +993,11 @@ double PDDouble::getLogLikeUnbinned(const fitsDataDouble& data) const {
     for (unsigned int i = 0; i < ndata; ++i) {
       cflux1 = flux1[i]; cflux2 = flux2[i];
       //Get effective indices
-      delt1 = (cflux1-minflux1)*idflux1;
-      delt2 = (cflux2-minflux2)*idflux2;
+      delt1 = (cflux1 - minflux1) * idflux1;
+      delt2 = (cflux2 - minflux2) * idflux2;
       idx1 = static_cast<int>(delt1);
       idx2 = static_cast<int>(delt2);
-      n2idx1 = n2*idx1;
+      n2idx1 = n2 * idx1;
       if (cflux1 <= minflux1) {
 	if (cflux2 <= minflux2) interp_val = pd_[0];
         else if (cflux2 >= maxflux2) interp_val = pd_[n2 - 1];
@@ -1013,9 +1015,9 @@ double PDDouble::getLogLikeUnbinned(const fitsDataDouble& data) const {
         t = delt1 - static_cast<double>(idx1);
         u = delt2 - static_cast<double>(idx2);
         omu = 1.0 - u; omt = 1.0 - t;
-        baseidx = n2idx1+idx2;
-        interp_val = omt * (omu * pd_[baseidx] + u * pd_[baseidx+1]) +
-          t * (omu * pd_[baseidx+n2] + u * pd_[baseidx+n2+1]);
+        baseidx = n2idx1 + idx2;
+        interp_val = omt * (omu * pd_[baseidx] + u * pd_[baseidx + 1]) +
+          t * (omu * pd_[baseidx + n2] + u * pd_[baseidx + n2 + 1]);
       }
       loglike += interp_val;
     }
@@ -1026,8 +1028,8 @@ double PDDouble::getLogLikeUnbinned(const fitsDataDouble& data) const {
     // in log space than interpolate, then log
     for (unsigned int i = 0; i < ndata; ++i) {
       cflux1 = flux1[i]; cflux2 = flux2[i];
-      delt1 = (cflux1-minflux1)*idflux1;
-      delt2 = (cflux2-minflux2)*idflux2;
+      delt1 = (cflux1 - minflux1) * idflux1;
+      delt2 = (cflux2 - minflux2) * idflux2;
       idx1 = static_cast<int>(delt1);
       idx2 = static_cast<int>(delt2);
       n2idx1 = n2 * idx1;
@@ -1048,9 +1050,9 @@ double PDDouble::getLogLikeUnbinned(const fitsDataDouble& data) const {
         //Not off edge
         t = delt1 - static_cast<double>(idx1);
         u = delt2 - static_cast<double>(idx2);
-        omu = 1.0 - u; omt = 1.0-t;
+        omu = 1.0 - u; omt = 1.0 - t;
         
-        baseidx = n2idx1+idx2;
+        baseidx = n2idx1 + idx2;
         interp_val = 
 	  omt * (omu * log2(pd_[baseidx]) + u * log2(pd_[baseidx + 1])) +
           t* (omu * log2(pd_[baseidx + n2]) + u * log2(pd_[baseidx + n2 + 1]));

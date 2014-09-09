@@ -982,11 +982,17 @@ void numberCountsDoubleLogNormal::getParams(paramSet& F) const {
 void numberCountsDoubleLogNormal::setParams(const paramSet& F) {
   unsigned int nneeded = nknots + nsigmaknots + noffsetknots;
   if (nneeded > F.getNParams())
-    throw affineExcept("numberCountsDoubleLogNormal", "setKnots",
+    throw affineExcept("numberCountsDoubleLogNormal", "setParams",
 		       "Not enough parameters present to set");
-  if (!(knotpos_loaded && sigmapos_loaded && offsetpos_loaded))
-    throw affineExcept("numberCountsDoubleLogNormal", "setKnots",
-		       "Some positions not set");
+  if (!knotpos_loaded)
+    throw affineExcept("numberCountsDoubleLogNormal", "setParams",
+		       "Knot positions not set");
+  if (!sigmapos_loaded)
+    throw affineExcept("numberCountsDoubleLogNormal", "setParams",
+		       "Sigma knot positions not set");
+  if (!offsetpos_loaded)
+    throw affineExcept("numberCountsDoubleLogNormal", "setParams",
+		       "Offset knot positions not set");
 
   // Internal storage is log2 and double, inputs are log10 float
   for (unsigned int i = 0; i < nknots; ++i)
@@ -2478,7 +2484,7 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
   nknots = sigmaidx = nk; //These could be combined, but meh
   nsigmas = ns;
   noffsets = no;
-  offsetidx = nk+ns;
+  offsetidx = nk + ns;
   
   //Read in values
   while (!initfs.eof()) {
@@ -2688,8 +2694,8 @@ initFileDoubleLogNormal::getModelPositions(numberCountsDoubleLogNormal& model)
     throw affineExcept("initFileDoubleLogNormal", "getModelPositions",
 		       "No knot information read in");
   model.setKnotPositions(nknots, knotpos);
-  model.setSigmaPositions(nsigmas, knotpos+sigmaidx);
-  model.setOffsetPositions(noffsets, knotpos+offsetidx);
+  model.setSigmaPositions(nsigmas, knotpos + sigmaidx);
+  model.setOffsetPositions(noffsets, knotpos + offsetidx);
 }
 
 /*

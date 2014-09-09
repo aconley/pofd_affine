@@ -460,6 +460,7 @@ void PD::writeToHDF5(const std::string& outputfile) const {
   }
 
   hsize_t adims;
+  hbool_t bl;
   hid_t mems_id, att_id, dat_id;
   
   // Properties
@@ -467,7 +468,8 @@ void PD::writeToHDF5(const std::string& outputfile) const {
   mems_id = H5Screate_simple(1, &adims, NULL);
   att_id = H5Acreate2(file_id, "isLog", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &logflat);
+  bl = static_cast<hbool_t>(logflat);
+  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
   H5Aclose(att_id);
   att_id = H5Acreate2(file_id, "dflux", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
