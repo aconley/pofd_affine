@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(mcmc_affine, 0.2.6, alexander.conley@colorado.edu)
+AC_INIT(mcmc_affine, 0.2.7, alexander.conley@colorado.edu)
 AC_LANG_CPLUSPLUS
 dnl AC_CONFIG_SRCDIR([src])
 AM_INIT_AUTOMAKE

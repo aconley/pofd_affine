@@ -8,6 +8,7 @@
 #include "../include/global_settings.h"
 #include "../include/affineEnsemble.h"
 #include "../include/affineExcept.h"
+#include "../include/hdf5utils.h"
 
 /////////////////////////////////////
 
@@ -1542,18 +1543,6 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
   H5Aclose(att_id);
   H5Sclose(mems_id);
 
-  // Number of accepted steps
-  adims = nwalkers;
-  mems_id = H5Screate_simple(1, &adims, NULL);
-  unsigned int *uatmp;
-  uatmp = new unsigned int[nwalkers];
-  for (unsigned int i = 0; i < nwalkers; ++i) uatmp[i] = naccept[i];
-  att_id = H5Acreate2(groupid, "naccept", H5T_NATIVE_UINT,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  H5Awrite(att_id, H5T_NATIVE_UINT, uatmp);
-  delete[] uatmp;
-  H5Aclose(att_id);
-  H5Sclose(mems_id);
   H5Gclose(groupid);
 
   ////////////////
@@ -1611,51 +1600,28 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
  
   // Initial values
   if (has_initStep) {
-    adims = nparams;
-    mems_id = H5Screate_simple(1, &adims, NULL);
     float *ftmp;
     ftmp = new float[nparams];
     for (unsigned int i = 0; i < nparams; ++i) 
       ftmp[i] = initStep[i];
-    att_id = H5Acreate2(groupid, "initial_position", H5T_NATIVE_FLOAT,
-			mems_id, H5P_DEFAULT, H5P_DEFAULT);
-    H5Awrite(att_id, H5T_NATIVE_FLOAT, ftmp);
-    H5Aclose(att_id);
-    H5Sclose(mems_id);
+    hdf5utils::writeAttFloats(groupid, "initial_position",
+			      nparams, ftmp);
     delete[] ftmp;
   }
   if (has_regenFirstStep) {
-    adims = nparams;
-    mems_id = H5Screate_simple(1, &adims, NULL);
     float *ftmp;
     ftmp = new float[nparams];
     for (unsigned int i = 0; i < nparams; ++i) 
       ftmp[i] = regenFirstStep[i];
-    att_id = H5Acreate2(groupid, "regenerated_first_step", H5T_NATIVE_FLOAT,
-			mems_id, H5P_DEFAULT, H5P_DEFAULT);
-    H5Awrite(att_id, H5T_NATIVE_FLOAT, ftmp);
-    H5Aclose(att_id);
-    delete ftmp;
-    H5Sclose(mems_id);
+    hdf5utils::writeAttFloats(groupid, "regenerated_first_step",
+			      nparams, ftmp);
+    delete[] ftmp;
   }
 
-  // Names of parameters -- complicated
-  if (has_any_names) {
-    hid_t datatype = H5Tcopy(H5T_C_S1);
-    H5Tset_size(datatype, H5T_VARIABLE);
-    const char ** catmp;
-    catmp = new const char*[nparams];
-    for (unsigned int i = 0; i < nparams; ++i)
-      catmp[i] = parnames[i].c_str();
-    adims = nparams;
-    mems_id = H5Screate_simple(1, &adims, NULL);
-    att_id = H5Acreate1(groupid, "param_names", datatype,
-			mems_id, H5P_DEFAULT);
-    H5Awrite(att_id, datatype, catmp);
-    delete[] catmp;
-    H5Aclose(att_id);
-    H5Sclose(mems_id);
-  }
+  // Names of parameters
+  if (has_any_names) 
+    hdf5utils::writeAttStrings(groupid, "param_names", parnames);
+
   H5Gclose(groupid);
 
   // And the actual chains and likelihoods to the Chains group
@@ -1664,7 +1630,13 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
   if (H5Iget_ref(groupid) < 0)
     throw affineExcept("affineEnsemble", "writeToHDF5Handle",
 		       "Failed to create Chains HDF5 group");
+
+  // Number of accepted steps
+  hdf5utils::writeAttUnsignedInts(groupid, "naccept", naccept);
+
+  // Chains
   chains.writeToHDF5Handle(groupid);
+
   H5Gclose(groupid);
 }
 
