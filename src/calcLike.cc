@@ -15,13 +15,18 @@ const double NaN = std::numeric_limits<double>::quiet_NaN();
   \param[in] NINTERP Number of interpolation points in R evaluation
 */
 calcLikeSingle::calcLikeSingle(unsigned int NINTERP) :
-  data_read(false), ndatasets(0), data(NULL), minDataFlux(NaN),
-  maxDataFlux(NaN), pdfac(NINTERP), minRFlux(NaN), maxRFlux(NaN), 
+  data_read(false), ndatasets(0), filenames(NULL), data(NULL), 
+  minDataFlux(NaN), maxDataFlux(NaN), dataext(NULL), hasmask(NULL),
+  maskext(NULL), pdfac(NINTERP), minRFlux(NaN), maxRFlux(NaN), 
   sigma_base(NULL), maxsigma_base(NaN), exp_conf(0.0), like_norm(NULL), 
   like_offset(NULL), has_beam(false), verbose(false) {}
-
+  
 calcLikeSingle::~calcLikeSingle() {
+  if (filenames != NULL) delete[] filenames;
   if (data != NULL) delete[] data;
+  if (dataext != NULL) delete[] dataext;
+  if (hasmask != NULL) delete[] hasmask;
+  if (maskext != NULL) delete[] maskext;
   if (sigma_base != NULL)  delete[] sigma_base;
   if (like_norm   != NULL) delete[] like_norm;
   if (like_offset != NULL) delete[] like_offset;

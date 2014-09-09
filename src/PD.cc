@@ -467,6 +467,7 @@ void PD::writeToHDF5(const std::string& outputfile) const {
   hdf5utils::writeAttBool(file_id, "isLog", logflat);
 
   adims = 1;
+  mems_id = H5Screate_simple(1, &adims, NULL);
   att_id = H5Acreate2(file_id, "dflux", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux);

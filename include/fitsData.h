@@ -25,6 +25,12 @@ class fitsData {
   double bindelta; //!< Delta of bins
   unsigned int* binval; //!< Number of elements in each bin
 
+  // Keep the filenames, extensions, etc.
+  std::string file; //!< File we read from
+  unsigned int dataext; //!< Extension we got data from
+  bool has_mask; //!< Data was masked when we read it
+  unsigned int maskext; //!< Extension we found mask in
+
  public:
   fitsData(); //!< Default constructor
   fitsData(const std::string&, bool ignore_mask=false, 
@@ -56,6 +62,12 @@ class fitsData {
   double getMin() const; //!< Get minimum flux
   dblpair getMinMax() const; //!< Get minima and maxima
   double getMean() const; //!< Get mean flux
+
+  std::string getFile() const { return file; } //!< Get filename data came from
+  unsigned int getDataExt() const { return dataext; } //!< Get data extension
+  bool hasMask() const { return has_mask; } //!< Data was masked on read
+  unsigned int getMaskExt() const { return maskext; } //!< Mask extension
+  
 
   void sendSelf(MPI_Comm, int dest) const; //!< Send self
   void receiveCopy(MPI_Comm, int src); //!< Receive
