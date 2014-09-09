@@ -1,7 +1,7 @@
 noinst_LTLIBRARIES = libaffine.la libpd.la
 
 libaffine_la_SOURCES = affineChainSet.cc affineEnsemble.cc affineExcept.cc \
-	paramSet.cc proposedStep.cc ran.cc
+	paramSet.cc proposedStep.cc ran.cc hdf5utils.cc
 
 libpd_la_SOURCES = utility.cc numberCounts.cc numberCountsKnots.cc \
 	numberCountsKnotsSpline.cc beam.cc numberCountsDouble.cc \
@@ -28,3 +28,4 @@ pofd_affine_getLike_LDADD = libpd.la
 pofd_affine_mcmc_SOURCES = pofdMCMC.cc pofdMCMCDouble.cc \
 	pofd_affine_mcmc.cc 
 pofd_affine_mcmc_LDADD = libpd.la
+
