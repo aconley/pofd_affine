@@ -567,7 +567,7 @@ void numberCountsKnotsSpline::writeToHDF5Handle(hid_t objid) const {
 		       "Input handle is not valid");
 
   // Name of model
-  const std::string modeltype("numberCountsKnotsSpline");
+  std::string modeltype("numberCountsKnotsSpline");
   hdf5utils::writeAttString(objid, "model_type", modeltype);
 
   // Other writes

@@ -873,8 +873,7 @@ void PDDouble::writeToHDF5(const std::string& outputfile) const {
   }
 
   hsize_t adims;
-  hid_t mems_id, att_id, dat_id;
-  hbool_t bl;
+  hid_t mems_id, att_id;
   
   // Properties
   hdf5utils::writeAttBool(file_id, "isLog", logflat);
@@ -904,33 +903,13 @@ void PDDouble::writeToHDF5(const std::string& outputfile) const {
   double *flux = new double[maxn];
   for (unsigned int i = 0; i < n1; ++i) 
     flux[i] = static_cast<double>(i) * dflux1 + minflux1;
-  adims = n1;
-  mems_id = H5Screate_simple(1, &adims, NULL);
-  dat_id = H5Dcreate2(file_id, "flux1", H5T_NATIVE_DOUBLE,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
-	   H5P_DEFAULT, flux);
-  H5Dclose(dat_id);
+  hdf5utils::writeDataDoubles(file_id, "flux1", n1, flux);
   for (unsigned int i = 0; i < n2; ++i) 
     flux[i] = static_cast<double>(i) * dflux2 + minflux2;
-  adims = n2;
-  mems_id = H5Screate_simple(1, &adims, NULL);
-  dat_id = H5Dcreate2(file_id, "flux2", H5T_NATIVE_DOUBLE,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
-	   H5P_DEFAULT, flux);
+  hdf5utils::writeDataDoubles(file_id, "flux2", n2, flux);
   delete[] flux;
-  H5Dclose(dat_id);
-  H5Sclose(mems_id);
 
-  hsize_t dims_steps[2] = {n1, n2};
-  mems_id = H5Screate_simple(2, dims_steps, NULL);
-  dat_id = H5Dcreate2(file_id, "PD", H5T_NATIVE_DOUBLE, mems_id,
-		      H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
-	   H5P_DEFAULT, pd_);
-  H5Dclose(dat_id);
-  H5Sclose(mems_id);
+  hdf5utils::writeData2DDoubles(file_id, "PD", n1, n2, pd_);
 
   H5Fclose(file_id);
 }

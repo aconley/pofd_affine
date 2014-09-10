@@ -13,7 +13,7 @@
 #include "../include/numberCountsKnotsSpline.h"
 #include "../include/numberCountsDoubleLogNormal.h"
 #include "../include/paramSet.h"
-#include "../include/utility.h"
+#include "../include/hdf5utils.h"
 #include "../include/affineExcept.h"
 
 //All sub-parses have to have the same options to avoid
@@ -110,8 +110,8 @@ int getRSingle( int argc, char** argv ) {
     model.getR(nflux, fluxes, bm, R);
     
     // Write
-    utility::outfiletype oft = utility::getOutputFileType(outfile);
-    if (oft == utility::HDF5 || oft == utility::UNKNOWN) {
+    hdf5utils::outfiletype oft = hdf5utils::getOutputFileType(outfile);
+    if (oft == hdf5utils::HDF5 || oft == hdf5utils::UNKNOWN) {
       if (verbose) std::cout << "Writing to: " << outfile 
 			     << " as HDF5" << std::endl;
       hid_t file_id;
@@ -123,7 +123,7 @@ int getRSingle( int argc, char** argv ) {
 			   "Failed to open HDF5 file to write");
       }
       hsize_t adims;
-      hid_t mems_id, att_id, group_id, dat_id;
+      hid_t mems_id, att_id, group_id;
       
       // Properties
       adims = 1;
@@ -141,23 +141,13 @@ int getRSingle( int argc, char** argv ) {
       H5Gclose(group_id);
 
       // Rflux
-      adims = nflux;
-      mems_id = H5Screate_simple(1, &adims, NULL);
-      dat_id = H5Dcreate2(file_id, "Flux", H5T_NATIVE_DOUBLE,
-			  mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-      H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
-	       H5P_DEFAULT, fluxes);
-      H5Dclose(dat_id);
+      hdf5utils::writeDataDoubles(file_id, "Flux", nflux, fluxes);
 
-      dat_id = H5Dcreate2(file_id, "R", H5T_NATIVE_DOUBLE, mems_id,
-			  H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-      H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
-	       H5P_DEFAULT, R);
-      H5Dclose(dat_id);
-      H5Sclose(mems_id);
+      // R
+      hdf5utils::writeDataDoubles(file_id, "R", nflux, R);
 
       H5Fclose(file_id);
-    } else if (oft == utility::TXT) {
+    } else if (oft == hdf5utils::TXT) {
       // Text file
       if (verbose) std::cout << "Writing to: " << outfile 
 			     << " as text" << std::endl;
@@ -171,7 +161,7 @@ int getRSingle( int argc, char** argv ) {
       for (unsigned int i = 0; i < nflux; ++i) 
 	fprintf(fp, "%12.6e   %15.9e\n", fluxes[i], R[i]);
       fclose(fp);
-    } else if (oft == utility::FITS) {
+    } else if (oft == hdf5utils::FITS) {
       std::cerr << "Output to FITS is not supported." << std::endl;
       return 256;
     }
@@ -302,11 +292,11 @@ int getRDouble(int argc, char** argv) {
 #endif
 
     // Write
-    utility::outfiletype oft = utility::getOutputFileType(outfile);
-    if (oft == utility::HDF5 || oft == utility::UNKNOWN) {
+    hdf5utils::outfiletype oft = hdf5utils::getOutputFileType(outfile);
+    if (oft == hdf5utils::HDF5 || oft == hdf5utils::UNKNOWN) {
       if (verbose) std::cout << "Writing to: " << outfile 
 			     << " as HDF5" << std::endl;
-      hid_t file_id;
+      hid_t file_id, group_id;
       file_id = H5Fcreate(outfile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
 			  H5P_DEFAULT);
       if (H5Iget_ref(file_id) < 0) {
@@ -315,7 +305,7 @@ int getRDouble(int argc, char** argv) {
 			   "Failed to open HDF5 file to write");
       }
       hsize_t adims;
-      hid_t mems_id, att_id, dat_id, group_id;
+      hid_t mems_id, att_id;
       
       // Properties
       adims = 1;
@@ -332,40 +322,19 @@ int getRDouble(int argc, char** argv) {
 
       // Model
       group_id = H5Gcreate(file_id, "Model", H5P_DEFAULT, H5P_DEFAULT, 
-			  H5P_DEFAULT);
+			   H5P_DEFAULT);
       model.writeToHDF5Handle(group_id);
       H5Gclose(group_id);
 
       // Fluxes
-      adims = nflux1;
-      mems_id = H5Screate_simple(1, &adims, NULL);
-      dat_id = H5Dcreate2(file_id, "RFlux1", H5T_NATIVE_DOUBLE,
-			  mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-      H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
-	       H5P_DEFAULT, fluxes1);
-      H5Dclose(dat_id);
-      H5Sclose(mems_id);
-      adims = nflux2;
-      mems_id = H5Screate_simple(1, &adims, NULL);
-      dat_id = H5Dcreate2(file_id, "RFlux2", H5T_NATIVE_DOUBLE,
-			  mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-      H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
-	       H5P_DEFAULT, fluxes2);
-      H5Dclose(dat_id);
-      H5Sclose(mems_id);
-      
-      // R, which is 2D
-      hsize_t dims_steps[2] = {nflux1, nflux2};
-      mems_id = H5Screate_simple(2, dims_steps, NULL);
-      dat_id = H5Dcreate2(file_id, "R", H5T_NATIVE_DOUBLE, mems_id,
-			  H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-      H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
-	       H5P_DEFAULT, R);			  
-      H5Dclose(dat_id);
-      H5Sclose(mems_id);
+      hdf5utils::writeDataDoubles(file_id, "RFlux1", nflux1, fluxes1);
+      hdf5utils::writeDataDoubles(file_id, "RFlux2", nflux2, fluxes2);
+
+      // R
+      hdf5utils::writeData2DDoubles(file_id, "R", nflux1, nflux2, R);
 
       H5Fclose(file_id);
-    } else if (oft == utility::TXT) {
+    } else if (oft == hdf5utils::TXT) {
       // Text file
       if (verbose) std::cout << "Writing to: " << outfile 
 			     << " as text" << std::endl;
@@ -385,7 +354,7 @@ int getRDouble(int argc, char** argv) {
 	fprintf(fp, "%13.7e\n", R[nflux2*i+nflux2-1]);
       }
       fclose(fp);
-    } else if (oft == utility::FITS) {
+    } else if (oft == hdf5utils::FITS) {
       std::cerr << "Output to FITS is not supported." << std::endl;
       return 256;
     }

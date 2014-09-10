@@ -2,36 +2,10 @@
 #include<cmath>
 #include<limits>
 #include<cstdlib>
-#include<algorithm>
 #include<sstream>
+#include<algorithm>
 
 #include "../include/utility.h"
-
-/*!
-  \param[in] str File name
-  \returns File type as determined by extension.
-
-  This should only be expected to work for ASCII text, possibly
-  not on all compilers.  Ah, the benefits of coding for yourself,
-  and only really yourself.
-*/
-utility::outfiletype utility::getOutputFileType(const std::string& str) {
-  size_t pos = str.find_last_of('.');
-  if (pos == std::string::npos) return UNKNOWN; // Didn't find
-  size_t strlen = str.size();
-  if (pos == strlen - 1) return UNKNOWN; // . was last character
-  std::string extn = str.substr(pos + 1);
-  std::transform(extn.begin(), extn.end(), extn.begin(), ::toupper);
-  // Switch doesn't work, so big if table
-  if (extn == "TXT" || extn == "TEXT")
-    return TXT;
-  else if (extn == "FITS" || extn == "FIT")
-    return FITS;
-  else if (extn == "H5" || extn == "HDF5")
-    return HDF5;
-  else
-    return UNKNOWN;
-}
 
 /*!
   \param[in] ins Input string

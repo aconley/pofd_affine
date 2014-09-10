@@ -1,4 +1,5 @@
 // Utilities for writing things to HDF5 handles
+#include<algorithm>
 
 #include "../include/hdf5utils.h"
 #include "../include/affineExcept.h"

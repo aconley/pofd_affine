@@ -484,7 +484,6 @@ TEST(model2DTest, Init) {
   for (unsigned int i = 0; i < noffsets; ++i) 
     EXPECT_FLOAT_EQ(op[i], op2[i]) <<
       "Offset position mismatch after copy constructor at index: " << i;
-
 }
 
 //Test set positions
@@ -596,7 +595,7 @@ TEST(model2DTest, getModelRange) {
   minmax = model.getMaxFlux();
   EXPECT_NEAR(0.040, minmax.first, 1e-5) 
     << "Band 1 model max not as expected";
-  EXPECT_NEAR(0.0636028, minmax.second, 1e-3) 
+  EXPECT_NEAR(0.067957, minmax.second, 1e-3) 
     << "Band 2 model max not as expected";
 }
 
@@ -637,7 +636,7 @@ TEST(model2DTest, getRRange) {
     << "Unexpected model upper R range band 1";
   EXPECT_FLOAT_EQ(0, rng.second.first) << 
     "Model band 2 lower R range should be zero";
-  EXPECT_NEAR(0.062871593, rng.second.second, 1e-4) 
+  EXPECT_NEAR(0.0671758809, rng.second.second, 1e-4) 
     << "Unexpected model upper R range band 2";
 }
 

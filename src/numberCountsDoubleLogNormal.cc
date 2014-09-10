@@ -72,7 +72,8 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
   nknots(NKNOTS), nsigmaknots(NSIGMA), noffsetknots(NOFFSET), 
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
-  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false) {
+  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
+  fslv(NULL) {
 
   nRWork = 0;
   RWork = NULL;
@@ -147,7 +148,8 @@ numberCountsDoubleLogNormal(const std::vector<float>& KNOTS,
 			    const std::vector<float>& OFFSETS) :
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
-  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false) {
+  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
+  fslv(NULL) {
 
   nRWork = 0;
   RWork = NULL;
@@ -180,7 +182,8 @@ numberCountsDoubleLogNormal(const std::vector<double>& KNOTS,
 			    const std::vector<double>& OFFSETS) :
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
-  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false) {
+  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
+  fslv(NULL) {
 
   nRWork = 0;
   RWork = NULL;
@@ -216,7 +219,8 @@ numberCountsDoubleLogNormal(unsigned int nk, const float* const K,
 			    unsigned int no, const float* const O) :
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
-  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false) {
+  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
+  fslv(NULL) {
 
   nRWork = 0;
   RWork = NULL;
@@ -251,7 +255,8 @@ numberCountsDoubleLogNormal(unsigned int nk, const double* const K,
 			    unsigned int no, const double* const O) :
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
-  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false) {
+  knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
+  fslv(NULL) {
 
   nRWork = 0;
   RWork = NULL;
@@ -286,6 +291,7 @@ numberCountsDoubleLogNormal(const numberCountsDoubleLogNormal& other) {
   sigmainterp = offsetinterp = NULL;
   nRWork = 0;
   RWork = NULL;
+  fslv = NULL;
   knots_valid = sigmas_valid = offsets_valid = false;
   knotpos_loaded = sigmapos_loaded = offsetpos_loaded = false;
   knotvals_loaded = sigmavals_loaded = offsetvals_loaded = false;

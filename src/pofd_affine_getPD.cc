@@ -5,7 +5,7 @@
 #include<getopt.h>
 
 #include "../include/global_settings.h"
-#include "../include/utility.h"
+#include "../include/hdf5utils.h"
 #include "../include/PDFactory.h"
 #include "../include/PDFactoryDouble.h"
 #include "../include/numberCountsKnotsSpline.h"
@@ -197,16 +197,16 @@ int getPDSingle(int argc, char **argv) {
     pfactory.getPD(sigma_noise, pd, getLog);
     
     // Write it
-    utility::outfiletype oft = utility::getOutputFileType(outputfile);
-    if (oft == utility::HDF5 || oft == utility::UNKNOWN) {
+    hdf5utils::outfiletype oft = hdf5utils::getOutputFileType(outputfile);
+    if (oft == hdf5utils::HDF5 || oft == hdf5utils::UNKNOWN) {
       if (verbose) std::cout << "Writing P(D) to file " << outputfile 
 			     << " as HDF5" << std::endl;
       pd.writeToHDF5(outputfile);
-    } else if (oft == utility::FITS) {
+    } else if (oft == hdf5utils::FITS) {
       if (verbose) std::cout << "Writing P(D) to file " << outputfile 
 			     << " as FITS" << std::endl;
       pd.writeToFits(outputfile);
-    } else if (oft == utility::TXT) {
+    } else if (oft == hdf5utils::TXT) {
       if (verbose) std::cout << "Writing P(D) to file " << outputfile 
 			     << " as text" << std::endl;
       std::ofstream ofs(outputfile.c_str());
@@ -436,16 +436,16 @@ int getPDDouble(int argc, char** argv) {
     pfactory.getPD(sigma1, sigma2, pd, getLog);
 
     // Write PD
-    utility::outfiletype oft = utility::getOutputFileType(outputfile);
-    if (oft == utility::HDF5 || oft == utility::UNKNOWN) {
+    hdf5utils::outfiletype oft = hdf5utils::getOutputFileType(outputfile);
+    if (oft == hdf5utils::HDF5 || oft == hdf5utils::UNKNOWN) {
       if (verbose) std::cout << "Writing P(D) to file " << outputfile 
 			     << " as HDF5" << std::endl;
       pd.writeToHDF5(outputfile);
-    } else if (oft == utility::FITS) {
+    } else if (oft == hdf5utils::FITS) {
       if (verbose) std::cout << "Writing P(D) to file " << outputfile 
 			     << " as FITS" << std::endl;
       pd.writeToFits(outputfile);
-    } else if (oft == utility::TXT) {
+    } else if (oft == hdf5utils::TXT) {
       if (verbose) std::cout << "Writing P(D) to file " << outputfile 
 			     << " as text" << std::endl;
       std::ofstream ofs(outputfile.c_str());

@@ -610,7 +610,6 @@ calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
 
       // Get log like
       curr_LogLike = pd.getLogLike(data[i]);
-      std::cerr << "Raw data likelihood: " << curr_LogLike << std::endl;
 
       // Apply beam norm and zero offset factor
       LogLike += (curr_LogLike - like_offset[i]) / like_norm[i];

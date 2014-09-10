@@ -6,6 +6,7 @@
 
 #include "../include/global_settings.h"
 #include "../include/PDFactory.h"
+#include "../include/hdf5utils.h"
 #include "../include/affineExcept.h"
 
 const double PDFactory::subedgemult = 1e-5;
@@ -1165,7 +1166,7 @@ void PDFactory::writeRToHDF5(const std::string& filename) const {
 
   // Write it as one dataset -- Rflux, R. 
   hsize_t adims;
-  hid_t mems_id, att_id, dat_id;
+  hid_t mems_id, att_id;
   
   // Properties
   adims = 1;
@@ -1183,28 +1184,18 @@ void PDFactory::writeRToHDF5(const std::string& filename) const {
   double mval = minflux_R - static_cast<double>(wrapRidx + 1)*dflux;
   for (unsigned int i = wrapRidx + 1; i < currsize; ++i)
     RFlux[i] = static_cast<double>(i) * dflux - mval;
-  adims = currsize;
-  mems_id = H5Screate_simple(1, &adims, NULL);
-  dat_id = H5Dcreate2(file_id, "RFlux", H5T_NATIVE_DOUBLE,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
-	   H5P_DEFAULT, RFlux);
-  H5Dclose(dat_id);
+  hdf5utils::writeDataDoubles(file_id, "RFlux", currsize, RFlux);
   delete[] RFlux;
 
   // R -- which we may need to copy to remove the dflux
-  dat_id = H5Dcreate2(file_id, "R", H5T_NATIVE_DOUBLE,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   if (rdflux) {
     double* tmp = new double[currsize];
     double idflux = 1.0 / dflux;
     for (unsigned int i = 0; i < currsize; ++i) tmp[i] = rvals[i] * idflux;
-    H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,  H5P_DEFAULT, tmp);
+    hdf5utils::writeDataDoubles(file_id, "R", currsize, tmp);
     delete[] tmp;
   } else
-    H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,  H5P_DEFAULT, rvals);
-  H5Dclose(dat_id);
-  H5Sclose(mems_id);
+    hdf5utils::writeDataDoubles(file_id, "R", currsize, rvals);
 
   // Done
   H5Fclose(file_id);

@@ -7,6 +7,7 @@
 
 #include "../include/global_settings.h"
 #include "../include/PDFactoryDouble.h"
+#include "../include/hdf5utils.h"
 #include "../include/affineExcept.h"
 
 const double PDFactoryDouble::lowEdgeRMult=1e-9; //!< How far to go down on edge
@@ -1350,7 +1351,7 @@ void PDFactoryDouble::writeRToHDF5(const std::string& filename) const {
 
   // Write it as one dataset -- Rflux1, Rflux2, R. 
   hsize_t adims;
-  hid_t mems_id, att_id, dat_id;
+  hid_t mems_id, att_id;
   
   // First, some properties
   adims = 1;
@@ -1366,36 +1367,19 @@ void PDFactoryDouble::writeRToHDF5(const std::string& filename) const {
   H5Sclose(mems_id);
 
   // Rfluxes
-  adims = currsize;
-  mems_id = H5Screate_simple(1, &adims, NULL);
-  dat_id = H5Dcreate2(file_id, "RFlux1", H5T_NATIVE_DOUBLE,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
-	   H5P_DEFAULT, RFlux1);
-  H5Dclose(dat_id);
-  dat_id = H5Dcreate2(file_id, "RFlux2", H5T_NATIVE_DOUBLE,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
-	   H5P_DEFAULT, RFlux2);
-  H5Dclose(dat_id);
-  H5Sclose(mems_id);
+  hdf5utils::writeDataDoubles(file_id, "RFlux1", currsize, RFlux1);
+  hdf5utils::writeDataDoubles(file_id, "RFlux2", currsize, RFlux2);
 
   // R -- which we may need to copy to remove the dflux
-  hsize_t dims_steps[2] = {currsize, currsize};
-  mems_id = H5Screate_simple(2, dims_steps, NULL);
-  dat_id = H5Dcreate2(file_id, "R", H5T_NATIVE_DOUBLE,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   if (rdflux) {
     double* tmp = new double[currsize * currsize];
     double idflux = 1.0 / (dflux1 * dflux2);
     for (unsigned int i = 0; i < currsize * currsize; ++i) 
       tmp[i] = rvals[i] * idflux;
-    H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,  H5P_DEFAULT, tmp);
+    hdf5utils::writeData2DDoubles(file_id, "R", currsize, currsize, tmp);
     delete[] tmp;
   } else
-    H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,  H5P_DEFAULT, rvals);
-  H5Dclose(dat_id);
-  H5Sclose(mems_id);
+    hdf5utils::writeData2DDoubles(file_id, "R", currsize, currsize, rvals);
 
   // Done
   H5Fclose(file_id);
