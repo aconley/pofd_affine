@@ -596,17 +596,6 @@ calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
       pdfac.getPD(sigmult1 * sigma_base1[i], sigmult2 * sigma_base2[i],
 		  pd, true);
       
-      // Dump individual data values
-      const double* flux1 = data->getData1();
-      const double* flux2 = data->getData2();
-      std::ofstream ofs("likecalc.txt");
-      for (unsigned int j = 0; j < data->getN(); ++j) {
-	ofs << flux1[j] << " " << flux2[j] << " "
-	    << pd.getPDVal(flux1[j], flux2[j], true)
-	    << std::endl;
-      }
-      ofs.close();
-
       // Get log like
       curr_LogLike = pd.getLogLike(data[i]);
 

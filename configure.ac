@@ -88,6 +88,17 @@ if test $usetest; then
        fi ] )
 fi
 
+dnl Timing test
+AC_ARG_ENABLE( timing,
+	       [  --enable-timing         Adds timing tests to some types of fits],
+	       timingset=$enableval,timingset="" )
+if test $timingset; then
+   AC_MSG_RESULT(Compiling timing output)
+   AC_DEFINE( TIMING, 1 )
+else
+   AC_MSG_RESULT(Not compiling timing output)
+fi
+
 dnl FFTW
 AC_LANG_C
 

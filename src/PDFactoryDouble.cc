@@ -144,7 +144,7 @@ void PDFactoryDouble::setNEdge(unsigned int nedg) {
 
 #ifdef TIMING
 void PDFactoryDouble::resetTime() {
-  RTime = p0Time = fftTime = posTime = copyTime = normTime = 0;
+  RTime = p0Time = fftTime = posTime = copyTime = splitTime = normTime = 0;
   edgeTime = meanTime = logTime = 0;
 }
 
@@ -152,7 +152,7 @@ void PDFactoryDouble::resetTime() {
   \param[in] nindent Number of indentation spaces
 */
 void PDFactoryDouble::summarizeTime(unsigned int nindent) const {
-  std::string prestring(nindent,' ');
+  std::string prestring(nindent, ' ');
     
   std::cout << "R time: " << prestring 
 	    << 1.0*RTime/CLOCKS_PER_SEC << "s" << std::endl;
@@ -162,6 +162,8 @@ void PDFactoryDouble::summarizeTime(unsigned int nindent) const {
 	    << 1.0*fftTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "pos time: " << prestring 
 	    << 1.0*posTime/CLOCKS_PER_SEC << "s" << std::endl;
+  std::cout << "split time: " << prestring 
+	    << 1.0*splitTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "copy time: " << prestring 
 	    << 1.0*copyTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "norm time: " << prestring 
@@ -869,7 +871,7 @@ void PDFactoryDouble::unwrapAndNormalizePD(PDDouble& pd) const {
   posTime += std::clock() - starttime;
 #endif
 
-  // Figure out the indices of the minimum in each dimension
+  // Figure out the indices of the split points
   // Do index 1 first
 #ifdef TIMING
   starttime = std::clock();
@@ -898,27 +900,35 @@ void PDFactoryDouble::unwrapAndNormalizePD(PDDouble& pd) const {
   }
 
   // Now second dimension.  This one is slower due to stride issues,
-  //  but otherwise is the same
-  for (unsigned int j = 0; j < currsize; ++j) {
-    cval = 0.5 * pofd[j];
-    for (unsigned int i = 1; i < currsize - 1; ++i)
-      cval += pofd[i * currsize + j];
-    cval += 0.5 * pofd[(currsize - 1) * currsize + j];
-    rsum[j] = cval;
+  //  but otherwise is the same. Doing the sum in this order is much faster
+  for (unsigned int j = 0; j < currsize; ++j) rsum[j] = 0.5 * pofd[j]; // i=0
+  for (unsigned int i = 1; i < currsize - 1; ++i) { // center
+    rowptr = pofd + i * currsize;
+    for (unsigned int j = 0; j < currsize; ++j)
+      rsum[j] += rowptr[j];
   }
+  rowptr = pofd + (currsize - 1) * currsize; // i = currsize-1
+  for (unsigned int j = 0; j < currsize; ++j)
+    rsum[j] += 0.5 * rowptr[j];
+
   unsigned int splitidx2;
   try {
     splitidx2 = findSplitPoint(rsum, dflux2, sg2);
   } catch (const affineExcept& ex) {
-    // Add information to the exception about which band we were in.
     std::stringstream newerrstr("");
     newerrstr << "In dimension two, problem with split point: " 
 	      << ex.getErrStr();
     throw affineExcept(ex.getErrClass(), ex.getErrMethod(), 
 		       newerrstr.str());
   }
+#ifdef TIMING
+  splitTime += std::clock() - starttime;
+#endif
 
   // Now the actual copying, which is an exercise in index gymnastics
+#ifdef TIMING
+  starttime = std::clock();
+#endif
   pd.resize(currsize, currsize);
   size_t size_double = sizeof(double); // Size of double
   std::memset(pd.pd_, 0, currsize * currsize * size_double);
@@ -951,14 +961,13 @@ void PDFactoryDouble::unwrapAndNormalizePD(PDDouble& pd) const {
   ptr_curr = pofd + splitidx1 * currsize;
   for (unsigned int i = 0; i < currsize - splitidx1; ++i)
     std::memcpy(ptr_out + i * currsize, ptr_curr + i * currsize, rowsz);
+#ifdef TIMING
+  copyTime += std::clock() - starttime;
+#endif
 
   pd.logflat = false;
   pd.minflux1 = 0.0; pd.dflux1 = dflux1;
   pd.minflux2 = 0.0; pd.dflux2 = dflux2;
-
-#ifdef TIMING
-  copyTime += std::clock() - starttime;
-#endif
 
   // Normalize
 #ifdef TIMING

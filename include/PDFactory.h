@@ -107,7 +107,7 @@ class PDFactory {
   void unwrapAndNormalizePD(PD& pd) const;
 
 #ifdef TIMING
-  mutable std::clock_t RTime, p0Time, fftTime, posTime, copyTime;
+  mutable std::clock_t RTime, p0Time, fftTime, posTime, copyTime, splitTime;
   mutable std::clock_t normTime, edgeTime, meanTime, logTime, starttime;
 #endif
 

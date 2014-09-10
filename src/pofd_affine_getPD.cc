@@ -169,10 +169,15 @@ int getPDSingle(int argc, char **argv) {
 	     minflux, maxflux);
       double modelMax = model.getMaxFlux();
       printf("  Model range est:      %0.3f-%0.3f [Jy]\n", 0., modelMax);
-      if (histogram)
-	printf("  Using beam histogramming to reduce beam size to: %u %u\n",
-	       bm.getNPos(), bm.getNNeg());
-      printf("  Interpolation length:  %u\n",ninterp);
+      if (histogram) {
+	printf("  Using beam histogramming to reduce beam size\n");
+	printf("    from: %u %u to: %u %u\n", bm.getNPos(), bm.getNNeg(), 
+	       bm.getNHistPos(), bm.getNHistNeg());
+      } else
+	printf("  Beam size: %u %u\n", bm.getNPos(), bm.getNNeg());
+	
+      printf("  Interpolation length:  %u\n", ninterp);
+      printf("  FFT size:              %u\n", nflux);
       printf("  Positions and initial values:\n");
       std::pair<double,double> pr;
       for (unsigned int i = 0; i < model_info.getNKnots(); ++i) {
@@ -184,8 +189,7 @@ int getPDSingle(int argc, char **argv) {
     }
 
     // Get P(D)
-    if (verbose) std::cout << "Getting P(D) with transform length: " 
-			   << nflux << std::endl;
+    if (verbose) std::cout << "Getting P(D)" << std::endl;
     bool succ;
     succ = pfactory.initPD(nflux, minflux, maxflux, model, bm);
     if (!succ) {
@@ -193,7 +197,6 @@ int getPDSingle(int argc, char **argv) {
 		<< std::endl;
       return 1;
     }    
-    std::cerr << "Get PD" << std::endl;
     pfactory.getPD(sigma_noise, pd, getLog);
     
     // Write it
@@ -412,30 +415,30 @@ int getPDDouble(int argc, char** argv) {
       else
 	printf("  Beam size is %u %u %u %u\n",
 	       bm.getNPix(0), bm.getNPix(1), bm.getNPix(2), bm.getNPix(3));
-
+      printf("  FFT size:                %u\n", nflux);
       printf("  Knot Positions and initial values:\n");
       std::pair<double,double> pr;
       for (unsigned int i = 0; i < model_info.getNKnots(); ++i) {
 	pr = model_info.getKnot(i);
-	printf("   %11.5e  %11.5e\n",pr.first,pr.second);
+	printf("    %11.5e  %11.5e\n",pr.first,pr.second);
       }
       printf("  Sigma Positions and initial values:\n");
       for (unsigned int i = 0; i < model_info.getNSigmas(); ++i) {
 	pr = model_info.getSigma(i);
-	printf("   %11.5e  %11.5e\n",pr.first,pr.second);
+	printf("    %11.5e  %11.5e\n",pr.first,pr.second);
       }
       printf("  Offset Positions and initial values:\n");
       for (unsigned int i = 0; i < model_info.getNOffsets(); ++i) {
 	pr = model_info.getOffset(i);
-	printf("   %11.5e  %11.5e\n",pr.first,pr.second);
+	printf("    %11.5e  %11.5e\n",pr.first,pr.second);
       }
       if (getLog)
 	printf("  Getting Log_2 P(D)\n");
     }
 
     //Get P(D)
-    if (verbose) std::cout << "Getting P(D) with transform length: " 
-			   << nflux << std::endl;
+    if (verbose) std::cout << "Getting P(D)" << std::endl;
+
     bool succ;
     succ = pfactory.initPD(nflux, minflux1, maxflux1, minflux2, maxflux2,
 			   model, bm, doedge);

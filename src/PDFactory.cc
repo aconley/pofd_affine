@@ -92,7 +92,7 @@ void PDFactory::init(unsigned int NINTERP) {
 
 #ifdef TIMING
 void PDFactory::resetTime() {
-  RTime = p0Time = fftTime = posTime = copyTime = normTime = 0;
+  RTime = p0Time = fftTime = posTime = copyTime = splitTime = normTime = 0;
   edgeTime = meanTime = logTime = 0;
 }
 
@@ -100,8 +100,7 @@ void PDFactory::resetTime() {
   \param[in] nindent Number of indentation spaces
 */
 void PDFactory::summarizeTime(unsigned int nindent) const {
-  std::string prestring(nindent,' ');
-  prestring = "  ";
+  std::string prestring(nindent, ' ');
     
   std::cout << "R time: " << prestring 
 	    << 1.0*RTime/CLOCKS_PER_SEC << "s" << std::endl;
@@ -111,6 +110,8 @@ void PDFactory::summarizeTime(unsigned int nindent) const {
 	    << 1.0*fftTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "pos time: " << prestring 
 	    << 1.0*posTime/CLOCKS_PER_SEC << "s" << std::endl;
+  std::cout << "split time: " << prestring 
+	    << 1.0*splitTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "copy time: " << prestring 
 	    << 1.0*copyTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "norm time: " << prestring 
@@ -907,11 +908,20 @@ void PDFactory::unwrapAndNormalizePD(PD& pd) const {
 #endif
 
   // Find the point we want to split at
+#ifdef TIMING
+  starttime = std::clock();
+#endif
   unsigned int splitidx = findSplitPoint();
-  
+#ifdef TIMING
+  splitTime += std::clock() - starttime;
+#endif  
+
   // Copy over.  Things above splitidx in pofd go into the bottom of
   // pd.pd_, then the stuff below that in pofd goes above that in pd.pd_
   // in the same order.
+#ifdef TIMING
+  starttime = std::clock();
+#endif
   pd.resize(currsize);
   double *ptr_curr, *ptr_out; // convenience vars
   ptr_curr = pofd + splitidx;
@@ -924,13 +934,12 @@ void PDFactory::unwrapAndNormalizePD(PD& pd) const {
   //for (unsigned int i = 0; i < splitidx; ++i)
   //  ptr_out[i] = ptr_curr[i];
   std::memcpy(ptr_out, ptr_curr, splitidx * sizeof(double));
-
-  pd.logflat = false;
-  pd.minflux = 0.0; pd.dflux = dflux;
-
 #ifdef TIMING
   copyTime += std::clock() - starttime;
 #endif
+
+  pd.logflat = false;
+  pd.minflux = 0.0; pd.dflux = dflux;
 
   //Normalize
 #ifdef TIMING
