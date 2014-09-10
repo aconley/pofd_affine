@@ -41,7 +41,6 @@ calcLikeSingle::~calcLikeSingle() {
 */
 void calcLikeSingle::free() {
   if (data != NULL) { delete[] data; data = NULL; }
-  ndatasets = 0;
   data_read = false;
 
   pd.strict_resize(0);
@@ -433,11 +432,11 @@ double calcLikeSingle::getLogLike(const numberCounts& model, bool& pars_invalid,
       newerrstr << errstr << std::endl
 		<< "Error encountered while processing model parameters: " 
 		<< std::endl << model
-		<< "While analyzing dataset " << i << " of " << ndatasets << " using:"
-		<< std::endl
+		<< "While analyzing dataset " << i << " of " << ndatasets 
+		<< " using:" << std::endl
 		<< " fftsize: " << fftsize << std::endl
-		<< " RFlux range: " << minRFlux << " to " << maxRFlux << std::endl
-		<< " sigmult: " << sigmult;
+		<< " RFlux range: " << minRFlux << " to " << maxRFlux 
+		<< std::endl << " sigmult: " << sigmult;
       throw affineExcept(ex.getErrClass(), ex.getErrMethod(), newerrstr.str());
     }
   }

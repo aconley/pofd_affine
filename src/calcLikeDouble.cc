@@ -51,7 +51,6 @@ calcLikeDoubleSingle::~calcLikeDoubleSingle() {
 */
 void calcLikeDoubleSingle::free() {
   if (data != NULL) { delete[] data; data = NULL; }
-  ndatasets = 0;
   data_read = false;
 
   pd.strict_resize(0, 0);
