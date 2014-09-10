@@ -13,6 +13,7 @@
 #include "../include/affineExcept.h"
 #include "../include/affineEnsemble.h"
 #include "../include/paramSet.h"
+#include "../include/hdf5utils.h"
 
 //The covariance matrix is set up as
 // 1) A correlation matrix with the band structure [-0.1, 0.2, 1, 0.2, 0.1]
@@ -184,7 +185,7 @@ int main(int argc, char** argv) {
   const unsigned int ndim = 5;
   unsigned int nwalkers, nsamples, min_burn, init_steps;
   std::string invcovfile, outfile;
-  bool verbose, fixed_burn, write_as_hdf;
+  bool verbose, fixed_burn;
   double init_temp;
 
   verbose = false;
@@ -192,14 +193,12 @@ int main(int argc, char** argv) {
   init_steps = 20;
   init_temp = 2.0;
   fixed_burn = false;
-  write_as_hdf = false;
 
   int c;
   int option_index = 0;
   static struct option long_options[] = {
     {"help",no_argument,0,'h'},
     {"fixedburn", no_argument, 0, 'f'},
-    {"hdf", no_argument, 0, 'H'},
     {"inittemp", required_argument, 0, 'I'},
     {"initsteps", required_argument, 0, 'i'},
     {"minburn", required_argument, 0, 'm'},
@@ -207,7 +206,7 @@ int main(int argc, char** argv) {
     {"Version",no_argument,0,'V'},
     {0,0,0,0}
   };
-  char optstring[] = "hfHi:I:m:vV";
+  char optstring[] = "hfi:I:m:vV";
 
   int rank, nproc;
   MPI_Init(&argc, &argv);
@@ -248,9 +247,6 @@ int main(int argc, char** argv) {
                   << " sample," << std::endl;
         std::cerr << "\t\trather than using the autocorrelation."
 		  << std::endl;
-	std::cerr << "\t-H, --hdf" << std::endl;
-	std::cerr << "\t\tWrite as HDF5 file rather than text file."
-		  << std::endl;
 	std::cerr << "\t-i, --initsteps STEPS" << std::endl;
 	std::cerr << "\t\tTake this many initial steps per walker, then "
 		  << "recenter" << std::endl;
@@ -274,9 +270,6 @@ int main(int argc, char** argv) {
       break;
     case 'f':
       fixed_burn = true;
-      break;
-    case 'H':
-      write_as_hdf = true;
       break;
     case 'i':
       init_steps = atoi(optarg);
@@ -364,12 +357,21 @@ int main(int argc, char** argv) {
 	std::cout << std::endl;
       } else std::cout << "Failed to compute autocorrelation" << std::endl;
   
-      //Write
-      if (write_as_hdf)
-	mg.writeToHDF5(outfile);
-      else
+      hdf5utils::outfiletype ftype;
+      ftype = hdf5utils::getOutputFileType(outfile);
+      switch(ftype) {
+      case hdf5utils::TXT:
 	mg.writeToFile(outfile);
-
+	break;
+      case hdf5utils::FITS:
+	throw affineExcept("multi_gauss_example", "main",
+			   "No support for FITS output");
+	break;
+      case hdf5utils::UNKNOWN:
+      case hdf5utils::HDF5:
+	mg.writeToHDF5(outfile);
+	break;
+      }
     }
   } catch ( const affineExcept& ex ) {
     std::cerr << "Error encountered" << std::endl;

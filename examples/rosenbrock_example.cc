@@ -10,6 +10,7 @@
 #include "../include/affineExcept.h"
 #include "../include/affineEnsemble.h"
 #include "../include/paramSet.h"
+#include "../include/hdf5utils.h"
 
 /*!
   \brief Rosenbrock density
@@ -93,7 +94,6 @@ int main(int argc, char** argv) {
   static struct option long_options[] = {
     {"help",no_argument,0,'h'},
     {"fixedburn", no_argument, 0, 'f'},
-    {"hdf", no_argument, 0, 'H'},
     {"initsteps", required_argument, 0, 'i'},
     {"inittemp", required_argument, 0, 'I'},
     {"minburn", required_argument, 0, 'm'},
@@ -101,7 +101,7 @@ int main(int argc, char** argv) {
     {"Version",no_argument,0,'V'},
     {0,0,0,0}
   };
-  char optstring[] = "hfHi:I:m:vV";
+  char optstring[] = "hfi:I:m:vV";
 
   int rank, nproc;
   MPI_Init(&argc, &argv);
@@ -140,9 +140,6 @@ int main(int argc, char** argv) {
                   << " sample," << std::endl;
         std::cerr << "\t\trather than using the autocorrelation."
 		  << std::endl;
-	std::cerr << "\t-H, --hdf" << std::endl;
-	std::cerr << "\t\tWrite as HDF5 file rather than text file."
-		  << std::endl;
 	std::cerr << "\t-i, --initsteps STEPS" << std::endl;
 	std::cerr << "\t\tTake this many initial steps per walker, then "
 		  << "recenter" << std::endl;
@@ -166,9 +163,6 @@ int main(int argc, char** argv) {
       break;
     case 'f':
       fixed_burn = true;
-      break;
-    case 'H':
-      write_as_hdf = true;
       break;
     case 'i':
       init_steps = atoi(optarg);
@@ -249,11 +243,21 @@ int main(int argc, char** argv) {
 			  << " " << acor[1] << std::endl; 
       else std::cout << "Failed to compute autocorrelation" << std::endl;
   
-      //And write
-      if (write_as_hdf)
-	rd.writeToHDF5(outfile);
-      else
+      hdf5utils::outfiletype ftype;
+      ftype = hdf5utils::getOutputFileType(outfile);
+      switch(ftype) {
+      case hdf5utils::TXT:
 	rd.writeToFile(outfile);
+	break;
+      case hdf5utils::FITS:
+	throw affineExcept("rosenbrock_example", "main",
+			   "No support for FITS output");
+	break;
+      case hdf5utils::UNKNOWN:
+      case hdf5utils::HDF5:
+	rd.writeToHDF5(outfile);
+	break;
+      }
     }
   } catch ( const affineExcept& ex ) {
     std::cerr << "Error encountered" << std::endl;

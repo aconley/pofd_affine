@@ -12,6 +12,7 @@
 #include "../include/affineExcept.h"
 #include "../include/affineEnsemble.h"
 #include "../include/paramSet.h"
+#include "../include/hdf5utils.h"
 
 /*!
   \brief Fit a polynomial to a fixed set of input data
@@ -363,7 +364,21 @@ int main(int argc, char** argv) {
 		<< std::endl;
 
       // Write
-      ply.writeToHDF5(outfile);
+      hdf5utils::outfiletype ftype;
+      ftype = hdf5utils::getOutputFileType(outfile);
+      switch(ftype) {
+      case hdf5utils::TXT:
+	ply.writeToFile(outfile);
+	break;
+      case hdf5utils::FITS:
+	throw affineExcept("polyfit_example", "main",
+			   "No support for FITS output");
+	break;
+      case hdf5utils::UNKNOWN:
+      case hdf5utils::HDF5:
+	ply.writeToHDF5(outfile);
+	break;
+      }
     }
   } catch ( const affineExcept& ex ) {
     std::cerr << "Error encountered" << std::endl;
