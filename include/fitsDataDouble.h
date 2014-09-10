@@ -31,10 +31,6 @@ class fitsDataDouble {
   double bindelta2; //!< Delta of bins, band 2
   unsigned int* binval; //!< Number of elements in each bin, row major array
 
-  /*! \brief Reads data from single file*/
-  bool readFile(const std::string&, long&, double*&, unsigned int&,
-		unsigned int*&, unsigned int&, bool=false);
-
   // We want to keep the filenames and extensions we read data from
   std::string file1; //!< File we read data 1 from
   unsigned int dataext1; //!< File extension for data 1
@@ -45,6 +41,10 @@ class fitsDataDouble {
   bool has_mask2; //!< Did we have a mask from file 2?
   unsigned int maskext2; //!< Mask 2 extension
   
+  /*! \brief Reads data from single file*/
+  bool readFile(const std::string&, long&, double*&, unsigned int&,
+		unsigned int*&, unsigned int&, bool=false);
+
  public:
   fitsDataDouble(); //!< Default constructor
   fitsDataDouble(const std::string&, const std::string&, 

@@ -57,6 +57,7 @@ class calcLikeSingle {
 
   //Beam
   bool has_beam; //!< Is beam loaded?
+  std::string beamfile; //!< Filename of beam
   beam bm; //!< Beam for this data
 
   bool verbose; //!< Output informational messages while running
@@ -123,8 +124,10 @@ class calcLikeSingle {
   double getLogLike(const numberCounts&, bool& pars_invalid, 
 		    double sigmult=1.0, unsigned int fftsize=131072) const;
 
-  void writePDToStream(std::ostream& os) const; //!< Write out computed P(D)
-  
+  void writeToHDF5Handle(hid_t) const; //!< Write dataset info to HDF5 handle
+  /*! \brief Make a new group and write to it */
+  void writeToNewHDF5Group(hid_t, const std::string& groupname) const;
+
   /*! \brief MPI copy send operation */
   void sendSelf(MPI_Comm, int dest) const;
   /*! \brief MPI copy receive operation */

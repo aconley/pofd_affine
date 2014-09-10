@@ -42,11 +42,13 @@ calcLikeDoubleSingle::~calcLikeDoubleSingle() {
   if (like_offset != NULL) delete[] like_offset;
 }
 
-// This deallocates large arrays, but does keep around things
-//  like the min/max fluxes, filenames, etc.  The idea is more
-//  or less for the master node to be able to call this after copying
-//  data over to the slave nodes in the mcmc, but keeping some data
-//  that we might like to write out.
+/*!
+  This deallocates large arrays, but does keep around things
+  like the min/max fluxes, filenames, etc.  The idea is more
+  or less for the master node to be able to call this after copying
+  data over to the slave nodes in the mcmc, but keeping some data
+  that we might like to write out.
+*/
 void calcLikeDoubleSingle::free() {
   if (data != NULL) { delete[] data; data = NULL; }
   ndatasets = 0;
@@ -631,15 +633,6 @@ calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
   }
   
   return LogLike;
-}
-
-/*!
-  \param[inout] os Stream to write most recent P(D) to
-*/
-void calcLikeDoubleSingle::writePDToStream(std::ostream& os) const {
-  PDDouble cpy(pd);
-  cpy.deLog();
-  os << cpy;
 }
 
 /*!						
@@ -1412,6 +1405,7 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
     // Generate group name
     std::stringstream name;
     name << "BeamSet" << i;
+    // Write
     beamsets[i].writeToNewHDF5Group(objid, name.str());
   }
 

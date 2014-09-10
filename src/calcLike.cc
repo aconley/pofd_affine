@@ -19,7 +19,7 @@ calcLikeSingle::calcLikeSingle(unsigned int NINTERP) :
   minDataFlux(NaN), maxDataFlux(NaN), dataext(NULL), hasmask(NULL),
   maskext(NULL), pdfac(NINTERP), minRFlux(NaN), maxRFlux(NaN), 
   sigma_base(NULL), maxsigma_base(NaN), exp_conf(0.0), like_norm(NULL), 
-  like_offset(NULL), has_beam(false), verbose(false) {}
+  like_offset(NULL), has_beam(false), beamfile(""), verbose(false) {}
   
 calcLikeSingle::~calcLikeSingle() {
   if (filenames != NULL) delete[] filenames;
@@ -32,11 +32,17 @@ calcLikeSingle::~calcLikeSingle() {
   if (like_offset != NULL) delete[] like_offset;
 }
 
+/*!
+  This deallocates large arrays, but does keep around things
+  like the min/max fluxes, filenames, etc.  The idea is more
+  or less for the master node to be able to call this after copying
+  data over to the slave nodes in the mcmc, but keeping some data
+  that we might like to write out.
+*/
 void calcLikeSingle::free() {
   if (data != NULL) { delete[] data; data = NULL; }
   ndatasets = 0;
   data_read = false;
-  minDataFlux = maxDataFlux = minRFlux = maxRFlux = NaN;
 
   pd.strict_resize(0);
   pdfac.free();
@@ -58,21 +64,37 @@ void calcLikeSingle::free() {
 void calcLikeSingle::resize(unsigned int n) {
   if (ndatasets == n) return;  //Don't have to do anything
 
+  if (filenames != NULL)   delete[] filenames;
   if (data != NULL)        delete[] data;
+  if (dataext != NULL)     delete[] dataext;
+  if (hasmask != NULL)     delete[] hasmask;
+  if (maskext != NULL)     delete[] maskext;
   if (sigma_base != NULL)  delete[] sigma_base;
   if (like_offset != NULL) delete[] like_offset;
   if (like_norm   != NULL) delete[] like_norm;
 
   if (n > 0) {
+    filenames   = new std::string[n];
     data        = new fitsData[n];
+    dataext     = new unsigned int[n];
+    hasmask     = new bool[n];
+    maskext     = new unsigned int[n];
     sigma_base  = new double[n];
     like_offset = new double[n];
     like_norm   = new double[n];
+    for (unsigned int i = 0; i < n; ++i) filenames[i] = "";
+    for (unsigned int i = 0; i < n; ++i) dataext[i] = 0;
+    for (unsigned int i = 0; i < n; ++i) hasmask[i] = false;
+    for (unsigned int i = 0; i < n; ++i) maskext[i] = 0;
     for (unsigned int i = 0; i < n; ++i) sigma_base[i] = NaN;
     for (unsigned int i = 0; i < n; ++i) like_offset[i] = NaN;
     for (unsigned int i = 0; i < n; ++i) like_norm[i] = 1.0;
   } else {
+    filenames   = NULL;
     data        = NULL;
+    dataext     = NULL;
+    hasmask     = NULL;
+    maskext     = NULL;
     sigma_base  = NULL;
     like_offset = NULL;
     like_norm   = NULL;
@@ -97,8 +119,14 @@ void calcLikeSingle::readDataFromFile(const std::string& datafile,
 				      bool IGNOREMASK, bool MEANSUB,
 				      bool BINDATA, unsigned int NBINS) {
   resize(1);
-
+  filenames[0] = datafile;
   data[0].readData(datafile, IGNOREMASK, MEANSUB);
+  dataext[0] = data[0].getDataExt();
+  hasmask[0] = data[0].hasMask();
+  if (hasmask[0])
+    maskext[0] = data[0].getMaskExt();
+  else
+    maskext[0] = 0;
   unsigned int nd = data[0].getN();
   if (nd == 0)
     throw affineExcept("calcLikeSingle", "readDataFromFile",
@@ -138,12 +166,22 @@ readDataFromFiles(const std::vector<std::string>& datafiles,
   resize(n);
 
   for (unsigned int i = 0; i < n; ++i) {
+    filenames[i] = datafiles[i];
     data[i].readData(datafiles[i], IGNOREMASK, MEANSUB);
+    dataext[i] = data[i].getDataExt();
+    hasmask[i] = data[i].hasMask();
+    if (hasmask[i])
+      maskext[i] = data[i].getMaskExt();
+    else
+      maskext[i] = 0;
     unsigned int nd = data[i].getN();
     if (nd == 0) {
       std::stringstream errstr("");
-      errstr << "No unmasked pixels in data file: "
-	     << datafiles[i];
+      if (hasmask[i])
+	errstr << "No unmasked pixels in data file: ";
+      else
+	errstr << "No pixels in data file: ";
+      errstr << datafiles[i];
       throw affineExcept("calcLikeSingle", "readDataFromFile",
 			 errstr.str());
     }
@@ -194,6 +232,7 @@ void calcLikeSingle::readBeam(const std::string& fl, double MINVAL,
   bm.readFile(fl, MINVAL);
   if (histogram) bm.makeHistogram(NBINS);
   has_beam = true;
+  beamfile = fl;
 }
 
 /*!
@@ -406,13 +445,58 @@ double calcLikeSingle::getLogLike(const numberCounts& model, bool& pars_invalid,
   return LogLike;
 }
 
-/*!
-  \param[inout] os Stream to write current P(D) to
+/*!						
+  \param[in] objid HDF5 handle to write information to.  Must already be
+    open.
 */
-void calcLikeSingle::writePDToStream(std::ostream& os) const {
-  PD cpy(pd);
-  cpy.deLog();
-  os << cpy;
+void calcLikeSingle::writeToHDF5Handle(hid_t objid) const {
+  hsize_t adims;
+  hid_t mems_id, att_id;
+
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("calcLikeSingle", "writeToHDF5Handle",
+		       "Input handle is not valid");
+
+  // Number of files
+  adims = 1;
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  att_id = H5Acreate2(objid, "nfiles", H5T_NATIVE_UINT,
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  H5Awrite(att_id, H5T_NATIVE_UINT, &ndatasets);
+  H5Aclose(att_id);
+  H5Sclose(mems_id);
+  
+  // Write files, extensions, etc.  We use the non-null, non-empty string
+  //  in the filenames as an indicator there are things to write
+  if ((filenames != NULL) && (filenames[0] != "")) {
+    hdf5utils::writeAttStrings(objid, "filenames", ndatasets, filenames);
+    hdf5utils::writeAttUnsignedInts(objid, "dataext", ndatasets, dataext);
+    hdf5utils::writeAttBools(objid, "hasmask", ndatasets, hasmask);
+    hdf5utils::writeAttUnsignedInts(objid, "maskext", ndatasets, maskext);
+  }
+  if (beamfile != "") 
+    hdf5utils::writeAttString(objid, "beamfile", beamfile);
+}
+
+/*!
+  \param[in] objid HDF5 handle to write information to.  Must already be
+    open.
+  \param[in] groupname Name of subgroup to create in objid
+*/
+void calcLikeSingle::writeToNewHDF5Group(hid_t objid, 
+					 const std::string& groupname) const {
+
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("calcLikeSingle", "writeToNewHDF5Group",
+		       "Input handle is not valid");
+
+  hid_t groupid;
+  groupid = H5Gopen(objid, groupname.c_str(), H5P_DEFAULT);
+  if (H5Iget_ref(groupid) < 0)
+    throw affineExcept("calcLikeSingle", "writeToNewHDF5Group",
+		       "Can't open new group with name " + groupname);
+  writeToHDF5Handle(groupid);
+  H5Gclose(groupid);
 }
 
 /*!
@@ -954,6 +1038,15 @@ void calcLike::writeToHDF5Handle(hid_t objid) const {
 
   // Model info
   model.writeToHDF5Handle(objid);
+
+  // Write each beam set to a subgroup
+  for (unsigned int i = 0; i < nbeamsets; ++i) {
+    // Generate group name
+    std::stringstream name;
+    name << "BeamSet" << i;
+    // Write
+    beamsets[i].writeToNewHDF5Group(objid, name.str());
+  }
 
 }
 

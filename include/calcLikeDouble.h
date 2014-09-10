@@ -29,7 +29,7 @@
 
 class calcLikeDoubleSingle { //Odd name...
  private:
-  //Data set
+  //Data set.
   static const double flux_safety; //!< maxflux multiplier to ensure margin
   bool data_read; //!< Have we read data?
   unsigned int ndatasets; //!< Number of data sets
@@ -145,8 +145,6 @@ class calcLikeDoubleSingle { //Odd name...
   double getLogLike(const numberCountsDouble&, bool&, double sigmult1=1.0, 
 		    double sigmult2=1.0, unsigned int fftsize=4096, 
 		    bool edgeinteg=true) const;
-
-  void writePDToStream( std::ostream& os) const; //!< Write out computed P(D)
 
   void writeToHDF5Handle(hid_t) const; //!< Write dataset info to HDF5 handle
   /*! \brief Make a new group and write to it */
