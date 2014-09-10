@@ -61,7 +61,7 @@ void hdf5utils::writeAttString(hid_t objid, const std::string& name,
 		      mems_id, H5P_DEFAULT);
 
   ctmp = value.c_str();
-  H5Awrite(att_id, datatype, ctmp);
+  H5Awrite(att_id, datatype, &ctmp);
   H5Aclose(att_id);
   H5Sclose(mems_id);
 }
