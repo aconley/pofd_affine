@@ -246,7 +246,7 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   
   double differenceRegularize(double) const; //!< Tikhonov regularization log Likelihood penalty
 
-  void writeToHDF5Handle(hid_t) const; //!< Write to HDF5 handle
+  void writeToHDF5Handle(hid_t, bool=false) const; //!< Write to HDF5 handle
   bool writeToStream(std::ostream& os) const; //<! Output to stream
   
   void sendSelf(MPI_Comm, int dest) const; //!< Send self

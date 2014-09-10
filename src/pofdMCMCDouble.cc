@@ -427,7 +427,8 @@ void pofdMCMCDouble::writeToHDF5Handle(hid_t objid) const {
   // Write to top level
   affineEnsemble::writeToHDF5Handle(objid);
 
-  // To ParamInfo group
+  // To ParamInfo group; note this already exists from 
+  //  affineEnsemble::writeToHDF5Handle, so we just reopen
   hid_t groupid;
   groupid = H5Gopen(objid, "ParamInfo", H5P_DEFAULT);
   if (H5Iget_ref(groupid) < 0)

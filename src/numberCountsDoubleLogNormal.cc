@@ -2065,8 +2065,11 @@ double numberCountsDoubleLogNormal::differenceRegularize(double alpha) const {
 
 /*!
   \param[inout] objid HDF5 handle to write to
+  \param[in] writevals If true, write the knot values in addition to
+      positions.  If the knots aren't loaded, this is ignored.
 */
-void numberCountsDoubleLogNormal::writeToHDF5Handle(hid_t objid) const {
+void numberCountsDoubleLogNormal::writeToHDF5Handle(hid_t objid,
+						    bool writevals) const {
   hsize_t adims;
   hid_t mems_id, att_id;
 
@@ -2097,11 +2100,33 @@ void numberCountsDoubleLogNormal::writeToHDF5Handle(hid_t objid) const {
 
   H5Sclose(mems_id);
 
-  // Knot positions
-  hdf5utils::writeAttDoubles(objid, "knotpos", nknots, knots);
-  hdf5utils::writeAttDoubles(objid, "sigmaknotpos", nsigmaknots, sigmaknots);
-  hdf5utils::writeAttDoubles(objid, "offsetknotpos", noffsetknots, 
-			     offsetknots);
+  // Knot positions as data
+  if (knotpos_loaded)
+    hdf5utils::writeDataDoubles(objid, "knotpos", nknots, knots);
+  if (sigmapos_loaded)
+    hdf5utils::writeDataDoubles(objid, "sigmaknotpos", nsigmaknots, 
+				sigmaknots);
+  if (offsetpos_loaded)
+    hdf5utils::writeDataDoubles(objid, "offsetknotpos", noffsetknots, 
+				offsetknots);
+
+  if (writevals && knotvals_loaded) {
+    // Convert to log 10 for write
+    double* kv;
+    kv = new double[nknots];
+    for (unsigned int i = 0; i < nknots; ++i)
+      kv[i] = pofd_mcmc::ilogfac * logknotvals[i];
+    hdf5utils::writeDataDoubles(objid, "log10knotvals", nknots, kv);
+    delete[] kv;
+  }
+
+  if (writevals && sigmavals_loaded)
+    hdf5utils::writeDataDoubles(objid, "sigmaknotvals", nsigmaknots,
+				sigmavals);
+
+  if (writevals && offsetvals_loaded)
+    hdf5utils::writeDataDoubles(objid, "offsetknotvals", nsigmaknots,
+				offsetvals);
 }
 
 /*!

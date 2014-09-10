@@ -201,7 +201,18 @@ int getPDSingle(int argc, char **argv) {
     if (oft == hdf5utils::HDF5 || oft == hdf5utils::UNKNOWN) {
       if (verbose) std::cout << "Writing P(D) to file " << outputfile 
 			     << " as HDF5" << std::endl;
-      pd.writeToHDF5(outputfile);
+      hid_t file_id, group_id;
+      file_id = H5Fcreate(outputfile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
+			  H5P_DEFAULT);
+
+      pd.writeToHDF5Handle(file_id);
+
+      group_id = H5Gcreate(file_id, "Model", H5P_DEFAULT, H5P_DEFAULT, 
+			  H5P_DEFAULT);
+      model.writeToHDF5Handle(group_id, true);
+      H5Gclose(group_id);
+
+      H5Fclose(file_id);
     } else if (oft == hdf5utils::FITS) {
       if (verbose) std::cout << "Writing P(D) to file " << outputfile 
 			     << " as FITS" << std::endl;
@@ -440,7 +451,18 @@ int getPDDouble(int argc, char** argv) {
     if (oft == hdf5utils::HDF5 || oft == hdf5utils::UNKNOWN) {
       if (verbose) std::cout << "Writing P(D) to file " << outputfile 
 			     << " as HDF5" << std::endl;
-      pd.writeToHDF5(outputfile);
+      hid_t file_id, group_id;
+      file_id = H5Fcreate(outputfile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
+			  H5P_DEFAULT);
+
+      pd.writeToHDF5Handle(file_id);
+
+      group_id = H5Gcreate(file_id, "Model", H5P_DEFAULT, H5P_DEFAULT, 
+			  H5P_DEFAULT);
+      model.writeToHDF5Handle(group_id, true);
+      H5Gclose(group_id);
+
+      H5Fclose(file_id);
     } else if (oft == hdf5utils::FITS) {
       if (verbose) std::cout << "Writing P(D) to file " << outputfile 
 			     << " as FITS" << std::endl;

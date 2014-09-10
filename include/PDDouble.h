@@ -5,6 +5,7 @@
 
 #include<string>
 #include<ostream>
+#include<hdf5.h>
 
 #include "../include/fitsDataDouble.h"
 
@@ -93,6 +94,7 @@ class PDDouble {
   std::ostream& writeToStream(std::ostream& os) const; //!< Write summary
 
   int writeToFits(const std::string& file) const; //!< Write as fits file
+  void writeToHDF5Handle(hid_t) const; //!< Write as HDF5 handle
   void writeToHDF5(const std::string& file) const; //!< Write as HDF5 file
 };
 

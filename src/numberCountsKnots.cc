@@ -420,9 +420,11 @@ void numberCountsKnots::receiveCopy(MPI_Comm comm, int src) {
 }
 
 /*!
-  \param[inout] objid HDF5 handle to write to
+  \param[in] objid HDF5 handle to write to
+  \param[in] writevals If true, write the knot values in addition to
+      positions.  If the knots aren't loaded, this is ignored.
 */
-void numberCountsKnots::writeToHDF5Handle(hid_t objid) const {
+void numberCountsKnots::writeToHDF5Handle(hid_t objid, bool writevals) const {
   hsize_t adims;
   hid_t mems_id, att_id;
 
@@ -440,7 +442,17 @@ void numberCountsKnots::writeToHDF5Handle(hid_t objid) const {
   H5Sclose(mems_id);
 
   // Knot positions
-  hdf5utils::writeAttDoubles(objid, "knotpos", nknots, knots);
+  hdf5utils::writeDataDoubles(objid, "knotpos", nknots, knots);
+
+  if (writevals && knotvals_loaded) {
+    // Convert to log 10 for write
+    double* kv;
+    kv = new double[nknots];
+    for (unsigned int i = 0; i < nknots; ++i)
+      kv[i] = pofd_mcmc::ilogfac * logknotvals[i];
+    hdf5utils::writeDataDoubles(objid, "log10knotvals", nknots, kv);
+    delete[] kv;
+  }
 }
 
 /*!

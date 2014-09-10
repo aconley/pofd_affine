@@ -4,7 +4,6 @@
 
 #include<fitsio.h>
 #include<fftw3.h>
-#include<hdf5.h>
 
 #include "../include/global_settings.h"
 #include "../include/PD.h"
@@ -454,25 +453,31 @@ void PD::writeToHDF5(const std::string& outputfile) const {
   hid_t file_id;
   file_id = H5Fcreate(outputfile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
 		      H5P_DEFAULT);
-  if (H5Iget_ref(file_id) < 0) {
-    H5Fclose(file_id);
-    throw affineExcept("PD", "writeToHDF5", 
-		       "Failed to open HDF5 file to write");
-  }
+  writeToHDF5Handle(file_id);
+  H5Fclose(file_id);
+}
+
+/*!
+  \param[in] objid Open HDF5 handle to write to.
+*/
+void PD::writeToHDF5Handle(hid_t objid) const {
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("PD", "writeToHDF5Handle", 
+		       "Output handle not open");
 
   hsize_t adims;
   hid_t mems_id, att_id;
   
   // Properties
-  hdf5utils::writeAttBool(file_id, "isLog", logflat);
+  hdf5utils::writeAttBool(objid, "isLog", logflat);
 
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, NULL);
-  att_id = H5Acreate2(file_id, "dflux", H5T_NATIVE_DOUBLE,
+  att_id = H5Acreate2(objid, "dFlux", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux);
   H5Aclose(att_id);
-  att_id = H5Acreate2(file_id, "minflux", H5T_NATIVE_DOUBLE,
+  att_id = H5Acreate2(objid, "minFlux", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, &minflux);
   H5Aclose(att_id);
@@ -482,13 +487,11 @@ void PD::writeToHDF5(const std::string& outputfile) const {
   double *flux = new double[n];
   for (unsigned int i = 0; i < n; ++i) 
     flux[i] = static_cast<double>(i) * dflux + minflux;
-  hdf5utils::writeDataDoubles(file_id, "flux", n, flux);
+  hdf5utils::writeDataDoubles(objid, "Flux", n, flux);
   delete[] flux;
 
   // PD
-  hdf5utils::writeDataDoubles(file_id, "PD", n, pd_);
-
-  H5Fclose(file_id);
+  hdf5utils::writeDataDoubles(objid, "PD", n, pd_);
 }
 
 /*!

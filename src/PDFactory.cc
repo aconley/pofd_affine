@@ -725,13 +725,15 @@ unsigned int PDFactory::findSplitPoint() const {
   //      too close to the peak).  This enforces requirement 1.
   //  4) If the min satisfies value >= f2 * peak, then the smallest value
   //     is not an acceptable split, so throw an error.  This is requirement 2.
-  //  5) If min > f1 * peak  (first estimate of jitter level) accept this as the split.
-  //     This is requirement 3, because f1 is meant to be a rough estimate of
-  //     the jitter point. f1 is set by comparing with example models.
-  //  6) Form a new estimate of the jitter level, the lesser of f1 * peak or f3 * min.
-  //  7) Search the -n1 * sigma to n1 * sigma range (from the top, with wrapping),
-  //      and look for a point that is above the jitter estimate, but the next one
-  //      down is below the jitter floor.
+  //  5) If min > f1 * peak  (first estimate of jitter level) accept this 
+  //     as the split. This is requirement 3, because f1 is meant to be a 
+  //     rough estimate of the jitter point. f1 is set by comparing with 
+  //     example models.
+  //  6) Form a new estimate of the jitter level, the lesser of f1 * peak or 
+  //      f3 * min.
+  //  7) Search the -n1 * sigma to n1 * sigma range (from the top, with 
+  //      wrapping), and look for a point that is above the jitter estimate, //
+  //      but the next one down is below the jitter floor.
   //  8) If no such point is found, throw an exception.
   // Here we are taking advantage of the assumption that the P(D) will
   //  have much more power in its positive tail than its negative tail.
@@ -770,12 +772,25 @@ unsigned int PDFactory::findSplitPoint() const {
     currval = pofd[i];
     if (currval > peak) peak = currval;
   }
+  if (peak <= 0.0)
+    throw affineExcept("PDFactory", "findSplitPoint",
+		       "Peak P(D) value was zero");
 
   // Step 3
   // Range we are searching
-  unsigned int topidx = 
-    static_cast<unsigned int>((n1sig - minflux_R) / dflux) + wrapRidx;
-  unsigned int botidx = static_cast<unsigned int>(n1sig / dflux);
+  unsigned int botidx, topidx;
+  botidx = static_cast<unsigned int>(n1sig / dflux);
+  if (n1sig > fabs(minflux_R))
+    topidx = wrapRidx;
+  else
+    topidx =
+      static_cast<unsigned int>(-(n1sig + minflux_R) / dflux + wrapRidx + 1);
+  if (botidx >= currsize) 
+    throw affineExcept("PDFactory", "findSplitPoint",
+		       "Logic error; invalid botidx (wrapped) in split search");
+  if (topidx >= currsize) 
+    throw affineExcept("PDFactory", "findSplitPoint",
+		       "Logic error; invalid (large) topidx in split search");
   unsigned int minidx;
   double minval;
   minidx = botidx;
@@ -808,7 +823,21 @@ unsigned int PDFactory::findSplitPoint() const {
     return minidx;
 
   // Step 6
-  jitter = (f3 * minval) < jitter ? (f3 * minval) : jitter; // Update jitter estimate
+  // Update jitter estimate; beware of zero min!
+  if (minval <= 0.0) {
+    // Try to use some neighboring points to get nicer estimate
+    const unsigned int nminup = 3;
+    unsigned int bi, ti;
+    if (minidx < botidx) bi = botidx; else bi = minidx - nminup;
+    if (minidx > topidx - nminup ) ti = topidx - nminup; 
+    else ti = minidx + nminup;
+    for (unsigned int i = bi; i < ti; ++i) {
+      currval = pofd[i];
+      if (currval > minval) minval = currval;
+    }
+  }
+  if (minval > 0)
+    jitter = (f3 * minval) < jitter ? (f3 * minval) : jitter; 
 
   // Step 7
   // Make sure there's a range to search
@@ -850,8 +879,6 @@ unsigned int PDFactory::findSplitPoint() const {
   throw affineExcept("PDFactory", "findSplitPoint", 
 		     errstr.str());
 }
-
-
 
 /*!
   \param[out] pd Holds P(D) on output, normalized, mean subtracted,

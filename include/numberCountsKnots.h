@@ -78,7 +78,7 @@ class numberCountsKnots : public numberCounts {
   /*! \brief Get range over which R is expected to be nonzero */
   dblpair getRRange(const beam&) const throw(affineExcept);
 
-  virtual void writeToHDF5Handle(hid_t objid) const; //!< Output to HDF5
+  virtual void writeToHDF5Handle(hid_t objid, bool=false) const; //!< Output to HDF5
   virtual bool writeToStream(std::ostream& os) const; //<! Output to stream
 
   virtual void sendSelf(MPI_Comm, int dest) const; //!< Send self

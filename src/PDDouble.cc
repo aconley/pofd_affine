@@ -4,7 +4,6 @@
 
 #include<fitsio.h>
 #include<fftw3.h>
-#include<hdf5.h>
 
 #include "../include/global_settings.h"
 #include "../include/PDDouble.h"
@@ -860,39 +859,34 @@ int PDDouble::writeToFits(const std::string& outputfile) const {
 }
 
 /*!
-  \param[in] outputfile File to write to
+  \param[in] objid Open HDF5 object handle to write to.
 */
-void PDDouble::writeToHDF5(const std::string& outputfile) const {
-  hid_t file_id;
-  file_id = H5Fcreate(outputfile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
-		      H5P_DEFAULT);
-  if (H5Iget_ref(file_id) < 0) {
-    H5Fclose(file_id);
-    throw affineExcept("PDDouble", "writeToHDF5",
-		       "Failed to open HDF5 file to write");
-  }
+void PDDouble::writeToHDF5Handle(hid_t objid) const {
 
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("PDDouble", "writeToHDF5Handle",
+		       "Failed to open HDF5 file to write");
   hsize_t adims;
   hid_t mems_id, att_id;
   
   // Properties
-  hdf5utils::writeAttBool(file_id, "isLog", logflat);
+  hdf5utils::writeAttBool(objid, "isLog", logflat);
 
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, NULL);
-  att_id = H5Acreate2(file_id, "dflux1", H5T_NATIVE_DOUBLE,
+  att_id = H5Acreate2(objid, "dFlux1", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux1);
   H5Aclose(att_id);
-  att_id = H5Acreate2(file_id, "dflux2", H5T_NATIVE_DOUBLE,
+  att_id = H5Acreate2(objid, "dFlux2", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux2);
   H5Aclose(att_id);
-  att_id = H5Acreate2(file_id, "minflux1", H5T_NATIVE_DOUBLE,
+  att_id = H5Acreate2(objid, "minFlux1", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, &minflux1);
   H5Aclose(att_id);
-  att_id = H5Acreate2(file_id, "minflux2", H5T_NATIVE_DOUBLE,
+  att_id = H5Acreate2(objid, "minFlux2", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, &minflux2);
   H5Aclose(att_id);
@@ -903,14 +897,24 @@ void PDDouble::writeToHDF5(const std::string& outputfile) const {
   double *flux = new double[maxn];
   for (unsigned int i = 0; i < n1; ++i) 
     flux[i] = static_cast<double>(i) * dflux1 + minflux1;
-  hdf5utils::writeDataDoubles(file_id, "flux1", n1, flux);
+  hdf5utils::writeDataDoubles(objid, "Flux1", n1, flux);
   for (unsigned int i = 0; i < n2; ++i) 
     flux[i] = static_cast<double>(i) * dflux2 + minflux2;
-  hdf5utils::writeDataDoubles(file_id, "flux2", n2, flux);
+  hdf5utils::writeDataDoubles(objid, "Flux2", n2, flux);
   delete[] flux;
 
-  hdf5utils::writeData2DDoubles(file_id, "PD", n1, n2, pd_);
+  hdf5utils::writeData2DDoubles(objid, "PD", n1, n2, pd_);
+}
 
+
+/*!
+  \param[in] outputfile File to write to
+*/
+void PDDouble::writeToHDF5(const std::string& outputfile) const {
+  hid_t file_id;
+  file_id = H5Fcreate(outputfile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
+		      H5P_DEFAULT);
+  writeToHDF5Handle(file_id);
   H5Fclose(file_id);
 }
 

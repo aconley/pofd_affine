@@ -750,6 +750,9 @@ unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
     currval = data[i];
     if (currval > peak) peak = currval;
   }
+  if (peak <= 0.0)
+    throw affineExcept("PDFactoryDouble", "findSplitPoint",
+		       "Peak P(D) value was zero");
 
   // Step 3
   // Figure out the search index range from -n1sig to +n1sig
@@ -794,7 +797,8 @@ unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
     const unsigned int nminup = 3;
     unsigned int bi, ti;
     if (minidx < botidx) bi = botidx; else bi = minidx - nminup;
-    if (minidx > topidx - nminup ) ti = topidx - nminup; else ti = minidx + nminup;
+    if (minidx > topidx - nminup ) ti = topidx - nminup; 
+    else ti = minidx + nminup;
     for (unsigned int i = bi; i < ti; ++i) {
       currval = data[i];
       if (currval > minval) minval = currval;

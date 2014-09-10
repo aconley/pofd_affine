@@ -560,8 +560,11 @@ double numberCountsKnotsSpline::differenceRegularize(double alpha) const {
 
 /*!
   \param[inout] objid HDF5 handle to write to
+  \param[in] writevals If true, write the knot values in addition to
+      positions.  If the knots aren't loaded, this is ignored.
 */
-void numberCountsKnotsSpline::writeToHDF5Handle(hid_t objid) const {
+void numberCountsKnotsSpline::writeToHDF5Handle(hid_t objid, 
+						bool writevals) const {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("numberCountsKnotsSpline", "writeToHDF5Handle",
 		       "Input handle is not valid");
@@ -571,7 +574,7 @@ void numberCountsKnotsSpline::writeToHDF5Handle(hid_t objid) const {
   hdf5utils::writeAttString(objid, "model_type", modeltype);
 
   // Other writes
-  numberCountsKnots::writeToHDF5Handle(objid);
+  numberCountsKnots::writeToHDF5Handle(objid, writevals);
 }
 
 /*!

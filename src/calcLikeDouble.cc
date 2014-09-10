@@ -690,7 +690,8 @@ void calcLikeDoubleSingle::writeToNewHDF5Group(hid_t objid,
 		       "Input handle is not valid");
 
   hid_t groupid;
-  groupid = H5Gopen(objid, groupname.c_str(), H5P_DEFAULT);
+  groupid = H5Gcreate(objid, groupname.c_str(), H5P_DEFAULT, H5P_DEFAULT, 
+		      H5P_DEFAULT);
   if (H5Iget_ref(groupid) < 0)
     throw affineExcept("calcLikeDoubleSingle", "writeToNewHDF5Group",
 		       "Can't open new group with name " + groupname);

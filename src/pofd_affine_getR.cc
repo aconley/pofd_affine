@@ -137,7 +137,7 @@ int getRSingle( int argc, char** argv ) {
       // Model
       group_id = H5Gcreate(file_id, "Model", H5P_DEFAULT, H5P_DEFAULT, 
 			  H5P_DEFAULT);
-      model.writeToHDF5Handle(group_id);
+      model.writeToHDF5Handle(group_id, true);
       H5Gclose(group_id);
 
       // Rflux
@@ -323,7 +323,7 @@ int getRDouble(int argc, char** argv) {
       // Model
       group_id = H5Gcreate(file_id, "Model", H5P_DEFAULT, H5P_DEFAULT, 
 			   H5P_DEFAULT);
-      model.writeToHDF5Handle(group_id);
+      model.writeToHDF5Handle(group_id, true);
       H5Gclose(group_id);
 
       // Fluxes

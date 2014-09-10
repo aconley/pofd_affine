@@ -69,7 +69,6 @@ class numberCountsDouble {
 		    unsigned int,const double* const,
 		    const doublebeam&, double*) const = 0;
 
-  virtual void writeToHDF5Handle(hid_t objid) const=0; //!< Output to HDF5
   virtual bool writeToStream(std::ostream& os) const=0; //!< Output to stream
 };
 
