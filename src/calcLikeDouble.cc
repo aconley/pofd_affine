@@ -646,22 +646,22 @@ void calcLikeDoubleSingle::writeToHDF5Handle(hid_t objid) const {
   // Write files, extensions, etc.  We use the non-null, non-empty string
   //  in the filenames as an indicator there are things to write
   if ((filenames1 != NULL) && (filenames1[0] != "")) {
-    hdf5utils::writeAttStrings(objid, "filenames1", ndatasets, filenames1);
-    hdf5utils::writeAttUnsignedInts(objid, "dataext1", ndatasets, dataext1);
-    hdf5utils::writeAttBools(objid, "hasmask1", ndatasets, hasmask1);
-    hdf5utils::writeAttUnsignedInts(objid, "maskext1", ndatasets, maskext1);
+    hdf5utils::writeDataStrings(objid, "filenames1", ndatasets, filenames1);
+    hdf5utils::writeDataUnsignedInts(objid, "dataext1", ndatasets, dataext1);
+    hdf5utils::writeDataBools(objid, "hasmask1", ndatasets, hasmask1);
+    hdf5utils::writeDataUnsignedInts(objid, "maskext1", ndatasets, maskext1);
   }
   if ((filenames2 != NULL) && (filenames2[0] != "")) {
-    hdf5utils::writeAttStrings(objid, "filenames2", ndatasets, filenames2);
-    hdf5utils::writeAttUnsignedInts(objid, "dataext2", ndatasets, dataext2);
-    hdf5utils::writeAttBools(objid, "hasmask2", ndatasets, hasmask2);
-    hdf5utils::writeAttUnsignedInts(objid, "maskext2", ndatasets, maskext2);
+    hdf5utils::writeDataStrings(objid, "filenames2", ndatasets, filenames2);
+    hdf5utils::writeDataUnsignedInts(objid, "dataext2", ndatasets, dataext2);
+    hdf5utils::writeDataBools(objid, "hasmask2", ndatasets, hasmask2);
+    hdf5utils::writeDataUnsignedInts(objid, "maskext2", ndatasets, maskext2);
   }  
 
   if (beamfile1 != "") 
-    hdf5utils::writeAttString(objid, "beamfile1", beamfile1);
+    hdf5utils::writeDataString(objid, "beamfile1", beamfile1);
   if (beamfile2 != "") 
-    hdf5utils::writeAttString(objid, "beamfile2", beamfile2);
+    hdf5utils::writeDataString(objid, "beamfile2", beamfile2);
 }
 
 /*!
@@ -1386,17 +1386,29 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   H5Sclose(mems_id);
 
   // Model info
-  model.writeToHDF5Handle(objid);
+  hid_t groupid;
+  groupid = H5Gcreate(objid, "Model", H5P_DEFAULT, H5P_DEFAULT, 
+		      H5P_DEFAULT);
+  if (H5Iget_ref(groupid) < 0)
+    throw affineExcept("calcLikeDouble", "writeToHDF5Handle",
+		       "Failed to create HDF5 group Model");
+  model.writeToHDF5Handle(groupid);
+  H5Gclose(groupid);
 
   // Write each beam set to a subgroup
+  groupid = H5Gcreate(objid, "Beamsets", H5P_DEFAULT, H5P_DEFAULT, 
+		      H5P_DEFAULT);
+  if (H5Iget_ref(groupid) < 0)
+    throw affineExcept("calcLikeDouble", "writeToHDF5Handle",
+		       "Failed to create HDF5 group Beamsets");
   for (unsigned int i = 0; i < nbeamsets; ++i) {
     // Generate group name
     std::stringstream name;
     name << "BeamSet" << i;
     // Write
-    beamsets[i].writeToNewHDF5Group(objid, name.str());
+    beamsets[i].writeToNewHDF5Group(groupid, name.str());
   }
-
+  H5Gclose(groupid);
 }
 
 /*!

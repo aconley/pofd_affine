@@ -35,8 +35,8 @@ class calcLikeSingle {
   unsigned int ndatasets; //!< Number of data sets
   std::string* filenames; //!< Names of data files
   fitsData* data; //!< Actual data sets -- len ndatasets
-  double minDataFlux; //!< Minimum flux density in actual data 
-  double maxDataFlux; //!< Maximum flux density in actual data 
+  double minDataFlux; //!< Minimum flux density in actual data
+  double maxDataFlux; //!< Maximum flux density in actual data
   unsigned int* dataext; //!< Data extension
   bool* hasmask; //!< Data had mask?
   unsigned int* maskext; //!< Mask extension

@@ -1102,80 +1102,32 @@ bool initFileKnots::isValid(const paramSet& p) const {
   \param[in] objid Handle to write information to
 */
 void initFileKnots::writeToHDF5Handle(hid_t objid) const {
-  hsize_t adims;
-  hid_t mems_id, att_id;
-
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("initFileKnots", "writeToHDF5Handle",
 		       "Input handle is not valid");
 
   // Has range, limits, etc.
-  adims = 1;
-  mems_id = H5Screate_simple(1, &adims, NULL);
-  hbool_t bl;
-  // Range
-  bl = static_cast<hbool_t>(has_range);
-  att_id = H5Acreate2(objid, "has_init_param_range", H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
-  H5Aclose(att_id);
-  // Lower limits
-  bl = static_cast<hbool_t>(has_lower_limits);
-  att_id = H5Acreate2(objid, "has_param_lower_limits", H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
-  H5Aclose(att_id);
-  // Upper limits
-  bl = static_cast<hbool_t>(has_upper_limits);
-  att_id = H5Acreate2(objid, "has_param_upper_limits", H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &bl);
-  H5Aclose(att_id);
-  H5Sclose(mems_id);
-
+  hdf5utils::writeAttBool(objid, "has_init_param_range", has_range);
+  hdf5utils::writeAttBool(objid, "has_param_lower_limits", has_lower_limits);
+  hdf5utils::writeAttBool(objid, "has_param_upper_limits", has_upper_limits);
+  
   // Ranges
-  if ((nknots > 0) && (has_range || has_lower_limits || has_upper_limits)) {
-    adims = static_cast<hsize_t>(nknots);
-    mems_id = H5Screate_simple(1, &adims, NULL);
+  if ((nknots > 0) {
+    if (has_range)
+      hdf5utils::writeDataDoubles(objid, "param_init_range", nknots, range);
 
-    if (has_range) {
-      att_id = H5Acreate2(objid, "param_init_range", H5T_NATIVE_DOUBLE,
-			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
-      H5Awrite(att_id, H5T_NATIVE_DOUBLE, range);
-      H5Aclose(att_id);
+    if (has_lower_limits) {
+      hdf5utils::writeDataBools(objid, "param_has_lowerlim", 
+				nknots, has_lowlim);
+      hdf5utils::writeDataDoubles(objid, "param_lowerlim", 
+				  nknots, lowlim);
     }
-
-    if (has_lower_limits || has_upper_limits) {
-      hbool_t *batmp;
-      batmp = new hbool_t[nknots];
-
-      if (has_lower_limits) {
-	for (unsigned int i = 0; i < nknots; ++i)
-	  batmp[i] = static_cast<hbool_t>(has_lowlim[i]);
-	att_id = H5Acreate2(objid, "param_has_lowlim", H5T_NATIVE_HBOOL,
-			    mems_id, H5P_DEFAULT, H5P_DEFAULT);
-	H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
-	H5Aclose(att_id);
-	att_id = H5Acreate2(objid, "param_lowlim", H5T_NATIVE_DOUBLE,
-			    mems_id, H5P_DEFAULT, H5P_DEFAULT);
-	H5Awrite(att_id, H5T_NATIVE_DOUBLE, lowlim);
-	H5Aclose(att_id);
-      }
-      if (has_upper_limits) {
-	for (unsigned int i = 0; i < nknots; ++i)
-	  batmp[i] = static_cast<hbool_t>(has_uplim[i]);
-	att_id = H5Acreate2(objid, "param_has_uplim", H5T_NATIVE_HBOOL,
-			    mems_id, H5P_DEFAULT, H5P_DEFAULT);
-	H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
-	H5Aclose(att_id);
-	att_id = H5Acreate2(objid, "param_uplim", H5T_NATIVE_DOUBLE,
-			    mems_id, H5P_DEFAULT, H5P_DEFAULT);
-	H5Awrite(att_id, H5T_NATIVE_DOUBLE, uplim);
-	H5Aclose(att_id);
-      }
-      delete[] batmp;
+    if (has_upper_limits) {
+      hdf5utils::writeDataBools(objid, "param_has_upperlim", 
+				nknots, has_uplim);
+      hdf5utils::writeDataDoubles(objid, "param_upperlim", 
+				  nknots, uplim);
     }
-    H5Sclose(mems_id);
   }
 }
 

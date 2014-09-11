@@ -443,8 +443,7 @@ void pofdMCMCDouble::writeToHDF5Handle(hid_t objid) const {
 
   if (H5Iget_ref(groupid) < 0)
     throw affineExcept("pofdMCMCDouble", "writeToHDF5",
-		       "Failed to create HDF5 group");
-
+		       "Failed to create HDF5 group LikelihoodParams");
   likeSet.writeToHDF5Handle(groupid);
   spec_info.writeToHDF5Handle(groupid);
   H5Gclose(groupid);

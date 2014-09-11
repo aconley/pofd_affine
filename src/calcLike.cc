@@ -468,13 +468,13 @@ void calcLikeSingle::writeToHDF5Handle(hid_t objid) const {
   // Write files, extensions, etc.  We use the non-null, non-empty string
   //  in the filenames as an indicator there are things to write
   if ((filenames != NULL) && (filenames[0] != "")) {
-    hdf5utils::writeAttStrings(objid, "filenames", ndatasets, filenames);
-    hdf5utils::writeAttUnsignedInts(objid, "dataext", ndatasets, dataext);
-    hdf5utils::writeAttBools(objid, "hasmask", ndatasets, hasmask);
-    hdf5utils::writeAttUnsignedInts(objid, "maskext", ndatasets, maskext);
+    hdf5utils::writeDataStrings(objid, "filenames", ndatasets, filenames);
+    hdf5utils::writeDataUnsignedInts(objid, "dataext", ndatasets, dataext);
+    hdf5utils::writeDataBools(objid, "hasmask", ndatasets, hasmask);
+    hdf5utils::writeDataUnsignedInts(objid, "maskext", ndatasets, maskext);
   }
   if (beamfile != "") 
-    hdf5utils::writeAttString(objid, "beamfile", beamfile);
+    hdf5utils::writeDataString(objid, "beamfile", beamfile);
 }
 
 /*!
@@ -1037,17 +1037,29 @@ void calcLike::writeToHDF5Handle(hid_t objid) const {
   H5Sclose(mems_id);
 
   // Model info
-  model.writeToHDF5Handle(objid);
+  hid_t groupid;
+  groupid = H5Gcreate(objid, "Model", H5P_DEFAULT, H5P_DEFAULT, 
+		      H5P_DEFAULT);
+  if (H5Iget_ref(groupid) < 0)
+    throw affineExcept("calcLike", "writeToHDF5Handle",
+		       "Failed to create HDF5 group Model");
+  model.writeToHDF5Handle(groupid);
+  H5Gclose(groupid);
 
   // Write each beam set to a subgroup
+  groupid = H5Gcreate(objid, "Beamsets", H5P_DEFAULT, H5P_DEFAULT, 
+		      H5P_DEFAULT);
+  if (H5Iget_ref(groupid) < 0)
+    throw affineExcept("calcLike", "writeToHDF5Handle",
+		       "Failed to create HDF5 group Beamsets");
   for (unsigned int i = 0; i < nbeamsets; ++i) {
     // Generate group name
     std::stringstream name;
     name << "BeamSet" << i;
     // Write
-    beamsets[i].writeToNewHDF5Group(objid, name.str());
+    beamsets[i].writeToNewHDF5Group(groupid, name.str());
   }
-
+  H5Gclose(groupid);
 }
 
 /*!
