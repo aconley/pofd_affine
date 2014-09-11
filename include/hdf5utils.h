@@ -66,6 +66,8 @@ namespace hdf5utils {
 
   // Data writers
   // 1D
+  /*! \brief Write string as data */
+  void writeDataString(hid_t, const std::string&, const std::string&);
   /*! \brief Write 1D array of strings as data */
   void writeDataStrings(hid_t, const std::string&, unsigned int,
 			const std::string* const);
