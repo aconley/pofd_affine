@@ -1112,7 +1112,7 @@ void initFileKnots::writeToHDF5Handle(hid_t objid) const {
   hdf5utils::writeAttBool(objid, "has_param_upper_limits", has_upper_limits);
   
   // Ranges
-  if ((nknots > 0) {
+  if (nknots > 0) {
     if (has_range)
       hdf5utils::writeDataDoubles(objid, "param_init_range", nknots, range);
 

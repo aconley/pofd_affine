@@ -41,7 +41,7 @@ fitsData::~fitsData() {
 }
 
 /*!
-  \param[in] file  Name of data file
+  \param[in] filename  Name of data file
   \param[in] ignore_mask Don't consider MASK information from files
   \param[in] meansub Do a mean subtraction
 
