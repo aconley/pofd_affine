@@ -1604,8 +1604,8 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
     ftmp = new float[nparams];
     for (unsigned int i = 0; i < nparams; ++i) 
       ftmp[i] = initStep[i];
-    hdf5utils::writeAttFloats(groupid, "initial_position",
-			      nparams, ftmp);
+    hdf5utils::writeDataFloats(groupid, "initial_position",
+			       nparams, ftmp);
     delete[] ftmp;
   }
   if (has_regenFirstStep) {
@@ -1613,8 +1613,8 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
     ftmp = new float[nparams];
     for (unsigned int i = 0; i < nparams; ++i) 
       ftmp[i] = regenFirstStep[i];
-    hdf5utils::writeAttFloats(groupid, "regenerated_first_step",
-			      nparams, ftmp);
+    hdf5utils::writeDataFloats(groupid, "regenerated_first_step",
+			       nparams, ftmp);
     delete[] ftmp;
   }
 
@@ -1632,7 +1632,7 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
 		       "Failed to create Chains HDF5 group");
 
   // Number of accepted steps
-  hdf5utils::writeAttUnsignedInts(groupid, "naccept", naccept);
+  hdf5utils::writeDataUnsignedInts(groupid, "naccept", naccept);
 
   // Chains
   chains.writeToHDF5Handle(groupid);
