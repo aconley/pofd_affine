@@ -59,10 +59,8 @@ void hdf5utils::writeAttString(hid_t objid, const std::string& name,
 
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, NULL);
-
   att_id = H5Acreate1(objid, name.c_str(), datatype,
 		      mems_id, H5P_DEFAULT);
-
   ctmp = value.c_str();
   H5Awrite(att_id, datatype, &ctmp);
   H5Aclose(att_id);
@@ -515,11 +513,39 @@ void hdf5utils::writeDataStrings(hid_t objid, const std::string& name,
   mems_id = H5Screate_simple(1, &adims, NULL);
   dat_id = H5Dcreate2(objid, name.c_str(), datatype, mems_id, H5P_DEFAULT, 
 		      H5P_DEFAULT, H5P_DEFAULT);
-  H5Dwrite(dat_id, datatype, H5S_ALL, H5S_ALL, 
-	   H5P_DEFAULT, ctmp);
+  H5Dwrite(dat_id, datatype, H5S_ALL, H5S_ALL, H5P_DEFAULT, ctmp);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
   delete[] ctmp;
+}
+
+/*!
+  \param[in] objid HDF5 handle to write to
+  \param[in] name Name of data to write
+  \param[in] value Value to write
+*/
+void hdf5utils::writeDataString(hid_t objid, const std::string& name,
+				const std::string& value) {
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("hdf5utils", "writeDataString",
+		       "Input handle is not valid when writing " + name);
+
+  // String datatype
+  hid_t datatype = H5Tcopy(H5T_C_S1);
+  H5Tset_size(datatype, H5T_VARIABLE);
+
+  const char * ctmp;
+  hsize_t adims;
+  hid_t mems_id, dat_id;
+
+  adims = 1;
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  dat_id = H5Dcreate2(objid, name.c_str(), datatype, mems_id, H5P_DEFAULT, 
+		      H5P_DEFAULT, H5P_DEFAULT);
+  ctmp = value.c_str();
+  H5Dwrite(dat_id, datatype, H5S_ALL, H5S_ALL, H5P_DEFAULT, &ctmp);
+  H5Dclose(dat_id);
+  H5Sclose(mems_id);
 }
 
 /*!
@@ -554,8 +580,7 @@ void hdf5utils::writeDataStrings(hid_t objid, const std::string& name,
   mems_id = H5Screate_simple(1, &adims, NULL);
   dat_id = H5Dcreate2(objid, name.c_str(), datatype, mems_id, H5P_DEFAULT, 
 		      H5P_DEFAULT, H5P_DEFAULT);
-  H5Dwrite(dat_id, datatype, H5S_ALL, H5S_ALL, 
-	   H5P_DEFAULT, ctmp);
+  H5Dwrite(dat_id, datatype, H5S_ALL, H5S_ALL, H5P_DEFAULT, ctmp);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
   delete[] ctmp;
@@ -590,8 +615,7 @@ void hdf5utils::writeDataBools(hid_t objid, const std::string& name,
   mems_id = H5Screate_simple(1, &adims, NULL);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  H5Dwrite(dat_id, H5T_NATIVE_HBOOL, H5S_ALL, H5S_ALL, 
-	   H5P_DEFAULT, v);
+  H5Dwrite(dat_id, H5T_NATIVE_HBOOL, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
   delete[] v;
@@ -625,8 +649,7 @@ void hdf5utils::writeDataBools(hid_t objid, const std::string& name,
   mems_id = H5Screate_simple(1, &adims, NULL);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  H5Dwrite(dat_id, H5T_NATIVE_HBOOL, H5S_ALL, H5S_ALL, 
-	   H5P_DEFAULT, v);
+  H5Dwrite(dat_id, H5T_NATIVE_HBOOL, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
   delete[] v;
@@ -656,8 +679,7 @@ void hdf5utils::writeDataUnsignedInts(hid_t objid, const std::string& name,
   mems_id = H5Screate_simple(1, &adims, NULL);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  H5Dwrite(dat_id, H5T_NATIVE_UINT, H5S_ALL, H5S_ALL, 
-	   H5P_DEFAULT, value);
+  H5Dwrite(dat_id, H5T_NATIVE_UINT, H5S_ALL, H5S_ALL, H5P_DEFAULT, value);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
 }
@@ -689,8 +711,7 @@ void hdf5utils::writeDataUnsignedInts(hid_t objid, const std::string& name,
   mems_id = H5Screate_simple(1, &adims, NULL);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  H5Dwrite(dat_id, H5T_NATIVE_UINT, H5S_ALL, H5S_ALL, 
-	   H5P_DEFAULT, v);
+  H5Dwrite(dat_id, H5T_NATIVE_UINT, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
   delete[] v;
@@ -719,8 +740,7 @@ void hdf5utils::writeDataInts(hid_t objid, const std::string& name,
   mems_id = H5Screate_simple(1, &adims, NULL);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_INT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  H5Dwrite(dat_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, 
-	   H5P_DEFAULT, value);
+  H5Dwrite(dat_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, value);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
 }
@@ -752,8 +772,7 @@ void hdf5utils::writeDataInts(hid_t objid, const std::string& name,
   mems_id = H5Screate_simple(1, &adims, NULL);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_INT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  H5Dwrite(dat_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, 
-	   H5P_DEFAULT, v);
+  H5Dwrite(dat_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
   delete[] v;
@@ -782,8 +801,7 @@ void hdf5utils::writeDataFloats(hid_t objid, const std::string& name,
   mems_id = H5Screate_simple(1, &adims, NULL);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_FLOAT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  H5Dwrite(dat_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, 
-	   H5P_DEFAULT, value);
+  H5Dwrite(dat_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, value);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
 }
@@ -815,8 +833,7 @@ void hdf5utils::writeDataFloats(hid_t objid, const std::string& name,
   mems_id = H5Screate_simple(1, &adims, NULL);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_FLOAT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  H5Dwrite(dat_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, 
-	   H5P_DEFAULT, v);
+  H5Dwrite(dat_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
   delete[] v;
@@ -846,8 +863,7 @@ void hdf5utils::writeDataDoubles(hid_t objid, const std::string& name,
   mems_id = H5Screate_simple(1, &adims, NULL);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
-	   H5P_DEFAULT, value);
+  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, value);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
 }
@@ -878,8 +894,7 @@ void hdf5utils::writeDataDoubles(hid_t objid, const std::string& name,
   mems_id = H5Screate_simple(1, &adims, NULL);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
-	   H5P_DEFAULT, v);
+  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
   delete[] v;
@@ -911,8 +926,7 @@ void hdf5utils::writeData2DFloats(hid_t objid, const std::string& name,
   mems_id = H5Screate_simple(2, adims, NULL);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_FLOAT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  H5Dwrite(dat_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, 
-	   H5P_DEFAULT, value);
+  H5Dwrite(dat_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, value);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
 }
@@ -942,8 +956,7 @@ void hdf5utils::writeData2DDoubles(hid_t objid, const std::string& name,
   mems_id = H5Screate_simple(2, adims, NULL);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, 
-	   H5P_DEFAULT, value);
+  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, value);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
 }
