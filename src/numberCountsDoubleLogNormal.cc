@@ -1739,9 +1739,10 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
   const double* ibmptr1[4];
   for (unsigned int i = 0; i < 4; ++i)
     ibmptr1[i] = ishist[i] ? bm.getBinVals1(i) : bm.getInvPixArr1(i);
-  const double* ibmptr2[4];
+  const double* logratioptr[4]; // Pointer to log(eta1/eta2)
   for (unsigned int i = 0; i < 4; ++i)
-    ibmptr2[i] = ishist[i] ? bm.getBinVals2(i) : bm.getInvPixArr2(i);
+    if (hassign[i])
+      logratioptr[i] = ishist[i] ? bm.getBinLogRatio(i) : bm.getLogRatio(i);
   // If abs(f1) is bigger than this, R is zero for this component
   double maxf1[4];
   for (unsigned int i = 0; i < 4; ++i)
@@ -1774,7 +1775,9 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
   //  want to explore f2 < 0 space to compute the P(D).
   //   RWork[*,0] = n1(f1/eta1) / eta1 * sigma1(f1/eta1) * pixel size prefac, 
   //      possibly multiplied by the wts if the beam is histogrammed
-  //   RWork[*,1] will hold log(f1/eta1) + offset(f1/eta1)
+  //   RWork[*,1] will hold log(f1) + offset(f1/eta1) - log(eta1 / eta2)
+  //               noting that the last term is something doublebeam
+  //               provides
   //   RWork[*,2] = -0.5 / sigma(f1/eta1)^2
   //  We only test for out of range (R always 0) on the first flux density
   //   because the model doesn't actually terminate sharply in the other band
@@ -1784,10 +1787,11 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
   double *__restrict__ rowptr; // Row pointer into output (R)
   const double *__restrict__ wptr; // Weights 
   const double *__restrict__ iparr1; // Inverse beam 1
-  const double *__restrict__ iparr2; // Inverse beam 2
+  const double *__restrict__ plogratio; // log(eta1 / eta2);
   unsigned int sgn1, sgnoff, sgn; // Sign index for this component
   unsigned int curr_n; // Number of beam elements for current component
-  double f1val, f2val, f1prod, f2prod, ieta1, workval, isigma, tfac, if2, cts;
+  double f1val, f2val, f1prod, ieta1, workval;
+  double isigma, tfac, if2, cts, logf1val, logf2val;
 
   bool hasNegX1 = hassign[2] || hassign[3]; // Any neg x1 beam components
   std::memset(R, 0, n1 * n2 * sizeof(double));
@@ -1797,6 +1801,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
     if ((f1val == 0) || (f1val < 0 && !hasNegX1)) continue; // R will be zero
     // Set sign and |f1| if needed
     if (f1val > 0) sgn1 = 0; else { sgn1 = 2; f1val = fabs(f1val); }
+    logf1val = log(f1val);
 
     // Number in neg/pos bits, if present
     unsigned int np = hassign[sgn1] ? npsf[sgn1] : 0;
@@ -1813,6 +1818,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
       //  in the else, which we use to mark values to skip
       if (curr_n > 0 && f1val < maxf1[sgn]) {
 	iparr1 = ibmptr1[sgn]; // Band 1 beam pixel array pointer
+	plogratio = logratioptr[sgn]; // log (beam1 / beam2) pointer
 	// &RWork[k * np, 0] -- piece of RWork for this sign
 	RWptr = RWork + k * np * 3; 
 	if (ishist[sgn]) {
@@ -1831,7 +1837,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 		// Pieces we can pre-compute
 		isigma = 1.0 / getSigmaInner(f1prod);
 		cRW[0] = wptr[j] * ieta1 * isigma * cts * prefac;
-		cRW[1] = log(f1prod) + getOffsetInner(f1prod);
+		cRW[1] = logf1val + getOffsetInner(f1prod) - plogratio[j];
 		cRW[2] = -0.5 * isigma * isigma;
 	      } else cRW[0] = 0; // Mark as no-use
 	    } else cRW[0] = 0; // Same
@@ -1847,7 +1853,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 	      if (cts > 0) {
 		isigma = 1.0 / getSigmaInner(f1prod);
 		cRW[0] = cts * ieta1 * isigma * prefac;
-		cRW[1] = log(f1prod) + getOffsetInner(f1prod);
+		cRW[1] = logf1val + getOffsetInner(f1prod) - plogratio[j];
 		cRW[2] = -0.5 * isigma * isigma;
 	      } else cRW[0] = 0;
 	    } else cRW[0] = 0;
@@ -1883,15 +1889,14 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
       if (hassign[sgn]) {
 	workval = 0;
 	curr_n = npsf[sgn];
-	iparr2 = ibmptr2[sgn];
 	if2 = 1.0 / f2val;
+	logf2val = log(f2val);
 	RWptr = RWork + sgnoff * np * 3; //&RWork[sgnoff*sgnbreak, 0]
 	for (unsigned int k = 0; k < curr_n; ++k) {
 	  cRW = RWptr + k * 3; //&RWork[sgnoff*sgnbreak + k, 0]
 	  cRW0 = cRW[0]; //RWork[sgnoff*sgnbreak + k, 0]
 	  if (cRW0 != 0) {
-	    f2prod = f2val * iparr2[k];
-	    tfac = log(f2prod) - cRW[1];
+	    tfac = logf2val - cRW[1];
 	    workval += cRW0 * exp(tfac * tfac * cRW[2]);
 	  }
 	}

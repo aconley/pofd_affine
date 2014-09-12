@@ -25,11 +25,15 @@ doublebeam::doublebeam() {
   for (unsigned int i = 0; i < 4; ++i) pixarr2[i] = NULL;
   for (unsigned int i = 0; i < 4; ++i) invpixarr1[i] = NULL;
   for (unsigned int i = 0; i < 4; ++i) invpixarr2[i] = NULL;
+  for (unsigned int i = 0; i < 4; ++i) haslogratio[i] = false;
+  for (unsigned int i = 0; i < 4; ++i) logratio[i] = NULL;
   for (unsigned int i = 0; i < 4; ++i) ishistogrammed[i] = false;
   for (unsigned int i = 0; i < 4; ++i) nhist[i] = 0;
   for (unsigned int i = 0; i < 4; ++i) binweights[i] = NULL;
   for (unsigned int i = 0; i < 4; ++i) binvals1[i] = NULL;
   for (unsigned int i = 0; i < 4; ++i) binvals2[i] = NULL;
+  for (unsigned int i = 0; i < 4; ++i) hasbinlogratio[i] = false;
+  for (unsigned int i = 0; i < 4; ++i) binlogratio[i] = NULL;
   for (unsigned int i = 0; i < 4; ++i) tot1[i] = nan;
   for (unsigned int i = 0; i < 4; ++i) tot2[i] = nan;
   for (unsigned int i = 0; i < 4; ++i) totsq1[i] = nan;
@@ -58,11 +62,15 @@ doublebeam::doublebeam(const std::string& filename1,
   for (unsigned int i = 0; i < 4; ++i) pixarr2[i] = NULL;
   for (unsigned int i = 0; i < 4; ++i) invpixarr1[i] = NULL;
   for (unsigned int i = 0; i < 4; ++i) invpixarr2[i] = NULL;
+  for (unsigned int i = 0; i < 4; ++i) haslogratio[i] = false;
+  for (unsigned int i = 0; i < 4; ++i) logratio[i] = NULL;
   for (unsigned int i = 0; i < 4; ++i) ishistogrammed[i] = false;
   for (unsigned int i = 0; i < 4; ++i) nhist[i] = 0;
   for (unsigned int i = 0; i < 4; ++i) binweights[i] = NULL;
   for (unsigned int i = 0; i < 4; ++i) binvals1[i] = NULL;
   for (unsigned int i = 0; i < 4; ++i) binvals2[i] = NULL;
+  for (unsigned int i = 0; i < 4; ++i) hasbinlogratio[i] = false;
+  for (unsigned int i = 0; i < 4; ++i) binlogratio[i] = NULL;
   for (unsigned int i = 0; i < 4; ++i) tot1[i] = nan;
   for (unsigned int i = 0; i < 4; ++i) tot2[i] = nan;
   for (unsigned int i = 0; i < 4; ++i) totsq1[i] = nan;
@@ -85,11 +93,15 @@ void doublebeam::cleanup() {
     if (pixarr2[i] != NULL) { delete[] pixarr2[i]; pixarr2[i] = NULL; }
     if (invpixarr1[i] != NULL) { delete[] invpixarr1[i]; invpixarr1[i] = NULL; }
     if (invpixarr2[i] != NULL) { delete[] invpixarr2[i]; invpixarr2[i] = NULL; }
+    haslogratio[i] = false;
+    if (logratio[i] != NULL) { delete[] logratio[i]; logratio[i] = NULL; }
     ishistogrammed[i] = false;
     nhist[i] = 0;
     if (binweights[i] != NULL) { delete[] binweights[i]; binweights[i] = NULL; }
     if (binvals1[i] != NULL) { delete[] binvals1[i]; binvals1[i] = NULL; }
     if (binvals2[i] != NULL) { delete[] binvals2[i]; binvals2[i] = NULL; }
+    hasbinlogratio[i] = false;
+    if (binlogratio[i] != NULL) { delete[] binlogratio[i]; binlogratio[i] = NULL; }
     tot1[i] = tot2[i] = totsq1[i] = totsq2[i] = NaN;
     minbm1[i] = maxbm1[i] = minbm2[i] = maxbm2[i] = NaN;
   }
@@ -670,6 +682,65 @@ dblpair doublebeam::getMinMax2(unsigned int idx) const {
   return std::make_pair(minbm2[idx], maxbm2[idx]);
 }
 
+/*
+!
+  \param[in] idx Sign component (pp, pn, np, nn)
+  \returns Access to Log beam1 / beam2.
+
+  Computed if not already set, and saved for later
+*/
+const double* const doublebeam::getLogRatio(unsigned int idx) const {
+  if (idx >= 4) throw affineExcept("doublebeam", "getLogRatio",
+				   "Invalid index");
+  if (!hassign[idx]) throw affineExcept("doublebeam", "getLogRatio",
+					"No data in specified index");
+  if (!haslogratio[idx]) {
+    // Compute
+    unsigned int n = npix[idx];
+    if (logratio[idx] != NULL) delete[] logratio[idx];
+    logratio[idx] = new double[n];
+    const double* p1 = pixarr1[idx];  // beam1
+    const double* p2 = invpixarr2[idx];  // 1 / beam2
+    double* lg = logratio[idx];
+    // Note that zero beam elements are not kept
+    for (unsigned int i = 0; i < n; ++i)
+      lg[i] = log(p1[i] * p2[i]);
+    haslogratio[idx] = true;
+  }
+  return logratio[idx];
+}
+
+/*
+!
+  \param[in] idx Sign component (pp, pn, np, nn)
+  \returns Access to Log beam1 / beam2 of histogrammed beam.
+
+  Computed if not already set, and saved for later
+*/
+const double* const doublebeam::getBinLogRatio(unsigned int idx) const {
+  if (idx >= 4) throw affineExcept("doublebeam", "getBinLogRatio",
+				   "Invalid index");
+  if (!hassign[idx]) throw affineExcept("doublebeam", "getLogRatio",
+					"No data in specified index");
+  if (!ishistogrammed[idx]) throw affineExcept("doublebeam", "getLogRatio",
+					       "No histogram in that index");
+  if (!hasbinlogratio[idx]) {
+    // Compute
+    unsigned int n = nhist[idx];
+    if (binlogratio[idx] != NULL) delete[] binlogratio[idx];
+    binlogratio[idx] = new double[n];
+    double* lg = binlogratio[idx];
+    const double* p1 = binvals1[idx];  // 1 / beam1
+    const double* p2 = binvals2[idx];  // 1 / beam2
+    // Note that zero beam elements are not kept,
+    //  and that binvals stores the inverse beam
+    for (unsigned int i = 0; i < n; ++i)
+      lg[i] = log(p2[i] / p1[i]); // beam 1 / beam 2
+    hasbinlogratio[idx] = true;
+  }
+  return binlogratio[idx];
+}
+
 /*!
   \param[in] comm MPI communicator
   \param[in] dest Destination for messages
@@ -693,6 +764,8 @@ void doublebeam::sendSelf(MPI_Comm comm, int dest) const {
 	   pofd_mcmc::DOUBLEBEAMSENDMAX2, comm);
   MPI_Send(const_cast<unsigned int*>(npix), 4, MPI_UNSIGNED, dest,
 	   pofd_mcmc::DOUBLEBEAMSENDNPIX, comm);
+  MPI_Send(const_cast<bool*>(haslogratio), 4, MPI::BOOL, dest,
+	   pofd_mcmc::DOUBLEBEAMSENDHASLOGRATIO, comm);
   for (unsigned int i = 0; i < 4; ++i)
     if (npix[i] > 0) {
       MPI_Send(pixarr1[i], npix[i], MPI_DOUBLE, dest,
@@ -703,8 +776,11 @@ void doublebeam::sendSelf(MPI_Comm comm, int dest) const {
 	       pofd_mcmc::DOUBLEBEAMSENDIPIXARR1, comm);
       MPI_Send(invpixarr2[i], npix[i], MPI_DOUBLE, dest,
 	       pofd_mcmc::DOUBLEBEAMSENDIPIXARR2, comm);
+      if (haslogratio[i])
+	MPI_Send(logratio[i], npix[i], MPI_DOUBLE, dest,
+		 pofd_mcmc::DOUBLEBEAMSENDLOGRATIO, comm);
     }
-
+  
   // Histogram
   MPI_Send(const_cast<unsigned int*>(&nbins), 1, MPI_UNSIGNED, dest,
 	   pofd_mcmc::DOUBLEBEAMSENDNBINS, comm);
@@ -712,14 +788,19 @@ void doublebeam::sendSelf(MPI_Comm comm, int dest) const {
 	   pofd_mcmc::DOUBLEBEAMSENDISHISTOGRAMMED, comm);
   MPI_Send(const_cast<unsigned int*>(nhist), 4, MPI_UNSIGNED, dest,
 	   pofd_mcmc::DOUBLEBEAMSENDNHIST, comm);
+  MPI_Send(const_cast<bool*>(hasbinlogratio), 4, MPI::BOOL, dest,
+	   pofd_mcmc::DOUBLEBEAMSENDHASBINLOGRATIO, comm);
   for (unsigned int i = 0; i < 4; ++i)
-    if (nhist[i] > 0) {
+    if ((ishistogrammed[i]) && (nhist[i] > 0)) {
       MPI_Send(binweights[i], nhist[i], MPI_DOUBLE, dest,
 	       pofd_mcmc::DOUBLEBEAMSENDBINWEIGHTS, comm);
       MPI_Send(binvals1[i], nhist[i], MPI_DOUBLE, dest,
 	       pofd_mcmc::DOUBLEBEAMSENDBINVALS1, comm);
       MPI_Send(binvals2[i], nhist[i], MPI_DOUBLE, dest,
 	       pofd_mcmc::DOUBLEBEAMSENDBINVALS2, comm);
+      if (hasbinlogratio[i])
+	MPI_Send(binlogratio[i], nhist[i], MPI_DOUBLE, dest,
+		 pofd_mcmc::DOUBLEBEAMSENDBINLOGRATIO, comm);
     }
 
   // Descriptive
@@ -759,6 +840,8 @@ void doublebeam::receiveCopy(MPI_Comm comm, int src) {
 	   comm, &Info);
   MPI_Recv(npix, 4, MPI_UNSIGNED, src, pofd_mcmc::DOUBLEBEAMSENDNPIX, 
 	   comm, &Info);
+  MPI_Recv(haslogratio, 4, MPI::BOOL, src, 
+	   pofd_mcmc::DOUBLEBEAMSENDHASLOGRATIO, comm, &Info);
 
   // Raw beam
   for (unsigned int i = 0; i < 4; ++i)
@@ -767,6 +850,8 @@ void doublebeam::receiveCopy(MPI_Comm comm, int src) {
       pixarr2[i] = new double[npix[i]];
       invpixarr1[i] = new double[npix[i]];
       invpixarr2[i] = new double[npix[i]];
+      if (haslogratio[i])
+	logratio[i] = new double[npix[i]];
 
       MPI_Recv(pixarr1[i], npix[i], MPI_DOUBLE, src,
 	       pofd_mcmc::DOUBLEBEAMSENDPIXARR1, comm, &Info);
@@ -776,6 +861,9 @@ void doublebeam::receiveCopy(MPI_Comm comm, int src) {
 	       pofd_mcmc::DOUBLEBEAMSENDIPIXARR1, comm, &Info);
       MPI_Recv(invpixarr2[i], npix[i], MPI_DOUBLE, src,
 	       pofd_mcmc::DOUBLEBEAMSENDIPIXARR2, comm, &Info);
+      if (haslogratio[i])
+	MPI_Recv(logratio[i], npix[i], MPI_DOUBLE, src,
+		 pofd_mcmc::DOUBLEBEAMSENDLOGRATIO, comm, &Info);
     }
   
   // Histogrammed beam
@@ -785,17 +873,24 @@ void doublebeam::receiveCopy(MPI_Comm comm, int src) {
 	   pofd_mcmc::DOUBLEBEAMSENDISHISTOGRAMMED, comm, &Info);
   MPI_Recv(nhist, 4, MPI_UNSIGNED, src,
 	   pofd_mcmc::DOUBLEBEAMSENDNHIST, comm, &Info);
+  MPI_Recv(hasbinlogratio, 4, MPI::BOOL, src, 
+	   pofd_mcmc::DOUBLEBEAMSENDHASBINLOGRATIO, comm, &Info);
   for (unsigned int i = 0; i < 4; ++i)
     if (ishistogrammed[i]) {
       binweights[i] = new double[nhist[i]];
       binvals1[i] = new double[nhist[i]];
       binvals2[i] = new double[nhist[i]];
+      if (hasbinlogratio[i])
+	binlogratio[i] = new double[nhist[i]];
       MPI_Recv(binweights[i], nhist[i], MPI_DOUBLE, src,
 	       pofd_mcmc::DOUBLEBEAMSENDBINWEIGHTS, comm, &Info);
       MPI_Recv(binvals1[i], nhist[i], MPI_DOUBLE, src,
 	       pofd_mcmc::DOUBLEBEAMSENDBINVALS1, comm, &Info);
       MPI_Recv(binvals2[i], nhist[i], MPI_DOUBLE, src,
 	       pofd_mcmc::DOUBLEBEAMSENDBINVALS2, comm, &Info);
+      if (hasbinlogratio[i])
+	MPI_Recv(binlogratio[i], nhist[i], MPI_DOUBLE, src,
+		 pofd_mcmc::DOUBLEBEAMSENDBINLOGRATIO, comm, &Info);
     }
     
   //Totals

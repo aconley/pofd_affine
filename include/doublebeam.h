@@ -24,6 +24,10 @@
   There are four sign components to keep track of.  These are always
   in the order pos-pos, pos-neg, neg-pos, neg-neg
 
+  It will also store the logarithm of the beam ratio of the two
+  bands.  This is created the first time it is asked for, so is only
+  computed if the user needs it.
+
   \ingroup Beams
 */
 class doublebeam {
@@ -39,6 +43,10 @@ class doublebeam {
   double *pixarr2[4]; //!< Array of pixels, beam 2.  Length npix
   double *invpixarr1[4]; //!< Array of inverse pixels, beam 1.  Length npix
   double *invpixarr2[4]; //!< Array of inverse pixels, beam 2.  Length npix
+  
+  // Log of beam ratio, unbinned
+  mutable bool haslogratio[4]; //!< Is the log of the beam ratios computed?
+  mutable double *logratio[4]; //!< Array of log(beam1/beam2), length npix
 
   // Histogrammed inverse beam
   // We build the nbins x nbins histogram, but only keep the non-zero entries
@@ -48,6 +56,10 @@ class doublebeam {
   double *binweights[4]; //!< Weights (double to avoid casting expense)
   double *binvals1[4]; //!< Bin values, inverse beam, band 1
   double *binvals2[4]; //!< Bin values, inverse beam, band 2
+
+  // Histogrammed log beam ratio
+  mutable bool hasbinlogratio[4]; //!< Is the log of the histogrammed beam ratios there?
+  mutable double *binlogratio[4]; //!< Array of log(beam1/beam2), histogrammed
 
   // Descriptive parameters. 
   double tot1[4]; //!< Sum of pp,pn,np,nn elements, beam 1
@@ -110,6 +122,9 @@ class doublebeam {
   /*! \brief Get inverse pixel array element, band 2 */
   const double* const getInvPixArr2(unsigned int idx) const { return invpixarr2[idx]; }
 
+  // Access to log ratio of beams.  Computes it if needed
+  const double* const getLogRatio(unsigned int idx) const;
+
   // Histogram information
   unsigned int getNBins() const { return nbins; } //!< Get number of bins
   /*! \brief Is the beam histogrammed? */
@@ -125,6 +140,8 @@ class doublebeam {
   /*! \brief Access to histogram bin values, band 2 */
   const double* const getBinVals2(unsigned int i) const { return binvals2[i]; }
   
+  // Access to log ratio of histogrammed beams.  Computes it if needed
+  const double* const getBinLogRatio(unsigned int idx) const;
 
   /*! \brief MPI copy send operation */
   void sendSelf(MPI_Comm, int dest) const;
