@@ -18,6 +18,7 @@ Installation is via the standard UNIX `configure` and
   [FFTW wisdom](http://www.fftw.org/fftw-wisdom.1.html)
   file will speed up the code signficantly.
 * [cfitsio](http://heasarc.gsfc.nasa.gov/fitsio/)
+* [hdf5](http://www.hdfgroup.org/HDF5/)
 * The [GNU scientific library](http://www.gnu.org/software/gsl/)
 * MPI. There are many versions of MPI, but 
    [OpenMPI](http://www.open-mpi.org/) is what I used. 
