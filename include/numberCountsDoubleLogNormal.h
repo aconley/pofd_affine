@@ -105,7 +105,7 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   mutable double* RWork; //!< R working array; for pre-computing R bits
   void setRWorkSize(unsigned int) const; //!< Controls R working arrays
   mutable unsigned int nf2work; //!< Number of elements in f2work array
-  mutable unsigned char* f2work_sgn; //!< Sign of f2; 0 for +, 1 for -, 2 for 0
+  mutable unsigned int* f2work_sgn; //!< Sign of f2; 0 for +, 1 for -, 2 for 0
   mutable double* f2work_inv; //!< 1 / |f2|
   mutable double* f2work_log; //!< log(|f2|)
   void setf2WorkSize(unsigned int) const; //!< Controls f2work arrays

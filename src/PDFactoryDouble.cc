@@ -83,8 +83,8 @@ PDFactoryDouble::~PDFactoryDouble() {
 
   if (REdgeFlux1 != NULL) fftw_free(REdgeFlux1);
   if (REdgeFlux2 != NULL) fftw_free(REdgeFlux2);
-  if (REdgeWork1 != NULL) fftw_free(REdgeWork1);
-  if (REdgeWork2 != NULL) fftw_free(REdgeWork2);
+  if (RxEdgeWork != NULL) fftw_free(RxEdgeWork);
+  if (RyEdgeWork != NULL) fftw_free(RyEdgeWork);
 
   if (plan != NULL) fftw_destroy_plan(plan); 
   if (plan_inv != NULL) fftw_destroy_plan(plan_inv);
@@ -115,8 +115,8 @@ void PDFactoryDouble::init(unsigned int NEDGE) {
   nedgework = 0;
   REdgeFlux1 = NULL;
   REdgeFlux2 = NULL;
-  REdgeWork1 = NULL;
-  REdgeWork2 = NULL;
+  RxEdgeWork = NULL;
+  RyEdgeWork = NULL;
 
   dflux1 = dflux2 = 0.0;
 
@@ -244,12 +244,12 @@ void PDFactoryDouble::allocateEdgevars() {
   }
   if (currsize > nedgework) { // Don't downsize
     // Resize (or allocate) REdgeWork[12]
-    if (REdgeWork1 != NULL) fftw_free(REdgeWork1);
-    if (REdgeWork2 != NULL) fftw_free(REdgeWork2);
+    if (RxEdgeWork != NULL) fftw_free(RxEdgeWork);
+    if (RyEdgeWork != NULL) fftw_free(RyEdgeWork);
     if (currsize > 0) {
-      REdgeWork1 = (double*) fftw_malloc(sizeof(double) * currsize);
-      REdgeWork2 = (double*) fftw_malloc(sizeof(double) * currsize);
-    } else REdgeWork1 = REdgeWork2 = NULL;
+      RxEdgeWork = (double*) fftw_malloc(sizeof(double) * currsize);
+      RyEdgeWork = (double*) fftw_malloc(sizeof(double) * currsize);
+    } else RxEdgeWork = RyEdgeWork = NULL;
     nedgework = currsize;
   }
 }
@@ -257,8 +257,8 @@ void PDFactoryDouble::allocateEdgevars() {
 void PDFactoryDouble::freeEdgevars() {
   if (REdgeFlux1 != NULL) { fftw_free(REdgeFlux1); REdgeFlux1 = NULL; }
   if (REdgeFlux2 != NULL) { fftw_free(REdgeFlux2); REdgeFlux2 = NULL; }
-  if (REdgeWork1 != NULL) { fftw_free(REdgeWork1); REdgeWork1 = NULL; }
-  if (REdgeWork2 != NULL) { fftw_free(REdgeWork2); REdgeWork2 = NULL; }
+  if (RxEdgeWork != NULL) { fftw_free(RxEdgeWork); RxEdgeWork = NULL; }
+  if (RyEdgeWork != NULL) { fftw_free(RyEdgeWork); RyEdgeWork = NULL; }
   edgevars_allocated = false;
   nedgework = 0;
 }
@@ -436,7 +436,7 @@ void PDFactoryDouble::initR(unsigned int n, double minflux1,
     RTime += std::clock() - starttime;
 #endif
 
-    //Do y integral first, store in REdgeWork1 as temporary
+    //Do y integral first, store in RxEdgeWork as temporary
     if (use_edge_log_y) {
       for (unsigned int i = 0; i < nedge; ++i) {
 	rptr = rvals + i * nedge; //row pointer
@@ -444,7 +444,7 @@ void PDFactoryDouble::initR(unsigned int n, double minflux1,
 	for (unsigned int j = 1; j < nedge - 1; ++j)
 	  scriptr += REdgeFlux2[j] * rptr[j];
 	scriptr += 0.5 * REdgeFlux2[nedge-1] * rptr[nedge-1];
-	REdgeWork1[i] = scriptr;
+	RxEdgeWork[i] = scriptr;
       }
     } else {
       for (unsigned int i = 0; i < nedge; ++i) {
@@ -453,26 +453,26 @@ void PDFactoryDouble::initR(unsigned int n, double minflux1,
 	for (unsigned int j = 1; j < nedge-1; ++j)
 	  scriptr += rptr[j];
 	scriptr += 0.5 * rptr[nedge - 1];
-	REdgeWork1[i] = scriptr;
+	RxEdgeWork[i] = scriptr;
       }
     }
-    // Now X integral along REdgeWork1, put in integral step size and area
+    // Now X integral along RxEdgeWork, put in integral step size and area
     // of bin, store in r00val
     if (use_edge_log_x) {
-      scriptr = 0.5 * REdgeFlux1[0] * REdgeWork1[0];
+      scriptr = 0.5 * REdgeFlux1[0] * RxEdgeWork[0];
       for (unsigned int i = 1; i < nedge - 1; ++i)
-	scriptr += REdgeFlux1[i] * REdgeWork1[i];
-      scriptr += 0.5 * REdgeFlux1[nedge - 1] * REdgeWork1[nedge - 1];
+	scriptr += REdgeFlux1[i] * RxEdgeWork[i];
+      scriptr += 0.5 * REdgeFlux1[nedge - 1] * RxEdgeWork[nedge - 1];
       r00val = scriptr * iR00norm;
     } else {
-      scriptr = 0.5*REdgeWork1[0];
+      scriptr = 0.5*RxEdgeWork[0];
       for (unsigned int i = 1; i < nedge-1; ++i)
-	scriptr += REdgeWork1[i];
-      scriptr += 0.5 * REdgeWork1[nedge - 1];
+	scriptr += RxEdgeWork[i];
+      scriptr += 0.5 * RxEdgeWork[nedge - 1];
       r00val = scriptr * iR00norm;
     }
 
-    // Now do Rx = R[0, y] (REdgeWork1), integral along x
+    // Now do Rx = R[0, y] (RxEdgeWork), integral along x
     //  First, compute R over the Edge x values for the real y, store in rvals
 #ifdef TIMING
     starttime = std::clock();
@@ -483,43 +483,43 @@ void PDFactoryDouble::initR(unsigned int n, double minflux1,
 #endif
 
     // Now we integrate along each x and store the results
-    // in REdgeWork1.
+    // in RxEdgeWork.
     if (use_edge_log_x) {
       double rf;
       // Do i = 0
       rf = REdgeFlux1[0];
       rptr = rvals;
       for (unsigned int j = 0; j < n; ++j)
-	REdgeWork1[j] = 0.5 * rf * rptr[j];
+	RxEdgeWork[j] = 0.5 * rf * rptr[j];
       // i = 1 to nedge - 1
       for (unsigned int i = 1; i < nedge - 1; ++i) {
 	rf = REdgeFlux1[i];
 	rptr = rvals + i * n;
 	for (unsigned int j = 0; j < n; ++j)
-	  REdgeWork1[j] += rf * rptr[j];
+	  RxEdgeWork[j] += rf * rptr[j];
       }
       // And i = nedge - 1
       rf = REdgeFlux1[nedge - 1];
       rptr = rvals + (nedge - 1) * n;
       for (unsigned int j = 0; j < n; ++j)
-	REdgeWork1[j] += 0.5 * rf * rptr[j];
+	RxEdgeWork[j] += 0.5 * rf * rptr[j];
     } else {
       for (unsigned int j = 0; j < n; ++j) // i = 0
-	REdgeWork1[j] = 0.5 * rvals[j];
+	RxEdgeWork[j] = 0.5 * rvals[j];
       for (unsigned int i = 1; i < nedge - 1; ++i) {
 	rptr = rvals + i * n;
 	for (unsigned int j = 0; j < n; ++j)
-	  REdgeWork1[j] += rptr[j];
+	  RxEdgeWork[j] += rptr[j];
       }
       // And i = nedge - 1
       rptr = rvals + (nedge - 1) * n;
       for (unsigned int j = 0; j < n; ++j)
-	REdgeWork1[j] += 0.5 * rptr[j];
+	RxEdgeWork[j] += 0.5 * rptr[j];
     }    
     for (unsigned int j = 0; j < n; ++j)
-      REdgeWork1[j] *= iRxnorm;
+      RxEdgeWork[j] *= iRxnorm;
 
-    //And Ry = R[x, 0] (REdgeWork2)
+    //And Ry = R[x, 0] (RyEdgeWork)
 #ifdef TIMING
     starttime = std::clock();
 #endif
@@ -529,7 +529,7 @@ void PDFactoryDouble::initR(unsigned int n, double minflux1,
 #endif    
 
     // Now we integrate along each x and store the results
-    // in REdgeWork2.
+    // in RyEdgeWork.
     if (use_edge_log_y) {
       for (unsigned int i = 0; i < n; ++i) {
 	rptr = rvals + i * nedge;
@@ -537,7 +537,7 @@ void PDFactoryDouble::initR(unsigned int n, double minflux1,
 	for (unsigned int j = 1; j < nedge - 1; ++j)
 	  scriptr += REdgeFlux2[j] * rptr[j];
 	scriptr += 0.5 * REdgeFlux2[nedge - 1] * rptr[nedge - 1]; // j = top
-	REdgeWork2[i] = scriptr;
+	RyEdgeWork[i] = scriptr;
       }
     } else {
       for (unsigned int i = 0; i < n; ++i) {
@@ -546,11 +546,11 @@ void PDFactoryDouble::initR(unsigned int n, double minflux1,
 	for (unsigned int j = 1; j < nedge - 1; ++j)
 	  scriptr += rptr[j];
 	scriptr += 0.5 * rptr[nedge - 1]; // j = top
-	REdgeWork2[i] = scriptr;
+	RyEdgeWork[i] = scriptr;
       }
     }
     for (unsigned int i = 0; i < n; ++i)
-      REdgeWork2[i] *= iRynorm;
+      RyEdgeWork[i] *= iRynorm;
   }
 
   // Fill main array.  This will set the edges to nonsense
@@ -564,11 +564,9 @@ void PDFactoryDouble::initR(unsigned int n, double minflux1,
   
   if (setEdge) {
     // Copy over from REdgeWork arrays
-    //std::memcpy(rvals + 1, REdgeWork1 + 1, (n - 1) * sizeof(double));
-    for (unsigned int j = 1; j < n; ++j)
-      rvals[j] = REdgeWork1[j];
+    std::memcpy(rvals + 1, RxEdgeWork + 1, (n - 1) * sizeof(double));
     for (unsigned int i = 1; i < n; ++i)
-      rvals[i * n] = REdgeWork2[i];
+      rvals[i * n] = RyEdgeWork[i];
     rvals[0] = r00val;
   } else {
     // Set edges to zero

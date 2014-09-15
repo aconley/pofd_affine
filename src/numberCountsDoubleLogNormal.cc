@@ -1741,7 +1741,7 @@ void numberCountsDoubleLogNormal::setf2WorkSize(unsigned int sz) const {
   if (f2work_inv != NULL) fftw_free(f2work_inv);
   if (f2work_log != NULL) fftw_free(f2work_log);
   if (sz > 0) {
-    f2work_sgn = (unsigned char*) fftw_malloc(sizeof(unsigned char) * sz);
+    f2work_sgn = (unsigned int*) fftw_malloc(sizeof(unsigned int) * sz);
     f2work_inv = (double*) fftw_malloc(sizeof(double) * sz);
     f2work_log = (double*) fftw_malloc(sizeof(double) * sz);
   } else {
@@ -1848,7 +1848,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
   const double *__restrict__ wptr; // Weights 
   const double *__restrict__ iparr1; // Inverse beam 1
   const double *__restrict__ plogratio; // log(eta1 / eta2);
-  unsigned char sgn1, sgn, f2sgn; // Sign index for this component
+  unsigned int sgn1, sgn, f2sgn; // Sign index for this component
   unsigned int curr_n; // Number of beam elements for current component
   double f1val, f2val, if2val, f1prod, ieta1, workval;
   double isigma, tfac, cts, logf1val, logf2val;
@@ -1892,7 +1892,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
     //  RWork information as described above.  Some index trickery here,
     //  so this isn't the clearest code.  But it's inner loop stuff, so
     //  clarity is of secondary importance
-    for (unsigned char k = 0; k < 2; ++k) { // k = 0 is pos, k = 1 is neg
+    for (unsigned int k = 0; k < 2; ++k) { // k = 0 is pos, k = 1 is neg
       sgn = sgn1 + k; // Current full sign (0 through 4, usual scheme)
       curr_n = (k == 0) ? np : nn;
       // Skip stuff out of range; note we set RWork[:, 0] to 0 below

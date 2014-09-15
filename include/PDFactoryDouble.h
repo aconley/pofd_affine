@@ -71,8 +71,8 @@ class PDFactoryDouble {
   double* REdgeFlux1; //!< Holds flux for R edge integration
   double* REdgeFlux2; //!< Holds flux for R edge integration
   unsigned int nedgework; //!< Size of REdgeWork[12]
-  double* REdgeWork1; //!< Holds R in edge1 integration (R[0, y])
-  double* REdgeWork2; //!< Holds R in edge2 integration (R[x, 0])
+  double* RxEdgeWork; //!< Holds R in edge1 integration (R[0, y])
+  double* RyEdgeWork; //!< Holds R in edge2 integration (R[x, 0])
     
   void allocateEdgevars(); //!< Allocate/resize edge variables
   void freeEdgevars(); //!< Free edge variables
