@@ -1207,6 +1207,7 @@ double numberCountsDoubleLogNormal::getOffset(double f1) const {
 double numberCountsDoubleLogNormal::
 getNumberCountsInner(double f1, double f2) const {
   const double normfac = 1.0 / sqrt(2 * M_PI);
+  const double prefac = -0.5 * pofd_mcmc::ilog2toe;
   if (f1 < knots[0] || f1 >= knots[nknots-1] || f2 <= 0.0) 
     return 0.0; //Out of range
 
@@ -1217,7 +1218,8 @@ getNumberCountsInner(double f1, double f2) const {
   double if1 = 1.0 / f1;
   double isigma = 1.0 / getSigmaInner(f1);
   double tfac = (log(f2 * if1) - getOffsetInner(f1)) * isigma;
-  cnts *= normfac * isigma * exp(-0.5 * tfac * tfac) / f2; //yes, it's 1/f2 here
+  //yes, it's 1/f2 here
+  cnts *= normfac * isigma * exp2(prefac * tfac * tfac) / f2; 
   return cnts;
 }
 
@@ -1699,7 +1701,7 @@ double numberCountsDoubleLogNormal::getR(double f1, double f2,
   \param[in] n2   Number of fluxes, band 2
   \param[in] f2   Flux 2, length n2
   \param[in] bm   Beam
-  \param[out] R   R value, dimension n1*n2 pre-allocated by caller.
+  \param[out] R   R value, dimension n1 * n2 pre-allocated by caller.
                   Does not include pixel area factor
 
   Does not check inputs for validity, and does not include area prefactor.
@@ -1733,13 +1735,13 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
       npsf[i] = ishist[i] ? bm.getNHist(i) : bm.getNPix(i);
     else
       npsf[i] = 0;
-  const double* wtptr[4];
+  const double* __restrict__ wtptr[4];
   for (unsigned int i = 0; i < 4; ++i) 
     wtptr[i] = ishist[i] ? bm.getBinWeights(i) : NULL;
-  const double* ibmptr1[4];
+  const double* __restrict__ ibmptr1[4];
   for (unsigned int i = 0; i < 4; ++i)
     ibmptr1[i] = ishist[i] ? bm.getBinVals1(i) : bm.getInvPixArr1(i);
-  const double* logratioptr[4]; // Pointer to log(eta1/eta2)
+  const double* __restrict__ logratioptr[4]; // Pointer to log(eta1/eta2)
   for (unsigned int i = 0; i < 4; ++i)
     if (hassign[i])
       logratioptr[i] = ishist[i] ? bm.getBinLogRatio(i) : bm.getLogRatio(i);
@@ -1778,7 +1780,9 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
   //   RWork[*,1] will hold log(f1) + offset(f1/eta1) - log(eta1 / eta2)
   //               noting that the last term is something doublebeam
   //               provides
-  //   RWork[*,2] = -0.5 / sigma(f1/eta1)^2
+  //   RWork[*,2] = -0.5 / (log(2) * sigma(f1/eta1)^2)
+  //                Where the log(2) allows us to use exp2 rather than exp
+  //                (since exp2 is faster)
   //  We only test for out of range (R always 0) on the first flux density
   //   because the model doesn't actually terminate sharply in the other band
 
@@ -1838,7 +1842,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 		isigma = 1.0 / getSigmaInner(f1prod);
 		cRW[0] = wptr[j] * ieta1 * isigma * cts * prefac;
 		cRW[1] = logf1val + getOffsetInner(f1prod) - plogratio[j];
-		cRW[2] = -0.5 * isigma * isigma;
+		cRW[2] = -0.5 * isigma * isigma * pofd_mcmc::ilog2toe;
 	      } else cRW[0] = 0; // Mark as no-use
 	    } else cRW[0] = 0; // Same
 	  }
@@ -1854,7 +1858,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 		isigma = 1.0 / getSigmaInner(f1prod);
 		cRW[0] = cts * ieta1 * isigma * prefac;
 		cRW[1] = logf1val + getOffsetInner(f1prod) - plogratio[j];
-		cRW[2] = -0.5 * isigma * isigma;
+		cRW[2] = -0.5 * isigma * isigma * pofd_mcmc::ilog2toe;
 	      } else cRW[0] = 0;
 	    } else cRW[0] = 0;
 	  }
@@ -1897,7 +1901,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 	  cRW0 = cRW[0]; //RWork[sgnoff*sgnbreak + k, 0]
 	  if (cRW0 != 0) {
 	    tfac = logf2val - cRW[1];
-	    workval += cRW0 * exp(tfac * tfac * cRW[2]);
+	    workval += cRW0 * exp2(tfac * tfac * cRW[2]);
 	  }
 	}
 	rowptr[j] = workval * if2;

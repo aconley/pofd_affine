@@ -68,6 +68,7 @@ namespace pofd_mcmc {
   const double smalllogval = -30.; //!< Log2 of small number
   const double smallval = exp2(smalllogval); //!< Log of small number (base 2)
   const double log2toe = log(2.); //!< Multiply by this to go from log2 to ln
+  const double ilog2toe = 1.0 / log(2.); //!< exponent conversion factor
 
   // All 1000 or more to avoid overlap with affine_messages
   // Why do this?  Purely for debugging purposes, so if there is a problem

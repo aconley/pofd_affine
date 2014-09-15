@@ -62,17 +62,19 @@ class PDFactoryDouble {
   double *RFlux2; //!< Holds R flux values for fill
   unsigned int RwrapIdx2; //!< Pos/neg wrap index in RFlux2
 
-  void allocateRvars(); //!< Allocates R variables if needed
+  void allocateRvars(); //!< Allocate R variables if needed
   void freeRvars(); //!< Free R variables
 
   //Edge variables
-  bool edgevars_allocated; //!< Are Edge variables (this block) allocated
+  bool edgevars_allocated; //!< Are EdgeFlux variables allocated
   unsigned int nedge; //!< Number of edge integral steps
   double* REdgeFlux1; //!< Holds flux for R edge integration
   double* REdgeFlux2; //!< Holds flux for R edge integration
-  double* REdgeWork; //!< Holds R in edge integration
+  unsigned int nedgework; //!< Size of REdgeWork[12]
+  double* REdgeWork1; //!< Holds R in edge1 integration (R[0, y])
+  double* REdgeWork2; //!< Holds R in edge2 integration (R[x, 0])
     
-  void allocateEdgevars(); //!< Allocate Edge variables
+  void allocateEdgevars(); //!< Allocate/resize edge variables
   void freeEdgevars(); //!< Free edge variables
 
   double dflux1; //!< Flux size step of last computation, band 1
