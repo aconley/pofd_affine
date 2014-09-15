@@ -327,8 +327,8 @@ int getRDouble(int argc, char** argv) {
       H5Gclose(group_id);
 
       // Fluxes
-      hdf5utils::writeDataDoubles(file_id, "RFlux1", nflux1, fluxes1);
-      hdf5utils::writeDataDoubles(file_id, "RFlux2", nflux2, fluxes2);
+      hdf5utils::writeDataDoubles(file_id, "Flux1", nflux1, fluxes1);
+      hdf5utils::writeDataDoubles(file_id, "Flux2", nflux2, fluxes2);
 
       // R
       hdf5utils::writeData2DDoubles(file_id, "R", nflux1, nflux2, R);
