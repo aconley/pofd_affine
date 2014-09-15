@@ -54,6 +54,10 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal() :
   nRWork = 0;
   RWork = NULL;
 
+  nf2work = 0;
+  f2work_inv = f2work_log = NULL;
+  f2work_sgn = NULL;
+
   acc = gsl_interp_accel_alloc();
   accsigma = gsl_interp_accel_alloc();
   accoffset = gsl_interp_accel_alloc();
@@ -77,6 +81,10 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
 
   nRWork = 0;
   RWork = NULL;
+
+  nf2work = 0;
+  f2work_inv = f2work_log = NULL;
+  f2work_sgn = NULL;
 
   if (NKNOTS > 0) {
     knots = new double[NKNOTS];
@@ -154,6 +162,10 @@ numberCountsDoubleLogNormal(const std::vector<float>& KNOTS,
   nRWork = 0;
   RWork = NULL;
 
+  nf2work = 0;
+  f2work_inv = f2work_log = NULL;
+  f2work_sgn = NULL;
+
   knots = 0; knots = logknots = logknotvals = NULL; 
   splinelog = NULL; 
   setKnotPositions(KNOTS);
@@ -187,6 +199,10 @@ numberCountsDoubleLogNormal(const std::vector<double>& KNOTS,
 
   nRWork = 0;
   RWork = NULL;
+
+  nf2work = 0;
+  f2work_inv = f2work_log = NULL;
+  f2work_sgn = NULL;
 
   knots = 0; knots = logknots = logknotvals = NULL; 
   splinelog = NULL; 
@@ -225,6 +241,10 @@ numberCountsDoubleLogNormal(unsigned int nk, const float* const K,
   nRWork = 0;
   RWork = NULL;
 
+  nf2work = 0;
+  f2work_inv = f2work_log = NULL;
+  f2work_sgn = NULL;
+
   knots = 0; knots = logknots = logknotvals = NULL; splinelog = NULL;
   setKnotPositions(nk,K);
   acc = gsl_interp_accel_alloc();
@@ -261,6 +281,10 @@ numberCountsDoubleLogNormal(unsigned int nk, const double* const K,
   nRWork = 0;
   RWork = NULL;
 
+  nf2work = 0;
+  f2work_inv = f2work_log = NULL;
+  f2work_sgn = NULL;
+
   knots = 0; knots = logknots = logknotvals = NULL; splinelog = NULL;
   setKnotPositions(nk,K);
   acc = gsl_interp_accel_alloc();
@@ -289,9 +313,16 @@ numberCountsDoubleLogNormal(const numberCountsDoubleLogNormal& other) {
   acc = accsigma = accoffset = NULL;
   splinelog = NULL;
   sigmainterp = offsetinterp = NULL;
+
   nRWork = 0;
   RWork = NULL;
+
+  nf2work = 0;
+  f2work_inv = f2work_log = NULL;
+  f2work_sgn = NULL;
+
   fslv = NULL;
+
   knots_valid = sigmas_valid = offsets_valid = false;
   knotpos_loaded = sigmapos_loaded = offsetpos_loaded = false;
   knotvals_loaded = sigmavals_loaded = offsetvals_loaded = false;
@@ -375,6 +406,9 @@ numberCountsDoubleLogNormal::~numberCountsDoubleLogNormal() {
 
   if (fslv != NULL) gsl_root_fsolver_free(fslv);
   if (RWork != NULL) fftw_free(RWork);
+  if (f2work_sgn != NULL) fftw_free(f2work_sgn);
+  if (f2work_inv != NULL) fftw_free(f2work_inv);
+  if (f2work_log != NULL) fftw_free(f2work_log);
 }
 
 /*!
@@ -920,35 +954,6 @@ setPositions(const std::vector<double>& K, const std::vector<double>& S,
   setKnotPositions(K);
   setSigmaPositions(S);
   setOffsetPositions(O);
-}
-
-/*! 
-  \param[in] sz New size of R work arrays.  This should be enough
-    to hold two beam components, not just one.
-
-  Allocates R work arrays.  Only upsizes -- that is, the arrays are already
-  sized and you ask for a smaller size, nothing is done.
-*/
-void numberCountsDoubleLogNormal::setRWorkSize(unsigned int sz) const {
-  // We want to pack these in relatively efficiently.
-  // So we do this logially as a sz by 3 array, where the second index
-  //  are 
-  //    0: n1(f1/eta1) / (eta1 * sigma(f1/eta1) or 0 if the counts are 0
-  //    1: log(f1/eta1) + offset(f1/eta1)
-  //    2: -0.5 / sigma(f1/eta1)**2
-  // If the 0th component is 0 (e.g., n1 is 0), then the others are not set
-  // Note we need to pack two beam components in: pp + pn, or np + nn.
-  //  So make sure to make it big enough to hold the larger of those.
-
-  if (sz <= nRWork) return;
-  if (RWork != NULL) fftw_free(RWork);
-  if (sz > 0) {
-    RWork = (double*) fftw_malloc(sizeof(double) * sz * 3);
-  } else {
-    RWork = NULL;
-  }
-
-  nRWork = sz;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1695,6 +1700,57 @@ double numberCountsDoubleLogNormal::getR(double f1, double f2,
   return prefac * prefac * retval;
 }
 
+/*! 
+  \param[in] sz New size of R work arrays.  This should be enough
+    to hold two beam components, not just one.
+
+  Allocates R work arrays.  Only upsizes -- that is, the arrays are already
+  sized and you ask for a smaller size, nothing is done.
+*/
+void numberCountsDoubleLogNormal::setRWorkSize(unsigned int sz) const {
+  // We want to pack these in relatively efficiently.
+  // So we do this logially as a sz by 3 array, where the second index
+  //  are 
+  //    0: n1(f1/eta1) / (eta1 * sigma(f1/eta1) or 0 if the counts are 0
+  //    1: log(f1/eta1) + offset(f1/eta1)
+  //    2: -0.5 / sigma(f1/eta1)**2
+  // If the 0th component is 0 (e.g., n1 is 0), then the others are not set
+  // Note we need to pack two beam components in: pp + pn, or np + nn.
+  //  So make sure to make it big enough to hold the larger of those.
+
+  if (sz <= nRWork) return;
+
+  if (RWork != NULL) fftw_free(RWork);
+  if (sz > 0) {
+    RWork = (double*) fftw_malloc(sizeof(double) * sz * 3);
+  } else RWork = NULL;
+  nRWork = sz;
+}
+
+/*! 
+  \param[in] sz New size of f2 work arrays.  This should hold the
+      largest f2 size you plan on using.
+
+  Allocates f2 work arrays.  Only upsizes -- that is, the arrays are already
+  sized and you ask for a smaller size, nothing is done.
+*/
+void numberCountsDoubleLogNormal::setf2WorkSize(unsigned int sz) const {
+  if (sz <= nf2work) return;
+
+  if (f2work_sgn != NULL) fftw_free(f2work_sgn);
+  if (f2work_inv != NULL) fftw_free(f2work_inv);
+  if (f2work_log != NULL) fftw_free(f2work_log);
+  if (sz > 0) {
+    f2work_sgn = (unsigned char*) fftw_malloc(sizeof(unsigned char) * sz);
+    f2work_inv = (double*) fftw_malloc(sizeof(double) * sz);
+    f2work_log = (double*) fftw_malloc(sizeof(double) * sz);
+  } else {
+    f2work_inv = f2work_log = NULL;
+    f2work_sgn = NULL;
+  }
+  nf2work = sz;
+}
+
 /*!
   \param[in] n1   Number of fluxes, band 1
   \param[in] f1   Flux in band 1, length n1
@@ -1792,13 +1848,34 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
   const double *__restrict__ wptr; // Weights 
   const double *__restrict__ iparr1; // Inverse beam 1
   const double *__restrict__ plogratio; // log(eta1 / eta2);
-  unsigned int sgn1, sgnoff, sgn; // Sign index for this component
+  unsigned char sgn1, sgn, f2sgn; // Sign index for this component
   unsigned int curr_n; // Number of beam elements for current component
-  double f1val, f2val, f1prod, ieta1, workval;
-  double isigma, tfac, if2, cts, logf1val, logf2val;
+  double f1val, f2val, if2val, f1prod, ieta1, workval;
+  double isigma, tfac, cts, logf1val, logf2val;
 
   bool hasNegX1 = hassign[2] || hassign[3]; // Any neg x1 beam components
   std::memset(R, 0, n1 * n2 * sizeof(double));
+
+  // Pretabulated f2 values
+  setf2WorkSize(n2);
+  for (unsigned int j = 0; j < n2; ++j) {
+    f2val = f2[j];
+
+    if (f2val == 0) {
+      f2work_inv[j] = 0.0; // Sign to skip
+      continue;
+    }
+    
+    if (f2val > 0) {
+      f2work_sgn[j] = 0;
+    } else if (f2val < 0) {
+      f2work_sgn[j] = 1;
+      f2val = fabs(f2val);
+    } 
+
+    f2work_inv[j] = 1.0  / f2val;
+    f2work_log[j] = log(f2val);
+  }
 
   for (unsigned int i = 0; i < n1; ++i) { // Loop over flux1
     f1val = f1[i];
@@ -1815,7 +1892,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
     //  RWork information as described above.  Some index trickery here,
     //  so this isn't the clearest code.  But it's inner loop stuff, so
     //  clarity is of secondary importance
-    for (unsigned int k = 0; k < 2; ++k) { // k = 0 is pos, k = 1 is neg
+    for (unsigned char k = 0; k < 2; ++k) { // k = 0 is pos, k = 1 is neg
       sgn = sgn1 + k; // Current full sign (0 through 4, usual scheme)
       curr_n = (k == 0) ? np : nn;
       // Skip stuff out of range; note we set RWork[:, 0] to 0 below
@@ -1879,23 +1956,19 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
     rowptr = R + i * n2; // row pointer into R
     double cRW0;
     for (unsigned int j = 0; j < n2; ++j) {
-      f2val = f2[j];
-      if (f2val == 0) continue; // R will be zero
+      if2val = f2work_inv[j]; 
+      // Testing on this is -much- faster, oddly, than testing on sgn
+      if (if2val == 0) continue; // f2 = 0, R will be 0
+
       // sgn will be pp, pn, np, nn component
-      if (f2val > 0) {
-	sgn = sgn1; 
-	sgnoff = 0;
-      } else {
-	sgn = sgn1 + 1; 
-	sgnoff = 1;
-	f2val = fabs(f2val);
-      }
+      f2sgn = f2work_sgn[j];
+      sgn = sgn1 + f2sgn; // Recall sgn1 is from f1
+
       if (hassign[sgn]) {
 	workval = 0;
 	curr_n = npsf[sgn];
-	if2 = 1.0 / f2val;
-	logf2val = log(f2val);
-	RWptr = RWork + sgnoff * np * 3; //&RWork[sgnoff*sgnbreak, 0]
+	RWptr = RWork + f2sgn * np * 3; //&RWork[sgnoff*sgnbreak, 0]
+	logf2val = f2work_log[j];
 	for (unsigned int k = 0; k < curr_n; ++k) {
 	  cRW = RWptr + k * 3; //&RWork[sgnoff*sgnbreak + k, 0]
 	  cRW0 = cRW[0]; //RWork[sgnoff*sgnbreak + k, 0]
@@ -1904,7 +1977,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
 	    workval += cRW0 * exp2(tfac * tfac * cRW[2]);
 	  }
 	}
-	rowptr[j] = workval * if2;
+	rowptr[j] = workval * f2work_inv[j];
       } // Recall that R was zeroed
     } // End loop over RFlux2
   } // End loop over RFlux1
