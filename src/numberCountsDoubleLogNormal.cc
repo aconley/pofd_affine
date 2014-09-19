@@ -2184,12 +2184,12 @@ void numberCountsDoubleLogNormal::writeToHDF5Handle(hid_t objid,
 
   // Knot positions as data
   if (knotpos_loaded)
-    hdf5utils::writeDataDoubles(objid, "knotpos", nknots, knots);
+    hdf5utils::writeDataDoubles(objid, "KnotPositions", nknots, knots);
   if (sigmapos_loaded)
-    hdf5utils::writeDataDoubles(objid, "sigmaknotpos", nsigmaknots, 
+    hdf5utils::writeDataDoubles(objid, "SigmaKnotPositions", nsigmaknots, 
 				sigmaknots);
   if (offsetpos_loaded)
-    hdf5utils::writeDataDoubles(objid, "offsetknotpos", noffsetknots, 
+    hdf5utils::writeDataDoubles(objid, "OffsetKnotPositions", noffsetknots, 
 				offsetknots);
 
   if (writevals && knotvals_loaded) {
@@ -2198,16 +2198,16 @@ void numberCountsDoubleLogNormal::writeToHDF5Handle(hid_t objid,
     kv = new double[nknots];
     for (unsigned int i = 0; i < nknots; ++i)
       kv[i] = pofd_mcmc::ilogfac * logknotvals[i];
-    hdf5utils::writeDataDoubles(objid, "log10knotvals", nknots, kv);
+    hdf5utils::writeDataDoubles(objid, "Log10KnotValues", nknots, kv);
     delete[] kv;
   }
 
   if (writevals && sigmavals_loaded)
-    hdf5utils::writeDataDoubles(objid, "sigmaknotvals", nsigmaknots,
+    hdf5utils::writeDataDoubles(objid, "SigmaKnotValues", nsigmaknots,
 				sigmavals);
 
   if (writevals && offsetvals_loaded)
-    hdf5utils::writeDataDoubles(objid, "offsetknotvals", nsigmaknots,
+    hdf5utils::writeDataDoubles(objid, "OffsetKnotValues", noffsetknots,
 				offsetvals);
 }
 
