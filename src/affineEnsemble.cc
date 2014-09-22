@@ -1516,28 +1516,28 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
   // First, simple 1 element objects
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, NULL);
-  att_id = H5Acreate2(groupid, "scalefac", H5T_NATIVE_FLOAT,
+  att_id = H5Acreate2(groupid, "ScaleFactor", H5T_NATIVE_FLOAT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_FLOAT, &scalefac);
   H5Aclose(att_id);
-  att_id = H5Acreate2(groupid, "init_steps", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(groupid, "NInitSteps", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &init_steps);
   H5Aclose(att_id);
-  att_id = H5Acreate2(groupid, "min_burn", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(groupid, "MinBurn", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &min_burn);
   H5Aclose(att_id);
   btmp = static_cast<hbool_t>(fixed_burn);
-  att_id = H5Acreate2(groupid, "fixed_burn", H5T_NATIVE_HBOOL,
+  att_id = H5Acreate2(groupid, "FixedBurn", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_HBOOL, &btmp);
   H5Aclose(att_id);
-  att_id = H5Acreate2(groupid, "burn_multiple", H5T_NATIVE_FLOAT,
+  att_id = H5Acreate2(groupid, "BurnMultiple", H5T_NATIVE_FLOAT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_FLOAT, &burn_multiple);
   H5Aclose(att_id);
-  att_id = H5Acreate2(groupid, "nsteps", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(groupid, "NSteps", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nsteps);
   H5Aclose(att_id);
@@ -1556,15 +1556,15 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, NULL);
 
-  att_id = H5Acreate2(groupid, "nfixed", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(groupid, "NFixed", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nfixed);
   H5Aclose(att_id);
-  att_id = H5Acreate2(groupid, "nignore", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(groupid, "NIgnore", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nignore);
   H5Aclose(att_id);
-  att_id = H5Acreate2(groupid, "nbonus", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(groupid, "NBonus", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nbonus);
   H5Aclose(att_id);
@@ -1578,20 +1578,20 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
   // Fixed first
   for (unsigned int i = 0; i < nparams; ++i) 
     batmp[i] = (param_state[i] & mcmc_affine::FIXED) != 0;
-  att_id = H5Acreate2(groupid, "fixed", H5T_NATIVE_HBOOL,
+  att_id = H5Acreate2(groupid, "IsParamFixed", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
   H5Aclose(att_id);
   // Ignored params
   for (unsigned int i = 0; i < nparams; ++i) 
     batmp[i] = (param_state[i] & mcmc_affine::ACIGNORE) != 0;
-  att_id = H5Acreate2(groupid, "acignore", H5T_NATIVE_HBOOL,
+  att_id = H5Acreate2(groupid, "IsParamAutocorrIgnore", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
   // Bonus params
   for (unsigned int i = 0; i < nparams; ++i) 
     batmp[i] = (param_state[i] & mcmc_affine::BONUS) != 0;
-  att_id = H5Acreate2(groupid, "bonus", H5T_NATIVE_HBOOL,
+  att_id = H5Acreate2(groupid, "IsParamBonus", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
   delete[] batmp;
@@ -1613,14 +1613,14 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
     ftmp = new float[nparams];
     for (unsigned int i = 0; i < nparams; ++i) 
       ftmp[i] = regenFirstStep[i];
-    hdf5utils::writeDataFloats(groupid, "regenerated_first_step",
+    hdf5utils::writeDataFloats(groupid, "RegeneratedFirstStep",
 			       nparams, ftmp);
     delete[] ftmp;
   }
 
   // Names of parameters
   if (has_any_names) 
-    hdf5utils::writeAttStrings(groupid, "param_names", parnames);
+    hdf5utils::writeAttStrings(groupid, "ParamNames", parnames);
 
   H5Gclose(groupid);
 
@@ -1632,7 +1632,7 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
 		       "Failed to create Chains HDF5 group");
 
   // Number of accepted steps
-  hdf5utils::writeDataUnsignedInts(groupid, "naccept", naccept);
+  hdf5utils::writeDataUnsignedInts(groupid, "NAccept", naccept);
 
   // Chains
   chains.writeToHDF5Handle(groupid);

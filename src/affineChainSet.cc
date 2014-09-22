@@ -1345,7 +1345,7 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
   
   // Data set
   hid_t dataset_idsteps;
-  dataset_idsteps = H5Dcreate2(objid, "chain", H5T_NATIVE_FLOAT, 
+  dataset_idsteps = H5Dcreate2(objid, "Chain", H5T_NATIVE_FLOAT, 
 			       dataspace_idsteps, H5P_DEFAULT, H5P_DEFAULT, 
 			       H5P_DEFAULT);
   
@@ -1354,15 +1354,15 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
   adims = 1;
   hid_t mems_id, att_id;
   mems_id = H5Screate_simple(1, &adims, NULL);
-  att_id = H5Acreate2(dataset_idsteps, "nwalkers", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(dataset_idsteps, "NWalkers", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nwalkers);
   H5Aclose(att_id);
-  att_id = H5Acreate2(dataset_idsteps, "nsteps", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(dataset_idsteps, "NSteps", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nit);
   H5Aclose(att_id);
-  att_id = H5Acreate2(dataset_idsteps, "nparams", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(dataset_idsteps, "NParams", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nparams);
   H5Aclose(att_id);
@@ -1415,15 +1415,15 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
   hsize_t count_like[2] = {1, 1};
   hid_t dataspace_idlike, dataset_idlike;
   dataspace_idlike = H5Screate_simple(2, dims_like, NULL);
-  dataset_idlike = H5Dcreate2(objid, "likelihood", H5T_NATIVE_DOUBLE, 
+  dataset_idlike = H5Dcreate2(objid, "Likelihood", H5T_NATIVE_DOUBLE, 
 			      dataspace_idlike, H5P_DEFAULT, H5P_DEFAULT, 
 			      H5P_DEFAULT);
   mems_id = H5Screate_simple(1, &adims, NULL);
-  att_id = H5Acreate2(dataset_idlike, "nwalkers", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(dataset_idlike, "NWalkers", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nwalkers);
   H5Aclose(att_id);
-  att_id = H5Acreate2(dataset_idlike, "nsteps", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(dataset_idlike, "NSteps", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nit);
   H5Aclose(att_id);
