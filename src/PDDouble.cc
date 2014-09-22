@@ -870,7 +870,7 @@ void PDDouble::writeToHDF5Handle(hid_t objid) const {
   hid_t mems_id, att_id;
   
   // Properties
-  hdf5utils::writeAttBool(objid, "isLog", logflat);
+  hdf5utils::writeAttBool(objid, "IsLog", logflat);
 
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, NULL);
@@ -882,11 +882,11 @@ void PDDouble::writeToHDF5Handle(hid_t objid) const {
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux2);
   H5Aclose(att_id);
-  att_id = H5Acreate2(objid, "minFlux1", H5T_NATIVE_DOUBLE,
+  att_id = H5Acreate2(objid, "MinFlux1", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, &minflux1);
   H5Aclose(att_id);
-  att_id = H5Acreate2(objid, "minFlux2", H5T_NATIVE_DOUBLE,
+  att_id = H5Acreate2(objid, "MinFlux2", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, &minflux2);
   H5Aclose(att_id);

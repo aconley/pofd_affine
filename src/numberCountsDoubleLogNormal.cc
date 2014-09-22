@@ -2167,15 +2167,15 @@ void numberCountsDoubleLogNormal::writeToHDF5Handle(hid_t objid,
   // Number of knots
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, NULL);
-  att_id = H5Acreate2(objid, "nknots", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(objid, "NKnots", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nknots);
   H5Aclose(att_id);
-  att_id = H5Acreate2(objid, "nsigmaknots", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(objid, "NSigmaKnots", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nsigmaknots);
   H5Aclose(att_id);
-  att_id = H5Acreate2(objid, "noffsetknots", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(objid, "NOffsetKnots", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &noffsetknots);
   H5Aclose(att_id);
@@ -3182,27 +3182,27 @@ void initFileDoubleLogNormal::writeToHDF5Handle(hid_t objid) const {
 		       "Input handle is not valid");
 
   // Has range, limits, etc.
-  hdf5utils::writeAttBool(objid, "has_init_param_range", has_range);
-  hdf5utils::writeAttBool(objid, "has_param_lower_limits", has_lower_limits);
-  hdf5utils::writeAttBool(objid, "has_param_upper_limits", has_upper_limits);
+  hdf5utils::writeAttBool(objid, "HasInitParamRange", has_range);
+  hdf5utils::writeAttBool(objid, "HasParamLowerLimits", has_lower_limits);
+  hdf5utils::writeAttBool(objid, "HasParamUpperLimits", has_upper_limits);
   
   // Ranges
   unsigned int ntotknots = nknots + nsigmas + noffsets;
   if (ntotknots > 0) {
     if (has_range) 
-      hdf5utils::writeDataDoubles(objid, "param_init_range", ntotknots, range);
+      hdf5utils::writeDataDoubles(objid, "ParamInitRange", ntotknots, range);
 
     if (has_lower_limits) {
-      hdf5utils::writeDataBools(objid, "param_has_lowerlim", 
+      hdf5utils::writeDataBools(objid, "ParamHasLowerlim", 
 				ntotknots, has_lowlim);
-      hdf5utils::writeDataDoubles(objid, "param_lowerlim", 
+      hdf5utils::writeDataDoubles(objid, "ParamLowerlim", 
 				  ntotknots, lowlim);
     }
 
     if (has_upper_limits) {
-      hdf5utils::writeDataBools(objid, "param_has_upperlim", 
+      hdf5utils::writeDataBools(objid, "ParamHasUpperlim", 
 				ntotknots, has_uplim);
-      hdf5utils::writeDataDoubles(objid, "param_upperlim", 
+      hdf5utils::writeDataDoubles(objid, "ParamUpperlim", 
 				  ntotknots, uplim);
     }
   }

@@ -541,11 +541,11 @@ void specFileDouble::writeToHDF5Handle(hid_t objid) const {
     throw affineExcept("specFileDouble", "writeToHDF5Handle",
 		       "Input handle is not valid");
 
-  hdf5utils::writeDataStrings(objid, "datafiles1", datafiles1);
-  hdf5utils::writeDataStrings(objid, "datafiles2", datafiles2);
-  hdf5utils::writeDataStrings(objid, "psffiles1", psffiles1);
-  hdf5utils::writeDataStrings(objid, "psffiles2", psffiles2);
-  hdf5utils::writeDataDoubles(objid, "inst_sigma1", sigmas1);
-  hdf5utils::writeDataDoubles(objid, "inst_sigma2", sigmas2);
-  hdf5utils::writeDataDoubles(objid, "like_norm", like_norm);
+  hdf5utils::writeDataStrings(objid, "DataFiles1", datafiles1);
+  hdf5utils::writeDataStrings(objid, "DataFiles2", datafiles2);
+  hdf5utils::writeDataStrings(objid, "BeamFiles1", psffiles1);
+  hdf5utils::writeDataStrings(objid, "BeamFiles2", psffiles2);
+  hdf5utils::writeDataDoubles(objid, "InstrumentSigma1", sigmas1);
+  hdf5utils::writeDataDoubles(objid, "InstrumentSigma2", sigmas2);
+  hdf5utils::writeDataDoubles(objid, "LikelihoodNormalization", like_norm);
 }

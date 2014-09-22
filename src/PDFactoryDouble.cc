@@ -1438,11 +1438,11 @@ void PDFactoryDouble::writeRToHDF5(const std::string& filename) const {
   // First, some properties
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, NULL);
-  att_id = H5Acreate2(file_id, "dflux1", H5T_NATIVE_DOUBLE,
+  att_id = H5Acreate2(file_id, "dFlux1", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux1);
   H5Aclose(att_id);
-  att_id = H5Acreate2(file_id, "dflux2", H5T_NATIVE_DOUBLE,
+  att_id = H5Acreate2(file_id, "dFlux2", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux2);
   H5Aclose(att_id);

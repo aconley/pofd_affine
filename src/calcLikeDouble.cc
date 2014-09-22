@@ -637,7 +637,7 @@ void calcLikeDoubleSingle::writeToHDF5Handle(hid_t objid) const {
   // Number of files
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, NULL);
-  att_id = H5Acreate2(objid, "nfiles", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(objid, "NFiles", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &ndatasets);
   H5Aclose(att_id);
@@ -646,22 +646,26 @@ void calcLikeDoubleSingle::writeToHDF5Handle(hid_t objid) const {
   // Write files, extensions, etc.  We use the non-null, non-empty string
   //  in the filenames as an indicator there are things to write
   if ((filenames1 != NULL) && (filenames1[0] != "")) {
-    hdf5utils::writeDataStrings(objid, "filenames1", ndatasets, filenames1);
-    hdf5utils::writeDataUnsignedInts(objid, "dataext1", ndatasets, dataext1);
-    hdf5utils::writeDataBools(objid, "hasmask1", ndatasets, hasmask1);
-    hdf5utils::writeDataUnsignedInts(objid, "maskext1", ndatasets, maskext1);
+    hdf5utils::writeDataStrings(objid, "Filenames1", ndatasets, filenames1);
+    hdf5utils::writeDataUnsignedInts(objid, "DataExtension1", 
+				     ndatasets, dataext1);
+    hdf5utils::writeDataBools(objid, "HasMask1", ndatasets, hasmask1);
+    hdf5utils::writeDataUnsignedInts(objid, "MaskExtension1", 
+				     ndatasets, maskext1);
   }
   if ((filenames2 != NULL) && (filenames2[0] != "")) {
-    hdf5utils::writeDataStrings(objid, "filenames2", ndatasets, filenames2);
-    hdf5utils::writeDataUnsignedInts(objid, "dataext2", ndatasets, dataext2);
-    hdf5utils::writeDataBools(objid, "hasmask2", ndatasets, hasmask2);
-    hdf5utils::writeDataUnsignedInts(objid, "maskext2", ndatasets, maskext2);
+    hdf5utils::writeDataStrings(objid, "Filenames2", ndatasets, filenames2);
+    hdf5utils::writeDataUnsignedInts(objid, "DataExtension2", 
+				     ndatasets, dataext2);
+    hdf5utils::writeDataBools(objid, "HasMask2", ndatasets, hasmask2);
+    hdf5utils::writeDataUnsignedInts(objid, "MaskExtension2", 
+				     ndatasets, maskext2);
   }  
 
   if (beamfile1 != "") 
-    hdf5utils::writeDataString(objid, "beamfile1", beamfile1);
+    hdf5utils::writeDataString(objid, "BeamFilename1", beamfile1);
   if (beamfile2 != "") 
-    hdf5utils::writeDataString(objid, "beamfile2", beamfile2);
+    hdf5utils::writeDataString(objid, "BeamFilename2", beamfile2);
 }
 
 /*!
@@ -1275,109 +1279,109 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   // FFTSIZE
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, NULL);
-  att_id = H5Acreate2(objid, "fftsize", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(objid, "FFTSize", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &fftsize);
   H5Aclose(att_id);
 
   // NEDGE
-  att_id = H5Acreate2(objid, "nedge", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(objid, "NEdge", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nedge);
   H5Aclose(att_id);
 
   // Edge integrate
-  hdf5utils::writeAttBool(objid, "edge_integrate", edgeInteg);
+  hdf5utils::writeAttBool(objid, "DidEdgeIntegration", edgeInteg);
 
   // Nbeamsets
-  att_id = H5Acreate2(objid, "nbeamsets", H5T_NATIVE_UINT,
+  att_id = H5Acreate2(objid, "NBeamsSets", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nbeamsets);
   H5Aclose(att_id);
 
   // Data binning
-  hdf5utils::writeAttBool(objid, "bin_data", bin_data);
+  hdf5utils::writeAttBool(objid, "WasDataBinned", bin_data);
   if (bin_data) {
-    att_id = H5Acreate2(objid, "ndatabins", H5T_NATIVE_UINT,
+    att_id = H5Acreate2(objid, "NDataBins", H5T_NATIVE_UINT,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(att_id, H5T_NATIVE_UINT, &nbins);
     H5Aclose(att_id);
   }
 
   // CFIRB prior 1
-  hdf5utils::writeAttBool(objid, "has_cfirb_prior1", has_cfirb_prior1);
+  hdf5utils::writeAttBool(objid, "HasCfirbPrior1", has_cfirb_prior1);
   if (has_cfirb_prior1) {
-    att_id = H5Acreate2(objid, "cfirb_prior_mean1", H5T_NATIVE_DOUBLE,
+    att_id = H5Acreate2(objid, "CfirbPriorMean1", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(att_id, H5T_NATIVE_DOUBLE, &cfirb_prior_mean1);
     H5Aclose(att_id);
-    att_id = H5Acreate2(objid, "cfirb_prior_sigma1", H5T_NATIVE_DOUBLE,
+    att_id = H5Acreate2(objid, "CfirbPriorSigma1", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(att_id, H5T_NATIVE_DOUBLE, &cfirb_prior_sigma1);
     H5Aclose(att_id);
   }
 
   // CFIRB prior 2
-  hdf5utils::writeAttBool(objid, "has_cfirb_prior2", has_cfirb_prior2);
+  hdf5utils::writeAttBool(objid, "HasCfirbPrior2", has_cfirb_prior2);
   if (has_cfirb_prior2) {
-    att_id = H5Acreate2(objid, "cfirb_prior_mean2", H5T_NATIVE_DOUBLE,
+    att_id = H5Acreate2(objid, "CfirbPriorMean2", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(att_id, H5T_NATIVE_DOUBLE, &cfirb_prior_mean1);
     H5Aclose(att_id);
-    att_id = H5Acreate2(objid, "cfirb_prior_sigma2", H5T_NATIVE_DOUBLE,
+    att_id = H5Acreate2(objid, "CfirbPriorSigma2", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(att_id, H5T_NATIVE_DOUBLE, &cfirb_prior_sigma2);
     H5Aclose(att_id);
   }
 
   // Poisson prior 1
-  hdf5utils::writeAttBool(objid, "has_poisson_prior1", has_poisson_prior1);
+  hdf5utils::writeAttBool(objid, "HasPoissonPrior1", has_poisson_prior1);
   if (has_poisson_prior1) {
-    att_id = H5Acreate2(objid, "poisson_prior_mean1", H5T_NATIVE_DOUBLE,
+    att_id = H5Acreate2(objid, "PoissonPriorMean1", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(att_id, H5T_NATIVE_DOUBLE, &poisson_prior_mean1);
     H5Aclose(att_id);
-    att_id = H5Acreate2(objid, "poisson_prior_sigma1", H5T_NATIVE_DOUBLE,
+    att_id = H5Acreate2(objid, "PoissonPriorSigma1", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(att_id, H5T_NATIVE_DOUBLE, &poisson_prior_sigma1);
     H5Aclose(att_id);
   }
 
   // Poisson prior 2
-  hdf5utils::writeAttBool(objid, "has_poisson_prior2", has_poisson_prior2);
+  hdf5utils::writeAttBool(objid, "HasPoissonPrior2", has_poisson_prior2);
   if (has_poisson_prior2) {
-    att_id = H5Acreate2(objid, "poisson_prior_mean2", H5T_NATIVE_DOUBLE,
+    att_id = H5Acreate2(objid, "PoissonPriorMean2", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(att_id, H5T_NATIVE_DOUBLE, &poisson_prior_mean1);
     H5Aclose(att_id);
-    att_id = H5Acreate2(objid, "poisson_prior_sigma2", H5T_NATIVE_DOUBLE,
+    att_id = H5Acreate2(objid, "PoissonPriorSigma2", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(att_id, H5T_NATIVE_DOUBLE, &poisson_prior_sigma2);
     H5Aclose(att_id);
   }
 
   // SIGMA prior 1
-  hdf5utils::writeAttBool(objid, "has_sigma_prior1", has_sigma_prior1);
+  hdf5utils::writeAttBool(objid, "HasSigmaPrior1", has_sigma_prior1);
   if (has_sigma_prior1) {
-    att_id = H5Acreate2(objid, "sigma_prior_width1", H5T_NATIVE_DOUBLE,
+    att_id = H5Acreate2(objid, "SigmaPriorWidth1", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(att_id, H5T_NATIVE_DOUBLE, &sigma_prior_width1);
     H5Aclose(att_id);
   }
 
   // SIGMA prior 2
-  hdf5utils::writeAttBool(objid, "has_sigma_prior2", has_sigma_prior2);
+  hdf5utils::writeAttBool(objid, "HasSigmaPrior2", has_sigma_prior2);
   if (has_sigma_prior1) {
-    att_id = H5Acreate2(objid, "sigma_prior_width2", H5T_NATIVE_DOUBLE,
+    att_id = H5Acreate2(objid, "SigmaPriorWidth2", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(att_id, H5T_NATIVE_DOUBLE, &sigma_prior_width2);
     H5Aclose(att_id);
   }
 
   // Regularization penalty
-  hdf5utils::writeAttBool(objid, "did_regularize", regularization_alpha > 0.0);
+  hdf5utils::writeAttBool(objid, "DidRegularize", regularization_alpha > 0.0);
   if (regularization_alpha > 0.0) {
-    att_id = H5Acreate2(objid, "regularization_alpha", H5T_NATIVE_DOUBLE,
+    att_id = H5Acreate2(objid, "RegularizationAlpha", H5T_NATIVE_DOUBLE,
 			mems_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(att_id, H5T_NATIVE_DOUBLE, &regularization_alpha);
     H5Aclose(att_id);
@@ -1396,7 +1400,7 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
   H5Gclose(groupid);
 
   // Write each beam set to a subgroup
-  groupid = H5Gcreate(objid, "Beamsets", H5P_DEFAULT, H5P_DEFAULT, 
+  groupid = H5Gcreate(objid, "BeamSets", H5P_DEFAULT, H5P_DEFAULT, 
 		      H5P_DEFAULT);
   if (H5Iget_ref(groupid) < 0)
     throw affineExcept("calcLikeDouble", "writeToHDF5Handle",

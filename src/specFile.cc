@@ -409,8 +409,8 @@ void specFile::writeToHDF5Handle(hid_t objid) const {
     throw affineExcept("specFile", "writeToHDF5Handle",
 		       "Input handle is not valid");
 
-  hdf5utils::writeDataStrings(objid, "datafiles", datafiles);
-  hdf5utils::writeDataStrings(objid, "psffiles", psffiles);
-  hdf5utils::writeDataDoubles(objid, "inst_sigma", sigmas);
-  hdf5utils::writeDataDoubles(objid, "like_norm", like_norm);
+  hdf5utils::writeDataStrings(objid, "DataFiles", datafiles);
+  hdf5utils::writeDataStrings(objid, "BeamFiles", psffiles);
+  hdf5utils::writeDataDoubles(objid, "InstrumentSigma", sigmas);
+  hdf5utils::writeDataDoubles(objid, "LikelihoodNormalization", like_norm);
 }
