@@ -533,11 +533,6 @@ void calcLikeDoubleSingle::setRRange(const numberCountsDouble& model) {
     minRFlux2 = minDataFlux2;
   if (maxDataFlux2 > maxRFlux2 && (bm.hasSign(0) || bm.hasSign(2)))
     maxRFlux2 = maxDataFlux2;
-  
-  // HACK HACK HACK
-  // Hardwire for testing purposes
-  minRFlux1 = minRFlux2 = 0.0;
-  maxRFlux1 = maxRFlux2 = 0.25;
 }
 
 

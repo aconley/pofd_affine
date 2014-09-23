@@ -19,7 +19,7 @@ const double PDDouble::lowsigval = 2.5;
   \param[in] N2 Dimension along band 2
   \param[in] MINFLUX2 Minimum flux density in band 2
   \param[in] DFLUX2 Delta flux density along band 2
-  \param[in] LOG Assume data is stored as log
+  \param[in] LOG Assume data is stored as log (base 2)
 */
 PDDouble::PDDouble(unsigned int N1, double MINFLUX1, double DFLUX1,
 		   unsigned int N2, double MINFLUX2, double DFLUX2,
