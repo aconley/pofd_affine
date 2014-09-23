@@ -9,6 +9,8 @@
 #include "../include/affineEnsemble.h"
 #include "../include/affineExcept.h"
 #include "../include/hdf5utils.h"
+#include "../include/hashbar.h"
+
 
 /////////////////////////////////////
 
@@ -597,6 +599,7 @@ void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
 }
 
 void affineEnsemble::masterSample() {
+  const unsigned int maxhash = 60;
 
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "masterSample", 
@@ -609,6 +612,9 @@ void affineEnsemble::masterSample() {
   //Make sure we have valid likelihoods
   calcLastLikelihood();
 
+  // Progress bar variable, allocated if needed
+  hashbar *progbar = NULL;
+
   //Do initial steps
   if (init_steps > 0) {
     if (verbosity >= 1) {
@@ -620,14 +626,24 @@ void affineEnsemble::masterSample() {
       if (verbosity >= 2) 
 	std::cout << "**********************************************"
 		  << std::endl;
+      if (verbosity == 1) {
+	progbar = new hashbar(maxhash, init_steps);
+	progbar->update(0, std::cout);
+      }
     }
     chains.addChunk(init_steps);
     for (unsigned int i = 0; i < init_steps; ++i) {
-      if (verbosity >= 2)
+      doMasterStep(init_temp);
+      if (verbosity == 1)
+	progbar->update(i + 1, std::cout);
+      else if (verbosity >= 2)
 	std::cout << " Done " << i+1 << " of " << init_steps << " steps"
 		  << std::endl;
-      doMasterStep(init_temp);
-    }    
+    }
+    if (verbosity == 1) {
+      progbar->fill(std::cout);
+      delete progbar;
+    }
 
     // Make sure at least one step was accepted, or else something
     // must have gone wrong, like all the parameters being rejected
@@ -671,13 +687,30 @@ void affineEnsemble::masterSample() {
       std::cout << "**********************************************"
 		<< std::endl;
   }
+
+  // Now do the main loop.  If the verbosity level is 1,
+  // then output a hash progress bar.  If it's higher, don't,
+  // because there will be other output interfering with it.
+  if (verbosity == 1) {
+    progbar = new hashbar(maxhash, nsteps);
+    progbar->update(0, std::cout);
+  }
   chains.addChunk(nsteps);
   for (unsigned int i = 0; i < nsteps; ++i) {
-    if (verbosity >= 2)
+    // Actual work
+    doMasterStep();
+
+    // Update output
+    if (verbosity == 1) progbar->update(i + 1, std::cout);
+    else if (verbosity >= 2)
       std::cout << " Done " << i+1 << " of " << nsteps << " steps"
 		<< std::endl;
-    doMasterStep();
   }
+  if (verbosity == 1) {
+    progbar->fill(std::cout);
+    delete progbar;
+  } else if (verbosity >= 2)
+    std::cout << "Done all steps" << std::endl;
 
   // This would be a definite problem
   if (!hasOneStepBeenAccepted())
@@ -1604,7 +1637,7 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
     ftmp = new float[nparams];
     for (unsigned int i = 0; i < nparams; ++i) 
       ftmp[i] = initStep[i];
-    hdf5utils::writeDataFloats(groupid, "initial_position",
+    hdf5utils::writeDataFloats(groupid, "InitialPosition",
 			       nparams, ftmp);
     delete[] ftmp;
   }

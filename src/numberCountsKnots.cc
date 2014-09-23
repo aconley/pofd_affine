@@ -442,7 +442,7 @@ void numberCountsKnots::writeToHDF5Handle(hid_t objid, bool writevals) const {
   H5Sclose(mems_id);
 
   // Knot positions
-  hdf5utils::writeDataDoubles(objid, "knotpos", nknots, knots);
+  hdf5utils::writeDataDoubles(objid, "KnotPositions", nknots, knots);
 
   if (writevals && knotvals_loaded) {
     // Convert to log 10 for write

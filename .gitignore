@@ -4,6 +4,7 @@
 \#*
 .*
 *.lo
+*.tar.gz
 INSTALL
 ChangeLog
 confscript.sh
@@ -16,13 +17,15 @@ config.log
 config.status
 config.sub
 configure
-compile
 depcomp
+doc/
+compile
 install-sh
 libtool
 ltmain.sh
 missing
 libaffine.la
+libpd.la
 multi_gauss_example
 single_gauss_example
 rosenbrock_example
@@ -30,7 +33,6 @@ polyfit_example
 chain_test
 ensemble_test
 queue_test
-doc
 src/Makefile
 src/Makefile.in
 pofd_affine_getPD
