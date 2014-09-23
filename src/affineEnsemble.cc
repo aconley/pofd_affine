@@ -2,6 +2,7 @@
 #include<cmath>
 #include<limits>
 #include<sstream>
+#include<iomanip>
 #include<unistd.h>
 #include<mpi.h>
 
@@ -671,13 +672,49 @@ void affineEnsemble::masterSample() {
       std::cout << "**********************************************"
 		<< std::endl;
   }
+
+  const unsigned int nmaxhash = 60;
+  double perc;
+  unsigned int nhash, currhash;
+  // Hash progress bar
+  if (verbosity == 1) {
+    std::cout << "[";
+    for (unsigned int h = 0; h < nmaxhash; ++h)
+      std::cout << " ";
+    std::cout << "]   0.0%\r " << std::flush;
+  }
+  currhash = 0;
+
   chains.addChunk(nsteps);
   for (unsigned int i = 0; i < nsteps; ++i) {
-    if (verbosity >= 2)
+    // Actual work
+    doMasterStep();
+
+    // Update output
+    if (verbosity == 1) {
+      perc = 100.0 * static_cast<double>(i * nmaxhash) / nsteps;
+      nhash = i * nmaxhash / nsteps;
+      nhash = nhash > nmaxhash ? nmaxhash : nhash;
+      if (nhash > currhash) {
+	std::cout << "[";
+	for (unsigned int h = 0; h < nhash; ++h)
+	  std::cout << "#";
+	for (unsigned int h = nhash; h < nmaxhash; ++h)
+	  std::cout << " ";
+	std::cout << "] " << std::setw(5) << std::setprecision(1)
+		  << perc << "%\r " << std::flush;
+	currhash = nhash;
+      }
+    } else if (verbosity >= 2)
       std::cout << " Done " << i+1 << " of " << nsteps << " steps"
 		<< std::endl;
-    doMasterStep();
   }
+  if (verbosity == 1) {
+    std::cout << "[";
+    for (unsigned int h = 0; h < nmaxhash; ++h) std::cout << "#";
+    std::cout << "] 100.0%" << std::endl;
+  } else if (verbosity >= 2)
+    std::cout << "Done all steps" << std::endl;
 
   // This would be a definite problem
   if (!hasOneStepBeenAccepted())
