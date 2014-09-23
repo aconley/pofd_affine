@@ -627,8 +627,8 @@ void affineEnsemble::masterSample() {
 	std::cout << "**********************************************"
 		  << std::endl;
       if (verbosity == 1) {
-	progbar = new hashbar(maxhash, init_steps);
-	progbar->update(0, std::cout);
+	progbar = new hashbar(maxhash, init_steps, '=');
+	progbar->initialize(std::cout);
       }
     }
     chains.addChunk(init_steps);
@@ -675,10 +675,14 @@ void affineEnsemble::masterSample() {
     calcLastLikelihood();
   }
 
-  //Do burn in
+  // Do burn in.  No progress bar because we don't know how
+  // many steps we are going to take
   doBurnIn();
 
-  //Then do extra steps
+  // Now do the main loop.  If the verbosity level is 1,
+  // then output a hash progress bar.  If it's higher, don't,
+  // because there will be other output interfering with it.
+  // Then do extra steps
   if (verbosity >= 1) {
     std::cout << "Doing " << nsteps << " additional steps per"
 	      << " walker, for " << nsteps*nwalkers
@@ -686,14 +690,10 @@ void affineEnsemble::masterSample() {
     if (verbosity >= 2) 
       std::cout << "**********************************************"
 		<< std::endl;
-  }
-
-  // Now do the main loop.  If the verbosity level is 1,
-  // then output a hash progress bar.  If it's higher, don't,
-  // because there will be other output interfering with it.
-  if (verbosity == 1) {
-    progbar = new hashbar(maxhash, nsteps);
-    progbar->update(0, std::cout);
+    if (verbosity == 1) {
+      progbar = new hashbar(maxhash, nsteps, '=');
+      progbar->initialize(std::cout);
+    }
   }
   chains.addChunk(nsteps);
   for (unsigned int i = 0; i < nsteps; ++i) {
