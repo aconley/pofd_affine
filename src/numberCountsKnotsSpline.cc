@@ -571,7 +571,7 @@ void numberCountsKnotsSpline::writeToHDF5Handle(hid_t objid,
 
   // Name of model
   std::string modeltype("numberCountsKnotsSpline");
-  hdf5utils::writeAttString(objid, "model_type", modeltype);
+  hdf5utils::writeAttString(objid, "ModelType", modeltype);
 
   // Other writes
   numberCountsKnots::writeToHDF5Handle(objid, writevals);

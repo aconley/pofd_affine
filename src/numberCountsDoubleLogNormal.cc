@@ -2162,7 +2162,7 @@ void numberCountsDoubleLogNormal::writeToHDF5Handle(hid_t objid,
   // Name of model
   // Name of model
   const std::string modeltype("numberCountsDoubleLogNormal");
-  hdf5utils::writeAttString(objid, "model_type", modeltype);
+  hdf5utils::writeAttString(objid, "ModelType", modeltype);
 
   // Number of knots
   adims = 1;
