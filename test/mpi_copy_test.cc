@@ -109,6 +109,8 @@ void master( int argc, char **argv ) {
   std::string fitsfile2 = "testdata/testmodel2D_band2.fits";
   std::string psffile1 = "testdata/band1_beam.fits";
   std::string psffile2 = "testdata/band2_beam.fits";
+  std::string psffile1_f100 = "testdata/band12_beam_f100.fits[0]";
+  std::string psffile2_f100 = "testdata/band12_beam_f100.fits[1]";
     
 
   MPI_Status Info;
@@ -158,14 +160,50 @@ void master( int argc, char **argv ) {
   for (int i=1; i < nproc; ++i)
     MPI_Send(&jnk, 1, MPI_INT, i, NEXTTEST, MPI_COMM_WORLD);
 
-  //Next doublebeam
+  //Next doublebeam.  Test on filtered beam
   try {
     if (verbose) std::cout << "Doublebeam test" << std::endl;
-    doublebeam bm(psffile1, psffile2, true); //Test with histogramming
+    doublebeam bm(psffile1_f100, psffile2_f100, true); //Test with histogramming
     for (int i=1; i < nproc; ++i)
       bm.sendSelf(MPI_COMM_WORLD, i);
+
+    unsigned int hassgn;
+    for (unsigned int i = 0; i < 4; ++i) {
+      hassgn = bm.hasSign(i) ? 1 : 0;
+      for (int i = 1; i < nproc; ++i)
+	MPI_Send(&hassgn, 1, MPI_UNSIGNED, i, SENDUIVAL, MPI_COMM_WORLD);
+    }
+
+    unsigned int npix, ishist, nhist;
+    for (unsigned int i = 0; i < 4; ++i) {
+      hassgn = bm.hasSign(i) ? 1 : 0;
+      if (hassgn) {
+	npix = bm.getNPix(i);
+	for (int i = 1; i < nproc; ++i)
+	  MPI_Send(&npix, 1, MPI_UNSIGNED, i, SENDUIVAL, MPI_COMM_WORLD);
+	dblpair pr = bm.getMinMax1(i);
+	for (int i = 1; i < nproc; ++i)
+	  MPI_Send(&pr.first, 1, MPI_DOUBLE, i, SENDDBLVAL, MPI_COMM_WORLD);
+	for (int i = 1; i < nproc; ++i)
+	  MPI_Send(&pr.second, 1, MPI_DOUBLE, i, SENDDBLVAL, MPI_COMM_WORLD);
+	pr = bm.getMinMax2(i);
+	for (int i = 1; i < nproc; ++i)
+	  MPI_Send(&pr.first, 1, MPI_DOUBLE, i, SENDDBLVAL, MPI_COMM_WORLD);
+	for (int i = 1; i < nproc; ++i)
+	  MPI_Send(&pr.second, 1, MPI_DOUBLE, i, SENDDBLVAL, MPI_COMM_WORLD);
+	ishist = bm.isHistogrammed(i) ? 1 : 0;
+	for (int i = 1; i < nproc; ++i)
+	  MPI_Send(&ishist, 1, MPI_UNSIGNED, i, SENDUIVAL, MPI_COMM_WORLD);
+	if (ishist) {
+	  nhist = bm.getNHist(i);
+	  for (int i = 1; i < nproc; ++i)
+	    MPI_Send(&nhist, 1, MPI_UNSIGNED, i, SENDUIVAL, MPI_COMM_WORLD);
+	}
+      }
+      
+    }
     for (int i = 1; i < nproc; ++i)
-      MPI_Recv(&jnk, 1, MPI_INT, i, TESTSUCCEEDED, MPI_COMM_WORLD, &Info);
+	MPI_Recv(&jnk, 1, MPI_INT, i, TESTSUCCEEDED, MPI_COMM_WORLD, &Info);
     if (verbose) std::cout << "Doublebeam test succeeded" << std::endl;
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
@@ -544,12 +582,67 @@ void slave() {
   try {
     doublebeam bm;
     bm.receiveCopy(MPI_COMM_WORLD, 0);
+
+    unsigned int hassgn;
+    for (unsigned int i = 0; i < 4; ++i) {
+      MPI_Recv(&hassgn, 1, MPI_UNSIGNED, 0, SENDUIVAL, MPI_COMM_WORLD, &Info);
+      if (hassgn != (bm.hasSign(i) ? 1 : 0))
+	throw affineExcept("test_copy", "slave", 
+			   "beam doesn't match presence of component");
+    }
+    
+    double val, diff;
+    dblpair pr;
+    unsigned int npix, ishist, nhist;
+    for (unsigned int i = 0; i < 4; ++i)
+      if (bm.hasSign(i)) {
+	MPI_Recv(&npix, 1, MPI_UNSIGNED, 0, SENDUIVAL, MPI_COMM_WORLD, &Info);
+	if (npix != bm.getNPix(i))
+	  throw affineExcept("test_copy", "slave", 
+			     "beam doesn't match number of elements in component");
+	
+	pr = bm.getMinMax1(i);
+	MPI_Recv(&val, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
+	diff = fabs(pr.first - val);
+	if (diff > 1e-5)
+	  throw affineExcept("test_copy", "slave", 
+			     "Wrong min in band 1 doublebeam component");
+	MPI_Recv(&val, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
+	diff = fabs(pr.second - val);
+	if (diff > 1e-5)
+	  throw affineExcept("test_copy", "slave", 
+			     "Wrong max in band 1 doublebeam component");
+	pr = bm.getMinMax2(i);
+	MPI_Recv(&val, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
+	diff = fabs(pr.first - val);
+	if (diff > 1e-5)
+	  throw affineExcept("test_copy", "slave", 
+			     "Wrong min in band 2 doublebeam component");
+	MPI_Recv(&val, 1, MPI_DOUBLE, 0, SENDDBLVAL, MPI_COMM_WORLD, &Info);
+	diff = fabs(pr.second - val);
+	if (diff > 1e-5)
+	  throw affineExcept("test_copy", "slave", 
+			     "Wrong max in band 2 doublebeam component");
+	
+	MPI_Recv(&ishist, 1, MPI_UNSIGNED, 0, SENDUIVAL, MPI_COMM_WORLD, &Info);
+	if (ishist != (bm.isHistogrammed(i) ? 1 : 0))
+	  throw affineExcept("test_copy", "slave", 
+			     "doublebeam doesn't match histogram presence component");	
+	if (bm.isHistogrammed(i)) {
+	  MPI_Recv(&nhist, 1, MPI_UNSIGNED, 0, SENDUIVAL,
+		   MPI_COMM_WORLD, &Info);
+	  if (nhist != bm.getNHist(i))
+	    throw affineExcept("test_copy", "slave", 
+			       "doublebeam doesn't match number of hist bins");	
+	}
+      }
     MPI_Send(&jnk, 1, MPI_INT, 0, TESTSUCCEEDED, MPI_COMM_WORLD);
   } catch ( const affineExcept& ex ) {
     std::cerr << ex << std::endl;
     MPI_Finalize();
     return;
   }
+
   MPI_Recv(&jnk, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &Info);
   this_tag = Info.MPI_TAG;
   if (this_tag != NEXTTEST) {

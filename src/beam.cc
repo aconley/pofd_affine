@@ -628,7 +628,6 @@ void beam::sendSelf(MPI_Comm comm, int dest) const {
 	       pofd_mcmc::BEAMSENDNEGHISTVAL, comm);
     }
   }
-
 }
 
 /*!

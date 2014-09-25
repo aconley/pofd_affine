@@ -754,20 +754,20 @@ void doublebeam::sendSelf(MPI_Comm comm, int dest) const {
   // Send raw beam
   MPI_Send(const_cast<bool*>(hassign), 4, MPI::BOOL, dest,
 	   pofd_mcmc::DOUBLEBEAMSENDHASSIGN, comm);
-  MPI_Send(const_cast<double*>(minbm1), 4, MPI_UNSIGNED, dest,
+  MPI_Send(const_cast<double*>(minbm1), 4, MPI_DOUBLE, dest,
 	   pofd_mcmc::DOUBLEBEAMSENDMIN1, comm);
-  MPI_Send(const_cast<double*>(maxbm1), 4, MPI_UNSIGNED, dest,
+  MPI_Send(const_cast<double*>(maxbm1), 4, MPI_DOUBLE, dest,
 	   pofd_mcmc::DOUBLEBEAMSENDMAX1, comm);
-  MPI_Send(const_cast<double*>(minbm2), 4, MPI_UNSIGNED, dest,
+  MPI_Send(const_cast<double*>(minbm2), 4, MPI_DOUBLE, dest,
 	   pofd_mcmc::DOUBLEBEAMSENDMIN2, comm);
-  MPI_Send(const_cast<double*>(maxbm2), 4, MPI_UNSIGNED, dest,
+  MPI_Send(const_cast<double*>(maxbm2), 4, MPI_DOUBLE, dest,
 	   pofd_mcmc::DOUBLEBEAMSENDMAX2, comm);
   MPI_Send(const_cast<unsigned int*>(npix), 4, MPI_UNSIGNED, dest,
 	   pofd_mcmc::DOUBLEBEAMSENDNPIX, comm);
   MPI_Send(const_cast<bool*>(haslogratio), 4, MPI::BOOL, dest,
 	   pofd_mcmc::DOUBLEBEAMSENDHASLOGRATIO, comm);
   for (unsigned int i = 0; i < 4; ++i)
-    if (npix[i] > 0) {
+    if (hassign[i]) {
       MPI_Send(pixarr1[i], npix[i], MPI_DOUBLE, dest,
 	       pofd_mcmc::DOUBLEBEAMSENDPIXARR1, comm);
       MPI_Send(pixarr2[i], npix[i], MPI_DOUBLE, dest,
@@ -779,7 +779,7 @@ void doublebeam::sendSelf(MPI_Comm comm, int dest) const {
       if (haslogratio[i])
 	MPI_Send(logratio[i], npix[i], MPI_DOUBLE, dest,
 		 pofd_mcmc::DOUBLEBEAMSENDLOGRATIO, comm);
-    }
+    } 
   
   // Histogram
   MPI_Send(const_cast<unsigned int*>(&nbins), 1, MPI_UNSIGNED, dest,
@@ -791,7 +791,7 @@ void doublebeam::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<bool*>(hasbinlogratio), 4, MPI::BOOL, dest,
 	   pofd_mcmc::DOUBLEBEAMSENDHASBINLOGRATIO, comm);
   for (unsigned int i = 0; i < 4; ++i)
-    if ((ishistogrammed[i]) && (nhist[i] > 0)) {
+    if (ishistogrammed[i] && (nhist[i] > 0)) {
       MPI_Send(binweights[i], nhist[i], MPI_DOUBLE, dest,
 	       pofd_mcmc::DOUBLEBEAMSENDBINWEIGHTS, comm);
       MPI_Send(binvals1[i], nhist[i], MPI_DOUBLE, dest,
@@ -828,15 +828,16 @@ void doublebeam::receiveCopy(MPI_Comm comm, int src) {
   MPI_Recv(&minval, 1, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDMINVAL, 
 	   comm, &Info);
 
+  // Raw beam
   MPI_Recv(hassign, 4, MPI::BOOL, src, pofd_mcmc::DOUBLEBEAMSENDHASSIGN, 
 	   comm, &Info);
-  MPI_Recv(minbm1, 4, MPI_UNSIGNED, src, pofd_mcmc::DOUBLEBEAMSENDMIN1, 
+  MPI_Recv(minbm1, 4, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDMIN1, 
 	   comm, &Info);
-  MPI_Recv(maxbm1, 4, MPI_UNSIGNED, src, pofd_mcmc::DOUBLEBEAMSENDMAX1, 
+  MPI_Recv(maxbm1, 4, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDMAX1, 
 	   comm, &Info);
-  MPI_Recv(minbm2, 4, MPI_UNSIGNED, src, pofd_mcmc::DOUBLEBEAMSENDMIN2, 
+  MPI_Recv(minbm2, 4, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDMIN2, 
 	   comm, &Info);
-  MPI_Recv(maxbm2, 4, MPI_UNSIGNED, src, pofd_mcmc::DOUBLEBEAMSENDMAX2, 
+  MPI_Recv(maxbm2, 4, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDMAX2, 
 	   comm, &Info);
   MPI_Recv(npix, 4, MPI_UNSIGNED, src, pofd_mcmc::DOUBLEBEAMSENDNPIX, 
 	   comm, &Info);
@@ -876,7 +877,7 @@ void doublebeam::receiveCopy(MPI_Comm comm, int src) {
   MPI_Recv(hasbinlogratio, 4, MPI::BOOL, src, 
 	   pofd_mcmc::DOUBLEBEAMSENDHASBINLOGRATIO, comm, &Info);
   for (unsigned int i = 0; i < 4; ++i)
-    if (ishistogrammed[i]) {
+    if (ishistogrammed[i] && (nhist[i] > 0)) {
       binweights[i] = new double[nhist[i]];
       binvals1[i] = new double[nhist[i]];
       binvals2[i] = new double[nhist[i]];
@@ -904,3 +905,34 @@ void doublebeam::receiveCopy(MPI_Comm comm, int src) {
 	   comm, &Info);
 }
 
+/*!
+  \param[inout] os Stream to write to
+*/
+bool doublebeam::writeToStream(std::ostream& os) const {
+  const char* cmpnames[4] = {"pp", "pn", "np", "nn"};
+  os << "Beam summary: " << std::endl;
+  os << " Pixel size: " << pixsize << " Min kept: " << minval << std::endl;
+  os << " Components info: " << std::endl;
+  for (unsigned int i = 0; i < 4; ++i)
+    if (hassign[i]) {
+      os << " Component: " << cmpnames[i];
+      os << " raw npix: " << npix[i];
+      if (ishistogrammed[i]) 
+	os << " hist bins: " << nhist[i];
+      os << std::endl;
+      os << "   Total1: " << tot1[i] << " Min1: " << minbm1[i]
+	 << " Max1: " << maxbm1[i] << std::endl;
+      os << "   Total2: " << tot2[i] << " Min2: " << minbm2[i]
+	 << " Max2: " << maxbm2[i] << std::endl;
+    }
+  return true;
+}
+
+/*!
+  \param[inout] os Stream to write to
+  \param[in] b Number counts model
+*/
+std::ostream& operator<<(std::ostream& os, const doublebeam& b) {
+  b.writeToStream(os);
+  return os;
+}

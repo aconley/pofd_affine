@@ -193,8 +193,8 @@ void calcLikeDoubleSingle::readDataFromFile(const std::string& datafile1,
 
   minDataFlux1 = pr.first.first;
   maxDataFlux1 = pr.first.second;
-  minDataFlux1 = pr.second.first;
-  maxDataFlux1 = pr.second.second;
+  minDataFlux2 = pr.second.first;
+  maxDataFlux2 = pr.second.second;
 
   // Can't be computed yet
   like_offset[0] = 0.0;
@@ -275,8 +275,8 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
   }
   minDataFlux1 = pr.first.first;
   maxDataFlux1 = pr.first.second;
-  minDataFlux1 = pr.second.first;
-  maxDataFlux1 = pr.second.second;
+  minDataFlux2 = pr.second.first;
+  maxDataFlux2 = pr.second.second;
   // Now compare to all the others.
   for (unsigned int i = 1; i < n; ++i) {
     pr = data[i].getMinMax();
@@ -564,7 +564,7 @@ calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
     throw affineExcept("calcLikeDoubleSingle", "getNegLogLike",
 		       "Beam not read");
 
-  //Maximum noise value with multiplier 
+  // Maximum noise value with multiplier 
   double max_sigma1 = maxsigma_base1 * sigmult1;
   if (max_sigma1 < 0.0) return calcLikeDoubleSingle::bad_like;
   double max_sigma2 = maxsigma_base2 * sigmult2;
@@ -582,7 +582,7 @@ calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
 
   if (pars_invalid) return 0.0; // No point in continuing
 
-  //Compute likelihood of each bit of data
+  // Compute likelihood of each bit of data
   double curr_LogLike, LogLike;
   LogLike = 0.0;
   for (unsigned int i = 0; i < ndatasets; ++i) {
@@ -623,7 +623,7 @@ calcLikeDoubleSingle::getLogLike(const numberCountsDouble& model,
 */
 void calcLikeDoubleSingle::writeToHDF5Handle(hid_t objid) const {
   hsize_t adims;
-  hid_t mems_id, att_id;
+  hid_t mems_id, att_id, dat_id;
 
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("calcLikeDoubleSingle", "writeToHDF5Handle",
@@ -661,6 +661,50 @@ void calcLikeDoubleSingle::writeToHDF5Handle(hid_t objid) const {
     hdf5utils::writeDataString(objid, "BeamFilename1", beamfile1);
   if (beamfile2 != "") 
     hdf5utils::writeDataString(objid, "BeamFilename2", beamfile2);
+
+  // Data ranges and R ranges
+  adims = 1;
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  dat_id = H5Dcreate2(objid, "MinDataFlux1", H5T_NATIVE_DOUBLE, 
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
+	   &minDataFlux1);
+  H5Dclose(dat_id);
+  dat_id = H5Dcreate2(objid, "MinDataFlux2", H5T_NATIVE_DOUBLE, 
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
+	   &minDataFlux2);
+  H5Dclose(dat_id);
+  dat_id = H5Dcreate2(objid, "MaxDataFlux1", H5T_NATIVE_DOUBLE, 
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
+	   &maxDataFlux2);
+  H5Dclose(dat_id);
+  dat_id = H5Dcreate2(objid, "MaxDataFlux2", H5T_NATIVE_DOUBLE, 
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
+	   &maxDataFlux2);
+  H5Dclose(dat_id);
+  dat_id = H5Dcreate2(objid, "MinRFlux1", H5T_NATIVE_DOUBLE, 
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
+	   &minRFlux1);
+  H5Dclose(dat_id);
+  dat_id = H5Dcreate2(objid, "MinRFlux2", H5T_NATIVE_DOUBLE, 
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
+	   &minRFlux2);
+  H5Dclose(dat_id);
+  dat_id = H5Dcreate2(objid, "MaxRFlux1", H5T_NATIVE_DOUBLE, 
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
+	   &maxRFlux1);
+  H5Dclose(dat_id);
+  dat_id = H5Dcreate2(objid, "MaxRFlux2", H5T_NATIVE_DOUBLE, 
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
+	   &maxRFlux2);
+  H5Sclose(mems_id);
 }
 
 /*!
@@ -718,7 +762,7 @@ void calcLikeDoubleSingle::sendSelf(MPI_Comm comm, int dest) const {
 	     pofd_mcmc::CLDSENDLIKENORM, comm);
     MPI_Send(const_cast<double*>(&minDataFlux1), 1, MPI_DOUBLE, dest,
 	     pofd_mcmc::CLDSENDMINDATAFLUX1, comm);
-    MPI_Send(const_cast<double*>(&minDataFlux1), 1, MPI_DOUBLE, dest,
+    MPI_Send(const_cast<double*>(&maxDataFlux1), 1, MPI_DOUBLE, dest,
 	     pofd_mcmc::CLDSENDMAXDATAFLUX1, comm);
     MPI_Send(const_cast<double*>(&minDataFlux2), 1, MPI_DOUBLE, dest,
 	     pofd_mcmc::CLDSENDMINDATAFLUX2, comm);
@@ -734,12 +778,12 @@ void calcLikeDoubleSingle::sendSelf(MPI_Comm comm, int dest) const {
 	     pofd_mcmc::CLDSENDMAXRFLUX2, comm);
   }
 
-  //Beam
+  // Beam
   MPI_Send(const_cast<bool*>(&has_beam), 1, MPI::BOOL, dest, 
 	   pofd_mcmc::CLDSENDHASBEAM, comm);
   if (has_beam) bm.sendSelf(comm, dest);
 
-  //PDFactory
+  // PDFactory
   pdfac.sendSelf(comm, dest);
 
   //Note we don't send verbose
@@ -766,8 +810,8 @@ void calcLikeDoubleSingle::receiveCopy(MPI_Comm comm, int src) {
       data[i].receiveCopy(comm, src);
     MPI_Recv(sigma_base1, newn, MPI_DOUBLE, src, 
 	     pofd_mcmc::CLDSENDSIGMABASE1, comm, &Info);
-    MPI_Recv(sigma_base2, newn, MPI_DOUBLE, src, pofd_mcmc::CLDSENDSIGMABASE2,
-	     comm, &Info);
+    MPI_Recv(sigma_base2, newn, MPI_DOUBLE, src,
+	     pofd_mcmc::CLDSENDSIGMABASE2, comm, &Info);
     MPI_Recv(&maxsigma_base1, 1, MPI_DOUBLE, src, 
 	     pofd_mcmc::CLDSENDMAXSIGMABASE1, comm, &Info);
     MPI_Recv(&maxsigma_base2, 1, MPI_DOUBLE, src,
@@ -922,17 +966,17 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
     throw affineExcept("calcLikeDouble", "readDataFromFiles",
 		       "datafiles and like_norm not same length");
   
-  //Use a map.  Could also use a multi-map, but meh
-  //Key will be the combination of both beam file names
+  // Use a map.  Could also use a multi-map, but meh
+  // Key will be the combination of both beam file names
   std::map< std::string, doublebeam_group > grpmap;
   std::map< std::string, doublebeam_group >::iterator grpmap_it;
   std::string key;
   for (unsigned int i = 0; i < ndat; ++i) {
     key = beamfiles1[i]+":"+beamfiles2[i];
-    //See if map already has key
+    // See if map already has key
     grpmap_it = grpmap.find(key);
     if (grpmap_it == grpmap.end()) {
-      //Previously unknown key
+      // Previously unknown key
       doublebeam_group newgrp;
       newgrp.n = 1;
       newgrp.datafiles1.push_back(datafiles1[i]);
@@ -983,7 +1027,7 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
 
 /*! 
   \param[in] nedg New edge integration size
- */
+*/
 void calcLikeDouble::setNEdge(unsigned int nedg) {
   if (nedg == nedge) return;
   if (beamsets != NULL)
@@ -995,13 +1039,13 @@ void calcLikeDouble::setNEdge(unsigned int nedg) {
 void calcLikeDouble::setBinData() {
   if (bin_data) return;
 
-  //Easy if no data is read.
+  // Easy if no data is read.
   if (nbeamsets == 0) {
     bin_data = true;
     return;
   }
 
-  //Now we have to actually bin
+  // Now we have to actually bin
   for (unsigned int i = 0; i < nbeamsets; ++i)
     beamsets[i].applyBinning(nbins);
   bin_data = true;
@@ -1041,6 +1085,12 @@ void calcLikeDouble::setNBins(unsigned int nbns) {
 
 /*!
   \param[in] p Model parameters to use
+
+  Note that you don't want to call this multiple times,
+  but set the ranges once and keep using them.  Changing
+  the range for each set of parameters introduces numerical
+  jitter into the likelihood computations that slows
+  convergence considerably.
 */
 void calcLikeDouble::setRRanges(const paramSet& p) {
   model.setParams(p);
@@ -1180,14 +1230,14 @@ double calcLikeDouble::getLogLike(const paramSet& p, bool& pars_invalid) const {
   //  Only do this once for all data sets so as not to multi-count the prior
   // Sigma priors
   if (has_sigma_prior1) {
-    //Assume the mean is always at 1 -- otherwise, the
+    // Assume the mean is always at 1 -- otherwise, the
     // user would have specified different noise level
-    double val = (sigmult1-1.0) / sigma_prior_width1;
-    LogLike -= half_log_2pi + log(sigma_prior_width1) + 0.5*val*val;
+    double val = (sigmult1 - 1.0) / sigma_prior_width1;
+    LogLike -= half_log_2pi + log(sigma_prior_width1) + 0.5 * val * val;
   }
   if (has_sigma_prior2) {
-    double val = (sigmult2-1.0) / sigma_prior_width2;
-    LogLike -= half_log_2pi + log(sigma_prior_width2) + 0.5*val*val;
+    double val = (sigmult2 - 1.0) / sigma_prior_width2;
+    LogLike -= half_log_2pi + log(sigma_prior_width2) + 0.5 * val * val;
   }
 
   // Compute mean flux per area values as bonus parameters, even
@@ -1198,12 +1248,12 @@ double calcLikeDouble::getLogLike(const paramSet& p, bool& pars_invalid) const {
   if (has_cfirb_prior1) {
     double val = (cfirb_prior_mean1 - mean_flux_per_area1) / 
       cfirb_prior_sigma1;
-    LogLike -=  half_log_2pi + log(cfirb_prior_sigma1) + 0.5*val*val;
+    LogLike -=  half_log_2pi + log(cfirb_prior_sigma1) + 0.5 * val * val;
   }
   if (has_cfirb_prior2) {
     double val = (cfirb_prior_mean2 - mean_flux_per_area2) / 
       cfirb_prior_sigma2;
-    LogLike -=  half_log_2pi + log(cfirb_prior_sigma2) + 0.5*val*val;
+    LogLike -=  half_log_2pi + log(cfirb_prior_sigma2) + 0.5 * val * val;
   }
 
   // Poisson priors, similar to CFIRB, but <S^2>.  Also bonus params
@@ -1212,12 +1262,12 @@ double calcLikeDouble::getLogLike(const paramSet& p, bool& pars_invalid) const {
   if (has_poisson_prior1) {
     double val = (poisson_prior_mean1 - mean_fluxsq_per_area1) / 
       poisson_prior_sigma1;
-    LogLike -=  half_log_2pi + log(poisson_prior_sigma1) + 0.5*val*val;
+    LogLike -=  half_log_2pi + log(poisson_prior_sigma1) + 0.5 * val * val;
   }
   if (has_poisson_prior2) {
     double val = (poisson_prior_mean2 - mean_fluxsq_per_area2) / 
       poisson_prior_sigma2;
-    LogLike -=  half_log_2pi + log(poisson_prior_sigma2) + 0.5*val*val;
+    LogLike -=  half_log_2pi + log(poisson_prior_sigma2) + 0.5 * val * val;
   }
 
   // Regularization penalty (return value is negative)
@@ -1227,6 +1277,10 @@ double calcLikeDouble::getLogLike(const paramSet& p, bool& pars_invalid) const {
   return LogLike;
 }
 
+/*!
+  \param[inout] par Model parameters.  On output, bonus values
+     are filled using the values for the non-bonus parameters.
+*/
 void calcLikeDouble::fillBonusParams(paramSet& par) const {
   unsigned int nmodelpars = model.getNParams();
   // Make sure it's the same parameters!
@@ -1476,7 +1530,7 @@ void calcLikeDouble::sendSelf(MPI_Comm comm, int dest) const {
 	     pofd_mcmc::CLDSENDCFRIBPRIORSIGMA2, comm);
   }
 
-  //Sigma prior
+  // Sigma prior
   MPI_Send(const_cast<bool*>(&has_sigma_prior1), 1, MPI::BOOL, dest,
 	   pofd_mcmc::CLDSENDHASSIGMAPRIOR1, comm);
   if (has_sigma_prior1)

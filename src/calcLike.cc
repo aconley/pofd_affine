@@ -61,7 +61,7 @@ void calcLikeSingle::free() {
   \param[in] n Number of datasets
 */
 void calcLikeSingle::resize(unsigned int n) {
-  if (ndatasets == n) return;  //Don't have to do anything
+  if (ndatasets == n) return;  // Don't have to do anything
 
   if (filenames != NULL)   delete[] filenames;
   if (data != NULL)        delete[] data;
@@ -190,7 +190,7 @@ readDataFromFiles(const std::vector<std::string>& datafiles,
     like_offset[i] = 0.0;
   }
 
-  //Determine maximum flux (with safety factor) for all this data
+  // Determine maximum flux (with safety factor) for all this data
   dblpair minmax;
   double cminflux, cmaxflux;
   minmax = data[0].getMinMax();
@@ -239,7 +239,7 @@ void calcLikeSingle::readBeam(const std::string& fl, double MINVAL,
 */
 void calcLikeSingle::applyBinning(unsigned int nbins) {
   if ((!data_read) || ndatasets == 0) return;
-  //Does nothing if the data is already binned at the same size
+  // Does nothing if the data is already binned at the same size
   for (unsigned int i = 0; i < ndatasets; ++i)
     data[i].applyBinning(nbins);
 }
@@ -450,7 +450,7 @@ double calcLikeSingle::getLogLike(const numberCounts& model, bool& pars_invalid,
 */
 void calcLikeSingle::writeToHDF5Handle(hid_t objid) const {
   hsize_t adims;
-  hid_t mems_id, att_id;
+  hid_t mems_id, att_id, dat_id;
 
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("calcLikeSingle", "writeToHDF5Handle",
@@ -477,6 +477,31 @@ void calcLikeSingle::writeToHDF5Handle(hid_t objid) const {
   }
   if (beamfile != "") 
     hdf5utils::writeDataString(objid, "BeamFilename", beamfile);
+
+  // Data and R ranges
+  adims = 1;
+  mems_id = H5Screate_simple(1, &adims, NULL);
+  dat_id = H5Dcreate2(objid, "MinDataFlux", H5T_NATIVE_DOUBLE, 
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
+	   &minDataFlux);
+  H5Dclose(dat_id);
+  dat_id = H5Dcreate2(objid, "MaxDataFlux", H5T_NATIVE_DOUBLE, 
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
+	   &maxDataFlux);
+  H5Dclose(dat_id);
+  dat_id = H5Dcreate2(objid, "MinRFlux", H5T_NATIVE_DOUBLE, 
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
+	   &minRFlux);
+  H5Dclose(dat_id);
+  dat_id = H5Dcreate2(objid, "MaxRFlux", H5T_NATIVE_DOUBLE, 
+		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
+	   &maxRFlux);
+  H5Dclose(dat_id);
+  H5Sclose(mems_id);
 }
 
 /*!
@@ -670,7 +695,7 @@ void calcLike::readDataFromFiles(const std::vector<std::string>& datafiles,
 				 double MINBEAMVAL, bool HISTOGRAM, 
 				 unsigned int NBEAMHIST, double EXPCONF) {
 
-  //Make sure they are all the same length
+  // Make sure they are all the same length
   unsigned int ndat = datafiles.size();
   if (ndat == 0)
     throw affineExcept("calcLike", "readDataFromFiles",
@@ -685,16 +710,16 @@ void calcLike::readDataFromFiles(const std::vector<std::string>& datafiles,
     throw affineExcept("calcLike", "readDataFromFiles",
 		       "datafiles and like_norm not same length");
   
-  //Use a map.  Could also use a multi-map, but meh
+  // Use a map.  Could also use a multi-map, but meh
   std::map< std::string, beam_group > grpmap;
   std::map< std::string, beam_group >::iterator grpmap_it;
   std::string key;
   for (unsigned int i = 0; i < ndat; ++i) {
     key = beamfiles[i];
-    //See if map already has key
+    // See if map already has key
     grpmap_it = grpmap.find(key);
     if (grpmap_it == grpmap.end()) {
-      //Previously unknown key
+      // Previously unknown key
       beam_group newgrp;
       newgrp.n = 1;
       newgrp.datafiles.push_back(datafiles[i]);
@@ -703,7 +728,7 @@ void calcLike::readDataFromFiles(const std::vector<std::string>& datafiles,
       newgrp.like_norms.push_back(like_norms[i]);
       grpmap[key] = newgrp;
     } else {
-      //Previously known key
+      // Previously known key
       grpmap_it->second.n += 1;
       grpmap_it->second.datafiles.push_back(datafiles[i]);
       grpmap_it->second.sigmas.push_back(sigmas[i]);
@@ -748,13 +773,13 @@ void calcLike::setNInterp(unsigned int nint) {
 void calcLike::setBinData() {
   if (bin_data) return;
 
-  //Easy if no data is read.
+  // Easy if no data is read.
   if (nbeamsets == 0) {
     bin_data = true;
     return;
   }
 
-  //Now we have to actually bin
+  // Now we have to actually bin
   for (unsigned int i = 0; i < nbeamsets; ++i)
     beamsets[i].applyBinning(nbins);
   bin_data = true;
@@ -794,6 +819,12 @@ void calcLike::setNBins(unsigned int nbns) {
 
 /*!
   \param[in] p Model parameters to use
+
+  Note that you don't want to call this multiple times,
+  but set the ranges once and keep using them.  Changing
+  the range for each set of parameters introduces numerical
+  jitter into the likelihood computations that slows
+  convergence considerably.
 */
 void calcLike::setRRanges(const paramSet& p) {
   model.setParams(p);
@@ -850,7 +881,7 @@ void calcLike::setRegularizationAlpha(double alpha) {
 /*!
   \param[in] p Parameters to evaluate
   \param[out] pars_invalid True if parameters were not valid,
-   otherwise False
+    otherwise False
 */
 double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
   const double half_log_2pi = 0.918938517570495605469;
@@ -1090,10 +1121,10 @@ void calcLike::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<unsigned int*>(&nbins), 1, MPI_UNSIGNED, dest,
 	   pofd_mcmc::CLSENDNBINS, comm);
 
-  //Model
+  // Model
   model.sendSelf(comm,dest);
 
-  //CFIRB prior
+  // CFIRB prior
   MPI_Send(const_cast<bool*>(&has_cfirb_prior), 1, MPI::BOOL, dest,
 	   pofd_mcmc::CLSENDHASCFIRBPRIOR, comm);
   if (has_cfirb_prior) {
@@ -1103,7 +1134,7 @@ void calcLike::sendSelf(MPI_Comm comm, int dest) const {
 	     pofd_mcmc::CLSENDCFIRBPRIORSIGMA, comm);
   }
 
-  //Poisson prior
+  // Poisson prior
   MPI_Send(const_cast<bool*>(&has_poisson_prior), 1, MPI::BOOL, dest,
 	   pofd_mcmc::CLSENDHASPOISSONPRIOR, comm);
   if (has_poisson_prior) {
@@ -1113,7 +1144,7 @@ void calcLike::sendSelf(MPI_Comm comm, int dest) const {
 	     pofd_mcmc::CLSENDPOISSONPRIORSIGMA, comm);
   }
 
-  //Sigma prior
+  // Sigma prior
   MPI_Send(const_cast<bool*>(&has_sigma_prior), 1, MPI::BOOL, dest,
 	   pofd_mcmc::CLSENDHASSIGMAPRIOR, comm);
   if (has_sigma_prior)

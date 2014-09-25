@@ -147,6 +147,11 @@ class doublebeam {
   void sendSelf(MPI_Comm, int dest) const;
   /*! \brief MPI copy receive operation */
   void receiveCopy(MPI_Comm, int dest);
+
+  bool writeToStream(std::ostream& os) const; //!< Output summary to stream
 };
+
+/*! \brief Write summary to stream */
+std::ostream& operator<<(std::ostream& os, const doublebeam& b);
 
 #endif

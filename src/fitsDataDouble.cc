@@ -502,7 +502,7 @@ fitsDataDouble::getMinMax() const {
   }
   min2 = max2 = data2[0];
   for (unsigned int i = 1; i < n; ++i) {
-    cval = data1[i];
+    cval = data2[i];
     if (cval < min2) min2 = cval;
     if (cval > max2) max2 = cval;
   }
@@ -652,7 +652,7 @@ void fitsDataDouble::sendSelf(MPI_Comm comm, int dest) const {
 	       pofd_mcmc::FDDSENDNBINS1, comm);
       MPI_Send(const_cast<unsigned int*>(&nbins2), 1, MPI_UNSIGNED, dest,
 	       pofd_mcmc::FDDSENDNBINS2, comm);
-      if ( (nbins1 > 0) && (nbins2 > 0) ) {
+      if ((nbins1 > 0) && (nbins2 > 0)) {
 	MPI_Send(binval, nbins1*nbins2, MPI_UNSIGNED, dest,
 		 pofd_mcmc::FDDSENDBINVAL, comm);
 	MPI_Send(const_cast<double*>(&bincent01), 1, MPI_DOUBLE, dest,
