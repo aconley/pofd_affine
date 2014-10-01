@@ -40,8 +40,10 @@ class PDFactoryDouble {
   double mn2; //!< Expected mean, band 2
   double var_noi1; //!< Expected variance without instrumental noise, band 1
   double var_noi2; //!< Expected variance without instrumental noise, band 2
-  double sg1; //!< Expected sigma (inc instrument noise), band 1 of most recent
-  double sg2; //!< Expected sigma (inc instrument noise), band 2 of most recent
+  double sg1pos; //!< Expected sigma (inc instrument noise) positive flux density, band 1 of most recent
+  double sg1neg; //!< Expected sigma (inc instrument noise) negative flux density, band 1 of most recent
+  double sg2pos; //!< Expected sigma (inc instrument noise) positive flux density, band 2 of most recent
+  double sg2neg; //!< Expected sigma (inc instrument noise) negative flux density, band 2 of most recent
 
   unsigned int fftw_plan_style; //!< FFTW plan flags
   bool has_wisdom; //!< Has FFTW wisdom 
@@ -104,7 +106,7 @@ class PDFactoryDouble {
 
   /*! \brief Helper function for unwrapAndNormalizePD */
   unsigned int findSplitPoint(const double* const, double,
-			      double) const;
+			      double, double) const;
 
   void unwrapAndNormalizePD(PDDouble& pd) const; //!< Moves computed P(D) to output var
 

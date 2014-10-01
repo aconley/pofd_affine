@@ -126,8 +126,8 @@ void PDFactoryDouble::init(unsigned int NEDGE) {
   has_wisdom = false;
   fftw_plan_style = FFTW_MEASURE;
 
-  mn1 = mn2 = var_noi1 = var_noi2 = sg1 = sg2 = 
-    std::numeric_limits<double>::quiet_NaN();
+  mn1 = mn2 = var_noi1 = var_noi2 = std::numeric_limits<double>::quiet_NaN();
+  sg1pos = sg1neg = sg2pos = sg2neg = std::numeric_limits<double>::quiet_NaN();
   rinitialized = false;
   initialized = false;
 }
@@ -774,7 +774,10 @@ void PDFactoryDouble::setupTransforms(unsigned int n) {
   \param[in] data Marginalized P(D) to find split point at.  Must be 
                   purly non-negative.
   \param[in] dflux Flux step
-  \param[in] sigma Estimated sigma for marginalized data
+  \param[in] sigmapos Estimated sigma for marginalized data for positive
+                    flux densities
+  \param[in] sigmaneg Estimated sigma for marginalized data for negative
+                    flux densities
   \returns Split point index
 
   This is a utility function for finding the split point to 'unwrap' a P(D).
@@ -782,7 +785,8 @@ void PDFactoryDouble::setupTransforms(unsigned int n) {
   for doing the marginalization.
 */
 unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
-					     double dflux, double sigma) const {
+					     double dflux, double sigmapos,
+					     double sigmaneg) const {
   // This is basically the same thing as PDFactory::findSplitPoint,
   //  but because some of the internal details of how things
   //  are stored differ, it is implemented both here and in PDFactory.
@@ -792,25 +796,30 @@ unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
   // These are are control constants for accepting points
   //  We use slightly more forgiving values here than in PDFactory
   //  because 2D is hard, and not as well sampled in practice.
-  const double n1 = 2.5; 
-  const double f1 = 1e-13;   // Jitter estimate #1 factor
+  const double n1 = 2.25;     // Minimum number of sigma away from mean
+  const double f1 = 5e-14;   // Jitter estimate #1 factor
   const double f2 = 1.5e-5;  // Peak relative estimate
   const double f3 = 5;       // Jitter estimate #2
 
-  if (sigma <= 0)
+  if (sigmapos <= 0)
     throw affineExcept("PDFactory", "findSplitPoint", 
-		       "Invalid (non-positive) sigma");
+		       "Invalid (non-positive) sigma pos");
+  if (sigmaneg <= 0)
+    throw affineExcept("PDFactory", "findSplitPoint", 
+		       "Invalid (non-positive) sigma neg");
 
   double fluxrange = currsize * dflux;
-  double n1sig = n1 * sigma;
+  double n1sigpos = n1 * sigmapos;
+  double n1signeg = n1 * sigmaneg;
 
   // Step 1
-  if (fluxrange < 2 * n1sig) {
+  if (fluxrange < (n1sigpos + n1signeg)) {
     std::stringstream errstr;
     errstr << "Not enough flux range; range is: "
-	   << fluxrange << " sigma is: " << sigma
+	   << fluxrange << " sigmas are: " << sigmapos
+	   << " and " << sigmaneg
 	   << " so required flux range is: "
-	   << 2 * n1sig;
+	   << (sigmapos + sigmaneg);
     throw affineExcept("PDFactoryDouble", "findSplitPoint", 
 		       errstr.str());
   }
@@ -827,16 +836,16 @@ unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
 		       "Peak P(D) value was zero");
 
   // Step 3
-  // Figure out the search index range from -n1sig to +n1sig
+  // Figure out the search index range from -n1signeg to +n1sigpos
   unsigned int topidx = 
-    currsize - static_cast<unsigned int>(n1sig / dflux) - 1;
-  unsigned int botidx = static_cast<unsigned int>(n1sig / dflux);
+    currsize - static_cast<unsigned int>(n1signeg / dflux) - 1;
+  unsigned int botidx = static_cast<unsigned int>(n1sigpos / dflux);
   // Find minimum value
   unsigned int minidx;
   double minval;
   minidx = botidx;
   minval = data[minidx];
-  for (unsigned int i = botidx + 1; i < topidx; ++i) {
+  for (unsigned int i = botidx + 1; i <= topidx; ++i) {
     currval = data[i];
     if (currval < minval) {
       minidx = i;
@@ -859,8 +868,36 @@ unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
   }
 
   // Step 5
-  double jitter = f1 * peak; // First estimate of jitter
-  if (minval > jitter) return minidx; // Success!
+  const unsigned int pre_jitter_n = 17; // Elements before jitter to check
+  double jitter = 0.0; // Estimate
+  if (minidx > pre_jitter_n) {
+    // Check if these values are decreasing
+    bool monotonic_decrease = true;
+    unsigned int initidx = minidx - pre_jitter_n;
+    double currval, prevval;
+    jitter = prevval = data[initidx];
+    for (unsigned int i = initidx + 1; i < minidx; ++i) {
+      currval = data[i];
+      if (currval >= prevval)
+	monotonic_decrease = false;
+      jitter += currval;
+      prevval = currval;
+    }
+    if (monotonic_decrease) // Success
+      return minidx;
+    else {
+      // Seems to be in the jitter; use 1.1x the mean as a jitter estimator
+      // estimate
+      jitter += minval;
+      jitter = 1.1 * jitter / static_cast<double>(pre_jitter_n + 1);
+    }
+  } else {
+    // We don't have room!  This is odd, but possible
+    // Just form an estimate from f1
+    jitter = f1 * peak;
+    if (minval > jitter) // Success!
+      return minidx;
+  }
 
   // Step 6
   // Update jitter estimate.  Beware of minimum being zero!
@@ -897,14 +934,14 @@ unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
     std::stringstream errstr;
     errstr << "Topidx (" << topidx << ") is already below jitter"
 	   << " estimate (" << jitter << ") with value "
-	   << pofd[topidx] << "; can't find split";
+	   << data[topidx] << " minval: " << minval
+	   << " and peak: " << peak << "; can't find split";
     throw affineExcept("PDFactoryDouble", "findSplitPoint", 
 		       errstr.str());
   }
   // Now search
   for (unsigned int i = topidx - 1; i >= botidx; --i)
     if (data[i] < jitter) return (i + 1); // Success
-
 
   // Step 8
   // Didn't find one -- throw exception.  But first find minimum
@@ -959,7 +996,7 @@ void PDFactoryDouble::unwrapAndNormalizePD(PDDouble& pd) const {
 
   unsigned int splitidx1;
   try {
-    splitidx1 = findSplitPoint(rsum, dflux1, sg1);
+    splitidx1 = findSplitPoint(rsum, dflux1, sg1pos, sg1neg);
   } catch (const affineExcept& ex) {
     // Add information to the exception about which band we were in.
     std::stringstream newerrstr("");
@@ -983,7 +1020,7 @@ void PDFactoryDouble::unwrapAndNormalizePD(PDDouble& pd) const {
 
   unsigned int splitidx2;
   try {
-    splitidx2 = findSplitPoint(rsum, dflux2, sg2);
+    splitidx2 = findSplitPoint(rsum, dflux2, sg2pos, sg2neg);
   } catch (const affineExcept& ex) {
     std::stringstream newerrstr("");
     newerrstr << "In dimension two, problem with split point: " 
@@ -1059,8 +1096,8 @@ void PDFactoryDouble::unwrapAndNormalizePD(PDDouble& pd) const {
     std::stringstream str;
     str << "Un-shift amounts not finite band1: " << tmn.first << " band2: "
         << tmn.second << std::endl;
-    str << "At length: " << currsize << " with sigma: " << sg1 << " "
-        << sg2;
+    str << "At length: " << currsize << " with sigmas: " << sg1pos << " "
+	<< sg1neg << " and " << sg2pos << " " << sg2neg;
     throw affineExcept("PDFactoryDouble", "unwrapAndNormalizePD", 
 		       str.str());
   }
@@ -1138,24 +1175,24 @@ bool PDFactoryDouble::initPD(unsigned int n, double minflux1, double maxflux1,
   getRStats();
 
   // Set the sigmas to the no-noise values for now
-  sg1 = sqrt(var_noi1);
-  sg2 = sqrt(var_noi2);
+  sg1pos = sqrt(var_noi1);
+  sg2pos = sqrt(var_noi2);
 
   //Decide if we will shift and pad, and if so by how much.
   // The idea is to shift the mean to zero -- but we only
   // do the shift if the sigma is larger than one actual step size
   // because otherwise we can't represent it well.
-  doshift1 = (sg1 > dflux1) && (fabs(mn1) > dflux1);
+  doshift1 = (sg1pos > dflux1) && (fabs(mn1) > dflux1);
   if (doshift1) shift1 = -mn1; else shift1 = 0.0;
-  doshift2 = (sg2 > dflux2) && (fabs(mn2) > dflux2);
+  doshift2 = (sg2pos > dflux2) && (fabs(mn2) > dflux2);
   if (doshift2) shift2 = -mn2; else shift2 = 0.0;
 
   if (verbose) {
     std::cout << " Initial mean estimate band1: " << mn1 << " band2: "
 	      << mn2 << std::endl;
     std::cout << " Initial stdev estimate band1 (no inst noise): " 
-	      << sg1 << " band2: "
-	      << sg2 << std::endl;
+	      << sg1pos << " band2: "
+	      << sg2pos << std::endl;
     if (doshift1)
       std::cout << " Additional shift in band 1: " << shift1 << std::endl;
     else std::cout << " Not applying additional shift in band 1" << std::endl;
@@ -1192,10 +1229,16 @@ bool PDFactoryDouble::initPD(unsigned int n, double minflux1, double maxflux1,
 void PDFactoryDouble::getPD(double sigma1, double sigma2,  
 			    PDDouble& pd, bool setLog) {
 
+  // If set, we assume that the P(D) will tend to cut off much more
+  // sharply at negative flux densities, which arises when the beam
+  // is mostly positive.  This is used in the split point computation,
+  // and is a good approximation for Herschel data but perhaps not in
+  // general.
+  const bool assume_negative_sharp = true;
+
   // The basic idea is to compute the P(D) from the previously filled
   // R values, adding in noise and all that fun stuff, filling pd
   // for output
-
   if (!initialized )
     throw affineExcept("PDFactoryDouble", "getPD",
 		       "Must call initPD first");
@@ -1397,9 +1440,29 @@ void PDFactoryDouble::getPD(double sigma1, double sigma2,
 
   // Copy into output variable, also normalizing, mean subtracting, 
   // making positive.  Need sigma estimates for unwrapAndNormalize
-  sg1 = sqrt(var_noi1 + sigma1 * sigma1);
-  sg2 = sqrt(var_noi2 + sigma2 * sigma2);
-  unwrapAndNormalizePD(pd);
+  // As is the case for PDFactory, we are going to assume that there 
+  // isn't much negative beam so that the sigma in the negative direction
+  // tends to be dominated by instrument noise.
+  sg1pos = sqrt(var_noi1 + sigma1 * sigma1);
+  sg2pos = sqrt(var_noi2 + sigma2 * sigma2);
+  if (assume_negative_sharp) {
+    if (9 * sigma1 * sigma1 > var_noi1) sg1neg = sigma1; else sg1neg = sg1pos;
+    if (9 * sigma2 * sigma2 > var_noi2) sg2neg = sigma2; else sg2neg = sg2pos;
+  } else {
+    sg1neg = sg1pos;
+    sg2neg = sg2pos;
+  }
+  
+  try {
+    unwrapAndNormalizePD(pd);
+  } catch  (const affineExcept& ex) {
+    // Add information to the exception about actual sigma values
+    std::stringstream newerrstr("");
+    newerrstr << ex.getErrStr() << std::endl
+	      << " for sigma values: " << sigma1 << " " << sigma2;
+    throw affineExcept(ex.getErrClass(), ex.getErrMethod(), 
+		       newerrstr.str());
+  }
 
   //Turn PD to log for more efficient log computation of likelihood
 #ifdef TIMING

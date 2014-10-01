@@ -33,7 +33,8 @@ class PDFactory {
   unsigned int currsize; //!< Current memory allocation for R, rtrans, etc.
   double mn; //!< Expected mean
   double var_noi; //!< Expected variance without instrument noise
-  double sg; //!< Expected sigma, inc instrument noise, or most recent P(D)
+  double sgpos; //!< Expected sigma, positive flux density, inc instrument noise, of most recent P(D)
+  double sgneg; //!< Expected sigma, negative flux density, inc instrument noise, of most recent P(D)
 
   // Plans
   unsigned int fftw_plan_style; //!< FFTW plan flags

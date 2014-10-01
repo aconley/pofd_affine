@@ -81,6 +81,8 @@ void PDFactory::init(unsigned int NINTERP) {
 
   dflux = 0.0;
 
+  mn = var_noi = sgpos = sgneg = std::numeric_limits<double>::quiet_NaN();
+
   verbose = false;
   has_wisdom = false;
   fftw_plan_style = FFTW_MEASURE;
@@ -726,12 +728,11 @@ unsigned int PDFactory::findSplitPoint() const {
   //      too close to the peak).  This enforces requirement 1.
   //  4) If the min satisfies value >= f2 * peak, then the smallest value
   //     is not an acceptable split, so throw an error.  This is requirement 2.
-  //  5) If min > f1 * peak  (first estimate of jitter level) accept this 
-  //     as the split. This is requirement 3, because f1 is meant to be a 
-  //     rough estimate of the jitter point. f1 is set by comparing with 
-  //     example models.
-  //  6) Form a new estimate of the jitter level, the lesser of f1 * peak or 
-  //      f3 * min.
+  //  5) Now we have to decide if there is jitter.  The first thing to 
+  //     do is look at the values before the minimum.  If they are all
+  //     nicely monotonically decreasing, they can't be jitter, so accept
+  //     this point. 
+  //  6) If they aren't, try to form an improved estimate of the jitter.
   //  7) Search the -n1 * sigma to n1 * sigma range (from the top, with 
   //      wrapping), and look for a point that is above the jitter estimate, //
   //      but the next one down is below the jitter floor.
@@ -743,25 +744,29 @@ unsigned int PDFactory::findSplitPoint() const {
   //  For data sets where the beam is not like that, this code may have issues.
 
   // These are are control constants for accepting points
-  const double n1 = 3.0; // Minimum number of sigma away from mean
-  const double f1 = 1e-13; // Values smaller than f1 * peak considered noise
+  const double n1 = 2.5; // Minimum number of sigma away from mean
+  const double f1 = 5e-14; // Values smaller than f1 * peak considered noise
   const double f2 = 1e-5; // Split must be less than f2 * peak
   const double f3 = 5; // Another jitter estimate: f3 * min
 
-  if (sg <= 0)
+  if (sgpos <= 0)
     throw affineExcept("PDFactory", "findSplitPoint", 
-		       "Invalid (non-positive) sigma");
+		       "Invalid (non-positive) sigma positive");
+  if (sgneg <= 0)
+    throw affineExcept("PDFactory", "findSplitPoint", 
+		       "Invalid (non-positive) sigma negative");
 
   double fluxrange = currsize * dflux;
-  double n1sig = n1 * sg;
+  double n1sigpos = n1 * sgpos;
+  double n1signeg = n1 * sgneg;
 
   // Step 1
-  if (fluxrange < 2 * n1sig) {
+  if (fluxrange < (n1sigpos + n1signeg)) {
     std::stringstream errstr;
     errstr << "Not enough flux range; range is: "
-	   << fluxrange << " sigma is: " << sg
+	   << fluxrange << " sigmas are: " << sgpos << " " << sgneg
 	   << " so required flux range is: "
-	   << 2 * n1sig;
+	   << (sgpos + sgneg);
     throw affineExcept("PDFactory", "findSplitPoint", 
 		       errstr.str());
   }
@@ -780,12 +785,12 @@ unsigned int PDFactory::findSplitPoint() const {
   // Step 3
   // Range we are searching
   unsigned int botidx, topidx;
-  botidx = static_cast<unsigned int>(n1sig / dflux);
-  if (n1sig > fabs(minflux_R))
+  botidx = static_cast<unsigned int>(n1sigpos / dflux);
+  if (n1sigpos > fabs(minflux_R))
     topidx = wrapRidx;
   else
     topidx =
-      static_cast<unsigned int>(-(n1sig + minflux_R) / dflux + wrapRidx + 1);
+      static_cast<unsigned int>(-(n1signeg + minflux_R) / dflux + wrapRidx + 1);
   if (botidx >= currsize) 
     throw affineExcept("PDFactory", "findSplitPoint",
 		       "Logic error; invalid botidx (wrapped) in split search");
@@ -796,7 +801,7 @@ unsigned int PDFactory::findSplitPoint() const {
   double minval;
   minidx = botidx;
   minval = pofd[minidx];
-  for (unsigned int i = botidx + 1; i < topidx; ++i) {
+  for (unsigned int i = botidx + 1; i <= topidx; ++i) {
     currval = pofd[i];
     if (currval < minval) {
       minidx = i;
@@ -818,11 +823,42 @@ unsigned int PDFactory::findSplitPoint() const {
 		       errstr.str());
   }
 
-  // Step 5
-  double jitter = f1 * peak; // First estimate of jitter
-  if (minval > jitter) // Success!
-    return minidx;
-
+  // Step 5 and 6
+  // Try to estimate jitter.  First, check if values are nicely
+  //  decreasing before min, which implies they can't really be jitter.
+  //  If they are, we can just accept.  Otherwise we take the information
+  //  we gather to construct a jitter estimate.
+  const unsigned int pre_jitter_n = 17; // Elements before jitter to check
+  double jitter = 0.0; // Estimate
+  if (minidx > pre_jitter_n) {
+    // Check if these values are decreasing
+    bool monotonic_decrease = true;
+    unsigned int initidx = minidx - pre_jitter_n;
+    double currval, prevval;
+    jitter = prevval = pofd[initidx];
+    for (unsigned int i = initidx + 1; i < minidx; ++i) {
+      currval = pofd[i];
+      if (currval >= prevval)
+	monotonic_decrease = false;
+      jitter += currval;
+      prevval = currval;
+    }
+    if (monotonic_decrease) // Success!
+      return minidx;
+    else {
+      // Seems to be in the jitter; use 1.1x the mean as a jitter estimator
+      // estimate.
+      jitter += minval;
+      jitter = 1.1 * jitter / static_cast<double>(pre_jitter_n + 1);
+    }
+  } else {
+    // We don't have room!  This is odd, but possible
+    // Just form an estimate from f1
+    jitter = f1 * peak;
+    if (minval > jitter) // Success!
+      return minidx;
+  }
+    
   // Step 6
   // Update jitter estimate; beware of zero min!
   if (minval <= 0.0) {
@@ -858,7 +894,8 @@ unsigned int PDFactory::findSplitPoint() const {
     std::stringstream errstr;
     errstr << "Topidx (" << topidx << ") is already below jitter"
 	   << " estimate (" << jitter << ") with value "
-	   << pofd[topidx] << "; can't find split";
+	   << pofd[topidx] << " minimum: " << minval
+	   << " peak: " << peak << "; can't find split";
     throw affineExcept("PDFactory", "findSplitPoint", 
 		       errstr.str());
   }
@@ -891,7 +928,7 @@ unsigned int PDFactory::findSplitPoint() const {
 */
 // This should only ever be called by getPD, so the inputs aren't checked
 //  Among other implications, we are assuming the P(D) is in pofd,
-//  the sigma is in sg, etc.
+//  the sigma is in sgpos/signeg, etc.
 void PDFactory::unwrapAndNormalizePD(PD& pd) const {
   // The idea is to find the point where the postive and negative bits
   //  cross each other and split there.  The details of that
@@ -959,7 +996,8 @@ void PDFactory::unwrapAndNormalizePD(PD& pd) const {
   if (std::isinf(tmn) || std::isnan(tmn)) {
     std::stringstream str;
     str << "Un-shift amounts not finite: " << tmn << " " << std::endl;
-    str << "At length: " << currsize << " with noise: " << sg;
+    str << "At length: " << currsize << " with noise estimates: " << sgpos
+	<< " " << sgneg;
     throw affineExcept("PDFactory", "unwrapandNormalizePD", str.str());
   }
   pd.minflux = -tmn;
@@ -986,7 +1024,6 @@ void PDFactory::unwrapAndNormalizePD(PD& pd) const {
 */
 bool PDFactory::initPD(unsigned int n, double minflux, double maxflux, 
 		       const numberCounts& model, const beam& bm) {
-
   if (n == 0)
     throw affineExcept("PDFactory", "initPD", "Invalid (zero) n");  
   if (n == 1)
@@ -1024,18 +1061,19 @@ bool PDFactory::initPD(unsigned int n, double minflux, double maxflux,
   getMeanVarFromR();
 
   // Set this to the value without instrument noise for now
-  sg = sqrt(var_noi);
+  sgpos = sqrt(var_noi);
 
   //Decide if we will shift and pad, and if so by how much.
   // The idea is to shift the mean to zero -- but we only
   // do the shift if the sigma is larger than one actual step size
   // because otherwise we can't represent it well.
-  doshift = (sg > dflux) && (fabs(mn) > dflux);
+  doshift = (sgpos > dflux) && (fabs(mn) > dflux); // Test on sgpos
   if (doshift) shift = -mn; else shift = 0.0;
 
   if (verbose) {
     std::cout << " Initial mean estimate: " << mn << std::endl;
-    std::cout << " Initial stdev estimate (no inst noise): " << sg << std::endl;
+    std::cout << " Initial stdev estimate (no inst noise): " << sgpos 
+	      << std::endl;
     if (doshift)
       std::cout << " Additional shift applied: " << shift << std::endl;
     else 
@@ -1070,10 +1108,16 @@ bool PDFactory::initPD(unsigned int n, double minflux, double maxflux,
 */
 void PDFactory::getPD(double sigma, PD& pd, bool setLog) {
 
+  // If set, we assume that the P(D) will tend to cut off much more
+  // sharply at negative flux densities, which arises when the beam
+  // is mostly positive.  This is used in the split point computation,
+  // and is a good approximation for Herschel data but perhaps not in
+  // general.
+  const bool assume_negative_sharp = true;
+
   // The basic idea is to compute the P(D) from the previously filled
   // R values, adding in noise and all that fun stuff, filling pd
   // for output
-
   if (!initialized)
     throw affineExcept("PDFactory", "getPD", "Must call initPD first");
 
@@ -1166,8 +1210,21 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog) {
 #endif
 
   // Copy into output variable, also normalizing, mean subtracting, 
-  // making positive
-  sg = sqrt(var_noi + sigma * sigma); // Used in unwrapPD
+  // making positive.  We are assuming the beam doesn't have that
+  // much negative contribution so that instrument noise dominates the
+  // downside cutoff unless sigma is quite small
+  // That is, we are ASSUMING something about the beams here,
+  //  which is that they don't have too much in the way of negative
+  //  flux densities, which is true of the Herschel beams but not
+  //  true in general
+  sgpos = sqrt(var_noi + sigma * sigma); // Used in unwrapPD
+  if (assume_negative_sharp)
+    if (9 * sigma * sigma > var_noi)
+      sgneg = sigma;  // Assume inst noise dominates negative extent
+    else
+      sgneg = sgpos;
+  else
+    sgneg = sgpos;
   unwrapAndNormalizePD(pd);
 
   //Turn PD to log for more efficient log computation of likelihood
