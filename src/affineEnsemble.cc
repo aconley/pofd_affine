@@ -451,7 +451,8 @@ void affineEnsemble::printStatistics(float conflevel,
 		       "Sampler not in valid state");
   std::string parname;
   float mn, var, low, up;
-  std::streamsize sw = os.width();
+  std::ios state(nullptr);
+  state.copyfmt(os);
   for (unsigned int i = 0; i < nparams; ++i) {
     if (!has_name[i]) parname = "Unknown"; else
       parname = parnames[i];
@@ -461,18 +462,20 @@ void affineEnsemble::printStatistics(float conflevel,
     } else {
       chains.getParamStats(i, mn, var, low, up, conflevel);
       os.width(6);
+      os.precision(4);
       os << "Parameter: " << parname << " Mean: " << mn << " Stdev: "
 	 << sqrt(var) << std::endl;
       os << "  lower limit: " << low << " upper limit: "
 	 << up << " (";
       os.width(5);
+      os.precision(2);
       os << conflevel * 100.0 << "% limit)";
       if (param_state[i] & mcmc_affine::BONUS)
 	os << " (bonus param)";
       os << std::endl;
     }
   }
-  os.width(sw);
+  os.copyfmt(state);
 }
 
 /*!

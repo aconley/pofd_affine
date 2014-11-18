@@ -34,6 +34,8 @@ void hashbar::update(unsigned int step, std::ostream& os) {
   if (step >= nsteps) nhash = maxlen;
   else nhash = step * maxlen / nsteps;
   if (nhash == currlen) return;
+  std::ios state(nullptr);
+  state.copyfmt(os);
   if (nhash == 0) {
     // Empty bar
     initialize(os);
@@ -57,6 +59,7 @@ void hashbar::update(unsigned int step, std::ostream& os) {
     os << "]\r" << std::flush;
   }
   currlen = nhash;
+  os.copyfmt(state);
 }
 
 /*!
