@@ -5,6 +5,7 @@
 #include<cstdlib>
 #include<ios>
 #include<iomanip>
+#include<limits>
 
 #include<getopt.h>
 
