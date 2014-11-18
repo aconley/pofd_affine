@@ -79,8 +79,8 @@ int getRSingle( int argc, char** argv ) {
   else
     dflux = 1.0;
 
-  double *fluxes = NULL;
-  double *R = NULL;
+  double *fluxes = nullptr;
+  double *R = nullptr;
   try {
     initFileKnots model_info(initfile, false, false);
 
@@ -127,7 +127,7 @@ int getRSingle( int argc, char** argv ) {
       
       // Properties
       adims = 1;
-      mems_id = H5Screate_simple(1, &adims, NULL);
+      mems_id = H5Screate_simple(1, &adims, nullptr);
       att_id = H5Acreate2(file_id, "dflux", H5T_NATIVE_DOUBLE,
 			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
       H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux);
@@ -170,13 +170,13 @@ int getRSingle( int argc, char** argv ) {
   } catch (const affineExcept& ex) {
     std::cerr << "Error encountered" << std::endl;
     std::cerr << ex << std::endl;
-    if (fluxes != NULL) delete[] fluxes;
-    if (R != NULL) delete[] R;
+    if (fluxes != nullptr) delete[] fluxes;
+    if (R != nullptr) delete[] R;
     return 8;
   } catch (const std::bad_alloc& ba) {
     std::cerr << "Bad allocation error: " << ba.what() << std::endl;
-    if (fluxes != NULL) delete[] fluxes;
-    if (R != NULL) delete[] R;
+    if (fluxes != nullptr) delete[] fluxes;
+    if (R != nullptr) delete[] R;
     return 16;
   }
   return 0;
@@ -248,7 +248,7 @@ int getRDouble(int argc, char** argv) {
   
   //Main computation
   double *fluxes1, *fluxes2, *R;
-  fluxes1 = fluxes2 = R = NULL;
+  fluxes1 = fluxes2 = R = nullptr;
   try {
     initFileDoubleLogNormal model_info(initfile, false, false);
 
@@ -309,7 +309,7 @@ int getRDouble(int argc, char** argv) {
       
       // Properties
       adims = 1;
-      mems_id = H5Screate_simple(1, &adims, NULL);
+      mems_id = H5Screate_simple(1, &adims, nullptr);
       att_id = H5Acreate2(file_id, "dflux1", H5T_NATIVE_DOUBLE,
 			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
       H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux1);
@@ -365,15 +365,15 @@ int getRDouble(int argc, char** argv) {
   } catch (const affineExcept& ex) {
     std::cerr << "Error encountered" << std::endl;
     std::cerr << ex << std::endl;
-    if (fluxes1 != NULL) delete[] fluxes1;
-    if (fluxes2 != NULL) delete[] fluxes2;
-    if (R != NULL) delete[] R;
+    if (fluxes1 != nullptr) delete[] fluxes1;
+    if (fluxes2 != nullptr) delete[] fluxes2;
+    if (R != nullptr) delete[] R;
     return 16;
   } catch (const std::bad_alloc& ba) {
     std::cerr << "Bad allocation error: " << ba.what() << std::endl;
-    if (fluxes1 != NULL) delete[] fluxes1;
-    if (fluxes2 != NULL) delete[] fluxes2;
-    if (R != NULL) delete[] R;
+    if (fluxes1 != nullptr) delete[] fluxes1;
+    if (fluxes2 != nullptr) delete[] fluxes2;
+    if (R != nullptr) delete[] R;
     return 16;
   }
 

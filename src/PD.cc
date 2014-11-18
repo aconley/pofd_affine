@@ -19,12 +19,12 @@ const double PD::lowsigval = 2.5;
 */
 PD::PD(unsigned int N, double MINFLUX, double DFLUX) :
   n(N), capacity(N), logflat(false), minflux(MINFLUX), dflux(DFLUX) {
-  if (capacity == 0) pd_ = NULL; else
+  if (capacity == 0) pd_ = nullptr; else
     pd_ = (double *) fftw_malloc(sizeof(double) * capacity);
 }
 
 PD::~PD() {
-  if (pd_ != NULL) fftw_free(pd_);
+  if (pd_ != nullptr) fftw_free(pd_);
 }
 
 /*!
@@ -37,9 +37,9 @@ void PD::resize(unsigned int N) {
   //Doesn't actually resize arrays if it can avoid it
   unsigned int newcap = N;
   if (newcap > capacity) {
-    if (pd_ != NULL) fftw_free(pd_);
+    if (pd_ != nullptr) fftw_free(pd_);
     if (newcap > 0) pd_ = (double *) fftw_malloc(sizeof(double) * newcap);
-    else pd_ = NULL;
+    else pd_ = nullptr;
     capacity = newcap;
   }
   n = N;
@@ -55,11 +55,11 @@ void PD::shrink() {
       double* tmp = (double*) fftw_malloc(sizeof(double) * newcap);
       for (unsigned int i = 0; i < newcap; ++i)
 	tmp[i] = pd_[i];
-      if (pd_ != NULL) fftw_free(pd_);
+      if (pd_ != nullptr) fftw_free(pd_);
       pd_ = tmp;
     } else {
-      if (pd_ != NULL) fftw_free(pd_);
-      pd_ = NULL;
+      if (pd_ != nullptr) fftw_free(pd_);
+      pd_ = nullptr;
     }
     capacity = newcap;
   }
@@ -72,9 +72,9 @@ void PD::shrink() {
 */
 void PD::strict_resize(unsigned int N) {
   if (N != capacity) {
-    if (pd_ != NULL) fftw_free(pd_);
+    if (pd_ != nullptr) fftw_free(pd_);
     if (N > 0) pd_ = (double*) fftw_malloc(sizeof(double) * N);
-    else pd_ = NULL;
+    else pd_ = nullptr;
     capacity = N;
   }
   n = N;
@@ -365,7 +365,7 @@ void PD::fill(unsigned int N, double MINFLUX, double DFLUX,
   if the P(D) has been converted to log values.
 */
 double PD::getPDVal(double x) const {
-  if (pd_ == NULL) return std::numeric_limits<double>::quiet_NaN();
+  if (pd_ == nullptr) return std::numeric_limits<double>::quiet_NaN();
 
   //look up the effective indexes
   int idx = static_cast<int>((x - minflux) / dflux);
@@ -472,7 +472,7 @@ void PD::writeToHDF5Handle(hid_t objid) const {
   hdf5utils::writeAttBool(objid, "IsLog", logflat);
 
   adims = 1;
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate2(objid, "dFlux", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux);
@@ -499,8 +499,9 @@ void PD::writeToHDF5Handle(hid_t objid) const {
   \returns Log likelihood
 */
 double PD::getLogLike(const fitsData& data) const {
-  if (pd_ == NULL) throw affineExcept("PD", "getLogLike",
-				      "pd not filled before likelihood calc");
+  if (pd_ == nullptr)
+    throw affineExcept("PD", "getLogLike",
+		       "pd not filled before likelihood calc");
   unsigned int ndata = data.getN();
   if (ndata == 0) throw affineExcept("PD", "getLogLike",
 				     "No data present");

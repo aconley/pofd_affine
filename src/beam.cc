@@ -19,15 +19,15 @@ beam::beam() {
   totneg = totpos = 0; 
   totnegsq = totpossq = 0.0;
   pixsize=0.0; 
-  pospixarr = negpixarr = NULL;
-  posinvpixarr = neginvpixarr = NULL;
+  pospixarr = negpixarr = nullptr;
+  posinvpixarr = neginvpixarr = nullptr;
   haspos = hasneg = false;
   minval = 0.0;
   nbins = 0;
   is_pos_histogrammed = is_neg_histogrammed = false;
   posnbins = negnbins = 0;
-  posweights = negweights = NULL;
-  poshistval = neghistval = NULL;
+  posweights = negweights = nullptr;
+  poshistval = neghistval = nullptr;
   
   if (minval < 0.0)
     throw affineExcept("beam", "beam", "Invalid (non-positive) minval");
@@ -46,13 +46,13 @@ beam::beam(const std::string& filename, bool histogram,
   totneg = totpos = 0; 
   totnegsq = totpossq = 0.0;
   pixsize=0.0; 
-  pospixarr = negpixarr = NULL;
-  posinvpixarr = neginvpixarr = NULL;
+  pospixarr = negpixarr = nullptr;
+  posinvpixarr = neginvpixarr = nullptr;
   haspos = hasneg = false;
   is_pos_histogrammed = is_neg_histogrammed = false;
   posnbins = negnbins = 0;
-  posweights = negweights = NULL;
-  poshistval = neghistval = NULL;
+  posweights = negweights = nullptr;
+  poshistval = neghistval = nullptr;
 
   if (minval < 0.0)
     throw affineExcept("beam", "beam", "Invalid (non-positive) minval");
@@ -65,10 +65,10 @@ beam::beam(const std::string& filename, bool histogram,
   \param[in] inp Beam to copy
 */
 beam::beam(const beam& inp) {
-  negpixarr = pospixarr = NULL;
-  posinvpixarr = neginvpixarr = NULL;
-  posweights = negweights = NULL;
-  poshistval = neghistval = NULL;
+  negpixarr = pospixarr = nullptr;
+  posinvpixarr = neginvpixarr = nullptr;
+  posweights = negweights = nullptr;
+  poshistval = neghistval = nullptr;
   npos = inp.npos;
   nneg = inp.nneg;
   haspos = inp.haspos;
@@ -172,14 +172,20 @@ beam& beam::operator=(const beam& other) {
 }
 
 void beam::cleanup() {
-  if (pospixarr != NULL) { delete[] pospixarr; pospixarr = NULL; }
-  if (negpixarr != NULL) { delete[] negpixarr; negpixarr = NULL; }
-  if (posinvpixarr != NULL) { delete[] posinvpixarr; posinvpixarr = NULL; }
-  if (neginvpixarr != NULL) { delete[] neginvpixarr; neginvpixarr = NULL; }
-  if (posweights != NULL) { delete[] posweights; posweights = NULL; }
-  if (negweights != NULL) { delete[] negweights; negweights = NULL; }
-  if (poshistval != NULL) { delete[] posweights; poshistval = NULL; }
-  if (neghistval != NULL) { delete[] negweights; neghistval = NULL; }
+  if (pospixarr != nullptr) { delete[] pospixarr; pospixarr = nullptr; }
+  if (negpixarr != nullptr) { delete[] negpixarr; negpixarr = nullptr; }
+  if (posinvpixarr != nullptr) {
+    delete[] posinvpixarr;
+    posinvpixarr = nullptr;
+  }
+  if (neginvpixarr != nullptr) {
+    delete[] neginvpixarr;
+    neginvpixarr = nullptr;
+  }
+  if (posweights != nullptr) { delete[] posweights; posweights = nullptr; }
+  if (negweights != nullptr) { delete[] negweights; negweights = nullptr; }
+  if (poshistval != nullptr) { delete[] posweights; poshistval = nullptr; }
+  if (neghistval != nullptr) { delete[] negweights; neghistval = nullptr; }
   haspos = hasneg = false;
   is_pos_histogrammed = is_neg_histogrammed = false;
   npos = nneg = 0;
@@ -214,10 +220,10 @@ void beam::readFile(const std::string& filename, double MINVAL) {
 
   // Do the read
   status = 0;
-  fptr = NULL;
+  fptr = nullptr;
 
   fits_open_file(&fptr, filename.c_str(), READONLY, &status);
-  if (fptr == NULL) {
+  if (fptr == nullptr) {
     fits_close_file(fptr, &status);
     std::stringstream errstr;
     errstr << "Error opening input file: " << filename << std::endl;
@@ -231,7 +237,7 @@ void beam::readFile(const std::string& filename, double MINVAL) {
     throw affineExcept("beam", "readFile", errstr.str());
   }
 
-  fits_get_hdrspace(fptr,&nkeys,NULL,&status);
+  fits_get_hdrspace(fptr, &nkeys, nullptr, &status);
   if (status) {
     fits_report_error(stderr, status);
     fits_close_file(fptr, &status);
@@ -378,10 +384,10 @@ void beam::makeHistogram(unsigned int NBINS) {
   // Clean up hist values
   is_pos_histogrammed = is_neg_histogrammed = false;
   posnbins = negnbins = 0;
-  if (posweights != NULL) delete[] posweights;
-  if (negweights != NULL) delete[] negweights;
-  if (poshistval != NULL) delete[] poshistval;
-  if (neghistval != NULL) delete[] neghistval;
+  if (posweights != nullptr) { delete[] posweights; posweights = nullptr; }
+  if (negweights != nullptr) { delete[] negweights; negweights = nullptr; }
+  if (poshistval != nullptr) { delete[] poshistval; poshistval = nullptr; }
+  if (neghistval != nullptr) { delete[] neghistval; neghistval = nullptr; }
 
   bool do_pos = haspos && (npos >= histothresh);
   bool do_neg = hasneg && (nneg >= histothresh);

@@ -10,11 +10,11 @@
 
 fitsDataDouble::fitsDataDouble() {
   n = 0;
-  data1 = data2 = NULL;
+  data1 = data2 = nullptr;
   is_binned = false;
   nbins1 = nbins2 = 0;
   bincent01 = bindelta1 = bincent02 = bindelta2 = 0.0;
-  binval = NULL;
+  binval = nullptr;
   file1 = "";
   file2 = "";
   dataext1 = dataext2 = maskext1 = maskext2 = 0;
@@ -36,18 +36,18 @@ fitsDataDouble::fitsDataDouble(const std::string& filename1,
 			       const std::string& filename2,
 			       bool ignoremask, bool meansub) {
   n = 0;
-  data1 = data2 = NULL;
+  data1 = data2 = nullptr;
   is_binned = false;
   nbins1 = nbins2 = 0;
   bincent01 = bindelta1 = bincent02 = bindelta2 = 0.0;
-  binval = NULL;
+  binval = nullptr;
   readData(filename1, filename2, ignoremask, meansub);
 }
 
 fitsDataDouble::~fitsDataDouble() {
-  if (data1 != NULL) fftw_free(data1);
-  if (data2 != NULL) fftw_free(data2);
-  if (binval != NULL) fftw_free(binval);
+  if (data1 != nullptr) fftw_free(data1);
+  if (data2 != nullptr) fftw_free(data2);
+  if (binval != nullptr) fftw_free(binval);
 }
 
 
@@ -78,8 +78,8 @@ bool fitsDataDouble::readFile(const std::string& file, long& ndata,
 
   this_has_mask = false;
   hduok = dataok = 0;
-  data = NULL;
-  mask = NULL;
+  data = nullptr;
+  mask = nullptr;
   ndata = 0;
 
   //Here we go -- start by trying to open file
@@ -306,9 +306,9 @@ void fitsDataDouble::readData(const std::string& filename1,
 			      const std::string& filename2,
 			      bool ignore_mask, bool meansub) {
   //Free up old arrays
-  if (data1 != NULL) fftw_free(data1);
-  if (data2 != NULL) fftw_free(data2);
-  if (binval != NULL) fftw_free(binval);
+  if (data1 != nullptr) { fftw_free(data1); data1 = nullptr; }
+  if (data2 != nullptr) { fftw_free(data2); data2 = nullptr; }
+  if (binval != nullptr) { fftw_free(binval); binval = nullptr; }
   is_binned = false;
   has_mask1 = has_mask2 = false;
   maskext1 = maskext2 = 0;
@@ -321,8 +321,8 @@ void fitsDataDouble::readData(const std::string& filename1,
   long ndat1_, ndat2_;
   double *data1_, *data2_;
   unsigned int *mask1_, *mask2_;
-  data1_ = data2_ = NULL;
-  mask1_ = mask2_ = NULL;
+  data1_ = data2_ = nullptr;
+  mask1_ = mask2_ = nullptr;
   has_mask1 = readFile(file1, ndat1_, data1_, dataext1, mask1_, maskext1, 
 		       ignore_mask);
   has_mask2 = readFile(file2, ndat2_, data2_, dataext2, mask2_, maskext2,
@@ -330,10 +330,10 @@ void fitsDataDouble::readData(const std::string& filename1,
 
   //Check to make sure they are the same size, etc.
   if (ndat1_ != ndat2_) {
-    if (data1_ != NULL) fftw_free(data1_);
-    if (data2_ != NULL) fftw_free(data2_);
-    if (mask1_ != NULL) fftw_free(mask1_);
-    if (mask2_ != NULL) fftw_free(mask2_);
+    if (data1_ != nullptr) fftw_free(data1_);
+    if (data2_ != nullptr) fftw_free(data2_);
+    if (mask1_ != nullptr) fftw_free(mask1_);
+    if (mask2_ != nullptr) fftw_free(mask2_);
     throw affineExcept("fitsDataDouble", "readData",
 		       "Data from file1 and file2 not the same size");
   }
@@ -351,10 +351,10 @@ void fitsDataDouble::readData(const std::string& filename1,
       for (unsigned int i = 0; i < ndat1_; ++i)
 	if ((mask1_[i] & mask2_[i]) == 0) ++nkeep;
       if (nkeep == 0) {
-	if (data1_ != NULL) fftw_free(data1_);
-	if (data2_ != NULL) fftw_free(data2_);
-	if (mask1_ != NULL) fftw_free(mask1_);
-	if (mask2_ != NULL) fftw_free(mask2_);
+	if (data1_ != nullptr) { fftw_free(data1_); data1_ = nullptr; }
+	if (data2_ != nullptr) { fftw_free(data2_); data2_ = nullptr; }
+	if (mask1_ != nullptr) { fftw_free(mask1_); mask1_ = nullptr; }
+	if (mask2_ != nullptr) { fftw_free(mask2_); mask2_ = nullptr; }
 	throw affineExcept("fitsDataDouble","readData",
 			   "All data masked");
       }
@@ -377,10 +377,10 @@ void fitsDataDouble::readData(const std::string& filename1,
       for (unsigned int i = 0; i < ndat1_; ++i)
 	if (msk[i] == 0) ++nkeep;
       if (nkeep == 0) {
-	if (data1_ != NULL) fftw_free(data1_);
-	if (data2_ != NULL) fftw_free(data2_);
-	if (mask1_ != NULL) fftw_free(mask1_);
-	if (mask2_ != NULL) fftw_free(mask2_);
+	if (data1_ != nullptr) { fftw_free(data1_); data1_ = nullptr; }
+	if (data2_ != nullptr) { fftw_free(data2_); data2_ = nullptr; }
+	if (mask1_ != nullptr) { fftw_free(mask1_); mask1_ = nullptr; }
+	if (mask2_ != nullptr) { fftw_free(mask2_); mask2_ = nullptr; }
 	throw affineExcept("fitsDataDouble", "readData",
 			   "All data masked");
       }
@@ -396,10 +396,12 @@ void fitsDataDouble::readData(const std::string& filename1,
       n = nkeep;
     }
     fftw_free(data1_);
+    data1_ = nullptr;
     fftw_free(data2_);
+    data2_ = nullptr;
   }
-  if (mask1_ != NULL) fftw_free(mask1_);
-  if (mask2_ != NULL) fftw_free(mask2_);
+  if (mask1_ != nullptr) { fftw_free(mask1_); mask1_ = nullptr; }
+  if (mask2_ != nullptr) { fftw_free(mask2_); mask2_ = nullptr; }
   if (meansub) meanSubtract();
 
 }
@@ -561,8 +563,9 @@ void fitsDataDouble::applyBinning(unsigned int NBINS1, unsigned int NBINS2) {
   if (is_binned && (NBINS1 == nbins1) && (NBINS2 == nbins2)) return;
 
   if ((NBINS1 != nbins1) || (NBINS2 != nbins2)) {
-    if (binval != NULL) fftw_free(binval);
-    binval = (unsigned int*) fftw_malloc(sizeof(unsigned int) *NBINS1 * NBINS2);
+    if (binval != nullptr) fftw_free(binval);
+    binval =
+      (unsigned int*) fftw_malloc(sizeof(unsigned int) *NBINS1 * NBINS2);
     nbins1 = NBINS1;
     nbins2 = NBINS2;
   }
@@ -606,7 +609,7 @@ void fitsDataDouble::applyBinning(unsigned int NBINS1, unsigned int NBINS2) {
 
 void fitsDataDouble::removeBinning() {
   if (!is_binned) return;
-  if (binval != NULL) fftw_free(binval);
+  if (binval != nullptr) { fftw_free(binval); binval = nullptr; }
   nbins1 = nbins2 = 0;
   is_binned = false;
 }
@@ -680,12 +683,12 @@ void fitsDataDouble::receiveCopy(MPI_Comm comm, int src) {
 
   if (newn != n) {
     //Have to change sizes
-    if (data1 != NULL) fftw_free(data1);
-    if (data2 != NULL) fftw_free(data2);
+    if (data1 != nullptr) fftw_free(data1);
+    if (data2 != nullptr) fftw_free(data2);
     if (newn > 0) {
       data1 = (double*) fftw_malloc(sizeof(double) * newn);
       data2 = (double*) fftw_malloc(sizeof(double) * newn);
-    } else data1 = data2 = NULL;
+    } else data1 = data2 = nullptr;
     n = newn;
   }
   if (n > 0) {
@@ -704,13 +707,13 @@ void fitsDataDouble::receiveCopy(MPI_Comm comm, int src) {
 	       comm, &Info);
       //Realloc if needed
       if ((newnbins1 != nbins1) || (newnbins2 != nbins2)) {
-	if (binval != NULL) fftw_free(binval);
+	if (binval != nullptr) fftw_free(binval);
 	if ( (newnbins1 > 0) && (newnbins2 > 0) ) {
 	  binval = (unsigned int*) 
 	    fftw_malloc( sizeof(unsigned int)*newnbins1*newnbins2 );
 	  nbins1 = newnbins1;
 	  nbins2 = newnbins2;
-	} else binval = NULL;
+	} else binval = nullptr;
       }
       if ((nbins1 > 0) && (nbins2 > 0)) {
 	MPI_Recv(binval, nbins1*nbins2, MPI_UNSIGNED, src,
@@ -727,8 +730,7 @@ void fitsDataDouble::receiveCopy(MPI_Comm comm, int src) {
       } else is_binned = false;
     }
   } else {
-    if (binval != NULL) fftw_free(binval);
-    binval = NULL;
+    if (binval != nullptr) { fftw_free(binval); binval = nullptr; }
     is_binned = false;
     nbins1 = nbins2 = 0;
   }

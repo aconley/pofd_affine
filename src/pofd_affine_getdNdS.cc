@@ -98,7 +98,7 @@ int getNSingle(int argc, char** argv) {
     return 2;
   }
 
-  double *dNdS = NULL;
+  double *dNdS = nullptr;
   try {
     initFileKnots model_info(initfile, false, false);
 
@@ -173,7 +173,7 @@ int getNSingle(int argc, char** argv) {
 
       // Properties
       adims = 1;
-      mems_id = H5Screate_simple(1, &adims, NULL);
+      mems_id = H5Screate_simple(1, &adims, nullptr);
       btmp = static_cast<hbool_t>(logspace);
       att_id = H5Acreate2(file_id, "logspace", H5T_NATIVE_HBOOL,
 			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
@@ -240,11 +240,11 @@ int getNSingle(int argc, char** argv) {
   } catch (const affineExcept& ex) {
     std::cerr << "Error encountered" << std::endl;
     std::cerr << ex << std::endl;
-    if (dNdS != NULL) delete[] dNdS;
+    if (dNdS != nullptr) delete[] dNdS;
     return 8;
   } catch (const std::bad_alloc& ba) {
     std::cerr << "Bad allocation error: " << ba.what() << std::endl;
-    if (dNdS != NULL) delete[] dNdS;
+    if (dNdS != nullptr) delete[] dNdS;
     return 16;
   }
   return 0;
@@ -320,7 +320,7 @@ int getNProjected(int argc, char** argv) {
   }
 
 
-  double *dNdS = NULL;
+  double *dNdS = nullptr;
   try {
     initFileDoubleLogNormal model_info(initfile, false, false);
     
@@ -399,7 +399,7 @@ int getNProjected(int argc, char** argv) {
 
       // Properties
       adims = 1;
-      mems_id = H5Screate_simple(1, &adims, NULL);
+      mems_id = H5Screate_simple(1, &adims, nullptr);
       btmp = static_cast<hbool_t>(logspace);
       att_id = H5Acreate2(file_id, "logspace", H5T_NATIVE_HBOOL,
 			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
@@ -464,11 +464,11 @@ int getNProjected(int argc, char** argv) {
   } catch (const affineExcept& ex) {
     std::cerr << "Error encountered" << std::endl;
     std::cerr << ex << std::endl;
-    if (dNdS != NULL) delete[] dNdS;
+    if (dNdS != nullptr) delete[] dNdS;
     return 8;
   } catch (const std::bad_alloc& ba) {
     std::cerr << "Bad allocation error: " << ba.what() << std::endl;
-    if (dNdS != NULL) delete[] dNdS;
+    if (dNdS != nullptr) delete[] dNdS;
     return 16;
   }
   return 0;
@@ -565,7 +565,7 @@ int getNDouble(int argc, char** argv) {
     return 4;
   }
 
-  double *dNdS = NULL;
+  double *dNdS = nullptr;
   try {
     initFileDoubleLogNormal model_info(initfile, false, false);
     
@@ -669,7 +669,7 @@ int getNDouble(int argc, char** argv) {
 
       // Properties
       adims = 1;
-      mems_id = H5Screate_simple(1, &adims, NULL);
+      mems_id = H5Screate_simple(1, &adims, nullptr);
       att_id = H5Acreate2(file_id, "dflux1", H5T_NATIVE_DOUBLE,
 			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
       H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux1);
@@ -744,11 +744,11 @@ int getNDouble(int argc, char** argv) {
   } catch (const affineExcept& ex) {
     std::cerr << "Error encountered" << std::endl;
     std::cerr << ex << std::endl;
-    if (dNdS != NULL) delete[] dNdS;
+    if (dNdS != nullptr) delete[] dNdS;
     return 8;
   } catch (const std::bad_alloc& ba) {
     std::cerr << "Bad allocation error: " << ba.what() << std::endl;
-    if (dNdS != NULL) delete[] dNdS;
+    if (dNdS != nullptr) delete[] dNdS;
     return 16;
   }
   return 0;

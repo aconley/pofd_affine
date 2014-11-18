@@ -43,20 +43,21 @@ static double evalCounts(double, void*);
 const unsigned int numberCountsDoubleLogNormal::nvarr = 17; 
 
 numberCountsDoubleLogNormal::numberCountsDoubleLogNormal() : 
-  nknots(0), knots(NULL), logknots(NULL), logknotvals(NULL), splinelog(NULL), 
-  nsigmaknots(0), sigmaknots(NULL), sigmavals(NULL), sigmainterp(NULL), 
-  noffsetknots(0), offsetknots(NULL), offsetvals(NULL), offsetinterp(NULL),
+  nknots(0), knots(nullptr), logknots(nullptr), logknotvals(nullptr),
+  splinelog(nullptr), nsigmaknots(0), sigmaknots(nullptr), sigmavals(nullptr),
+  sigmainterp(nullptr), noffsetknots(0), offsetknots(nullptr),
+  offsetvals(nullptr), offsetinterp(nullptr),
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
   knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
-  fslv(NULL) {
+  fslv(nullptr) {
   
   nRWork = 0;
-  RWork = NULL;
+  RWork = nullptr;
 
   nf2work = 0;
-  f2work_inv = f2work_log = NULL;
-  f2work_sgn = NULL;
+  f2work_inv = f2work_log = nullptr;
+  f2work_sgn = nullptr;
 
   acc = gsl_interp_accel_alloc();
   accsigma = gsl_interp_accel_alloc();
@@ -77,14 +78,14 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
   knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
-  fslv(NULL) {
+  fslv(nullptr) {
 
   nRWork = 0;
-  RWork = NULL;
+  RWork = nullptr;
 
   nf2work = 0;
-  f2work_inv = f2work_log = NULL;
-  f2work_sgn = NULL;
+  f2work_inv = f2work_log = nullptr;
+  f2work_sgn = nullptr;
 
   if (NKNOTS > 0) {
     knots = new double[NKNOTS];
@@ -102,12 +103,12 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
     for (unsigned int i = 0; i < NKNOTS; ++i)
       logknotvals[i] = std::numeric_limits<double>::quiet_NaN();
   } else {
-    knots = logknots = logknotvals = NULL;
-    splinelog = NULL;
+    knots = logknots = logknotvals = nullptr;
+    splinelog = nullptr;
   }
   acc = gsl_interp_accel_alloc();
 
-  sigmainterp = NULL;
+  sigmainterp = nullptr;
   if (NSIGMA > 0) {
     sigmaknots = new double[NSIGMA];
     sigmavals = new double[NSIGMA];
@@ -121,10 +122,10 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
     else if (NSIGMA > 2)
       sigmainterp = gsl_interp_alloc(gsl_interp_cspline,
 				     static_cast<size_t>(NSIGMA));
-  } else sigmaknots = sigmavals = NULL;
+  } else sigmaknots = sigmavals = nullptr;
   accsigma = gsl_interp_accel_alloc();
 
-  offsetinterp = NULL;
+  offsetinterp = nullptr;
   if (NOFFSET > 0) {
     offsetknots = new double[NOFFSET];
     offsetvals = new double[NOFFSET];
@@ -138,7 +139,7 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
     else if (NOFFSET > 2)
       offsetinterp = gsl_interp_alloc(gsl_interp_cspline,
 				      static_cast<size_t>(NOFFSET));
-  } else offsetknots = offsetvals = NULL;
+  } else offsetknots = offsetvals = nullptr;
   accoffset = gsl_interp_accel_alloc();
 
   gsl_work = gsl_integration_workspace_alloc(1000);
@@ -157,25 +158,25 @@ numberCountsDoubleLogNormal(const std::vector<float>& KNOTS,
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
   knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
-  fslv(NULL) {
+  fslv(nullptr) {
 
   nRWork = 0;
-  RWork = NULL;
+  RWork = nullptr;
 
   nf2work = 0;
-  f2work_inv = f2work_log = NULL;
-  f2work_sgn = NULL;
+  f2work_inv = f2work_log = nullptr;
+  f2work_sgn = nullptr;
 
-  knots = 0; knots = logknots = logknotvals = NULL; 
-  splinelog = NULL; 
+  knots = 0; knots = logknots = logknotvals = nullptr; 
+  splinelog = nullptr; 
   setKnotPositions(KNOTS);
   acc = gsl_interp_accel_alloc();
 
-  nsigmaknots = 0; sigmaknots = sigmavals = NULL; sigmainterp = NULL;
+  nsigmaknots = 0; sigmaknots = sigmavals = nullptr; sigmainterp = nullptr;
   setSigmaPositions(SIGMAS);
   accsigma = gsl_interp_accel_alloc();
 
-  noffsetknots = 0; offsetknots = offsetvals = NULL; offsetinterp = NULL;
+  noffsetknots = 0; offsetknots = offsetvals = nullptr; offsetinterp = nullptr;
   setOffsetPositions(OFFSETS);
   accoffset = gsl_interp_accel_alloc();
 
@@ -195,25 +196,25 @@ numberCountsDoubleLogNormal(const std::vector<double>& KNOTS,
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
   knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
-  fslv(NULL) {
+  fslv(nullptr) {
 
   nRWork = 0;
-  RWork = NULL;
+  RWork = nullptr;
 
   nf2work = 0;
-  f2work_inv = f2work_log = NULL;
-  f2work_sgn = NULL;
+  f2work_inv = f2work_log = nullptr;
+  f2work_sgn = nullptr;
 
-  knots = 0; knots = logknots = logknotvals = NULL; 
-  splinelog = NULL; 
+  knots = 0; knots = logknots = logknotvals = nullptr; 
+  splinelog = nullptr; 
   setKnotPositions(KNOTS);
   acc = gsl_interp_accel_alloc();
 
-  nsigmaknots = 0; sigmaknots = sigmavals = NULL; sigmainterp = NULL;
+  nsigmaknots = 0; sigmaknots = sigmavals = nullptr; sigmainterp = nullptr;
   setSigmaPositions(SIGMAS);
   accsigma = gsl_interp_accel_alloc();
 
-  noffsetknots = 0; offsetknots = offsetvals = NULL; offsetinterp = NULL;
+  noffsetknots = 0; offsetknots = offsetvals = nullptr; offsetinterp = nullptr;
   setOffsetPositions(OFFSETS);
   accoffset = gsl_interp_accel_alloc();
 
@@ -236,24 +237,24 @@ numberCountsDoubleLogNormal(unsigned int nk, const float* const K,
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
   knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
-  fslv(NULL) {
+  fslv(nullptr) {
 
   nRWork = 0;
-  RWork = NULL;
+  RWork = nullptr;
 
   nf2work = 0;
-  f2work_inv = f2work_log = NULL;
-  f2work_sgn = NULL;
+  f2work_inv = f2work_log = nullptr;
+  f2work_sgn = nullptr;
 
-  knots = 0; knots = logknots = logknotvals = NULL; splinelog = NULL;
+  knots = 0; knots = logknots = logknotvals = nullptr; splinelog = nullptr;
   setKnotPositions(nk,K);
   acc = gsl_interp_accel_alloc();
 
-  nsigmaknots = 0; sigmaknots = sigmavals = NULL; sigmainterp = NULL;
+  nsigmaknots = 0; sigmaknots = sigmavals = nullptr; sigmainterp = nullptr;
   setSigmaPositions(ns,S);
   accsigma = gsl_interp_accel_alloc();
 
-  noffsetknots = 0; offsetknots = offsetvals = NULL; offsetinterp = NULL;
+  noffsetknots = 0; offsetknots = offsetvals = nullptr; offsetinterp = nullptr;
   setOffsetPositions(no,O);
   accoffset = gsl_interp_accel_alloc();
 
@@ -276,24 +277,24 @@ numberCountsDoubleLogNormal(unsigned int nk, const double* const K,
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
   knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
-  fslv(NULL) {
+  fslv(nullptr) {
 
   nRWork = 0;
-  RWork = NULL;
+  RWork = nullptr;
 
   nf2work = 0;
-  f2work_inv = f2work_log = NULL;
-  f2work_sgn = NULL;
+  f2work_inv = f2work_log = nullptr;
+  f2work_sgn = nullptr;
 
-  knots = 0; knots = logknots = logknotvals = NULL; splinelog = NULL;
+  knots = 0; knots = logknots = logknotvals = nullptr; splinelog = nullptr;
   setKnotPositions(nk,K);
   acc = gsl_interp_accel_alloc();
 
-  nsigmaknots = 0; sigmaknots = sigmavals = NULL; sigmainterp = NULL;
+  nsigmaknots = 0; sigmaknots = sigmavals = nullptr; sigmainterp = nullptr;
   setSigmaPositions(ns,S);
   accsigma = gsl_interp_accel_alloc();
 
-  noffsetknots = 0; offsetknots = offsetvals = NULL; offsetinterp = NULL;
+  noffsetknots = 0; offsetknots = offsetvals = nullptr; offsetinterp = nullptr;
   setOffsetPositions(no,O);
   accoffset = gsl_interp_accel_alloc();
 
@@ -309,19 +310,19 @@ numberCountsDoubleLogNormal(const numberCountsDoubleLogNormal& other) {
   if (this == &other) return; //Self-copy
   nknots = nsigmaknots = noffsetknots = 0;
   knots = logknots = logknotvals = sigmaknots = 
-    sigmavals = offsetknots = offsetvals = NULL;
-  acc = accsigma = accoffset = NULL;
-  splinelog = NULL;
-  sigmainterp = offsetinterp = NULL;
+    sigmavals = offsetknots = offsetvals = nullptr;
+  acc = accsigma = accoffset = nullptr;
+  splinelog = nullptr;
+  sigmainterp = offsetinterp = nullptr;
 
   nRWork = 0;
-  RWork = NULL;
+  RWork = nullptr;
 
   nf2work = 0;
-  f2work_inv = f2work_log = NULL;
-  f2work_sgn = NULL;
+  f2work_inv = f2work_log = nullptr;
+  f2work_sgn = nullptr;
 
-  fslv = NULL;
+  fslv = nullptr;
 
   knots_valid = sigmas_valid = offsets_valid = false;
   knotpos_loaded = sigmapos_loaded = offsetpos_loaded = false;
@@ -385,30 +386,30 @@ numberCountsDoubleLogNormal(const numberCountsDoubleLogNormal& other) {
 }
 
 numberCountsDoubleLogNormal::~numberCountsDoubleLogNormal() {
-  if (knots != NULL) delete[] knots;
-  if (logknots != NULL) delete[] logknots;
-  if (logknotvals != NULL) delete[] logknotvals;
-  if (splinelog != NULL) gsl_spline_free(splinelog);
+  if (knots != nullptr) delete[] knots;
+  if (logknots != nullptr) delete[] logknots;
+  if (logknotvals != nullptr) delete[] logknotvals;
+  if (splinelog != nullptr) gsl_spline_free(splinelog);
   gsl_interp_accel_free(acc);
 
-  if (sigmaknots != NULL) delete[] sigmaknots;
-  if (sigmavals != NULL) delete[] sigmavals;
-  if (sigmainterp != NULL) gsl_interp_free(sigmainterp);
+  if (sigmaknots != nullptr) delete[] sigmaknots;
+  if (sigmavals != nullptr) delete[] sigmavals;
+  if (sigmainterp != nullptr) gsl_interp_free(sigmainterp);
   gsl_interp_accel_free(accsigma);
 
-  if (offsetknots != NULL) delete[] offsetknots;
-  if (offsetvals != NULL) delete[] offsetvals;
-  if (offsetinterp != NULL) gsl_interp_free(offsetinterp);
+  if (offsetknots != nullptr) delete[] offsetknots;
+  if (offsetvals != nullptr) delete[] offsetvals;
+  if (offsetinterp != nullptr) gsl_interp_free(offsetinterp);
   gsl_interp_accel_free(accoffset);
 
   gsl_integration_workspace_free(gsl_work);
   delete[] varr;
 
-  if (fslv != NULL) gsl_root_fsolver_free(fslv);
-  if (RWork != NULL) fftw_free(RWork);
-  if (f2work_sgn != NULL) fftw_free(f2work_sgn);
-  if (f2work_inv != NULL) fftw_free(f2work_inv);
-  if (f2work_log != NULL) fftw_free(f2work_log);
+  if (fslv != nullptr) gsl_root_fsolver_free(fslv);
+  if (RWork != nullptr) fftw_free(RWork);
+  if (f2work_sgn != nullptr) fftw_free(f2work_sgn);
+  if (f2work_inv != nullptr) fftw_free(f2work_inv);
+  if (f2work_log != nullptr) fftw_free(f2work_log);
 }
 
 /*!
@@ -485,10 +486,10 @@ operator=(const numberCountsDoubleLogNormal& other) {
 void numberCountsDoubleLogNormal::setNKnots(unsigned int n) {
   if (nknots == n) return;
 
-  if (knots != NULL) delete[] knots;
-  if (logknotvals != NULL) delete[] logknotvals;
-  if (logknots != NULL) delete[] logknots;
-  if (splinelog != NULL) gsl_spline_free(splinelog);
+  if (knots != nullptr) delete[] knots;
+  if (logknotvals != nullptr) delete[] logknotvals;
+  if (logknots != nullptr) delete[] logknots;
+  if (splinelog != nullptr) gsl_spline_free(splinelog);
   knots_valid = knotpos_loaded = knotvals_loaded = false;
 
   if (n > 0) {
@@ -496,13 +497,13 @@ void numberCountsDoubleLogNormal::setNKnots(unsigned int n) {
     logknots = new double[n];
     logknotvals = new double[n];
   } else {
-    knots = logknots = logknotvals = NULL;
+    knots = logknots = logknotvals = nullptr;
   }
   if (n > 2)
     splinelog=gsl_spline_alloc(gsl_interp_cspline,
 			       static_cast<size_t>(n));
   else 
-    splinelog=NULL;
+    splinelog=nullptr;
   nknots = n;
 }
 
@@ -515,18 +516,18 @@ void numberCountsDoubleLogNormal::setNKnots(unsigned int n) {
 void numberCountsDoubleLogNormal::setNSigmas(unsigned int n) {
   if (nsigmaknots == n) return;
 
-  if (sigmaknots != NULL) delete[] sigmaknots;
-  if (sigmavals != NULL) delete[] sigmavals;
-  if (sigmainterp != NULL) gsl_interp_free(sigmainterp);
+  if (sigmaknots != nullptr) delete[] sigmaknots;
+  if (sigmavals != nullptr) delete[] sigmavals;
+  if (sigmainterp != nullptr) gsl_interp_free(sigmainterp);
   sigmas_valid = sigmapos_loaded = sigmavals_loaded = false;
 
   if (n > 0) {
     sigmaknots = new double[n];
     sigmavals = new double[n];
   } else {
-    sigmaknots = sigmavals = NULL;
+    sigmaknots = sigmavals = nullptr;
   }
-  sigmainterp = NULL;
+  sigmainterp = nullptr;
   if (n == 2)
       sigmainterp=gsl_interp_alloc(gsl_interp_linear,
 				   static_cast<size_t>(n));
@@ -545,18 +546,18 @@ void numberCountsDoubleLogNormal::setNSigmas(unsigned int n) {
 void numberCountsDoubleLogNormal::setNOffsets(unsigned int n) {
   if (noffsetknots == n) return;
 
-  if (offsetknots != NULL) delete[] offsetknots;
-  if (offsetvals != NULL) delete[] offsetvals;
-  if (offsetinterp != NULL) gsl_interp_free(offsetinterp);
+  if (offsetknots != nullptr) delete[] offsetknots;
+  if (offsetvals != nullptr) delete[] offsetvals;
+  if (offsetinterp != nullptr) gsl_interp_free(offsetinterp);
   offsets_valid = offsetpos_loaded = offsetvals_loaded = false;
 
   if (n > 0) {
     offsetknots = new double[n];
     offsetvals = new double[n];
   } else {
-    offsetknots = offsetvals = NULL;
+    offsetknots = offsetvals = nullptr;
   }
-  offsetinterp = NULL;
+  offsetinterp = nullptr;
   if (n == 2) 
     offsetinterp=gsl_interp_alloc(gsl_interp_linear,
 				  static_cast<size_t>(n));
@@ -1423,7 +1424,7 @@ double numberCountsDoubleLogNormal::logNormalSolver(double mu, double sig,
   double u_high = u_low + delta_u;
 
   // Allocate solver if not previously allocated
-  if (fslv == NULL) fslv = gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
+  if (fslv == nullptr) fslv = gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
   gsl_root_fsolver_set (fslv, &F, u_low, u_high);
   
   // Solve
@@ -1720,10 +1721,10 @@ void numberCountsDoubleLogNormal::setRWorkSize(unsigned int sz) const {
 
   if (sz <= nRWork) return;
 
-  if (RWork != NULL) fftw_free(RWork);
+  if (RWork != nullptr) fftw_free(RWork);
   if (sz > 0) {
     RWork = (double*) fftw_malloc(sizeof(double) * sz * 3);
-  } else RWork = NULL;
+  } else RWork = nullptr;
   nRWork = sz;
 }
 
@@ -1737,16 +1738,16 @@ void numberCountsDoubleLogNormal::setRWorkSize(unsigned int sz) const {
 void numberCountsDoubleLogNormal::setf2WorkSize(unsigned int sz) const {
   if (sz <= nf2work) return;
 
-  if (f2work_sgn != NULL) fftw_free(f2work_sgn);
-  if (f2work_inv != NULL) fftw_free(f2work_inv);
-  if (f2work_log != NULL) fftw_free(f2work_log);
+  if (f2work_sgn != nullptr) fftw_free(f2work_sgn);
+  if (f2work_inv != nullptr) fftw_free(f2work_inv);
+  if (f2work_log != nullptr) fftw_free(f2work_log);
   if (sz > 0) {
     f2work_sgn = (unsigned int*) fftw_malloc(sizeof(unsigned int) * sz);
     f2work_inv = (double*) fftw_malloc(sizeof(double) * sz);
     f2work_log = (double*) fftw_malloc(sizeof(double) * sz);
   } else {
-    f2work_inv = f2work_log = NULL;
-    f2work_sgn = NULL;
+    f2work_inv = f2work_log = nullptr;
+    f2work_sgn = nullptr;
   }
   nf2work = sz;
 }
@@ -1793,7 +1794,7 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
       npsf[i] = 0;
   const double* __restrict__ wtptr[4];
   for (unsigned int i = 0; i < 4; ++i) 
-    wtptr[i] = ishist[i] ? bm.getBinWeights(i) : NULL;
+    wtptr[i] = ishist[i] ? bm.getBinWeights(i) : nullptr;
   const double* __restrict__ ibmptr1[4];
   for (unsigned int i = 0; i < 4; ++i)
     ibmptr1[i] = ishist[i] ? bm.getBinVals1(i) : bm.getInvPixArr1(i);
@@ -2166,7 +2167,7 @@ void numberCountsDoubleLogNormal::writeToHDF5Handle(hid_t objid,
 
   // Number of knots
   adims = 1;
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate2(objid, "NKnots", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nknots);
@@ -2463,14 +2464,15 @@ initFileDoubleLogNormal::initFileDoubleLogNormal() :
   nknots(0), nsigmas(0), noffsets(0), sigmaidx(0), offsetidx(0),
   has_range(false), has_lower_limits(false), has_upper_limits(false) {
 
-  knotpos = knotval = range = lowlim = uplim = NULL;
-  has_lowlim = has_uplim = NULL;
+  knotpos = knotval = range = lowlim = uplim = nullptr;
+  has_lowlim = has_uplim = nullptr;
 }
 
 /*!
   \param[in] flname File to read from
   \param[in] read_range      Read in (and require) knot ranges
-  \param[in] read_limits     Try to read limits; this will turn on require_range
+  \param[in] read_limits     Try to read limits; this will turn on 
+                             require_range
 
   See initFileDoubleLogNormal::readFile for details of the file format
 */
@@ -2480,20 +2482,20 @@ initFileDoubleLogNormal::initFileDoubleLogNormal(const std::string& flname,
   nknots(0), nsigmas(0), noffsets(0), sigmaidx(0), offsetidx(0),
   has_range(false), has_lower_limits(false), has_upper_limits(false) {
 
-  knotpos = knotval = range = lowlim = uplim = NULL;
-  has_lowlim = has_uplim = NULL;
+  knotpos = knotval = range = lowlim = uplim = nullptr;
+  has_lowlim = has_uplim = nullptr;
 
   readFile(flname, read_range, read_limits);
 }
 
 initFileDoubleLogNormal::~initFileDoubleLogNormal() {
-  if (knotpos != NULL) delete[] knotpos;
-  if (knotval != NULL) delete[] knotval;
-  if (range != NULL) delete[] range;
-  if (has_lowlim != NULL) delete[] has_lowlim;
-  if (lowlim != NULL) delete[] lowlim;
-  if (has_uplim != NULL) delete[] has_uplim;
-  if (uplim != NULL) delete[] uplim;
+  if (knotpos != nullptr) delete[] knotpos;
+  if (knotval != nullptr) delete[] knotval;
+  if (range != nullptr) delete[] range;
+  if (has_lowlim != nullptr) delete[] has_lowlim;
+  if (lowlim != nullptr) delete[] lowlim;
+  if (has_uplim != nullptr) delete[] has_uplim;
+  if (uplim != nullptr) delete[] uplim;
 }
 
 /*!
@@ -2525,15 +2527,13 @@ void initFileDoubleLogNormal::readFile(const std::string& flname,
   noffsets = 0;
   sigmaidx = 0;
   offsetidx = 0;
-  if (knotpos != NULL) delete[] knotpos;
-  if (knotval != NULL) delete[] knotval;
-  if (range != NULL) delete[] range;
-  if (has_lowlim != NULL) delete[] has_lowlim;
-  if (lowlim != NULL) delete[] lowlim;
-  if (has_uplim != NULL) delete[] has_uplim;
-  if (uplim != NULL) delete[] uplim;
-  knotpos = knotval = range = lowlim = uplim = NULL;
-  has_lowlim = has_uplim = NULL;
+  if (knotpos != nullptr) { delete[] knotpos; knotpos = nullptr; }
+  if (knotval != nullptr) { delete[] knotval; knotval = nullptr; }
+  if (range != nullptr) { delete[] range; range = nullptr; }
+  if (has_lowlim != nullptr) { delete[] has_lowlim; has_lowlim = nullptr; }
+  if (lowlim != nullptr) { delete[] lowlim; lowlim = nullptr; }
+  if (has_uplim != nullptr) { delete[] has_uplim; has_uplim = nullptr; }
+  if (uplim != nullptr) { delete[] uplim; uplim = nullptr; }
   has_range = has_lower_limits = has_upper_limits = false;
 
   //Figure out how many elements we require
@@ -3254,15 +3254,15 @@ void initFileDoubleLogNormal::sendSelf(MPI_Comm comm, int dest) const {
 */
 void initFileDoubleLogNormal::receiveCopy(MPI_Comm comm, int src) {
   //Delete everything for simplicity
-  if (knotpos != NULL) delete[] knotpos;
-  if (knotval != NULL) delete[] knotval;
-  if (range != NULL) delete[] range;
-  if (has_lowlim != NULL) delete[] has_lowlim;
-  if (lowlim != NULL) delete[] lowlim;
-  if (has_uplim != NULL) delete[] has_uplim;
-  if (uplim != NULL) delete[] uplim;
-  knotpos = knotval = range = lowlim = uplim = NULL;
-  has_lowlim = has_uplim = NULL;
+  if (knotpos != nullptr) delete[] knotpos;
+  if (knotval != nullptr) delete[] knotval;
+  if (range != nullptr) delete[] range;
+  if (has_lowlim != nullptr) delete[] has_lowlim;
+  if (lowlim != nullptr) delete[] lowlim;
+  if (has_uplim != nullptr) delete[] has_uplim;
+  if (uplim != nullptr) delete[] uplim;
+  knotpos = knotval = range = lowlim = uplim = nullptr;
+  has_lowlim = has_uplim = nullptr;
 
   MPI_Status Info;
   MPI_Recv(&nknots, 1, MPI_UNSIGNED, src, pofd_mcmc::IFDLNSENDNKNOTS,

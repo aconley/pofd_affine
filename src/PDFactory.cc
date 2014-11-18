@@ -28,23 +28,23 @@ PDFactory::PDFactory(const std::string& wisfile, unsigned int NINTERP) {
 }
 
 PDFactory::~PDFactory() {
-  if (RinterpFlux_pos != NULL) delete[] RinterpFlux_pos;
-  if (RinterpVals_pos != NULL) delete[] RinterpVals_pos;
-  if (acc_pos != NULL)  gsl_interp_accel_free(acc_pos);
-  if (spline_pos != NULL) gsl_spline_free(spline_pos);
+  if (RinterpFlux_pos != nullptr) delete[] RinterpFlux_pos;
+  if (RinterpVals_pos != nullptr) delete[] RinterpVals_pos;
+  if (acc_pos != nullptr)  gsl_interp_accel_free(acc_pos);
+  if (spline_pos != nullptr) gsl_spline_free(spline_pos);
 
-  if (RinterpFlux_neg != NULL) delete[] RinterpFlux_neg;
-  if (RinterpVals_neg != NULL) delete[] RinterpVals_neg;
-  if (acc_neg != NULL)  gsl_interp_accel_free(acc_neg);
-  if (spline_neg != NULL) gsl_spline_free(spline_neg);
+  if (RinterpFlux_neg != nullptr) delete[] RinterpFlux_neg;
+  if (RinterpVals_neg != nullptr) delete[] RinterpVals_neg;
+  if (acc_neg != nullptr)  gsl_interp_accel_free(acc_neg);
+  if (spline_neg != nullptr) gsl_spline_free(spline_neg);
 
-  if (rvals != NULL) fftw_free(rvals);
-  if (rtrans != NULL) fftw_free(rtrans);
-  if (pofd != NULL) fftw_free(pofd);
-  if (pval != NULL) fftw_free(pval);
+  if (rvals != nullptr) fftw_free(rvals);
+  if (rtrans != nullptr) fftw_free(rtrans);
+  if (pofd != nullptr) fftw_free(pofd);
+  if (pval != nullptr) fftw_free(pval);
 
-  if (plan != NULL) fftw_destroy_plan(plan); 
-  if (plan_inv != NULL) fftw_destroy_plan(plan_inv);
+  if (plan != nullptr) fftw_destroy_plan(plan); 
+  if (plan_inv != nullptr) fftw_destroy_plan(plan_inv);
 }
 
 /*!
@@ -59,25 +59,25 @@ void PDFactory::init(unsigned int NINTERP) {
 #endif
 
   acc_pos = gsl_interp_accel_alloc();
-  spline_pos = NULL;
+  spline_pos = nullptr;
   acc_neg = gsl_interp_accel_alloc();
-  spline_neg = NULL;
+  spline_neg = nullptr;
 
   interpvars_allocated_pos = false;
-  RinterpFlux_pos = NULL;
-  RinterpVals_pos = NULL;
+  RinterpFlux_pos = nullptr;
+  RinterpVals_pos = nullptr;
 
   interpvars_allocated_neg = false;
-  RinterpFlux_neg = NULL;
-  RinterpVals_neg = NULL;
+  RinterpFlux_neg = nullptr;
+  RinterpVals_neg = nullptr;
 
-  plan = plan_inv = NULL;
+  plan = plan_inv = nullptr;
   rvars_allocated = false;
-  rvals = NULL;
+  rvals = nullptr;
   rdflux = false;
-  rtrans = NULL;
-  pval = NULL;
-  pofd = NULL;
+  rtrans = nullptr;
+  pval = nullptr;
+  pofd = nullptr;
 
   dflux = 0.0;
 
@@ -139,8 +139,11 @@ bool PDFactory::resize(unsigned int NSIZE) {
   if (NSIZE == currsize) return false;
   freeRvars();
   currsize = NSIZE;
-  if (plan != NULL) { fftw_destroy_plan(plan); plan = NULL; }
-  if (plan_inv != NULL) { fftw_destroy_plan(plan_inv); plan_inv = NULL; }  
+  if (plan != nullptr) { fftw_destroy_plan(plan); plan = nullptr; }
+  if (plan_inv != nullptr) {
+    fftw_destroy_plan(plan_inv);
+    plan_inv = nullptr;
+  }  
   initialized = false;
   return true;
 }
@@ -160,10 +163,10 @@ void PDFactory::allocateRvars() {
 
 // Doesn't necessarily invalidate the plans
 void PDFactory::freeRvars() {
-  if (rvals != NULL) { fftw_free(rvals); rvals=NULL; }
-  if (rtrans != NULL) {fftw_free(rtrans); rtrans=NULL; }
-  if (pval != NULL) { fftw_free(pval); pval = NULL; }
-  if (pofd != NULL) { fftw_free(pofd); pofd = NULL; }
+  if (rvals != nullptr) { fftw_free(rvals); rvals=nullptr; }
+  if (rtrans != nullptr) {fftw_free(rtrans); rtrans=nullptr; }
+  if (pval != nullptr) { fftw_free(pval); pval = nullptr; }
+  if (pofd != nullptr) { fftw_free(pofd); pofd = nullptr; }
   rvars_allocated = false;
   initialized = false;
 }
@@ -201,13 +204,13 @@ void PDFactory::allocateInterpPos() {
 
 
 void PDFactory::freeInterpPos() {
-  if (RinterpFlux_pos != NULL) { 
+  if (RinterpFlux_pos != nullptr) { 
     delete[] RinterpFlux_pos; 
-    RinterpFlux_pos = NULL; 
+    RinterpFlux_pos = nullptr; 
   }
-  if (RinterpVals_pos != NULL) { 
+  if (RinterpVals_pos != nullptr) { 
     delete[] RinterpVals_pos; 
-    RinterpVals_pos = NULL; 
+    RinterpVals_pos = nullptr; 
   }
   interpvars_allocated_pos = false;
   rinitialized = false; // Can't match rinterp any more
@@ -230,13 +233,13 @@ void PDFactory::allocateInterpNeg() {
 }
 
 void PDFactory::freeInterpNeg() {
-  if (RinterpFlux_neg != NULL) { 
+  if (RinterpFlux_neg != nullptr) { 
     delete[] RinterpFlux_neg; 
-    RinterpFlux_neg = NULL; 
+    RinterpFlux_neg = nullptr; 
   }
-  if (RinterpVals_neg != NULL) { 
+  if (RinterpVals_neg != nullptr) { 
     delete[] RinterpVals_neg; 
-    RinterpVals_neg = NULL; 
+    RinterpVals_neg = nullptr; 
   }
   interpvars_allocated_neg = false;
   initialized = false;
@@ -257,9 +260,9 @@ void PDFactory::free() {
   \param[in] filename Name of wisdom file
 */
 void PDFactory::addWisdom(const std::string& filename) {
-  FILE *fp = NULL;
+  FILE *fp = nullptr;
   fp = fopen(filename.c_str(), "r");
-  if (fp == NULL) {
+  if (fp == nullptr) {
     std::stringstream str;
     str << "Error opening wisdom file: " << filename;
     throw affineExcept("PDFactory", "addWisdom", str.str());
@@ -273,13 +276,13 @@ void PDFactory::addWisdom(const std::string& filename) {
   fftw_plan_style = FFTW_WISDOM_ONLY;
   has_wisdom = true;
   wisdom_file = filename;
-  if (plan != NULL) {
+  if (plan != nullptr) {
     fftw_destroy_plan(plan); 
-    plan = NULL;
+    plan = nullptr;
   }
-  if (plan_inv != NULL) {
+  if (plan_inv != nullptr) {
     fftw_destroy_plan(plan_inv);
-    plan_inv = NULL;
+    plan_inv = nullptr;
   }
 
   initialized = false;
@@ -309,12 +312,12 @@ void PDFactory::setupTransforms(unsigned int n) {
   if (!rvars_allocated) allocateRvars();
 
   int intn = static_cast<int>(n);
-  if (plan == NULL) {
-    if (plan != NULL) fftw_destroy_plan(plan);
+  if (plan == nullptr) {
+    if (plan != nullptr) fftw_destroy_plan(plan);
     plan = fftw_plan_dft_r2c_1d(intn, rvals, rtrans,
 				fftw_plan_style);
   }
-  if (plan == NULL) {
+  if (plan == nullptr) {
     std::stringstream str;
     str << "Plan creation failed for forward transform of size: " << n;
     if (has_wisdom) str << std::endl << "Your wisdom file may not have"
@@ -322,12 +325,12 @@ void PDFactory::setupTransforms(unsigned int n) {
     throw affineExcept("PDFactory", "setupTransforms", str.str());
   }
 
-  if (plan_inv == NULL) {
-    if (plan_inv != NULL) fftw_destroy_plan(plan_inv);
+  if (plan_inv == nullptr) {
+    if (plan_inv != nullptr) fftw_destroy_plan(plan_inv);
     plan_inv = fftw_plan_dft_c2r_1d(intn, pval, pofd,
 				    fftw_plan_style);
   }
-  if (plan_inv == NULL) {
+  if (plan_inv == nullptr) {
     std::stringstream str;
     str << "Plan creation failed for inverse transform of size: " << n;
     if (has_wisdom) str << std::endl << "Your wisdom file may not have"
@@ -1263,7 +1266,7 @@ void PDFactory::writeRToHDF5(const std::string& filename) const {
   
   // Properties
   adims = 1;
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate2(file_id, "dFlux", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux);

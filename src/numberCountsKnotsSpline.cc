@@ -10,9 +10,9 @@
 static double evalPowfNKnotsSpline(double, void*); //!< Evaluates f^pow dN/dS
 
 numberCountsKnotsSpline::numberCountsKnotsSpline() : numberCountsKnots() {
-  logknots = NULL;
+  logknots = nullptr;
   acc = gsl_interp_accel_alloc();
-  splinelog = NULL;
+  splinelog = nullptr;
   gsl_work = gsl_integration_workspace_alloc(1000);
   varr = new void*[5];
 }
@@ -22,13 +22,13 @@ numberCountsKnotsSpline::numberCountsKnotsSpline() : numberCountsKnots() {
 */
 numberCountsKnotsSpline::numberCountsKnotsSpline(unsigned int NKNOTS) :
   numberCountsKnots(NKNOTS) {
-  if (NKNOTS > 0) logknots = new double[NKNOTS]; else logknots = NULL;
+  if (NKNOTS > 0) logknots = new double[NKNOTS]; else logknots = nullptr;
   acc = gsl_interp_accel_alloc();
   if (NKNOTS > 0)
     splinelog = gsl_spline_alloc(gsl_interp_cspline,
 				 static_cast<size_t>(NKNOTS));
   else {
-    splinelog=NULL;
+    splinelog=nullptr;
   }
   gsl_work = gsl_integration_workspace_alloc(1000);
   varr = new void*[5];
@@ -43,13 +43,13 @@ numberCountsKnotsSpline::numberCountsKnotsSpline(const std::vector<float>& v):
     logknots = new double[nknots]; 
     for (unsigned int i = 0; i < nknots; ++i)
       logknots[i] = log2(static_cast<double>(knots[i]));
-  } else logknots = NULL;
+  } else logknots = nullptr;
   acc = gsl_interp_accel_alloc();
   if (v.size() > 0)
     splinelog = gsl_spline_alloc(gsl_interp_cspline,
 				 static_cast<size_t>(v.size()));
   else
-    splinelog = NULL;
+    splinelog = nullptr;
   gsl_work = gsl_integration_workspace_alloc(1000);
   varr = new void*[5];
 }
@@ -63,13 +63,13 @@ numberCountsKnotsSpline::numberCountsKnotsSpline(const std::vector<double>& v):
     logknots = new double[nknots]; 
     for (unsigned int i = 0; i < nknots; ++i)
       logknots[i] = log2(knots[i]);
-  } else logknots = NULL;
+  } else logknots = nullptr;
   acc = gsl_interp_accel_alloc();
   if (v.size() > 0)
     splinelog = gsl_spline_alloc(gsl_interp_cspline,
 				 static_cast<size_t>(v.size()));
   else
-    splinelog = NULL;
+    splinelog = nullptr;
   gsl_work = gsl_integration_workspace_alloc(1000);
   varr = new void*[5];
 }
@@ -85,7 +85,7 @@ numberCountsKnotsSpline::numberCountsKnotsSpline(unsigned int n,
     logknots = new double[nknots]; 
     for (unsigned int i = 0; i < nknots; ++i)
       logknots[i] = log2(static_cast<double>(knots[i]));
-  } else logknots = NULL;
+  } else logknots = nullptr;
   acc = gsl_interp_accel_alloc();
   splinelog = gsl_spline_alloc(gsl_interp_cspline,
 			       static_cast<size_t>(n));
@@ -104,7 +104,7 @@ numberCountsKnotsSpline::numberCountsKnotsSpline(unsigned int n,
     logknots = new double[nknots]; 
     for (unsigned int i = 0; i < nknots; ++i)
       logknots[i] = log2(knots[i]);
-  } else logknots = NULL;
+  } else logknots = nullptr;
   acc = gsl_interp_accel_alloc();
   splinelog = gsl_spline_alloc(gsl_interp_cspline,
 			       static_cast<size_t>(n));
@@ -119,9 +119,9 @@ numberCountsKnotsSpline::
 numberCountsKnotsSpline(const numberCountsKnotsSpline& other){
   if (this == &other) return; //Self-copy
   nknots = 0;
-  knots = logknots = logknotvals = NULL;
-  acc = NULL;
-  splinelog=NULL;
+  knots = logknots = logknotvals = nullptr;
+  acc = nullptr;
+  splinelog=nullptr;
 
   setNKnots(other.nknots);
   for (unsigned int i = 0; i < nknots; ++i)
@@ -141,7 +141,7 @@ numberCountsKnotsSpline(const numberCountsKnotsSpline& other){
 
 numberCountsKnotsSpline::~numberCountsKnotsSpline() {
   gsl_interp_accel_free(acc);
-  if (splinelog != NULL) gsl_spline_free(splinelog);
+  if (splinelog != nullptr) gsl_spline_free(splinelog);
   gsl_integration_workspace_free(gsl_work);
   delete[] varr;
 }
@@ -154,23 +154,23 @@ numberCountsKnotsSpline::~numberCountsKnotsSpline() {
 */
 void numberCountsKnotsSpline::setNKnots(unsigned int n) {
   if (nknots == n) return;
-  if (knots != NULL) delete[] knots;
-  if (logknotvals != NULL) delete[] logknotvals;
-  if (logknots != NULL) delete[] logknots;
-  if (splinelog != NULL) gsl_spline_free(splinelog);
+  if (knots != nullptr) delete[] knots;
+  if (logknotvals != nullptr) delete[] logknotvals;
+  if (logknots != nullptr) delete[] logknots;
+  if (splinelog != nullptr) gsl_spline_free(splinelog);
 
   if (n > 0) {
     knots = new double[n];
     logknots = new double[n];
     logknotvals = new double[n];
   } else {
-    knots = logknots = logknotvals = NULL;
+    knots = logknots = logknotvals = nullptr;
   }
   if (n > 1)
     splinelog=gsl_spline_alloc(gsl_interp_cspline,
 			       static_cast<size_t>(n));
   else 
-    splinelog=NULL;
+    splinelog=nullptr;
   nknots = n;
   knotvals_loaded = false;
 }
@@ -184,12 +184,12 @@ numberCountsKnotsSpline::operator=(const numberCountsKnotsSpline& other) {
   if (this == &other) return *this; //Self-copy
   if (other.nknots == 0) {
     if (nknots != 0) {
-      if (knots != NULL) delete[] knots;
-      if (logknots != NULL) delete[] logknots;
-      if (logknotvals != NULL) delete[] logknotvals;
-      if (splinelog != NULL) gsl_spline_free(splinelog);
-      knots = logknots = logknotvals = NULL;
-      splinelog = NULL;
+      if (knots != nullptr) delete[] knots;
+      if (logknots != nullptr) delete[] logknots;
+      if (logknotvals != nullptr) delete[] logknotvals;
+      if (splinelog != nullptr) gsl_spline_free(splinelog);
+      knots = logknots = logknotvals = nullptr;
+      splinelog = nullptr;
     }
     knotvals_loaded = false;
   } else {
@@ -458,10 +458,10 @@ void numberCountsKnotsSpline::getR(unsigned int n, const double* const flux,
   bool haspos = bm.hasPos();
   bool hasneg = bm.hasNeg();
   bool poshist = false, neghist = false;
-  const double *__restrict__ wtptr_pos = NULL;
-  const double *__restrict__ wtptr_neg = NULL;
-  const double *__restrict__ ibmptr_pos = NULL;
-  const double *__restrict__ ibmptr_neg = NULL;
+  const double *__restrict__ wtptr_pos = nullptr;
+  const double *__restrict__ wtptr_neg = nullptr;
+  const double *__restrict__ ibmptr_pos = nullptr;
+  const double *__restrict__ ibmptr_neg = nullptr;
   if (haspos) {
     poshist = bm.isPosHist();
     npos = poshist ? bm.getNHistPos() : bm.getNPos();
@@ -598,12 +598,12 @@ void numberCountsKnotsSpline::receiveCopy(MPI_Comm comm, int src) {
   numberCountsKnots::receiveCopy(comm, src);
 
   if (nknots != oldnknots) {
-    if (splinelog != NULL) gsl_spline_free(splinelog);
+    if (splinelog != nullptr) gsl_spline_free(splinelog);
     if (nknots > 0) 
       splinelog = gsl_spline_alloc(gsl_interp_cspline,
 				   static_cast<size_t>(nknots));
     else
-      splinelog = NULL;
+      splinelog = nullptr;
   }
   if (nknots > 0) {
     MPI_Recv(logknots, nknots, MPI_DOUBLE, src, pofd_mcmc::NCKSSENDLOGKNOTS,

@@ -21,19 +21,19 @@ doublebeam::doublebeam() {
   double nan = std::numeric_limits<double>::quiet_NaN();
   for (unsigned int i = 0; i < 4; ++i) hassign[i] = false;
   for (unsigned int i = 0; i < 4; ++i) npix[i] = 0;
-  for (unsigned int i = 0; i < 4; ++i) pixarr1[i] = NULL;
-  for (unsigned int i = 0; i < 4; ++i) pixarr2[i] = NULL;
-  for (unsigned int i = 0; i < 4; ++i) invpixarr1[i] = NULL;
-  for (unsigned int i = 0; i < 4; ++i) invpixarr2[i] = NULL;
+  for (unsigned int i = 0; i < 4; ++i) pixarr1[i] = nullptr;
+  for (unsigned int i = 0; i < 4; ++i) pixarr2[i] = nullptr;
+  for (unsigned int i = 0; i < 4; ++i) invpixarr1[i] = nullptr;
+  for (unsigned int i = 0; i < 4; ++i) invpixarr2[i] = nullptr;
   for (unsigned int i = 0; i < 4; ++i) haslogratio[i] = false;
-  for (unsigned int i = 0; i < 4; ++i) logratio[i] = NULL;
+  for (unsigned int i = 0; i < 4; ++i) logratio[i] = nullptr;
   for (unsigned int i = 0; i < 4; ++i) ishistogrammed[i] = false;
   for (unsigned int i = 0; i < 4; ++i) nhist[i] = 0;
-  for (unsigned int i = 0; i < 4; ++i) binweights[i] = NULL;
-  for (unsigned int i = 0; i < 4; ++i) binvals1[i] = NULL;
-  for (unsigned int i = 0; i < 4; ++i) binvals2[i] = NULL;
+  for (unsigned int i = 0; i < 4; ++i) binweights[i] = nullptr;
+  for (unsigned int i = 0; i < 4; ++i) binvals1[i] = nullptr;
+  for (unsigned int i = 0; i < 4; ++i) binvals2[i] = nullptr;
   for (unsigned int i = 0; i < 4; ++i) hasbinlogratio[i] = false;
-  for (unsigned int i = 0; i < 4; ++i) binlogratio[i] = NULL;
+  for (unsigned int i = 0; i < 4; ++i) binlogratio[i] = nullptr;
   for (unsigned int i = 0; i < 4; ++i) tot1[i] = nan;
   for (unsigned int i = 0; i < 4; ++i) tot2[i] = nan;
   for (unsigned int i = 0; i < 4; ++i) totsq1[i] = nan;
@@ -58,19 +58,19 @@ doublebeam::doublebeam(const std::string& filename1,
   double nan = std::numeric_limits<double>::quiet_NaN();
   for (unsigned int i = 0; i < 4; ++i) hassign[i] = false;
   for (unsigned int i = 0; i < 4; ++i) npix[i] = 0;
-  for (unsigned int i = 0; i < 4; ++i) pixarr1[i] = NULL;
-  for (unsigned int i = 0; i < 4; ++i) pixarr2[i] = NULL;
-  for (unsigned int i = 0; i < 4; ++i) invpixarr1[i] = NULL;
-  for (unsigned int i = 0; i < 4; ++i) invpixarr2[i] = NULL;
+  for (unsigned int i = 0; i < 4; ++i) pixarr1[i] = nullptr;
+  for (unsigned int i = 0; i < 4; ++i) pixarr2[i] = nullptr;
+  for (unsigned int i = 0; i < 4; ++i) invpixarr1[i] = nullptr;
+  for (unsigned int i = 0; i < 4; ++i) invpixarr2[i] = nullptr;
   for (unsigned int i = 0; i < 4; ++i) haslogratio[i] = false;
-  for (unsigned int i = 0; i < 4; ++i) logratio[i] = NULL;
+  for (unsigned int i = 0; i < 4; ++i) logratio[i] = nullptr;
   for (unsigned int i = 0; i < 4; ++i) ishistogrammed[i] = false;
   for (unsigned int i = 0; i < 4; ++i) nhist[i] = 0;
-  for (unsigned int i = 0; i < 4; ++i) binweights[i] = NULL;
-  for (unsigned int i = 0; i < 4; ++i) binvals1[i] = NULL;
-  for (unsigned int i = 0; i < 4; ++i) binvals2[i] = NULL;
+  for (unsigned int i = 0; i < 4; ++i) binweights[i] = nullptr;
+  for (unsigned int i = 0; i < 4; ++i) binvals1[i] = nullptr;
+  for (unsigned int i = 0; i < 4; ++i) binvals2[i] = nullptr;
   for (unsigned int i = 0; i < 4; ++i) hasbinlogratio[i] = false;
-  for (unsigned int i = 0; i < 4; ++i) binlogratio[i] = NULL;
+  for (unsigned int i = 0; i < 4; ++i) binlogratio[i] = nullptr;
   for (unsigned int i = 0; i < 4; ++i) tot1[i] = nan;
   for (unsigned int i = 0; i < 4; ++i) tot2[i] = nan;
   for (unsigned int i = 0; i < 4; ++i) totsq1[i] = nan;
@@ -89,19 +89,40 @@ void doublebeam::cleanup() {
   for (unsigned int i = 0; i < 4; ++i) {
     hassign[i] = false;
     npix[i] = 0;
-    if (pixarr1[i] != NULL) { delete[] pixarr1[i]; pixarr1[i] = NULL; }
-    if (pixarr2[i] != NULL) { delete[] pixarr2[i]; pixarr2[i] = NULL; }
-    if (invpixarr1[i] != NULL) { delete[] invpixarr1[i]; invpixarr1[i] = NULL; }
-    if (invpixarr2[i] != NULL) { delete[] invpixarr2[i]; invpixarr2[i] = NULL; }
+    if (pixarr1[i] != nullptr) { delete[] pixarr1[i]; pixarr1[i] = nullptr; }
+    if (pixarr2[i] != nullptr) { delete[] pixarr2[i]; pixarr2[i] = nullptr; }
+    if (invpixarr1[i] != nullptr) {
+      delete[] invpixarr1[i];
+      invpixarr1[i] = nullptr;
+    }
+    if (invpixarr2[i] != nullptr) {
+      delete[] invpixarr2[i];
+      invpixarr2[i] = nullptr;
+    }
     haslogratio[i] = false;
-    if (logratio[i] != NULL) { delete[] logratio[i]; logratio[i] = NULL; }
+    if (logratio[i] != nullptr) {
+      delete[] logratio[i];
+      logratio[i] = nullptr;
+    }
     ishistogrammed[i] = false;
     nhist[i] = 0;
-    if (binweights[i] != NULL) { delete[] binweights[i]; binweights[i] = NULL; }
-    if (binvals1[i] != NULL) { delete[] binvals1[i]; binvals1[i] = NULL; }
-    if (binvals2[i] != NULL) { delete[] binvals2[i]; binvals2[i] = NULL; }
+    if (binweights[i] != nullptr) {
+      delete[] binweights[i];
+      binweights[i] = nullptr;
+    }
+    if (binvals1[i] != nullptr) {
+      delete[] binvals1[i];
+      binvals1[i] = nullptr;
+    }
+    if (binvals2[i] != nullptr) {
+      delete[] binvals2[i];
+      binvals2[i] = nullptr;
+    }
     hasbinlogratio[i] = false;
-    if (binlogratio[i] != NULL) { delete[] binlogratio[i]; binlogratio[i] = NULL; }
+    if (binlogratio[i] != nullptr) {
+      delete[] binlogratio[i];
+      binlogratio[i] = nullptr;
+    }
     tot1[i] = tot2[i] = totsq1[i] = totsq2[i] = NaN;
     minbm1[i] = maxbm1[i] = minbm2[i] = maxbm2[i] = NaN;
   }
@@ -131,7 +152,7 @@ void doublebeam::readFiles(const std::string& filename1,
   int nkeys;
 
   status = 0;
-  fptr = NULL;
+  fptr = nullptr;
 
   // Start with beam 1
   fits_open_file(&fptr, filename1.c_str(), READONLY, &status);
@@ -143,7 +164,7 @@ void doublebeam::readFiles(const std::string& filename1,
     throw affineExcept("doublebeam", "readFiles", errstr.str());
   }
 
-  fits_get_hdrspace(fptr, &nkeys, NULL, &status);
+  fits_get_hdrspace(fptr, &nkeys, nullptr, &status);
   if (status) {
     std::stringstream errstr("");
     errstr << "Error getting header space for: " << filename1;
@@ -214,7 +235,7 @@ void doublebeam::readFiles(const std::string& filename1,
     errstr << "Error opening input file: " << filename2;
     throw affineExcept("doublebeam", "readFiles", errstr.str());
   }
-  fits_get_hdrspace(fptr, &nkeys, NULL, &status);
+  fits_get_hdrspace(fptr, &nkeys, nullptr, &status);
   if (status) {
     fits_report_error(stderr, status);
     fits_close_file(fptr, &status);
@@ -455,9 +476,18 @@ void doublebeam::makeHistogram(unsigned int NBINS) {
   for (unsigned int i = 0; i < 4; ++i) {
     ishistogrammed[i] = false;
     nhist[i] = 0;
-    if (binweights[i] != NULL) { delete[] binweights[i]; binweights[i] = NULL; }
-    if (binvals1[i] != NULL) { delete[] binvals1[i]; binvals1[i] = NULL; }
-    if (binvals2[i] != NULL) { delete[] binvals2[i]; binvals2[i] = NULL; }
+    if (binweights[i] != nullptr) {
+      delete[] binweights[i];
+      binweights[i] = nullptr;
+    }
+    if (binvals1[i] != nullptr) {
+      delete[] binvals1[i];
+      binvals1[i] = nullptr;
+    }
+    if (binvals2[i] != nullptr) {
+      delete[] binvals2[i];
+      binvals2[i] = nullptr;
+    }
   }
 
   // Working variables
@@ -697,7 +727,7 @@ const double* const doublebeam::getLogRatio(unsigned int idx) const {
   if (!haslogratio[idx]) {
     // Compute
     unsigned int n = npix[idx];
-    if (logratio[idx] != NULL) delete[] logratio[idx];
+    if (logratio[idx] != nullptr) delete[] logratio[idx];
     logratio[idx] = new double[n];
     const double* p1 = pixarr1[idx];  // beam1
     const double* p2 = invpixarr2[idx];  // 1 / beam2
@@ -727,7 +757,7 @@ const double* const doublebeam::getBinLogRatio(unsigned int idx) const {
   if (!hasbinlogratio[idx]) {
     // Compute
     unsigned int n = nhist[idx];
-    if (binlogratio[idx] != NULL) delete[] binlogratio[idx];
+    if (binlogratio[idx] != nullptr) delete[] binlogratio[idx];
     binlogratio[idx] = new double[n];
     double* lg = binlogratio[idx];
     const double* p1 = binvals1[idx];  // 1 / beam1

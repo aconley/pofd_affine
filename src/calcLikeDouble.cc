@@ -15,31 +15,31 @@ const double NaN = std::numeric_limits<double>::quiet_NaN();
   \param[in] NEDGE Number of edge values if doing edge integration
 */
 calcLikeDoubleSingle::calcLikeDoubleSingle(unsigned int NEDGE) :
-  data_read(false), ndatasets(0), filenames1(NULL), filenames2(NULL),
-  data(NULL), minDataFlux1(NaN),
+  data_read(false), ndatasets(0), filenames1(nullptr), filenames2(nullptr),
+  data(nullptr), minDataFlux1(NaN),
   maxDataFlux1(NaN), minDataFlux2(NaN), maxDataFlux2(NaN),
-  dataext1(NULL), dataext2(NULL), hasmask1(NULL), hasmask2(NULL),
-  maskext1(NULL), maskext2(NULL),
+  dataext1(nullptr), dataext2(nullptr), hasmask1(nullptr), hasmask2(nullptr),
+  maskext1(nullptr), maskext2(nullptr),
   pdfac(NEDGE), minRFlux1(NaN), maxRFlux1(NaN), minRFlux2(NaN),
-  maxRFlux2(NaN), sigma_base1(NULL), sigma_base2(NULL), maxsigma_base1(NaN),
-  maxsigma_base2(NaN), exp_conf1(0.0), exp_conf2(0.0), 
-  like_norm(NULL), like_offset(NULL), has_beam(false), 
+  maxRFlux2(NaN), sigma_base1(nullptr), sigma_base2(nullptr),
+  maxsigma_base1(NaN), maxsigma_base2(NaN), exp_conf1(0.0), exp_conf2(0.0), 
+  like_norm(nullptr), like_offset(nullptr), has_beam(false), 
   beamfile1(""), beamfile2(""), verbose(false) {}
 
 calcLikeDoubleSingle::~calcLikeDoubleSingle() {
-  if (filenames1 != NULL) delete[] filenames1;
-  if (filenames2 != NULL) delete[] filenames2;
-  if (data != NULL) delete[] data;
-  if (dataext1 != NULL) delete[] dataext1;
-  if (dataext2 != NULL) delete[] dataext2;
-  if (hasmask1 != NULL) delete[] hasmask1;
-  if (hasmask2 != NULL) delete[] hasmask2;
-  if (maskext1 != NULL) delete[] maskext1;
-  if (maskext2 != NULL) delete[] maskext2;
-  if (sigma_base1 != NULL) delete[] sigma_base1;
-  if (sigma_base2 != NULL) delete[] sigma_base2;
-  if (like_norm   != NULL) delete[] like_norm;
-  if (like_offset != NULL) delete[] like_offset;
+  if (filenames1 != nullptr) delete[] filenames1;
+  if (filenames2 != nullptr) delete[] filenames2;
+  if (data != nullptr) delete[] data;
+  if (dataext1 != nullptr) delete[] dataext1;
+  if (dataext2 != nullptr) delete[] dataext2;
+  if (hasmask1 != nullptr) delete[] hasmask1;
+  if (hasmask2 != nullptr) delete[] hasmask2;
+  if (maskext1 != nullptr) delete[] maskext1;
+  if (maskext2 != nullptr) delete[] maskext2;
+  if (sigma_base1 != nullptr) delete[] sigma_base1;
+  if (sigma_base2 != nullptr) delete[] sigma_base2;
+  if (like_norm   != nullptr) delete[] like_norm;
+  if (like_offset != nullptr) delete[] like_offset;
 }
 
 /*!
@@ -50,17 +50,17 @@ calcLikeDoubleSingle::~calcLikeDoubleSingle() {
   that we might like to write out.
 */
 void calcLikeDoubleSingle::free() {
-  if (data != NULL) { delete[] data; data = NULL; }
+  if (data != nullptr) { delete[] data; data = nullptr; }
   data_read = false;
 
   pd.strict_resize(0, 0);
   pdfac.free();
   
-  if (sigma_base1 != NULL) { delete[] sigma_base1; sigma_base1 = NULL; }
-  if (sigma_base2 != NULL) { delete[] sigma_base2; sigma_base2 = NULL; }
+  if (sigma_base1 != nullptr) { delete[] sigma_base1; sigma_base1 = nullptr; }
+  if (sigma_base2 != nullptr) { delete[] sigma_base2; sigma_base2 = nullptr; }
 
-  if (like_norm != NULL) { delete[] like_norm; like_norm = NULL; }
-  if (like_offset != NULL) { delete[] like_offset; like_offset = NULL; }
+  if (like_norm != nullptr) { delete[] like_norm; like_norm = nullptr; }
+  if (like_offset != nullptr) { delete[] like_offset; like_offset = nullptr; }
 
   has_beam = false;
   bm.free();
@@ -72,19 +72,19 @@ void calcLikeDoubleSingle::free() {
 void calcLikeDoubleSingle::resize(unsigned int n) {
   if (ndatasets == n) return;  //Don't have to do anything
 
-  if (filenames1 != NULL)  delete[] filenames1;
-  if (filenames2 != NULL)  delete[] filenames2;
-  if (data != NULL)        delete[] data;
-  if (dataext1 != NULL)    delete[] dataext1;
-  if (dataext2 != NULL)    delete[] dataext2;
-  if (hasmask1 != NULL)    delete[] hasmask1;
-  if (hasmask2 != NULL)    delete[] hasmask2;
-  if (maskext1 != NULL)    delete[] maskext1;
-  if (maskext2 != NULL)    delete[] maskext2;
-  if (sigma_base1 != NULL) delete[] sigma_base1;
-  if (sigma_base2 != NULL) delete[] sigma_base2;
-  if (like_offset != NULL) delete[] like_offset;
-  if (like_norm   != NULL) delete[] like_norm;
+  if (filenames1 != nullptr)  delete[] filenames1;
+  if (filenames2 != nullptr)  delete[] filenames2;
+  if (data != nullptr)        delete[] data;
+  if (dataext1 != nullptr)    delete[] dataext1;
+  if (dataext2 != nullptr)    delete[] dataext2;
+  if (hasmask1 != nullptr)    delete[] hasmask1;
+  if (hasmask2 != nullptr)    delete[] hasmask2;
+  if (maskext1 != nullptr)    delete[] maskext1;
+  if (maskext2 != nullptr)    delete[] maskext2;
+  if (sigma_base1 != nullptr) delete[] sigma_base1;
+  if (sigma_base2 != nullptr) delete[] sigma_base2;
+  if (like_offset != nullptr) delete[] like_offset;
+  if (like_norm   != nullptr) delete[] like_norm;
 
   if (n > 0) {
     filenames1  = new std::string[n];
@@ -117,19 +117,19 @@ void calcLikeDoubleSingle::resize(unsigned int n) {
     for (unsigned int i = 0; i < n; ++i)
       like_norm[i]   = 1.0;
   } else {
-    filenames1  = NULL;
-    filenames2  = NULL;
-    data        = NULL;
-    dataext1    = NULL;
-    dataext2    = NULL;
-    hasmask1    = NULL;
-    hasmask2    = NULL;
-    maskext1    = NULL;
-    maskext2    = NULL;
-    sigma_base1 = NULL;
-    sigma_base2 = NULL;
-    like_offset = NULL;
-    like_norm   = NULL;
+    filenames1  = nullptr;
+    filenames2  = nullptr;
+    data        = nullptr;
+    dataext1    = nullptr;
+    dataext2    = nullptr;
+    hasmask1    = nullptr;
+    hasmask2    = nullptr;
+    maskext1    = nullptr;
+    maskext2    = nullptr;
+    sigma_base1 = nullptr;
+    sigma_base2 = nullptr;
+    like_offset = nullptr;
+    like_norm   = nullptr;
   }
   
   data_read = false;
@@ -631,7 +631,7 @@ void calcLikeDoubleSingle::writeToHDF5Handle(hid_t objid) const {
 
   // Number of files
   adims = 1;
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate2(objid, "NFiles", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &ndatasets);
@@ -640,7 +640,7 @@ void calcLikeDoubleSingle::writeToHDF5Handle(hid_t objid) const {
   
   // Write files, extensions, etc.  We use the non-null, non-empty string
   //  in the filenames as an indicator there are things to write
-  if ((filenames1 != NULL) && (filenames1[0] != "")) {
+  if ((filenames1 != nullptr) && (filenames1[0] != "")) {
     hdf5utils::writeDataStrings(objid, "Filenames1", ndatasets, filenames1);
     hdf5utils::writeDataUnsignedInts(objid, "DataExtension1", 
 				     ndatasets, dataext1);
@@ -648,7 +648,7 @@ void calcLikeDoubleSingle::writeToHDF5Handle(hid_t objid) const {
     hdf5utils::writeDataUnsignedInts(objid, "MaskExtension1", 
 				     ndatasets, maskext1);
   }
-  if ((filenames2 != NULL) && (filenames2[0] != "")) {
+  if ((filenames2 != nullptr) && (filenames2[0] != "")) {
     hdf5utils::writeDataStrings(objid, "Filenames2", ndatasets, filenames2);
     hdf5utils::writeDataUnsignedInts(objid, "DataExtension2", 
 				     ndatasets, dataext2);
@@ -664,7 +664,7 @@ void calcLikeDoubleSingle::writeToHDF5Handle(hid_t objid) const {
 
   // Data ranges and R ranges
   adims = 1;
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, "MinDataFlux1", H5T_NATIVE_DOUBLE, 
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
@@ -884,11 +884,11 @@ calcLikeDouble::calcLikeDouble(unsigned int FFTSIZE, unsigned int NEDGE,
   regularization_alpha(0.0), verbose(false) {
 
   nbeamsets = 0;
-  beamsets  = NULL;
+  beamsets  = nullptr;
 }
 
 calcLikeDouble::~calcLikeDouble() {
-  if (beamsets != NULL) delete[] beamsets;
+  if (beamsets != nullptr) delete[] beamsets;
 }
 
 /*!
@@ -1000,9 +1000,9 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
 
   unsigned int newnbeamsets = grpmap.size();
   if (newnbeamsets != nbeamsets) {
-    if (beamsets != NULL) delete[] beamsets;
+    if (beamsets != nullptr) delete[] beamsets;
     if (newnbeamsets > 0) beamsets = new calcLikeDoubleSingle[newnbeamsets];
-    else beamsets = NULL;
+    else beamsets = nullptr;
     nbeamsets = newnbeamsets;
   }
 
@@ -1030,7 +1030,7 @@ readDataFromFiles(const std::vector<std::string>& datafiles1,
 */
 void calcLikeDouble::setNEdge(unsigned int nedg) {
   if (nedg == nedge) return;
-  if (beamsets != NULL)
+  if (beamsets != nullptr)
     for (unsigned int i = 0; i < nbeamsets; ++i)
       beamsets[i].setNEdge(nedg);
   nedge = nedg;
@@ -1327,7 +1327,7 @@ void calcLikeDouble::writeToHDF5Handle(hid_t objid) const {
 
   // FFTSIZE
   adims = 1;
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate2(objid, "FFTSize", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &fftsize);
@@ -1567,9 +1567,9 @@ void calcLikeDouble::receiveCopy(MPI_Comm comm, int src) {
   MPI_Recv(&newnbeamsets, 1, MPI_UNSIGNED, src, pofd_mcmc::CLDSENDNBEAM,
 	   comm, &Info);
   if (newnbeamsets != nbeamsets) {
-    if (beamsets != NULL) delete[] beamsets;
+    if (beamsets != nullptr) delete[] beamsets;
     if (newnbeamsets > 0) beamsets = new calcLikeDoubleSingle[newnbeamsets];
-    else beamsets = NULL;
+    else beamsets = nullptr;
     nbeamsets = newnbeamsets;
   }
   unsigned int idx;

@@ -10,11 +10,11 @@
 
 fitsData::fitsData() {
   n = 0;
-  data = NULL;
+  data = nullptr;
   is_binned = false;
   nbins = 0;
   bincent0 = bindelta = 0.0;
-  binval = NULL;
+  binval = nullptr;
   file = "";
   has_mask = false;
   dataext = maskext = 0;
@@ -27,17 +27,17 @@ fitsData::fitsData() {
 */
 fitsData::fitsData(const std::string& file, bool ignoremask, bool meansub) {
   n = 0;
-  data = NULL;
+  data = nullptr;
   is_binned = false;
   nbins = 0;
   bincent0 = bindelta = 0.0;
-  binval = NULL;
+  binval = nullptr;
   readData(file, ignoremask, meansub);
 }
 
 fitsData::~fitsData() {
-  if (data != NULL) fftw_free(data);
-  if (binval != NULL) fftw_free(binval);
+  if (data != nullptr) fftw_free(data);
+  if (binval != nullptr) fftw_free(binval);
 }
 
 /*!
@@ -57,9 +57,9 @@ void fitsData::readData(const std::string& filename,
 			bool ignore_mask, bool meansub) {
 
   //Free up old arrays
-  if (data != NULL) fftw_free(data);
+  if (data != nullptr) { fftw_free(data); data = nullptr; }
   n = 0;
-  if (binval != NULL) fftw_free(binval);
+  if (binval != nullptr) { fftw_free(binval); binval = nullptr; }
   nbins = 0;
   is_binned = false;
 
@@ -71,8 +71,8 @@ void fitsData::readData(const std::string& filename,
   long ndat_;
   double *data_;
   unsigned int *mask;
-  data_ = NULL;
-  mask  = NULL;
+  data_ = nullptr;
+  mask  = nullptr;
 
    //Lots of fits reading fun
   fitsfile *fptr;
@@ -295,8 +295,8 @@ void fitsData::readData(const std::string& filename,
     for (unsigned int i = 0; i < ndat_; ++i)
       if (mask[i] == 0) ++nkeep;
     if (nkeep == 0) {
-      if (data_ != NULL) fftw_free(data_);      
-      if (mask != NULL) fftw_free(mask);
+      if (data_ != nullptr) fftw_free(data_);      
+      if (mask != nullptr) fftw_free(mask);
       throw affineExcept("fitsData", "readData", "All data masked");
     }
 
@@ -409,7 +409,7 @@ void fitsData::applyBinning(unsigned int NBINS) {
 				     "Trying to bin with no bins");
   if (is_binned && NBINS==nbins) return;
   if (NBINS != nbins) {
-    if (binval != NULL) fftw_free(binval);
+    if (binval != nullptr) fftw_free(binval);
     binval = (unsigned int*) fftw_malloc(sizeof(unsigned int) * NBINS);
     nbins = NBINS;
   }
@@ -438,7 +438,7 @@ void fitsData::applyBinning(unsigned int NBINS) {
 
 void fitsData::removeBinning() {
   if (!is_binned) return;
-  if (binval != NULL) fftw_free(binval);
+  if (binval != nullptr) { fftw_free(binval); binval = nullptr; }
   nbins = 0;
   is_binned = false;
 }
@@ -479,10 +479,10 @@ void fitsData::receiveCopy(MPI_Comm comm, int src) {
 
   if (newn != n) {
     // Must resize
-    if (data != NULL) fftw_free(data);
+    if (data != nullptr) fftw_free(data);
     if (newn > 0)
       data = (double*) fftw_malloc(sizeof(double) * newn);
-    else data = NULL;
+    else data = nullptr;
     n = newn;
   }
   if (n > 0) 
@@ -498,11 +498,11 @@ void fitsData::receiveCopy(MPI_Comm comm, int src) {
     if (newnbins != nbins) {
       //Need to resize
       nbins = newnbins;
-      if (binval != NULL) fftw_free(binval);
+      if (binval != nullptr) fftw_free(binval);
       if (nbins > 0) 
 	binval = (unsigned int*) fftw_malloc(sizeof(unsigned int) * nbins);
       else
-	binval = NULL;
+	binval = nullptr;
     }
     if (nbins > 0) {
       MPI_Recv(binval, nbins, MPI_UNSIGNED, src, pofd_mcmc::FDSENDBINVAL,
@@ -515,8 +515,7 @@ void fitsData::receiveCopy(MPI_Comm comm, int src) {
     } else is_binned = false;
   } else if (is_binned) {
     //Previous data was binned, now it isn't
-    if (binval != NULL) fftw_free(binval);
-    binval = NULL;
+    if (binval != nullptr) { fftw_free(binval); binval = nullptr; }
     is_binned = false;
     nbins = 0;
   }

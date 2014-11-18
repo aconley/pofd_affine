@@ -15,8 +15,8 @@
 
 numberCountsKnots::numberCountsKnots() {
   nknots = 0;
-  knots = NULL;
-  logknotvals = NULL;
+  knots = nullptr;
+  logknotvals = nullptr;
   knotvals_loaded = false;
 }
 
@@ -35,7 +35,7 @@ numberCountsKnots::numberCountsKnots(unsigned int NKNOTS) :
     for (unsigned int i = 0; i < nknots; ++i)
       logknotvals[i] = std::numeric_limits<double>::quiet_NaN();
   } else
-    knots = logknotvals = NULL;
+    knots = logknotvals = nullptr;
   knotvals_loaded = false;
 }  
 
@@ -44,8 +44,8 @@ numberCountsKnots::numberCountsKnots(unsigned int NKNOTS) :
 */
 numberCountsKnots::numberCountsKnots(const std::vector<float>& S) {
   nknots = 0;
-  knots = NULL;
-  logknotvals = NULL;
+  knots = nullptr;
+  logknotvals = nullptr;
   setKnotPositions(S);
   knotvals_loaded = false;
 }
@@ -55,8 +55,8 @@ numberCountsKnots::numberCountsKnots(const std::vector<float>& S) {
 */
 numberCountsKnots::numberCountsKnots(const std::vector<double>& S) {
   nknots = 0;
-  knots = NULL;
-  logknotvals = NULL;
+  knots = nullptr;
+  logknotvals = nullptr;
   setKnotPositions(S);
   knotvals_loaded = false;
 }
@@ -67,8 +67,8 @@ numberCountsKnots::numberCountsKnots(const std::vector<double>& S) {
 */
 numberCountsKnots::numberCountsKnots(unsigned int n, const float* const S) {
   nknots = 0;
-  knots = NULL;
-  logknotvals = NULL;
+  knots = nullptr;
+  logknotvals = nullptr;
   setKnotPositions(n, S);
   knotvals_loaded = false;
 }
@@ -79,8 +79,8 @@ numberCountsKnots::numberCountsKnots(unsigned int n, const float* const S) {
 */
 numberCountsKnots::numberCountsKnots(unsigned int n, const double* const S) {
   nknots = 0;
-  knots = NULL;
-  logknotvals = NULL;
+  knots = nullptr;
+  logknotvals = nullptr;
   setKnotPositions(n, S);
   knotvals_loaded = false;
 }
@@ -91,8 +91,8 @@ numberCountsKnots::numberCountsKnots(unsigned int n, const double* const S) {
 numberCountsKnots::numberCountsKnots(const numberCountsKnots& other) {
   if (this == &other) return; //Self-copy
   nknots = 0;
-  knots = NULL;
-  logknotvals = NULL;
+  knots = nullptr;
+  logknotvals = nullptr;
   setNKnots(other.nknots);
   for (unsigned int i = 0; i < nknots; ++i)
     knots[i] = other.knots[i];
@@ -104,8 +104,8 @@ numberCountsKnots::numberCountsKnots(const numberCountsKnots& other) {
 }
 
 numberCountsKnots::~numberCountsKnots() {
-  if (knots != NULL) delete[] knots;
-  if (logknotvals != NULL) delete[] logknotvals;
+  if (knots != nullptr) delete[] knots;
+  if (logknotvals != nullptr) delete[] logknotvals;
 }
 
 /*!
@@ -116,13 +116,13 @@ numberCountsKnots::~numberCountsKnots() {
 */
 void numberCountsKnots::setNKnots(unsigned int n) {
   if (nknots == n) return;
-  if (knots != NULL) delete[] knots;
-  if (logknotvals != NULL) delete[] logknotvals;
+  if (knots != nullptr) delete[] knots;
+  if (logknotvals != nullptr) delete[] logknotvals;
   if (n > 0) {
     knots = new double[n];
     logknotvals = new double[n];
   } else {
-    knots = logknotvals = NULL;
+    knots = logknotvals = nullptr;
   }
   nknots = n;
   knotvals_loaded = false;
@@ -434,7 +434,7 @@ void numberCountsKnots::writeToHDF5Handle(hid_t objid, bool writevals) const {
 
   // Number of knots
   adims = 1;
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate2(objid, "NKnots", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nknots);
@@ -487,8 +487,8 @@ initFileKnots::initFileKnots() : nknots(0), has_range(false),
 				 has_lower_limits(false),
 				 has_upper_limits(false) {
 
-  knotpos = knotval = range = lowlim = uplim = NULL;
-  has_lowlim = has_uplim = NULL;
+  knotpos = knotval = range = lowlim = uplim = nullptr;
+  has_lowlim = has_uplim = nullptr;
 
 }
 
@@ -504,20 +504,20 @@ initFileKnots::initFileKnots(const std::string& flname,
   nknots(0), has_range(false), has_lower_limits(false), 
   has_upper_limits(false) {
   
-  knotpos = knotval = range = lowlim = uplim = NULL;
-  has_lowlim = has_uplim = NULL;
+  knotpos = knotval = range = lowlim = uplim = nullptr;
+  has_lowlim = has_uplim = nullptr;
 
   readFile(flname, read_range, read_limits);
 }
 
 initFileKnots::~initFileKnots() {
-  if (knotpos != NULL) delete[] knotpos;
-  if (knotval != NULL) delete[] knotval;
-  if (range != NULL) delete[] range;
-  if (has_lowlim != NULL) delete[] has_lowlim;
-  if (lowlim != NULL) delete[] lowlim;
-  if (has_uplim != NULL) delete[] has_uplim;
-  if (uplim != NULL) delete[] uplim;
+  if (knotpos != nullptr) delete[] knotpos;
+  if (knotval != nullptr) delete[] knotval;
+  if (range != nullptr) delete[] range;
+  if (has_lowlim != nullptr) delete[] has_lowlim;
+  if (lowlim != nullptr) delete[] lowlim;
+  if (has_uplim != nullptr) delete[] has_uplim;
+  if (uplim != nullptr) delete[] uplim;
 }
 
 /*!
@@ -541,15 +541,15 @@ void initFileKnots::readFile(const std::string& flname,
 
   //Clear old data
   nknots = 0;
-  if (knotpos != NULL) delete[] knotpos;
-  if (knotval != NULL) delete[] knotval;
-  if (range != NULL) delete[] range;
-  if (has_lowlim != NULL) delete[] has_lowlim;
-  if (lowlim != NULL) delete[] lowlim;
-  if (has_uplim != NULL) delete[] has_uplim;
-  if (uplim != NULL) delete[] uplim;
-  knotpos = knotval = range = lowlim = uplim = NULL;
-  has_lowlim = has_uplim = NULL;
+  if (knotpos != nullptr) delete[] knotpos;
+  if (knotval != nullptr) delete[] knotval;
+  if (range != nullptr) delete[] range;
+  if (has_lowlim != nullptr) delete[] has_lowlim;
+  if (lowlim != nullptr) delete[] lowlim;
+  if (has_uplim != nullptr) delete[] has_uplim;
+  if (uplim != nullptr) delete[] uplim;
+  knotpos = knotval = range = lowlim = uplim = nullptr;
+  has_lowlim = has_uplim = nullptr;
   has_range = has_lower_limits = has_upper_limits = false;
 
   //Figure out how many elements we require
@@ -1171,15 +1171,15 @@ void initFileKnots::sendSelf(MPI_Comm comm, int dest) const {
 */
 void initFileKnots::receiveCopy(MPI_Comm comm, int src) {
   //Delete everything for simplicity
-  if (knotpos != NULL) delete[] knotpos;
-  if (knotval != NULL) delete[] knotval;
-  if (range != NULL) delete[] range;
-  if (has_lowlim != NULL) delete[] has_lowlim;
-  if (lowlim != NULL) delete[] lowlim;
-  if (has_uplim != NULL) delete[] has_uplim;
-  if (uplim != NULL) delete[] uplim;
-  knotpos = knotval = range = lowlim = uplim = NULL;
-  has_lowlim = has_uplim = NULL;
+  if (knotpos != nullptr) delete[] knotpos;
+  if (knotval != nullptr) delete[] knotval;
+  if (range != nullptr) delete[] range;
+  if (has_lowlim != nullptr) delete[] has_lowlim;
+  if (lowlim != nullptr) delete[] lowlim;
+  if (has_uplim != nullptr) delete[] has_uplim;
+  if (uplim != nullptr) delete[] uplim;
+  knotpos = knotval = range = lowlim = uplim = nullptr;
+  has_lowlim = has_uplim = nullptr;
 
   MPI_Status Info;
 

@@ -27,12 +27,12 @@ PDDouble::PDDouble(unsigned int N1, double MINFLUX1, double DFLUX1,
 			       logflat(LOG),
 			       minflux1(MINFLUX1), dflux1(DFLUX1),
 			       minflux2(MINFLUX2), dflux2(DFLUX2) {
-  if (capacity == 0) pd_ = NULL; else
+  if (capacity == 0) pd_ = nullptr; else
     pd_ = (double *) fftw_malloc(sizeof(double) * capacity);
 }
 
 PDDouble::~PDDouble() {
-  if (pd_ != NULL) fftw_free(pd_);
+  if (pd_ != nullptr) fftw_free(pd_);
 }
 
 /*!
@@ -45,9 +45,9 @@ void PDDouble::resize(unsigned int N1, unsigned int N2) {
   //Doesn't actually resize arrays if it can avoid it
   unsigned int newcap = N1 * N2;
   if (newcap > capacity) {
-    if (pd_ != NULL) fftw_free(pd_);
+    if (pd_ != nullptr) fftw_free(pd_);
     if (newcap > 0) pd_ = (double *) fftw_malloc(sizeof(double) * newcap);
-    else pd_ = NULL;
+    else pd_ = nullptr;
     capacity = newcap;
   }
   n1 = N1;
@@ -64,11 +64,11 @@ void PDDouble::shrink() {
       double* tmp = (double*) fftw_malloc(sizeof(double) * newcap);
       for (unsigned int i = 0; i < newcap; ++i)
 	tmp[i] = pd_[i];
-      if (pd_ != NULL) fftw_free(pd_);
+      if (pd_ != nullptr) fftw_free(pd_);
       pd_ = tmp;
     } else {
-      if (pd_ != NULL) fftw_free(pd_);
-      pd_ = NULL;
+      if (pd_ != nullptr) fftw_free(pd_);
+      pd_ = nullptr;
     }
     capacity = newcap;
   }
@@ -83,9 +83,9 @@ void PDDouble::shrink() {
 void PDDouble::strict_resize(unsigned int N1, unsigned int N2) {
   unsigned int newcap = N1*N2;
   if (newcap != capacity) {
-    if (pd_ != NULL) fftw_free(pd_);
+    if (pd_ != nullptr) fftw_free(pd_);
     if (newcap > 0) pd_ = (double*) fftw_malloc(sizeof(double) * newcap);
-    else pd_ = NULL;
+    else pd_ = nullptr;
     capacity = newcap;
   }
   n1 = N1;
@@ -656,7 +656,7 @@ PDDouble& PDDouble::operator=(const PDDouble& other) {
   dflux2 = other.dflux2;
   unsigned int sz = n1 * n2;
   if (sz > 0) {
-    if (pd_ == NULL)
+    if (pd_ == nullptr)
       throw affineExcept("PDDouble", "operator=", 
 			 "Internal storage not initialized");
     for (unsigned int i = 0; i < sz; ++i)
@@ -687,7 +687,7 @@ void PDDouble::fill(unsigned int N1, double MINFLUX1, double DFLUX1,
   dflux2 = DFLUX2;
   unsigned int sz = n1*n2;
   if (sz > 0) {
-    if (pd_ == NULL)
+    if (pd_ == nullptr)
       throw affineExcept("PDDouble", "operator=", 
 			 "Internal storage not initialized");
     for (unsigned int i = 0; i < sz; ++i)
@@ -705,7 +705,7 @@ void PDDouble::fill(unsigned int N1, double MINFLUX1, double DFLUX1,
   if the P(D) has been converted to log values.
 */
 double PDDouble::getPDVal(double x, double y, bool logval) const {
-  if (pd_ == NULL) return std::numeric_limits<double>::quiet_NaN();
+  if (pd_ == nullptr) return std::numeric_limits<double>::quiet_NaN();
 
   //look up the effective indexes
   int idx1 = static_cast<int>((x - minflux1) / dflux1);
@@ -873,7 +873,7 @@ void PDDouble::writeToHDF5Handle(hid_t objid) const {
   hdf5utils::writeAttBool(objid, "IsLog", logflat);
 
   adims = 1;
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate2(objid, "dFlux1", H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux1);
@@ -926,7 +926,7 @@ void PDDouble::writeToHDF5(const std::string& outputfile) const {
   will result if the P(D) is stored in log form or not.
 */
 double PDDouble::getLogLike(const fitsDataDouble& data) const {
-  if (pd_ == NULL) throw affineExcept("PDDouble", "getLogLike",
+  if (pd_ == nullptr) throw affineExcept("PDDouble", "getLogLike",
 				      "pd not filled before likelihood calc");
   unsigned int ndata = data.getN();
   if (ndata == 0) throw affineExcept("PDDouble", "getLogLike",
