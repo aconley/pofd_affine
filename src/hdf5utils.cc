@@ -58,7 +58,7 @@ void hdf5utils::writeAttString(hid_t objid, const std::string& name,
   const char * ctmp;
 
   adims = 1;
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), datatype,
 		      mems_id, H5P_DEFAULT);
   ctmp = value.c_str();
@@ -97,7 +97,7 @@ void hdf5utils::writeAttStrings(hid_t objid, const std::string& name,
     ctmp[i] = value[i].c_str();
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), datatype,
 		      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, datatype, ctmp);
@@ -135,7 +135,7 @@ void hdf5utils::writeAttStrings(hid_t objid, const std::string& name,
     ctmp[i] = value[i].c_str();
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), datatype,
 		      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, datatype, ctmp);
@@ -161,7 +161,7 @@ void hdf5utils::writeAttBool(hid_t objid, const std::string& name,
 
   bl = static_cast<hbool_t>(value);
   adims = 1;
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &bl);
@@ -194,7 +194,7 @@ void hdf5utils::writeAttBools(hid_t objid, const std::string& name,
     bl[i] = static_cast<hbool_t>(value[i]);
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_HBOOL, bl);
@@ -228,7 +228,7 @@ void hdf5utils::writeAttBools(hid_t objid, const std::string& name,
     bl[i] = static_cast<hbool_t>(value[i]);
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_HBOOL, bl);
@@ -258,7 +258,7 @@ void hdf5utils::writeAttUnsignedInts(hid_t objid, const std::string& name,
   hid_t mems_id, att_id;
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, value);
@@ -290,7 +290,7 @@ void hdf5utils::writeAttUnsignedInts(hid_t objid, const std::string& name,
     v[i] = value[i];
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, v);
@@ -319,7 +319,7 @@ void hdf5utils::writeAttInts(hid_t objid, const std::string& name,
   hid_t mems_id, att_id;
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_INT,
 		      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_INT, value);
@@ -349,7 +349,7 @@ void hdf5utils::writeAttInts(hid_t objid, const std::string& name,
   for (unsigned int i = 0; i < n; ++i) v[i] = value[i];
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_INT,
 		      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_INT, v);
@@ -378,7 +378,7 @@ void hdf5utils::writeAttFloats(hid_t objid, const std::string& name,
   hid_t mems_id, att_id;
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_FLOAT,
 		      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_FLOAT, value);
@@ -410,7 +410,7 @@ void hdf5utils::writeAttFloats(hid_t objid, const std::string& name,
     v[i] = value[i];
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_FLOAT,
 		      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_FLOAT, v);
@@ -439,7 +439,7 @@ void hdf5utils::writeAttDoubles(hid_t objid, const std::string& name,
   hid_t mems_id, att_id;
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, value);
@@ -471,7 +471,7 @@ void hdf5utils::writeAttDoubles(hid_t objid, const std::string& name,
     v[i] = value[i];
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, v);
@@ -510,7 +510,7 @@ void hdf5utils::writeDataStrings(hid_t objid, const std::string& name,
   hid_t mems_id, dat_id;
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), datatype, mems_id, H5P_DEFAULT, 
 		      H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, datatype, H5S_ALL, H5S_ALL, H5P_DEFAULT, ctmp);
@@ -539,7 +539,7 @@ void hdf5utils::writeDataString(hid_t objid, const std::string& name,
   hid_t mems_id, dat_id;
 
   adims = 1;
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), datatype, mems_id, H5P_DEFAULT, 
 		      H5P_DEFAULT, H5P_DEFAULT);
   ctmp = value.c_str();
@@ -577,7 +577,7 @@ void hdf5utils::writeDataStrings(hid_t objid, const std::string& name,
   hid_t mems_id, dat_id;
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), datatype, mems_id, H5P_DEFAULT, 
 		      H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, datatype, H5S_ALL, H5S_ALL, H5P_DEFAULT, ctmp);
@@ -612,7 +612,7 @@ void hdf5utils::writeDataBools(hid_t objid, const std::string& name,
     v[i] = static_cast<hbool_t>(value[i]);
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_HBOOL, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
@@ -646,7 +646,7 @@ void hdf5utils::writeDataBools(hid_t objid, const std::string& name,
     v[i] = static_cast<hbool_t>(value[i]);
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_HBOOL, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
@@ -676,7 +676,7 @@ void hdf5utils::writeDataUnsignedInts(hid_t objid, const std::string& name,
   hid_t mems_id, dat_id;
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_UINT, H5S_ALL, H5S_ALL, H5P_DEFAULT, value);
@@ -708,7 +708,7 @@ void hdf5utils::writeDataUnsignedInts(hid_t objid, const std::string& name,
   unsigned int *v = new unsigned int[n];
   for (unsigned int i = 0; i < n; ++i) v[i] = value[i];
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_UINT, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
@@ -737,7 +737,7 @@ void hdf5utils::writeDataInts(hid_t objid, const std::string& name,
   hid_t mems_id, dat_id;
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_INT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, value);
@@ -769,7 +769,7 @@ void hdf5utils::writeDataInts(hid_t objid, const std::string& name,
   int *v = new int[n];
   for (unsigned int i = 0; i < n; ++i) v[i] = value[i];
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_INT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
@@ -798,7 +798,7 @@ void hdf5utils::writeDataFloats(hid_t objid, const std::string& name,
   hid_t mems_id, dat_id;
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_FLOAT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, value);
@@ -830,7 +830,7 @@ void hdf5utils::writeDataFloats(hid_t objid, const std::string& name,
   for (unsigned int i = 0; i < n; ++i) v[i] = value[i];
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_FLOAT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
@@ -860,7 +860,7 @@ void hdf5utils::writeDataDoubles(hid_t objid, const std::string& name,
   hid_t mems_id, dat_id;
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, value);
@@ -891,7 +891,7 @@ void hdf5utils::writeDataDoubles(hid_t objid, const std::string& name,
   for (unsigned int i = 0; i < n; ++i) v[i] = value[i];
 
   adims = static_cast<hsize_t>(n);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
@@ -923,7 +923,7 @@ void hdf5utils::writeData2DFloats(hid_t objid, const std::string& name,
 
   adims[0] = static_cast<hsize_t>(n1);
   adims[1] = static_cast<hsize_t>(n2);
-  mems_id = H5Screate_simple(2, adims, NULL);
+  mems_id = H5Screate_simple(2, adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_FLOAT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, value);
@@ -953,7 +953,7 @@ void hdf5utils::writeData2DDoubles(hid_t objid, const std::string& name,
 
   adims[0] = static_cast<hsize_t>(n1);
   adims[1] = static_cast<hsize_t>(n2);
-  mems_id = H5Screate_simple(2, adims, NULL);
+  mems_id = H5Screate_simple(2, adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_DOUBLE,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, value);

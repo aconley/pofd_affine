@@ -34,6 +34,8 @@ void hashbar::update(unsigned int step, std::ostream& os) {
   if (step >= nsteps) nhash = maxlen;
   else nhash = step * maxlen / nsteps;
   if (nhash == currlen) return;
+  std::ios state(nullptr);
+  state.copyfmt(os);
   if (nhash == 0) {
     // Empty bar
     initialize(os);
@@ -41,8 +43,10 @@ void hashbar::update(unsigned int step, std::ostream& os) {
     // Partially full bar
     float perc = 100.0 * static_cast<float>(step) / nsteps;
     perc = perc > 100.0 ? 100.0 : perc;
+    std::streamsize sp = os.precision();
     os << " " << std::setw(5) << std::setprecision(1) 
        << std::fixed << perc << "%[";
+    os << std::setprecision(sp);
     for (unsigned int h = 0; h < nhash-1; ++h) os << mark;
     os << ">";
     for (unsigned int h = nhash; h < maxlen; ++h)
@@ -55,6 +59,7 @@ void hashbar::update(unsigned int step, std::ostream& os) {
     os << "]\r" << std::flush;
   }
   currlen = nhash;
+  os.copyfmt(state);
 }
 
 /*!

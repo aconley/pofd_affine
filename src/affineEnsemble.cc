@@ -451,6 +451,8 @@ void affineEnsemble::printStatistics(float conflevel,
 		       "Sampler not in valid state");
   std::string parname;
   float mn, var, low, up;
+  std::ios state(nullptr);
+  state.copyfmt(os);
   for (unsigned int i = 0; i < nparams; ++i) {
     if (!has_name[i]) parname = "Unknown"; else
       parname = parnames[i];
@@ -459,16 +461,21 @@ void affineEnsemble::printStatistics(float conflevel,
       os << "Parameter: " << parname << " Fixed at value: " << mn << std::endl;
     } else {
       chains.getParamStats(i, mn, var, low, up, conflevel);
+      os.width(6);
+      os.precision(4);
       os << "Parameter: " << parname << " Mean: " << mn << " Stdev: "
 	 << sqrt(var) << std::endl;
       os << "  lower limit: " << low << " upper limit: "
-	 << up << " (" << conflevel * 100.0 << "% limit)";
+	 << up << " (";
+      os.width(5);
+      os.precision(2);
+      os << conflevel * 100.0 << "% limit)";
       if (param_state[i] & mcmc_affine::BONUS)
 	os << " (bonus param)";
       os << std::endl;
     }
   }
-
+  os.copyfmt(state);
 }
 
 /*!
@@ -613,7 +620,7 @@ void affineEnsemble::masterSample() {
   calcLastLikelihood();
 
   // Progress bar variable, allocated if needed
-  hashbar *progbar = NULL;
+  hashbar *progbar = nullptr;
 
   //Do initial steps
   if (init_steps > 0) {
@@ -1548,7 +1555,7 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
 
   // First, simple 1 element objects
   adims = 1;
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate2(groupid, "ScaleFactor", H5T_NATIVE_FLOAT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_FLOAT, &scalefac);
@@ -1587,7 +1594,7 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
 		       "Failed to create ParamInfo HDF5 group");
   // Again, start with single value stuff
   adims = 1;
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
 
   att_id = H5Acreate2(groupid, "NFixed", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
@@ -1605,7 +1612,7 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
 
   // Parameter state (fixed, ignored, bonus) information
   adims = nparams;
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   hbool_t *batmp;
   batmp = new hbool_t[nparams];
   // Fixed first

@@ -6,7 +6,7 @@
 
 paramSet::paramSet() {
   nparams = 0;
-  paramvals = NULL;
+  paramvals = nullptr;
 }
 
 /*!
@@ -14,7 +14,7 @@ paramSet::paramSet() {
 */
 paramSet::paramSet(unsigned int NPARAMS) {
   nparams = 0;
-  paramvals = NULL;
+  paramvals = nullptr;
   setNParams(NPARAMS);
 }
 
@@ -23,7 +23,7 @@ paramSet::paramSet(unsigned int NPARAMS) {
 */
 paramSet::paramSet(const std::vector<float>& vec) {
   nparams = 0;
-  paramvals = NULL;
+  paramvals = nullptr;
   setNParams(vec.size());
   if (nparams > 0) 
     for (unsigned int i = 0; i < nparams; ++i)
@@ -37,7 +37,7 @@ paramSet::paramSet(const std::vector<float>& vec) {
 */
 paramSet::paramSet(const std::vector<double>& vec) {
   nparams = 0;
-  paramvals = NULL;
+  paramvals = nullptr;
   setNParams(vec.size());
   if (nparams > 0) 
     for (unsigned int i = 0; i < nparams; ++i)
@@ -50,7 +50,7 @@ paramSet::paramSet(const std::vector<double>& vec) {
 */
 paramSet::paramSet(unsigned int N, const float* const VAL) {
   nparams = 0;
-  paramvals = NULL;
+  paramvals = nullptr;
   setNParams(N);
   if (nparams > 0) 
     for (unsigned int i = 0; i < nparams; ++i)
@@ -63,7 +63,7 @@ paramSet::paramSet(unsigned int N, const float* const VAL) {
 */
 paramSet::paramSet(unsigned int N, const double* const VAL) {
   nparams = 0;
-  paramvals = NULL;
+  paramvals = nullptr;
   setNParams(N);
   if (nparams > 0) 
     for (unsigned int i = 0; i < nparams; ++i)
@@ -75,19 +75,19 @@ paramSet::paramSet(unsigned int N, const double* const VAL) {
 */
 paramSet::paramSet(const paramSet& other) {
   nparams = 0;
-  paramvals = NULL;
+  paramvals = nullptr;
   setNParams(other.nparams);
   for (unsigned int i = 0; i < other.nparams; ++i)
     paramvals[i] = other.paramvals[i];
 }
 
 paramSet::~paramSet() {
-  if (paramvals != NULL) delete[] paramvals;
+  if (paramvals != nullptr) delete[] paramvals;
 }
 
 void paramSet::clear() {
-  if (paramvals != NULL) delete[] paramvals;
-  paramvals = NULL;
+  if (paramvals != nullptr) delete[] paramvals;
+  paramvals = nullptr;
   nparams = 0;
 }
 
@@ -98,8 +98,8 @@ void paramSet::clear() {
  */
 void paramSet::setNParams(unsigned int npar) {
   if (npar == nparams) return;
-  if (paramvals != NULL) delete[] paramvals;
-  if (npar > 0) paramvals = new float[npar]; else paramvals=NULL;
+  if (paramvals != nullptr) delete[] paramvals;
+  if (npar > 0) paramvals = new float[npar]; else paramvals=nullptr;
   nparams=npar;
 }
 
