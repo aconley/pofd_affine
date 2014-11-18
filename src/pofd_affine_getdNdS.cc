@@ -227,9 +227,10 @@ int getNSingle(int argc, char** argv) {
 	for (unsigned int i = 0; i < nflux; ++i) 
 	  fprintf(fp, "%12.6e   %15.9e\n",
 		  exp2(lmin + static_cast<double>(i) * dflux), dNdS[i]);
-      } else for (unsigned int i = 0; i < nflux; ++i) 
-	       fprintf(fp, "%12.6e   %15.9e\n",
-		       minflux + static_cast<double>(i) * dflux, dNdS[i]);
+      } else
+	for (unsigned int i = 0; i < nflux; ++i) 
+	  fprintf(fp, "%12.6e   %15.9e\n",
+		  minflux + static_cast<double>(i) * dflux, dNdS[i]);
       fclose(fp);
     } else if (oft == hdf5utils::FITS)
       throw affineExcept("pofd_affine_getdNdS", "getNSingle",

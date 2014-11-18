@@ -49,9 +49,9 @@ class fitsData {
 
   bool hasData() const { return n != 0; } //!< Has data been read
   unsigned int getN() const { return n; } //!< Number of data points
-  const double* const getData() const { return data; } //!< Access to data
+  const double* getData() const { return data; } //!< Access to data
   /*! \brief Access to binned data */
-  const unsigned int* const getBinnedData() const { return binval; }
+  const unsigned int* getBinnedData() const { return binval; }
 
   double getData(unsigned int i) const { return data[i]; } //!< Unchecked data access
   unsigned int getBinnedData(unsigned int i) const { return binval[i]; } //!< Unckecked binned data access

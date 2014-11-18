@@ -75,7 +75,7 @@ class PD {
   double getPDVal(double) const;
 
   /*! \brief Element access */
-  const double operator[](unsigned int i) const { return pd_[i]; }
+  double operator[](unsigned int i) const { return pd_[i]; }
   unsigned int getDim() const { return n; } //!< Get number of elements in PD
 
   /*! \brief Get Log likelihood of data set*/

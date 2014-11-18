@@ -61,15 +61,15 @@ class fitsDataDouble {
   std::pair<unsigned int, unsigned int> getNBins() const; //!< Get number of bins along each dimension
   dblpair getBinCent0() const; //!< Gets center of 0th bin along each dimension
   dblpair getBinDelta() const; //!< Gets size of bins along each dimension
-  const unsigned int* const getBinnedData() const { return binval; } //!< Access to binned elements
+  const unsigned int* getBinnedData() const { return binval; } //!< Access to binned elements
   unsigned int getBinnedData(unsigned int i, unsigned int j) const 
   { return binval[i*nbins2+j]; } //!< Unchecked binned data access
   unsigned int getBinnedData(unsigned int i) const { return binval[i]; } //!< Unckecked binned data access
 
   bool hasData() const { return n != 0; } //!< Has data been read?
   unsigned int getN() const { return n; } //!< Get number of data points
-  const double* const getData1() const { return data1; } //!< Direct data access, band 1
-  const double* const getData2() const { return data2; } //!< Direct data access, band 2
+  const double* getData1() const { return data1; } //!< Direct data access, band 1
+  const double* getData2() const { return data2; } //!< Direct data access, band 2
   double getData1(unsigned int i) const { return data1[i]; } //!< Unchecked
   double getData2(unsigned int i) const { return data2[i]; } //!< Unchecked
   
