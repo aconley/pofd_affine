@@ -543,7 +543,7 @@ TEST(affineChainSetTest, ClearPreserveLast) {
 TEST(affineChainSetTest, Acor) {
   const unsigned int ntest = 8815;
   std::ifstream ifs("testdata/testvec.txt");
-  ASSERT_TRUE(ifs) << "Can't open testvec.txt";
+  ASSERT_TRUE(ifs.is_open()) << "Can't open testvec.txt";
   affineChainSet chains3(1,1);
   chains3.addChunk(ntest);
   paramSet p(1);
