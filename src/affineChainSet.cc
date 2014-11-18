@@ -35,9 +35,9 @@ affineStepChunk::affineStepChunk(unsigned int NWALKERS,
     for (unsigned int i = 0; i < nwalkers; ++i)
       nsteps[i] = 0;
   } else {
-    steps = NULL;
-    logLike = NULL;
-    nsteps = NULL;
+    steps = nullptr;
+    logLike = nullptr;
+    nsteps = nullptr;
   }
 }
 
@@ -61,9 +61,9 @@ affineStepChunk::affineStepChunk(const affineStepChunk& other) {
     for (unsigned int i = 0; i < nwalkers; ++i)
       nsteps[i] = other.nsteps[i];
   } else {
-    steps = NULL;
-    logLike = NULL;
-    nsteps = NULL;
+    steps = nullptr;
+    logLike = nullptr;
+    nsteps = nullptr;
   }
 }
 
@@ -103,9 +103,9 @@ void affineStepChunk::fillFromLastStep(const affineStepChunk& other)
       for (unsigned int i = 0; i < nwalkers; ++i)
 	nsteps[i] = 0;
     } else {
-      steps = NULL;
-      logLike = NULL;
-      nsteps = NULL;
+      steps = nullptr;
+      logLike = nullptr;
+      nsteps = nullptr;
       return;
     }
   } 
@@ -127,17 +127,17 @@ void affineStepChunk::fillFromLastStep(const affineStepChunk& other)
 
 //Frees memory
 void affineStepChunk::clear() {
-  if (steps != NULL) {
+  if (steps != nullptr) {
     delete[] steps;
-    steps = NULL;
+    steps = nullptr;
   }
-  if (logLike != NULL) {
+  if (logLike != nullptr) {
     delete[] logLike;
-    logLike = NULL;
+    logLike = nullptr;
   }
-  if (nsteps != NULL) {
+  if (nsteps != nullptr) {
     delete[] nsteps;
-    nsteps = NULL;
+    nsteps = nullptr;
   }
   nwalkers = niters = nparams = 0;
 }
@@ -356,48 +356,48 @@ bool affineStepChunk::getStep(unsigned int walker_idx, unsigned int iter_idx,
 /*!
   \param[in] walker_idx Walker to replace last step with
   \param[in] iter_idx Step to get from that walker
-  \returns Pointer to that set of parameters, NULL if invalid step
+  \returns Pointer to that set of parameters, nullptr if invalid step
 */
 float* affineStepChunk::getParamPointer(unsigned int walker_idx,
 					unsigned int iter_idx) {
-  if (walker_idx >= nwalkers) return NULL;
-  if (iter_idx >= niters) return NULL;
+  if (walker_idx >= nwalkers) return nullptr;
+  if (iter_idx >= niters) return nullptr;
   return steps + (niters * walker_idx + iter_idx) * nparams;
 }
 
 /*!
   \param[in] walker_idx Walker to replace last step with
   \param[in] iter_idx Step to get from that walker
-  \returns Pointer to const of that set of parameters, NULL if invalid step
+  \returns Pointer to const of that set of parameters, nullptr if invalid step
 */
 float* const affineStepChunk::getParamPointer(unsigned int walker_idx,
 					      unsigned int iter_idx) const {
-  if (walker_idx >= nwalkers) return NULL;
-  if (iter_idx >= niters) return NULL;
+  if (walker_idx >= nwalkers) return nullptr;
+  if (iter_idx >= niters) return nullptr;
   return steps + (niters * walker_idx + iter_idx) * nparams;
 }
 
 /*!
   \param[in] walker_idx Walker to replace last step with
-  \returns Pointer to last set of parameters, NULL if no steps in this chunk
+  \returns Pointer to last set of parameters, nullptr if no steps in this chunk
 */
 float* affineStepChunk::getLastParamPointer(unsigned int walker_idx) {
-  if (walker_idx >= nwalkers) return NULL;
+  if (walker_idx >= nwalkers) return nullptr;
   unsigned int iter_idxp1 = nsteps[walker_idx];
-  if (iter_idxp1 == 0) return NULL;
+  if (iter_idxp1 == 0) return nullptr;
   return steps + (niters * walker_idx + iter_idxp1 - 1) * nparams;
 }
 
 /*!
   \param[in] walker_idx Walker to replace last step with
-  \returns Pointer to const of last set of parameters, NULL 
+  \returns Pointer to const of last set of parameters, nullptr 
      if no steps in this chunk
 */
 float* const affineStepChunk::getLastParamPointer(unsigned int walker_idx) 
   const {
-  if (walker_idx >= nwalkers) return NULL;
+  if (walker_idx >= nwalkers) return nullptr;
   unsigned int iter_idxp1 = nsteps[walker_idx];
-  if (iter_idxp1 == 0) return NULL;
+  if (iter_idxp1 == 0) return nullptr;
   return steps + (niters * walker_idx + iter_idxp1 - 1) * nparams;
 }
 
@@ -443,7 +443,7 @@ affineChainSet::~affineChainSet() {
 
 void affineChainSet::clear() {
   for (unsigned int i = 0; i < steps.size(); ++i)
-    if (steps[i] != NULL) delete steps[i];
+    if (steps[i] != nullptr) delete steps[i];
   steps.clear();
   skipfirst = false;
 }
@@ -459,7 +459,7 @@ void affineChainSet::clearPreserveLast() throw (affineExcept) {
   affineStepChunk *newchunk = new affineStepChunk(nwalkers, 1, nparams);
   newchunk->fillFromLastStep(*steps.back());
   for (unsigned int i = 0; i < steps.size(); ++i)
-    if (steps[i] != NULL) delete steps[i];
+    if (steps[i] != nullptr) delete steps[i];
   steps.clear();
   steps.push_back(newchunk);
 }
@@ -1341,7 +1341,7 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
 
   // Data space
   hid_t dataspace_idsteps;
-  dataspace_idsteps = H5Screate_simple(3, dims_steps, NULL);
+  dataspace_idsteps = H5Screate_simple(3, dims_steps, nullptr);
   
   // Data set
   hid_t dataset_idsteps;
@@ -1353,7 +1353,7 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
   hsize_t adims;
   adims = 1;
   hid_t mems_id, att_id;
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate2(dataset_idsteps, "NWalkers", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nwalkers);
@@ -1374,7 +1374,7 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
   const affineStepChunk* chunk;
   fwrkarr = new float[nit * nparams];
   if (skipfirst) firststep = 1; else firststep = 0;
-  mems_id = H5Screate_simple(3, memsdim_steps, NULL);
+  mems_id = H5Screate_simple(3, memsdim_steps, nullptr);
   for (unsigned int walkidx = 0; walkidx < nwalkers; ++walkidx) {
     // Copy all steps for this walker into fwrkarr
     cntr = 0;
@@ -1392,7 +1392,7 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
     // Now write chunk
     offset_steps[0] = static_cast<hsize_t>(walkidx);
     H5Sselect_hyperslab(dataspace_idsteps, H5S_SELECT_SET, 
-			offset_steps, NULL, count_steps, memsdim_steps);
+			offset_steps, nullptr, count_steps, memsdim_steps);
     H5Dwrite(dataset_idsteps, H5T_NATIVE_FLOAT, mems_id,
 	     dataspace_idsteps, H5P_DEFAULT, fwrkarr);
   }
@@ -1414,11 +1414,11 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
   memsdim_like[1] = static_cast<hsize_t>(nit);
   hsize_t count_like[2] = {1, 1};
   hid_t dataspace_idlike, dataset_idlike;
-  dataspace_idlike = H5Screate_simple(2, dims_like, NULL);
+  dataspace_idlike = H5Screate_simple(2, dims_like, nullptr);
   dataset_idlike = H5Dcreate2(objid, "Likelihood", H5T_NATIVE_DOUBLE, 
 			      dataspace_idlike, H5P_DEFAULT, H5P_DEFAULT, 
 			      H5P_DEFAULT);
-  mems_id = H5Screate_simple(1, &adims, NULL);
+  mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate2(dataset_idlike, "NWalkers", H5T_NATIVE_UINT,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nwalkers);
@@ -1430,7 +1430,7 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
   H5Sclose(mems_id);
   double *dwrkarr;
   dwrkarr = new double[nit];
-  mems_id = H5Screate_simple(2, memsdim_like, NULL);
+  mems_id = H5Screate_simple(2, memsdim_like, nullptr);
   for (unsigned int walkidx = 0; walkidx < nwalkers; ++walkidx) {
     cntr = 0;
     for (unsigned int chunkidx = firststep; 
@@ -1444,7 +1444,7 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
     // Now write chunk
     offset_like[0] = static_cast<hsize_t>(walkidx);
     H5Sselect_hyperslab(dataspace_idlike, H5S_SELECT_SET, 
-			offset_like, NULL, count_like, memsdim_like);
+			offset_like, nullptr, count_like, memsdim_like);
     H5Dwrite(dataset_idlike, H5T_NATIVE_DOUBLE, mems_id,
 	     dataspace_idlike, H5P_DEFAULT, dwrkarr);
   }

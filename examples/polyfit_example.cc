@@ -4,6 +4,7 @@
 #include<sstream>
 #include<cstdlib>
 #include<ios>
+#include<iomanip>
 
 #include<getopt.h>
 
@@ -352,13 +353,15 @@ int main(int argc, char** argv) {
     
     if (rank == 0) {
       // Summarize results
-      ply.printStatistics();
+      std::cout << std::fixed;
+      ply.printStatistics(0.683, std::cout);
 
       std::vector<float> accept;
       ply.getAcceptanceFrac(accept);
       double mnacc = accept[0];
       for (unsigned int i = 1; i < nwalkers; ++i)
 	mnacc += accept[i];
+      std::cout.width(5);
       std::cout << "Mean acceptance: " << mnacc / static_cast<double>(nwalkers)
 		<< std::endl;
 

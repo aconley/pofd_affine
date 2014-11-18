@@ -46,7 +46,7 @@ template< class Item > affineQueue<Item>::affineQueue() {
   nelem    = 0;
   head     = 0;
   tail     = 0;
-  data = NULL;
+  data = nullptr;
 }
 
 /*!
@@ -60,11 +60,11 @@ template< class Item > affineQueue<Item>::affineQueue(unsigned int CAP) {
   if (cap > 0)
     data = new Item[cap];
   else 
-    data = NULL;
+    data = nullptr;
 }
 
 template< class Item > affineQueue<Item>::~affineQueue() {
-  if (data != NULL) delete[] data;
+  if (data != nullptr) delete[] data;
 }
 
 /*!
@@ -72,8 +72,8 @@ template< class Item > affineQueue<Item>::~affineQueue() {
 */
 template< class Item > void affineQueue<Item>::setCapacity(unsigned int CAP) {
   if (cap != CAP) {
-    if (data != NULL) delete[] data;
-    if (CAP > 0) data = new Item[CAP]; else data = NULL;
+    if (data != nullptr) delete[] data;
+    if (CAP > 0) data = new Item[CAP]; else data = nullptr;
     cap = CAP;
   }
   nelem = 0;
