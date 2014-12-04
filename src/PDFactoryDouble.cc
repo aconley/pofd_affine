@@ -10,12 +10,6 @@
 #include "../include/hdf5utils.h"
 #include "../include/affineExcept.h"
 
-const double PDFactoryDouble::lowEdgeRMult=1e-9; //!< How far to go down on edge
-//Control of how we do the edge integrals -- linear or log?
-const bool PDFactoryDouble::use_edge_log_x = true; //!< edge log x spacing
-const bool PDFactoryDouble::use_edge_log_y = false; //!< edge log y spacing
-
-
 // Helper function for RFlux setup.  After this is called
 //  rflux is filled with values from minflux_realized to maxflux 
 //  in steps of dflux with wrapping to negative values occuring at wrapidx.

@@ -25,7 +25,8 @@
 */
 class PDFactory {
  private :
-  static const double subedgemult; //!< Controls interpolation lower edge
+  /* \brief Controls interpolation lower edge */
+  static constexpr double subedgemult = 1e-5;
 
   bool rinitialized; //!< R initialized
   bool initialized; //!< R forward transform is filled

@@ -27,7 +27,9 @@
 */
 class beam {
  private :
-  static const unsigned int histothresh; //!< Minimum number of pix to histogram
+  /* \brief Minimum number of pixels in beam to histogram */
+  static constexpr unsigned int histothresh = 20; //!< 
+
   unsigned int npos; //!< Number of positive pixels
   unsigned int nneg; //!< Number of negative pixels
 

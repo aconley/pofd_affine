@@ -27,10 +27,14 @@
 */
 class PDFactoryDouble {
  private :
-  //Constants controlling edge integrations
-  static const double lowEdgeRMult; //!< How far down to go from model limits in edge integrals
-  static const bool use_edge_log_x; //!< Integrate Rx in x log space
-  static const bool use_edge_log_y; //!< Integrate Ry in y log space
+  // Constants controlling edge integrations.  Set based on tests of
+  //  sample models.
+  /* \brief How far down to go from model limits in edge integrals */
+  static constexpr double lowEdgeRMult = 1e-9;
+  /* \brief Integrate Rx in x log space */
+  static constexpr bool use_edge_log_x = true;
+  /* \brief Integrate Ry in y log space */
+  static constexpr bool use_edge_log_y = false;
   
   bool rinitialized; //!< R, RFluxes are filled
   bool initialized; //!< forward transformed R is filled

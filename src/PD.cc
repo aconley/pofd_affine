@@ -10,8 +10,6 @@
 #include "../include/hdf5utils.h"
 #include "../include/affineExcept.h"
 
-const double PD::lowsigval = 2.5;
-
 /*!
   \param[in] N Number of elements
   \param[in] MINFLUX minimum flux value

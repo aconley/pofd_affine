@@ -24,7 +24,7 @@
  */
 class PD {
  private:
-  static const double lowsigval; //!< Constant used in edgeFix
+  static constexpr double lowsigval = 2.5; //!< Constant used in edgeFix
 
   unsigned int n; //!< Current size
   unsigned int capacity; //!< Current capacity
@@ -33,7 +33,8 @@ class PD {
   double getLogLikeUnbinned(const fitsData&) const;
 
  public:
-  PD(unsigned int N=0, double MINFLUX=0.0, double DFLUX=0.0); //!< Constructor
+  /* \brief Constructor */
+  explicit PD(unsigned int N=0, double MINFLUX=0.0, double DFLUX=0.0);
   ~PD(); //!< Destructor
 
   //Public for efficient filling -- bad form, but speed matters here

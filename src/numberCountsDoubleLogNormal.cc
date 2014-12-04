@@ -39,9 +39,6 @@ static double lognorm(double, void*);
 /*! \brief Evaluates sqrt(2 pi) dN / dS1 dS2 with S1 as an argument and S2 a parameter*/
 static double evalCounts(double, void*); 
 
-/*! \brief Number of elements in varr (lots of model params!) */
-const unsigned int numberCountsDoubleLogNormal::nvarr = 17; 
-
 numberCountsDoubleLogNormal::numberCountsDoubleLogNormal() : 
   nknots(0), knots(nullptr), logknots(nullptr), logknotvals(nullptr),
   splinelog(nullptr), nsigmaknots(0), sigmaknots(nullptr), sigmavals(nullptr),

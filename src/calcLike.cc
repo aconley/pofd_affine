@@ -7,8 +7,6 @@
 #include "../include/hdf5utils.h"
 #include "../include/affineExcept.h"
 
-const double calcLikeSingle::bad_like = 1e25;
-const double calcLikeSingle::flux_safety = 1.1;
 const double NaN = std::numeric_limits<double>::quiet_NaN();
 
 /*!

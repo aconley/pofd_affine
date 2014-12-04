@@ -32,7 +32,8 @@
 */
 class doublebeam {
  private :
-  static const unsigned int histothresh; //!< Don't bother histogramming for this many or fewer
+  /* \brief  Don't bother histogramming for this many pix or fewer */
+  static constexpr  unsigned int histothresh = 30; //!<
 
   double pixsize; //!< Size of pixel in arcsec
 

@@ -278,7 +278,7 @@ unsigned int utility::log2(unsigned int val) {
     const unsigned int b[] = {0x2, 0xC, 0xF0, 0xFF00, 0xFFFF0000};
     const unsigned int S[] = {1, 2, 4, 8, 16};
 
-    register unsigned int r = 0;
+    unsigned int r = 0;
     for (int i = 4; i >= 0; i--) {
       if (val & b[i]) {
 	val >>= S[i];

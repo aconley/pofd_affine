@@ -13,8 +13,6 @@
 #include "../include/global_settings.h"
 #include "../include/affineExcept.h"
 
-const unsigned int doublebeam::histothresh = 15;
-
 // Note we don't set nbins or minval here.  Why not?
 // Because these only really make sense when reading or histogramming
 doublebeam::doublebeam() {

@@ -12,8 +12,6 @@
 #include "../include/global_settings.h"
 #include "../include/affineExcept.h"
 
-const unsigned int beam::histothresh = 15;
-
 beam::beam() {
   nneg = npos = 0; 
   totneg = totpos = 0; 

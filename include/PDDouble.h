@@ -24,7 +24,7 @@
  */
 class PDDouble {
  private:
-  static const double lowsigval; //!< Constant used in edgeFix
+  static constexpr double lowsigval = 2.5; //!< Constant used in edgeFix
 
   unsigned int n1; //!< Current size along dimension 1
   unsigned int n2; //!< Current size along dimension 2
@@ -34,9 +34,9 @@ class PDDouble {
   double getLogLikeUnbinned(const fitsDataDouble&) const;
 
  public:
-  PDDouble(unsigned int N1=0, double MINFLUX1=0.0, double DFLUX1=0.0,
-	   unsigned int N2=0, double MINFLUX2=0.0, double DFLUX2=0.0,
-	   bool LOG=true); //!< Constructor
+  explicit PDDouble(unsigned int N1=0, double MINFLUX1=0.0, double DFLUX1=0.0,
+		    unsigned int N2=0, double MINFLUX2=0.0, double DFLUX2=0.0,
+		    bool LOG=true); //!< Constructor
   ~PDDouble(); //!< Destructor
 
   //Public for efficient filling -- bad form, but speed matters here

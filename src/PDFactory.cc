@@ -9,8 +9,6 @@
 #include "../include/hdf5utils.h"
 #include "../include/affineExcept.h"
 
-const double PDFactory::subedgemult = 1e-5;
-
 /*!
   \param[in] NINTERP number of interpolation points
 */

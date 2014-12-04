@@ -124,7 +124,9 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
 
   /*! \brief Integrate powers of fluxes over number counts */
   double splineInt(double alpha, double beta) const;
-  static const unsigned int nvarr; //!< Number of elements in varr
+
+  /*! \brief Number of elements in varr (lots of model params!) */
+  static constexpr unsigned int nvarr = 17; 
   void **varr; //!< Internal evil casting array for splineInt
 
   bool isValidLoaded() const; //!< Are loaded values valid?

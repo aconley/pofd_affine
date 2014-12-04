@@ -10,8 +10,6 @@
 #include "../include/affineExcept.h"
 #include "../include/hdf5utils.h"
 
-const double PDDouble::lowsigval = 2.5;
-
 /*!
   \param[in] N1 Dimension along band 1
   \param[in] MINFLUX1 Minimum flux density in band 1

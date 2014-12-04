@@ -29,8 +29,10 @@
 
 class calcLikeDoubleSingle { //Odd name...
  private:
-  //Data set.
-  static const double flux_safety; //!< maxflux multiplier to ensure margin
+  /* \brief maxflux multiplier to ensure safety margin */
+  static constexpr double flux_safety = 1.1;
+
+  //Data set
   bool data_read; //!< Have we read data?
   unsigned int ndatasets; //!< Number of data sets
   std::string* filenames1; //!< Names of files, band 1
@@ -77,7 +79,7 @@ class calcLikeDoubleSingle { //Odd name...
   void resize(unsigned int); //!< Change number of data sets
 
  public :
-  const static double bad_like; //!< Bad log likelihood value
+  static constexpr double bad_like = 1e25; //!< Bad log likelihood value
 
   /*!\brief Default constructor */
   explicit calcLikeDoubleSingle(unsigned int NEDGE=256); 

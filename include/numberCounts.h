@@ -47,7 +47,7 @@ class numberCounts {
 
   /*! \brief Get flux per unit area */
   virtual double getFluxPerArea() const = 0; 
-  /*! \brief Get mean flux^2 per unit area) */
+  /*! \brief Get mean flux^2 per unit area */
   virtual double getFluxSqPerArea() const = 0;
 
   /*! Get differential number counts */
@@ -55,8 +55,9 @@ class numberCounts {
 
   /*! \brief Get number of source responses, single value version */
   virtual double getR(double, const beam&) const = 0;
-  
-  virtual double differenceRegularize(double) const; //!< Tikhonov regularization log Likelihood penalty
+
+  /*! \brief Tikhonov regularization log Likelihood penalty */
+  virtual double differenceRegularize(double) const;
 
   /*! \brief Get number of source responses, array version*/
   virtual void getR(unsigned int n, const double* const,
