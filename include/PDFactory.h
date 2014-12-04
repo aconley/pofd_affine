@@ -113,8 +113,9 @@ class PDFactory {
 #endif
 
  public :
-  PDFactory(unsigned int NINTERP=2048); //!< Default constructor
-  PDFactory(const std::string&,unsigned int NINTERP=2048); //!< Constructor with wisdom file
+  explicit PDFactory(unsigned int NINTERP=2048); //!< Default constructor
+  /*! \brief Constructor with wisdom file */
+  explicit PDFactory(const std::string&, unsigned int NINTERP=2048);
   ~PDFactory(); //!< Destructor
 
   void free(); //!< Frees memory

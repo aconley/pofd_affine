@@ -118,8 +118,8 @@ class PDFactoryDouble {
 
  public :
 
-  PDFactoryDouble(unsigned int nedge=256); //!< Default constructor
-  PDFactoryDouble(const std::string&, unsigned int nedge=256 ); //!< Constructor with wisdom file
+  explicit PDFactoryDouble(unsigned int nedge=256); //!< Default constructor
+  explicit PDFactoryDouble(const std::string&, unsigned int nedge=256 ); //!< Constructor with wisdom file
   ~PDFactoryDouble(); //!< Destructor
 
   void free(); //!< Frees memory

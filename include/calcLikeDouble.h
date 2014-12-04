@@ -80,7 +80,7 @@ class calcLikeDoubleSingle { //Odd name...
   const static double bad_like; //!< Bad log likelihood value
 
   /*!\brief Default constructor */
-  calcLikeDoubleSingle(unsigned int NEDGE=256); 
+  explicit calcLikeDoubleSingle(unsigned int NEDGE=256); 
   ~calcLikeDoubleSingle(); //!< Destructor
 
   void free(); //!< Frees memory for large structures, keeps some summary stats
@@ -230,9 +230,9 @@ class calcLikeDouble {
 
  public:
   /*! \brief Constructor */
-  calcLikeDouble(unsigned int FFTSIZE=4096, unsigned int NEDGE=256, 
-		 bool EDGEINTEG=true, bool BINNED=false, 
-		 unsigned int NBINS=1000);
+  explicit calcLikeDouble(unsigned int FFTSIZE=4096, unsigned int NEDGE=256, 
+			  bool EDGEINTEG=true, bool BINNED=false, 
+			  unsigned int NBINS=1000);
   ~calcLikeDouble(); //!< Destructor 
 
   void freeData(); //!< Remove internal data
