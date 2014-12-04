@@ -21,7 +21,8 @@ class paramSet {
 
  public:
   paramSet(); //!< Basic constructor
-  paramSet(unsigned int NPARAMS); //!< Constructor with number of parameters
+  /*! \brief  Constructor with number of parameters */
+  explicit paramSet(unsigned int NPARAMS);
   paramSet(const std::vector<float>&); //!< Constructor with parameter vector
   paramSet(const std::vector<double>&); //!< Constructor with parameter vector
   paramSet(unsigned int, const float* const); //!< Constructor with parameter c array
