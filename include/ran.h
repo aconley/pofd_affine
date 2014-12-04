@@ -16,7 +16,7 @@ class ran {
   unsigned long long int w; //!< Internal state variable
  public:
   /*! \brief Constructor */
-  ran(unsigned long long int seed=10214L) { setSeed(seed); }
+  explicit ran(unsigned long long int seed=10214L) { setSeed(seed); }
   void setSeed(unsigned long long int); //!< Set the seed
   unsigned long long int int64(); //!< Get uniform 64 bit integer
   /*! \brief Get uniform float */

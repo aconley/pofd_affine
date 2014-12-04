@@ -18,7 +18,8 @@ struct proposedStep {
   double newLogLike; //!< Log Likelihood of new step
   float z; //!< Z value (stretch parameter)
 
-  proposedStep(unsigned int); //!< Constructor with number of parameters
+  /*! \brief  Constructor with number of parameters */
+  explicit proposedStep(unsigned int);
   proposedStep(const proposedStep&); //!< Copy constructor
   ~proposedStep(); //!< Destructor
 

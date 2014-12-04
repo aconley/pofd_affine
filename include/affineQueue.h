@@ -27,7 +27,7 @@ template <class Item> class affineQueue {
  public :
 
   affineQueue(); //!< Constructor
-  affineQueue(unsigned int); //!< Constructor with specified capacity
+  explicit affineQueue(unsigned int); //!< Constructor with specified capacity
   ~affineQueue(); //!< Destructor
 
   unsigned int capacity() const { return cap; } //!< Get capactity
