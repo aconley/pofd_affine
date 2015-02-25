@@ -684,7 +684,7 @@ void affineEnsemble::masterSample() {
 
   // Do burn in.  No progress bar because we don't know how
   // many steps we are going to take
-  doBurnIn();
+  doBurnIn(verbosity == 1);
 
   // Now do the main loop.  If the verbosity level is 1,
   // then output a hash progress bar.  If it's higher, don't,
@@ -753,6 +753,9 @@ float affineEnsemble::getMaxAcor() const {
 
 /*!
  This does the burn in.  Only called from master node
+
+ \param[in] dohash Show hashbar during initial burn in steps
+
  1) Possibly do init_steps, taking the best one to re-seed the
      initial position for burn-in
  2) Do the burn in 
@@ -762,11 +765,13 @@ float affineEnsemble::getMaxAcor() const {
  3) Throw away all steps, keeping the last step as the first one of
      the main loop (but don't count it in any statistics, etc.)
 */
-void affineEnsemble::doBurnIn() throw(affineExcept) {
+void affineEnsemble::doBurnIn(bool dohash) throw(affineExcept) {
 
   const unsigned int max_acor_iters = 20;
   const unsigned int max_burn_iters = 30;
 
+  hashbar *progbar = nullptr;
+  
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "doBurnIn", "Don't call on slave");
 
@@ -782,11 +787,20 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
 
   //First do min_burn steps in each walker
   chains.addChunk(min_burn);
+  if (dohash) {
+    progbar = new hashbar(60, init_steps, '=');
+    progbar->initialize(std::cout);
+  }
   for (unsigned int i = 0; i < min_burn; ++i) {
     if (verbosity >= 2)
       std::cout << " Done " << i+1 << " of " << min_burn << " steps"
 		<< std::endl;
     doMasterStep();
+    if (dohash) progbar->update(i + 1, std::cout);
+  }
+  if (dohash) {
+    progbar->fill(std::cout);
+    delete progbar;
   }
 
   // This would be a problem
