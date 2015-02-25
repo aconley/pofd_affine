@@ -157,8 +157,8 @@ bool pofdMCMC::initChainsMaster() {
   while (nnotinitialized > 0) {
     //See if a message is available, wait for one if it isn't
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
-    while (ismsg == 0) {
-      usleep(mcmc_affine::usleeplen); //Sleep for 1/100th of a second
+    while (ismsg == 0) {  // No message, sleep
+      usleep(mcmc_affine::ssleeplen);
       MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     }
 
@@ -306,7 +306,7 @@ bool pofdMCMC::initChainsSlave() {
   //See if a message is available, wait for one if it isn't
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
   while (ismsg == 0) {
-    usleep(mcmc_affine::usleeplen); //Sleep for 1/100th of a second
+    usleep(mcmc_affine::msleeplen); 
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
   }
 

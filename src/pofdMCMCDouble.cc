@@ -194,7 +194,7 @@ bool pofdMCMCDouble::initChainsMaster() {
     //See if a message is available, wait for one if it isn't
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     while (ismsg == 0) {
-      usleep(10000); //Sleep for 1/100th of a second
+      usleep(mcmc_affine::ssleeplen);
       MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     }
 
@@ -360,7 +360,7 @@ bool pofdMCMCDouble::initChainsSlave() {
   int ismsg;
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
   while (ismsg == 0) {
-    usleep(10000); //Sleep for 1/100th of a second
+    usleep(mcmc_affine::msleeplen); //Sleep for 1/100th of a second
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
   }
 
