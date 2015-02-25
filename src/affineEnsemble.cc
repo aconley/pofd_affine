@@ -11,6 +11,7 @@
 #include "../include/hdf5utils.h"
 #include "../include/hashbar.h"
 
+double qNaN = std::numeric_limits<double>::quiet_NaN();
 
 /////////////////////////////////////
 
@@ -183,7 +184,7 @@ void affineEnsemble::setNParams(unsigned int n) {
   \returns Maximum likelihood of all steps taken
 */
 double affineEnsemble::getMaxLogLike() const {
-  if (rank != 0) return std::numeric_limits<double>::quiet_NaN();
+  if (rank != 0) return qNaN;
   return chains.getMaxLogLike();
 }
 
@@ -193,10 +194,10 @@ double affineEnsemble::getMaxLogLike() const {
 */
 void affineEnsemble::getMaxLogLikeParam(double& val, paramSet& p) const {
   if (rank != 0) {
-    val = std::numeric_limits<double>::quiet_NaN();
+    val = qNaN;
     p.setNParams(nparams);
     for (unsigned int i = 0; i < nparams; ++i)
-      p[i] = std::numeric_limits<double>::quiet_NaN();
+      p[i] = qNaN;
     return;
   }
   chains.getMaxLogLikeParam(val,p);
@@ -684,7 +685,7 @@ void affineEnsemble::masterSample() {
 
   // Do burn in.  No progress bar because we don't know how
   // many steps we are going to take
-  doBurnIn();
+  doBurnIn(verbosity == 1);
 
   // Now do the main loop.  If the verbosity level is 1,
   // then output a hash progress bar.  If it's higher, don't,
@@ -753,6 +754,9 @@ float affineEnsemble::getMaxAcor() const {
 
 /*!
  This does the burn in.  Only called from master node
+
+ \param[in] dohash Show hashbar during initial burn in steps
+
  1) Possibly do init_steps, taking the best one to re-seed the
      initial position for burn-in
  2) Do the burn in 
@@ -762,11 +766,13 @@ float affineEnsemble::getMaxAcor() const {
  3) Throw away all steps, keeping the last step as the first one of
      the main loop (but don't count it in any statistics, etc.)
 */
-void affineEnsemble::doBurnIn() throw(affineExcept) {
+void affineEnsemble::doBurnIn(bool dohash) throw(affineExcept) {
 
   const unsigned int max_acor_iters = 20;
   const unsigned int max_burn_iters = 30;
 
+  hashbar *progbar = nullptr;
+  
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "doBurnIn", "Don't call on slave");
 
@@ -782,11 +788,20 @@ void affineEnsemble::doBurnIn() throw(affineExcept) {
 
   //First do min_burn steps in each walker
   chains.addChunk(min_burn);
+  if (dohash) {
+    progbar = new hashbar(60, init_steps, '=');
+    progbar->initialize(std::cout);
+  }
   for (unsigned int i = 0; i < min_burn; ++i) {
     if (verbosity >= 2)
       std::cout << " Done " << i+1 << " of " << min_burn << " steps"
 		<< std::endl;
     doMasterStep();
+    if (dohash) progbar->update(i + 1, std::cout);
+  }
+  if (dohash) {
+    progbar->fill(std::cout);
+    delete progbar;
   }
 
   // This would be a problem
@@ -1024,7 +1039,7 @@ void affineEnsemble::calcLastLikelihood() {
     // sleep for 1/100th of a second and try again
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     while (ismsg == 0) {
-      usleep(mcmc_affine::usleeplen); //Sleep for 1/100th of a second
+      usleep(mcmc_affine::msleeplen); //Sleep for 1/100th of a second
       MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     }
     
@@ -1088,7 +1103,7 @@ double affineEnsemble::getLogLike(const paramSet& p) {
   bool parrej;
   double loglike = getLogLike(p, parrej);
   if (parrej)
-    return std::numeric_limits<double>::quiet_NaN();
+    return qNaN;
   else
     return loglike;
 }
@@ -1126,7 +1141,7 @@ void affineEnsemble::generateNewStep(unsigned int idx1, unsigned int idx2,
   chains.getLastStep(idx1, prstep.oldStep, prstep.oldLogLike);
   chains.getLastStep(idx2, params_tmp, tmp);
   prstep.update_idx = idx1;
-  prstep.newLogLike = std::numeric_limits<double>::quiet_NaN();
+  prstep.newLogLike = qNaN;
 
   // Start trying to generate new step
   prstep.z = generateZ();
@@ -1136,7 +1151,7 @@ void affineEnsemble::generateNewStep(unsigned int idx1, unsigned int idx2,
       //Fixed parameter, keep previous
       prstep.newStep.setParamValue(i, prstep.oldStep[i]);
     } else if (param_state[i] & mcmc_affine::BONUS) {
-      prstep.newStep.setParamValue(i, std::numeric_limits<double>::quiet_NaN());
+      prstep.newStep.setParamValue(i, qNaN);
     } else {
       val = prstep.z * prstep.oldStep[i] + omz * params_tmp[i];
       prstep.newStep.setParamValue(i, val);
@@ -1204,7 +1219,8 @@ void affineEnsemble::doMasterStep(double temp) throw (affineExcept) {
     throw affineExcept("affineEnsemble", "doMasterStep",
 		       "step queue should be empty at start");
   if (temp <= 0)
-    throw affineExcept("affineEnsemble", "doMasterStep", "Invalid temperature");
+    throw affineExcept("affineEnsemble", "doMasterStep",
+		       "Invalid temperature");
 
   unsigned int minidx, maxidx;
   std::pair<unsigned int, unsigned int> pr;
@@ -1298,7 +1314,7 @@ void affineEnsemble::emptyMasterQueue(double temp) throw (affineExcept) {
     // sleep for 1/100th of a second and try again
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     while (ismsg == 0) {
-      usleep(mcmc_affine::usleeplen); //Sleep and then check again
+      usleep(mcmc_affine::msleeplen); //Sleep and then check again
       MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     }
 
@@ -1413,7 +1429,7 @@ void affineEnsemble::slaveSample() {
     throw affineExcept("affineEnsemble", "slaveSample",
 		       "Should not be called from master node");
   
-  int jnk;
+  int jnk, ismsg;
   MPI_Status Info;
   bool parrej; // Parameter set rejected
 
@@ -1423,7 +1439,16 @@ void affineEnsemble::slaveSample() {
       MPI_Send(&jnk, 1, MPI_INT, 0, mcmc_affine::REQUESTPOINT,
 	       MPI_COMM_WORLD);
 
-      //Now wait for one
+      //Now wait for one.  We use the same sleep while waiting
+      // for a response trick as emptyMasterQueue, but with a shorter
+      // sleep.
+      MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
+      while (ismsg == 0) {
+	usleep(mcmc_affine::ssleeplen); //Sleep and then check again
+	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
+      }
+
+      // Now there's a message -- grab it
       MPI_Recv(&jnk, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &Info);
 
       int tag = Info.MPI_TAG;

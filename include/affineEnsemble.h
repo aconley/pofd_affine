@@ -60,7 +60,7 @@ private:
   void slaveSample(); //!< Slave node sampler routine
 
   //sampling sub-routines
-  void doBurnIn() throw (affineExcept); //!< Master node burn in routine
+  void doBurnIn(bool=false) throw (affineExcept); //!< Master node burn in routine
   void doMasterStep(double=1.0) throw (affineExcept); //!< Does a step for all walkers, master node
   void emptyMasterQueue(double=1.0) throw (affineExcept); //!< Runs all steps in stepqueue as master node
   void calcLastLikelihood(); //!< Compute the likelihoods of the last step
