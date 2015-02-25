@@ -41,6 +41,7 @@ namespace mcmc_affine {
   */
   enum { FIXED=1, ACIGNORE=2, BONUS=4 };
   
-  const useconds_t usleeplen = 1000; //!< Sleep time if no message ready in usec
+  const useconds_t msleeplen = 1000; //!< Master sleep time if no message ready in usec
+  const useconds_t ssleeplen = 50; //!< Slave sleep time if no message ready in usec
 }
 #endif
