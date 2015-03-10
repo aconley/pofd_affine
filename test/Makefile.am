@@ -2,7 +2,10 @@ if DOTEST
 
 OTHERDIR=../src/
 
-check_PROGRAMS = chain_test ensemble_test queue_test
+check_PROGRAMS = paramset_test chain_test ensemble_test queue_test
+
+paramset_test_SOURCES = paramset_test.cc
+paramset_test_LDADD = $(OTHERDIR)/libaffine.la
 
 chain_test_SOURCES = chain_test.cc
 chain_test_LDADD = $(OTHERDIR)/libaffine.la
