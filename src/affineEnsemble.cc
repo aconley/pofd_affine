@@ -780,7 +780,8 @@ void affineEnsemble::doBurnIn(bool dohash) throw(affineExcept) {
     if (verbosity >= 2)
       std::cout << "**********************************************"
 		<< std::endl;
-    std::cout << "Starting burn-in process" << std::endl;
+    std::cout << "Starting burn-in process with " << min_burn
+	      << " steps" << std::endl;
     if (verbosity >= 2)
       std::cout << "**********************************************"
 		<< std::endl;
