@@ -30,6 +30,7 @@ multi_gauss_example
 single_gauss_example
 rosenbrock_example
 polyfit_example
+paramset_test
 chain_test
 ensemble_test
 queue_test
