@@ -1,5 +1,6 @@
 //PD.cc
 #include<limits>
+#include<cstring>
 #include<sstream>
 
 #include<fitsio.h>
@@ -51,9 +52,8 @@ void PD::shrink() {
   if (newcap < capacity) {
     if (newcap > 0) {
       double* tmp = (double*) fftw_malloc(sizeof(double) * newcap);
-      for (unsigned int i = 0; i < newcap; ++i)
-	tmp[i] = pd_[i];
-      if (pd_ != nullptr) fftw_free(pd_);
+      std::memcpy(tmp, pd_, newcap * sizeof(pd_[0]));
+      if (pd_ != nullptr) fftw_free(pd_);  // Always true, but...
       pd_ = tmp;
     } else {
       if (pd_ != nullptr) fftw_free(pd_);
@@ -333,7 +333,7 @@ PD& PD::operator=(const PD& other) {
   resize(other.n);
   minflux = other.minflux;
   dflux   = other.dflux;
-  if (n > 0) memcpy(pd_, other.pd_, n * sizeof(double));
+  if (n > 0) std::memcpy(pd_, other.pd_, n * sizeof(pd_[0]));
   logflat = other.logflat;
   return *this;
 }
@@ -351,7 +351,7 @@ void PD::fill(unsigned int N, double MINFLUX, double DFLUX,
   resize(N);
   minflux = MINFLUX;
   dflux = DFLUX;
-  if (n > 0) memcpy(pd_, PD, n * sizeof(double));
+  if (n > 0) std::memcpy(pd_, PD, n * sizeof(double));
 }
 
 /*!
@@ -368,7 +368,7 @@ double PD::getPDVal(double x) const {
   //look up the effective indexes
   int idx = static_cast<int>((x - minflux) / dflux);
 
-  double maxfluxlm = minflux + static_cast<double>(n-2)*dflux;
+  double maxfluxlm = minflux + static_cast<double>(n-2) * dflux;
 
   if (x < minflux) return pd_[0];
   if (x > maxfluxlm) return pd_[n-1]; 

@@ -1,5 +1,6 @@
 //PDDouble.cc
 #include<limits>
+#include<cstring>
 #include<sstream>
 
 #include<fitsio.h>
@@ -56,13 +57,12 @@ void PDDouble::resize(unsigned int N1, unsigned int N2) {
   Tries to preserve data
 */
 void PDDouble::shrink() {
-  unsigned int newcap = n1*n2;
+  unsigned int newcap = n1 * n2;
   if (newcap < capacity) {
     if (newcap > 0) {
-      double* tmp = (double*) fftw_malloc(sizeof(double) * newcap);
-      for (unsigned int i = 0; i < newcap; ++i)
-	tmp[i] = pd_[i];
-      if (pd_ != nullptr) fftw_free(pd_);
+      double* tmp = (double*) fftw_malloc(newcap * sizeof(double));
+      std::memcpy(tmp, pd_, newcap * sizeof(pd_[0]));
+      if (pd_ != nullptr) fftw_free(pd_); // Always true
       pd_ = tmp;
     } else {
       if (pd_ != nullptr) fftw_free(pd_);
@@ -657,8 +657,7 @@ PDDouble& PDDouble::operator=(const PDDouble& other) {
     if (pd_ == nullptr)
       throw affineExcept("PDDouble", "operator=", 
 			 "Internal storage not initialized");
-    for (unsigned int i = 0; i < sz; ++i)
-      pd_[i] = other.pd_[i];
+    std::memcpy(pd_, other.pd_, sz * sizeof(pd_[0]));
   }
   logflat = other.logflat;
   return *this;
