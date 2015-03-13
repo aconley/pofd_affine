@@ -32,15 +32,15 @@ public:
 		 float BURN_MULTIPLE=5.0, float SCALEFAC=2.0); //!< Constructor
   virtual ~pofdMCMCDouble() {}; //!< Destructor
 
-  void setVerbosity(unsigned int);
+  void setVerbosity(unsigned int) override;
 
-  void initChains(); //!< Initializes data between MPI jobs
-  bool areParamsValid(const paramSet&) const; //!< Test against limits
-  void generateInitialPosition(const paramSet&); //!< Sets up initial position
-  double getLogLike(const paramSet&, bool&); //!< Evaluates log likelihood
-  void fillBonusParams(paramSet& par, bool rej);
+  void initChains() override; //!< Initializes data between MPI jobs
+  bool areParamsValid(const paramSet&) const override; //!< Test against limits
+  void generateInitialPosition(const paramSet&) override; //!< Sets up initial position
+  double getLogLike(const paramSet&, bool&) override; //!< Evaluates log likelihood
+  void fillBonusParams(paramSet& par, bool rej) override;
 
-  void writeToHDF5Handle(hid_t) const; //!< Serialize to HDF5 handle
+  void writeToHDF5Handle(hid_t) const override; //!< Serialize to HDF5 handle
 };
 
 

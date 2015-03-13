@@ -33,6 +33,8 @@ class numberCountsDouble {
   virtual float paramRelativeDistance(const paramSet& p1, const paramSet& p2)
     const throw(affineExcept) = 0;
 
+  virtual double getNS() const = 0; //!< Total number of sources per area
+
   /*! \brief Get Mean Flux per unit area */
   virtual double getFluxPerArea(unsigned int) const = 0;
 
@@ -49,6 +51,7 @@ class numberCountsDouble {
   virtual std::pair<dblpair, dblpair> 
     getRRange(const doublebeam&) const throw(affineExcept) = 0;
 
+  virtual void getParams(paramSet&) const=0; //!< Get parameters
   virtual void setParams(const paramSet& params)=0; //!< Set parameters
 
   virtual unsigned int getNParams() const = 0; //!< Return number of parameters required
@@ -69,6 +72,9 @@ class numberCountsDouble {
 		    unsigned int,const double* const,
 		    const doublebeam&, double*) const = 0;
 
+  virtual double differenceRegularize(double) const { return 0.0; } //!< Tikhonov regularization log Likelihood penalty
+
+  virtual void writeToHDF5Handle(hid_t, bool=false) const=0; //!< Write to HDF5 handle
   virtual bool writeToStream(std::ostream& os) const=0; //!< Output to stream
 };
 

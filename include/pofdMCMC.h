@@ -31,12 +31,12 @@ public:
 	   float BURN_MULTIPLE=5.0, float SCALEFAC=2.0); //!< Constructor
   virtual ~pofdMCMC() {}; //!< Destructor
 
-  void setVerbosity(unsigned int);
+  void setVerbosity(unsigned int) override;
 
-  void initChains(); //!< Initializes data between MPI jobs
-  bool areParamsValid(const paramSet&) const; //!< Test against limits
-  void generateInitialPosition(const paramSet&); //!< Sets up initial position
-  double getLogLike(const paramSet&, bool&); //!< Evaluates log likelihood
-  void fillBonusParams(paramSet&, bool rej=false); //!< Add mean flux per area
-  void writeToHDF5Handle(hid_t) const; //!< Serialize to HDF5 handle
+  void initChains() override; //!< Initializes data between MPI jobs
+  bool areParamsValid(const paramSet&) const override; //!< Test against limits
+  void generateInitialPosition(const paramSet&) override; //!< Sets up initial position
+  double getLogLike(const paramSet&, bool&) override; //!< Evaluates log likelihood
+  void fillBonusParams(paramSet&, bool rej=false) override; //!< Add mean flux per area
+  void writeToHDF5Handle(hid_t) const override; //!< Serialize to HDF5 handle
 };

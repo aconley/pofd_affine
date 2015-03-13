@@ -159,11 +159,11 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   /*! \brief Copy operator */
   numberCountsDoubleLogNormal& operator=(const numberCountsDoubleLogNormal&);
 
-  bool isValid() const; //!< Are model settings loaded and valid?
+  bool isValid() const override; //!< Are model settings loaded and valid?
 
   /*! \brief Relative distance between two sets of params over model params*/
   float paramRelativeDistance(const paramSet& p1, const paramSet& p2)
-    const throw(affineExcept);
+    const throw(affineExcept) override;
 
   void setNKnots(unsigned int n); //!< Sets number of knots in band 1
   unsigned int getNKnots() const { return nknots; } //!< Number of knots in band 1 spline
@@ -217,8 +217,8 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   void setPositions(const std::vector<double>&,const std::vector<double>&,
 		    const std::vector<double>&);
   
-  void getParams(paramSet&) const; //!< Get parameters
-  void setParams(const paramSet&); //!< Set parameters
+  void getParams(paramSet&) const override; //!< Get parameters
+  void setParams(const paramSet&) override; //!< Set parameters
  
   /*! \brief Evaluates Sigma */
   double getSigma(double) const;
@@ -226,39 +226,39 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   double getOffset(double) const;
   
   /*! \brief Evaluates number counts model */
-  double getNumberCounts(double, double) const;
+  double getNumberCounts(double, double) const override;
 
   /*! Evaluates band 1 number counts model at specified value of S_1 */
-  double getBand1NumberCounts(double) const;
+  double getBand1NumberCounts(double) const override;
   /*! Evaluates band 2 number counts model at specified value of S_2 */
-  double getBand2NumberCounts(double) const;
+  double getBand2NumberCounts(double) const override;
 
   /*! \brief Minimum flux model is defined for */
-  dblpair getMinFlux() const;
+  dblpair getMinFlux() const override;
   
   /*! \brief Maxium flux model is defined for */
-  dblpair getMaxFlux() const;
+  dblpair getMaxFlux() const override;
   
   /*! \brief Get range over which R is expected to be nonzero */
   std::pair<dblpair, dblpair> getRRange(const doublebeam&) const 
-    throw(affineExcept);
+    throw(affineExcept) override;
 
-  double getNS() const; //!< Total number of sources per area
-  double getFluxPerArea(unsigned int) const; //!< Flux per unit area (sq deg)
-  double getFluxSqPerArea(unsigned int) const; //!< Flux^2 per unit area (sq deg)
+  double getNS() const override; //!< Total number of sources per area
+  double getFluxPerArea(unsigned int) const override; //!< Flux per unit area (sq deg)
+  double getFluxSqPerArea(unsigned int) const override; //!< Flux^2 per unit area (sq deg)
   double getFluxPowerPerArea(double p1, double p2) const; //!< Integral of s1 to some power and s2 to some power over number counts
   
   //Routines for getting R
   /*! \brief Get R value at single flux1,flux2 value */
-  double getR(double, double, const doublebeam&) const;
+  double getR(double, double, const doublebeam&) const override;
   /*! \brief Gets R values, array version */
   void getR(unsigned int n1, const double* const, unsigned int n2,
-	    const double* const, const doublebeam&, double*) const;
+	    const double* const, const doublebeam&, double*) const override;
   
   double differenceRegularize(double) const; //!< Tikhonov regularization log Likelihood penalty
 
-  void writeToHDF5Handle(hid_t, bool=false) const; //!< Write to HDF5 handle
-  bool writeToStream(std::ostream& os) const; //<! Output to stream
+  void writeToHDF5Handle(hid_t, bool=false) const override; //!< Write to HDF5 handle
+  bool writeToStream(std::ostream& os) const override; //<! Output to stream
   
   void sendSelf(MPI_Comm, int dest) const; //!< Send self
   void receiveCopy(MPI_Comm, int src); //!< Receive

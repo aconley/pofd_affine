@@ -45,31 +45,31 @@ class numberCountsKnotsSpline : public numberCountsKnots {
   /*! \brief copy operator */
   numberCountsKnotsSpline& operator=(const numberCountsKnotsSpline&);
  
-  void setKnotPositions(const std::vector<float>&); //!< Set knot positions
-  void setKnotPositions(unsigned int, const float* const); //!< Set knot positions
-  void setKnotPositions(const std::vector<double>&); //!< Set knot positions
-  void setKnotPositions(unsigned int, const double* const); //!< Set knot positions
+  void setKnotPositions(const std::vector<float>&) override; //!< Set knot positions
+  void setKnotPositions(unsigned int, const float* const) override; //!< Set knot positions
+  void setKnotPositions(const std::vector<double>&) override; //!< Set knot positions
+  void setKnotPositions(unsigned int, const double* const) override; //!< Set knot positions
 
-  void setParams(const paramSet&); //!< Set parameters
+  void setParams(const paramSet&) override; //!< Set parameters
 
-  double getNumberCounts(double) const; //!< Evaluates number counts model
-  double getNS() const; //!< Return the number of sources with \f$S > S_{min}\f$ per square degree
+  double getNumberCounts(double) const override; //!< Evaluates number counts model
+  double getNS() const override; //!< Return the number of sources with \f$S > S_{min}\f$ per square degree
 
-  double getFluxPerArea() const; //!< Flux per unit area (sq deg)
-  double getFluxSqPerArea() const; //!< Flux squared per unit area (sq deg)
+  double getFluxPerArea() const override; //!< Flux per unit area (sq deg)
+  double getFluxSqPerArea() const override; //!< Flux squared per unit area (sq deg)
   
   /*! \brief Get R at single flux value */
-  double getR(double, const beam&) const;
+  double getR(double, const beam&) const override;
   /*! \brief Get R, array version */
   void getR(unsigned int n, const double* const,
-	    const beam&, double*) const;
+	    const beam&, double*) const override;
 
-  double differenceRegularize(double) const; //!< Tikhonov regularization log Likelihood penalty
+  double differenceRegularize(double) const override; //!< Tikhonov regularization log Likelihood penalty
 
-  void writeToHDF5Handle(hid_t, bool=false) const; //!< Write to HDF5 handle
+  void writeToHDF5Handle(hid_t, bool=false) const override; //!< Write to HDF5 handle
 
-  virtual void sendSelf(MPI_Comm, int dest) const; //!< Send self
-  virtual void receiveCopy(MPI_Comm, int src); //!< Receive
+  virtual void sendSelf(MPI_Comm, int dest) const override; //!< Send self
+  virtual void receiveCopy(MPI_Comm, int src) override; //!< Receive
 };
 
 #endif

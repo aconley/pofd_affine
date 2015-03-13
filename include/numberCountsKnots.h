@@ -56,7 +56,7 @@ class numberCountsKnots : public numberCounts {
   virtual void setKnotPositions(unsigned int, const float* const);
 
   virtual void getParams(paramSet&) const; //!< Return current parameters
-  virtual void setParams(const paramSet&); //!< Set parameters
+  virtual void setParams(const paramSet&) override; //!< Set parameters
 
   unsigned int getNKnots() const { return nknots; } //!< Returns number of knots
   /*! \brief Get position of specified knot */
@@ -66,17 +66,17 @@ class numberCountsKnots : public numberCounts {
   dblpair getLogKnot(unsigned int i) const {
     return std::pair<double,double>(knots[i], logknotvals[i]); }
 
-  virtual bool isValid() const; //!< Are model parameters valid
+  virtual bool isValid() const override; //!< Are model parameters valid
 
   /*! \brief Distance between two parameter sets over params model cares about*/
   virtual float paramRelativeDistance(const paramSet& p1, const paramSet& p2) 
-    const throw(affineExcept);
+    const throw(affineExcept) override;
 
-  double getMaxFlux() const; //!< Maximum flux supported by model
-  double getMinFlux() const; //!< Minimum flux supported by model
+  double getMaxFlux() const override; //!< Maximum flux supported by model
+  double getMinFlux() const override; //!< Minimum flux supported by model
 
   /*! \brief Get range over which R is expected to be nonzero */
-  dblpair getRRange(const beam&) const throw(affineExcept);
+  dblpair getRRange(const beam&) const throw(affineExcept) override;
 
   virtual void writeToHDF5Handle(hid_t objid, bool=false) const; //!< Output to HDF5
   virtual bool writeToStream(std::ostream& os) const; //<! Output to stream

@@ -370,7 +370,7 @@ dblpair numberCountsKnots::getRRangeInternal(const beam& bm) const
 
   We also include flux=0, even though R is technically zero there.
 */
-dblpair numberCountsKnots::getRRange(const beam& bm) const 
+dblpair numberCountsKnots::getRRange(const beam& bm) const
   throw(affineExcept) {
 
   if (!isValid())
