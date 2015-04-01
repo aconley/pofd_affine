@@ -1132,9 +1132,9 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog) {
   // There are some complications because of shifts and all that.
   // The frequencies are:
   //  f = i/dflux*n  
-  // We work in w instead of f (2 pi f)
+  // We work in w instead of f (2 pi f = 2 pi i / dflux * n)
   // and actually compute 
-  //  exp( r(omega) - r(0) - i*shift*omega - 1/2 sigma^2 omega^2 )
+  //  exp(r(omega) - r(0) - i*shift*omega - 1/2 sigma^2 omega^2)
   if (verbose) std::cout << "  Computing p(w)" << std::endl;
 
 #ifdef TIMING
