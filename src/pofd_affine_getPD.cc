@@ -597,7 +597,7 @@ int main( int argc, char** argv ) {
 		<< "beam" << std::endl;
       std::cerr << "\tin the 1D case, and beamfile1, beamfile2 give the beam "
 		<< "in each" << std::endl;
-      std::cerr << "\t of the two bands in the 2D case." << std::endl;
+      std::cerr << "\tof the two bands in the 2D case." << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tIn both cases the output PD is written to outputfile "
 		<< "either as" << std::endl;
