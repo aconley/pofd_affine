@@ -60,8 +60,8 @@ class PDFactoryDouble {
   double* rvals; //!< Working space for R computation, row major order
   double* rsum; //!< Sum of rvals along one dimension
   bool rdflux; //!< Has rvals been multiplied by dflux1 * dflux2?
-  fftw_complex *rtrans; //!< Holds FFTed rvals 
-  fftw_complex* pval; //!< Working variable holding p = exp(stuff)
+  fftw_complex *prtrans; //!< Holds FFTed exp(rvals - rvals[0] - shift)
+  fftw_complex* pval; //!< Working variable with prtrans plus noise
   double* pofd; //!< Internal P(D) variable.  
   double *RFlux1; //!< Holds R flux values for fill
   unsigned int RwrapIdx1; //!< Pos/neg wrap index in RFlux1

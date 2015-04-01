@@ -461,6 +461,9 @@ void doublebeam::setBeams(unsigned int n, const double* const beam1,
   pixsize = PIXSIZE;
 }
 
+/*
+  \param[in] NBINS Number of beam bins
+*/
 void doublebeam::makeHistogram(unsigned int NBINS) {
   if (!hasData())
     throw affineExcept("doublebeam", "makeHistogram",
@@ -511,7 +514,6 @@ void doublebeam::makeHistogram(unsigned int NBINS) {
   double val1, val2, wtnorm; // Working vars
   for (unsigned int sgn = 0; sgn < 4; ++sgn) 
     if (hassign[sgn] && npix[sgn] >= histothresh) {
-
       // Get min/max to figure out minimum bin value and step
       tmp = getMinMax1(sgn);
       minbinval1 = log2(tmp.first) - log2outscale;

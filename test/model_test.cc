@@ -958,11 +958,12 @@ TEST(model2DTest, getRNeg) {
 	fluxdens2[j];
     }
 
-  // Histogram and try again; pos-neg shouldn't be histed (too few elems)
+  // Histogram and try again; pos-neg and neg-pos shouldn't be histed
+  //  (too few elems)
   bm.makeHistogram(200);
   ASSERT_TRUE(bm.isHistogrammed(0)) << "Pos-pos should be histogrammed";
   ASSERT_FALSE(bm.isHistogrammed(1)) << "Pos-neg should not be histogrammed";
-  ASSERT_TRUE(bm.isHistogrammed(2)) << "Neg-pos should be histogrammed";
+  ASSERT_FALSE(bm.isHistogrammed(2)) << "Neg-pos should not be histogrammed";
   ASSERT_TRUE(bm.isHistogrammed(3)) << "Neg-neg should be histogrammed";
 
   // Scalar

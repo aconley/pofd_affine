@@ -316,11 +316,11 @@ TEST(beam2DTest, NegBeam) {
   EXPECT_NEAR(0.065584647, minmax.second, 1e-6) <<
     "Unexpected neg-pos maximum value, band 2";
   
-  // Histogram; pos-neg shouldn't be because it has too few elements
+  // Histogram; pos-neg/neg-pos shouldn't be because they have too few elements
   bm.makeHistogram(200);
   EXPECT_TRUE(bm.isHistogrammed(0)) << "Pos-pos should be histogrammed";
   EXPECT_FALSE(bm.isHistogrammed(1)) << "Pos-neg should not be histogrammed";
-  EXPECT_TRUE(bm.isHistogrammed(2)) << "Neg-pos should be histogrammed";
+  EXPECT_FALSE(bm.isHistogrammed(2)) << "Neg-pos should not be histogrammed";
   EXPECT_TRUE(bm.isHistogrammed(3)) << "Neg-neg should be histogrammed";
 }
 
