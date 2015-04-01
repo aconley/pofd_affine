@@ -69,11 +69,11 @@ PDFactoryDouble::~PDFactoryDouble() {
   if (RFlux1 != nullptr) fftw_free(RFlux1);
   if (RFlux2 != nullptr) fftw_free(RFlux2);
 
-  if (rvals != nullptr)  fftw_free(rvals);
-  if (rsum != nullptr)   fftw_free(rsum);
-  if (rtrans != nullptr) fftw_free(rtrans);
-  if (pofd != nullptr)   fftw_free(pofd);
-  if (pval != nullptr)   fftw_free(pval);
+  if (rvals != nullptr) fftw_free(rvals);
+  if (rsum != nullptr) fftw_free(rsum);
+  if (prtrans != nullptr) fftw_free(prtrans);
+  if (pofd != nullptr) fftw_free(pofd);
+  if (pval != nullptr) fftw_free(pval);
 
   if (REdgeFlux1 != nullptr) fftw_free(REdgeFlux1);
   if (REdgeFlux2 != nullptr) fftw_free(REdgeFlux2);
@@ -100,7 +100,7 @@ void PDFactoryDouble::init(unsigned int NEDGE) {
   rdflux = false;
   rvals = nullptr;
   rsum = nullptr;
-  rtrans = nullptr;
+  prtrans = nullptr;
   pofd = nullptr;
   pval = nullptr;
 
@@ -202,7 +202,7 @@ void PDFactoryDouble::allocateRvars() {
   rvals = (double*) fftw_malloc(sizeof(double) * fsize);
   pofd  = (double*) fftw_malloc(sizeof(double) * fsize);
   fsize = currsize * (currsize / 2 + 1);
-  rtrans = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * fsize);
+  prtrans = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * fsize);
   pval = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * fsize);
 
   rvars_allocated = true;
@@ -216,7 +216,7 @@ void PDFactoryDouble::freeRvars() {
   if (RFlux2 != nullptr) { fftw_free(RFlux2); RFlux2=nullptr; }
   if (rvals != nullptr)  { fftw_free(rvals); rvals=nullptr; }
   if (rsum != nullptr)   { fftw_free(rsum); rsum=nullptr; }
-  if (rtrans != nullptr) { fftw_free(rtrans); rtrans=nullptr; }
+  if (prtrans != nullptr) { fftw_free(prtrans); prtrans=nullptr; }
   if (pval != nullptr)   { fftw_free(pval); pval = nullptr; }
   if (pofd != nullptr)   { fftw_free(pofd); pofd = nullptr; }
   rvars_allocated = false;
@@ -727,7 +727,7 @@ void PDFactoryDouble::getRStats() {
 void PDFactoryDouble::setupTransforms(unsigned int n) {
 
   //The transform plan is that the forward transform
-  // takes rvals to rtrans.  We then do things to rtrans
+  // takes rvals to prtrans.  We then do things to prtrans
   // to turn it into pval, including shifting, adding noise,
   // etc, and then transform from pval to pofd.
 
@@ -743,7 +743,7 @@ void PDFactoryDouble::setupTransforms(unsigned int n) {
 
   int intn = static_cast<int>(n);
   if (plan == nullptr) {
-    plan = fftw_plan_dft_r2c_2d(intn, intn, rvals, rtrans,
+    plan = fftw_plan_dft_r2c_2d(intn, intn, rvals, prtrans,
 				fftw_plan_style);
   }
   if (plan == nullptr) {
@@ -1125,6 +1125,10 @@ void PDFactoryDouble::unwrapAndNormalizePD(PDDouble& pd) const {
   The idea is to compute everything that doesn't require knowing the
   exact sigmas here so we can call this multiple times on
   maps with the same beam but different noise values.
+
+  After this, prtrans holds exp(rtrans - rtrans[0] - shift*omega)
+  where rtrans is the FFTed R and the shift is optional.  Then getPD
+  only needs to add the sigma bits to get p.
 */
 bool PDFactoryDouble::initPD(unsigned int n, double minflux1, double maxflux1, 
 			     double minflux2, double maxflux2, 
@@ -1198,17 +1202,137 @@ bool PDFactoryDouble::initPD(unsigned int n, double minflux1, double maxflux1,
     else std::cout << " Not applying additional shift in band 2" << std::endl;
   }
 
-  //Compute forward transform of this r value, store in rtrans
-  //Have to use argument version, since the address of rtrans, etc. can move
+  //Compute forward transform of this r value, store in prtrans
+  //Have to use argument version, since the address of prtrans, etc. can move
 #ifdef TIMING
   starttime = std::clock();
 #endif
-  fftw_execute_dft_r2c(plan, rvals, rtrans);
+  fftw_execute_dft_r2c(plan, rvals, prtrans);
 #ifdef TIMING
   fftTime += std::clock() - starttime;
 #endif
   initialized = true;
 
+  // Now replace FFT(R) with most of p in prtrans in place.
+  // The 2D output real FFT format makes this a bit tricky.  The output
+  //  array is n by (n/2+1).  The first dimension has both
+  //  positive and negative frequencies, the second dimension has
+  //  only positive dimensions.
+  // In particular, if i is the index over the first dimension,
+  //  the frequencies along the first dimension are:
+  //   f1 = i/delta1*n        for i = [0,n/2]
+  //      = - (n-i)/delta1*n  for i = [n/2+1,n-1]
+  //  where delta1 is dflux1.
+  // And if j is the second dimension index, then
+  //   f2 = j/delta2*n  
+  //  and delta2 = dflux2.
+  // We work in w instead of f (2 pi f) and actually compute 
+  //   exp(r(omega1,omega2) - r(0,0) - i*shift1*omega1 - i*shift2*omega2)
+  //  where r is FFT(R)
+  unsigned int ncplx = n / 2 + 1;
+  double r0, expfac, rval, ival;
+  fftw_complex *rowptr; // Row pointer into prtrans
+  double iflux1 = mcmc_affine::two_pi / (n * dflux1);
+  double iflux2 = mcmc_affine::two_pi / (n * dflux2);
+
+#ifdef TIMING
+  std::clock_t starttime = std::clock();
+#endif
+
+  r0 = prtrans[0][0]; // r[0,0] is pure real
+
+  if (doshift1 && doshift2) {
+    // Should be the most common case
+    double shiftfac1 = shift1 * iflux1;
+    double shiftfac2 = shift2 * iflux2;
+    double shiftprod1;
+    // First, positive frequencies
+    for (unsigned int idx1 = 0; idx1 < ncplx; ++idx1) {
+      rowptr = prtrans + idx1 * ncplx;
+      shiftprod1 = shiftfac1 * static_cast<double>(idx1);
+      for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
+	rval = rowptr[idx2][0] - r0;
+	ival = rowptr[idx2][1] - shiftprod1 -
+	  shiftfac2 * static_cast<double>(idx2);
+	expfac = exp(rval);
+	rowptr[idx2][0] = expfac * cos(ival);
+	rowptr[idx2][1] = expfac * sin(ival);
+      }
+    }
+    // Now negative frequencies
+    for (unsigned int idx1 = ncplx; idx1 < n; ++idx1) {
+      rowptr = prtrans + idx1 * ncplx;
+      shiftprod1 = - shiftfac1 * static_cast<double>(n - idx1);
+      for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
+	rval = rowptr[idx2][0] - r0;
+	ival = rowptr[idx2][1] - shiftprod1 -
+	  shiftfac2 * static_cast<double>(idx2);
+	expfac = exp(rval);
+	rowptr[idx2][0] = expfac * cos(ival);
+	rowptr[idx2][1] = expfac * sin(ival);
+      }
+    }
+  } else if (doshift1) {
+    // Only a shift in band 1.  Probably pretty uncommon
+    double shiftfac1 = shift1 * iflux1;
+    double shiftprod1;
+    for (unsigned int idx1 = 0; idx1 < ncplx; ++idx1) {
+      rowptr = prtrans + idx1 * ncplx;
+      shiftprod1 = shiftfac1 * static_cast<double>(idx1);
+      for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
+	rval = rowptr[idx2][0] - r0;
+	ival = rowptr[idx2][1] - shiftprod1;
+	expfac = exp(rval);
+	rowptr[idx2][0] = expfac * cos(ival);
+	rowptr[idx2][1] = expfac * sin(ival);
+      }
+    }
+    for (unsigned int idx1 = ncplx; idx1 < n; ++idx1) {
+      rowptr = prtrans + idx1 * ncplx;
+      shiftprod1 = - shiftfac1 * static_cast<double>(n - idx1);
+      for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
+	rval = rowptr[idx2][0] - r0;
+	ival = rowptr[idx2][1] - shiftprod1;
+	expfac = exp(rval);
+	rowptr[idx2][0] = expfac * cos(ival);
+	rowptr[idx2][1] = expfac * sin(ival);
+      }
+    }
+  } else if (doshift2) {
+    // Only shift in band 2 -- also probably pretty uncommon
+    double shiftfac2 = shift2 * iflux2;
+    // Note we no longer have to split into neg/pos frequency bits
+    for (unsigned int idx1 = 0; idx1 < n; ++idx1) {
+      rowptr = prtrans + idx1 * ncplx;
+      for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
+	rval = rowptr[idx2][0] - r0;
+	ival = rowptr[idx2][1] - shiftfac2 * static_cast<double>(idx2);
+	expfac = exp(rval);
+	rowptr[idx2][0] = expfac * cos(ival);
+	rowptr[idx2][1] = expfac * sin(ival);
+      }
+    }
+  } else {
+    // No shifts -- very easy, more common than the previous 2,
+    //  although only in testing
+    for (unsigned int idx1 = 0; idx1 < n; ++idx1) {
+      rowptr = prtrans + idx1 * ncplx;
+      for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
+	rval = rowptr[idx2][0] - r0;
+	ival = rowptr[idx2][1];
+	expfac = exp(rval);
+	rowptr[idx2][0] = expfac * cos(ival);
+	rowptr[idx2][1] = expfac * sin(ival);
+      }
+    }
+  }
+  prtrans[0][0] = 1.0;
+  prtrans[0][1] = 0.0;
+
+#ifdef TIMING
+  p0Time += std::clock() - starttime;
+#endif
+  
   return true;
 }
 
@@ -1234,8 +1358,8 @@ void PDFactoryDouble::getPD(double sigma1, double sigma2,
   const bool assume_negative_sharp = true;
 
   // The basic idea is to compute the P(D) from the previously filled
-  // R values, adding in noise and all that fun stuff, filling pd
-  // for output
+  // R values, adding in noise filling pd for output.
+  // Note that pval will not be filled if the sigmas are zero
   if (!initialized )
     throw affineExcept("PDFactoryDouble", "getPD",
 		       "Must call initPD first");
@@ -1246,195 +1370,86 @@ void PDFactoryDouble::getPD(double sigma1, double sigma2,
   //Output array from 2D FFT is n * (n/2+1)
   unsigned int n = currsize;
   unsigned int ncplx = n / 2 + 1;
-      
-  //Calculate p(omega) = exp( r(omega1,omega2) - r(0,0) ),
-  // which is what we will transform back into pofd.
-  // There are some complications because of shifts and all that.
-  //The 2D output real FFT format makes this a bit tricky.  The output
-  // array is n by (n/2+1).  The first dimension has both
-  // positive and negative frequencies, the second dimension has
-  // only positive dimensions.
-  //In particular, if i is the index over the first dimension,
-  // the frequencies along the first dimension are:
-  //  f1 = i/delta1*n        for i = [0,n/2]
-  //     = - (n-i)/delta1*n  for i = [n/2+1,n-1]
-  // where delta1 is dflux1.
-  // And if j is the second dimension index, then
-  //  f2 = j/delta2*n  
-  // and delta2 = dflux2.  We work in w instead of f (2 pi f)
-  // and actually compute 
-  //  exp( r(omega1,omega2) - r(0,0) - i*shift1*omega1 - i*shift2*omega2
-  //       - 1/2 sigma1^2 omega1^2 - 1/2 sigma2^2 * omega2^2)
-  
-  double r0, expfac, rval, ival;
-  fftw_complex *row_current_out; //Output out variable
-  fftw_complex *r_input_rowptr; //Row pointer into out_part (i.e., input)
-  r0 = rtrans[0][0]; //r[0,0] is pure real
-  
-  double iflux1 = mcmc_affine::two_pi / (n * dflux1);
-  double iflux2 = mcmc_affine::two_pi / (n * dflux2);
-  
-  if (verbose) std::cout << "  Computing p(w1,w2)" << std::endl;
+
+  // Finish computing P and transform.
+  // For simplicity, assume if there is
+  // noise in either band there will be noise in both, which should
+  // always be true in practice.
+  if (sigma1 > 0 || sigma2 > 0) {
+    // Real data case (that is, with noise)
 
 #ifdef TIMING
-  std::clock_t starttime = std::clock();
+    std::clock_t starttime = std::clock();
 #endif
 
-  // Now we have 16 potential cases -- both shift bits, both with
-  //  and without sigma in each.  However, in practice it is unlikely
-  //  that we are shifting in one band and not the other, or have noise
-  //  in one band and not the other, so we will pay the small inefficiency
-  //  price for those cases by only exploring the 4 cases
-  //  (any shift vs. noshift) by (any sigma vs. no sigma).
-  if (doshift1 || doshift2) {
-    double meanprod1, didx2, w1, w2;
-    if (sigma1 > 0 || sigma2 > 0) {
-      double sigfac1 = 0.5 * sigma1 * sigma1;
-      double sigfac2 = 0.5 * sigma2 * sigma2;
-      double sigprod1;
-      //First, Pos freq
-      for (unsigned int idx1 = 0; idx1 < ncplx; ++idx1) {
-	r_input_rowptr = rtrans + idx1 * ncplx; //Input
-	row_current_out = pval + idx1 * ncplx; //Output
-	w1 = iflux1 * static_cast<double>(idx1);
-	meanprod1 = shift1 * w1;
-	sigprod1  = sigfac1 * w1 * w1;
-	for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
-	  didx2 = static_cast<double>(idx2);
-	  w2 = iflux2 * didx2;
-	  rval = r_input_rowptr[idx2][0] - r0 - sigprod1 - sigfac2 * w2 * w2;
-	  ival = r_input_rowptr[idx2][1] - meanprod1 - shift2 * w2;
-	  expfac = exp(rval);
-	  row_current_out[idx2][0] = expfac * cos(ival);
-	  row_current_out[idx2][1] = expfac * sin(ival);
-	}
-      }
-      //Now, Neg freq
-      for (unsigned int idx1 = ncplx; idx1 < n; ++idx1) {
-	r_input_rowptr = rtrans + idx1 * ncplx; //Input
-	row_current_out = pval + idx1 * ncplx; //Output
-	w1 = - iflux1 * static_cast<double>(n - idx1);
-	meanprod1 = shift1 * w1;
-	sigprod1  = sigfac1 * w1 * w1;
-	for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
-	  didx2 = static_cast<double>(idx2);
-	  w2 = iflux2 * didx2;
-	  rval = r_input_rowptr[idx2][0] - r0 - sigprod1 - sigfac2 * w2 * w2;
-	  ival = r_input_rowptr[idx2][1] - meanprod1 - shift2 * w2;
-	  expfac = exp(rval);
-	  row_current_out[idx2][0] = expfac * cos(ival);
-	  row_current_out[idx2][1] = expfac * sin(ival);
-	}
-      }
-    } else {
-      // Shifts, but no sigmas
-      for (unsigned int idx1 = 0; idx1 < ncplx; ++idx1) {
-	r_input_rowptr = rtrans + idx1 * ncplx; //Input
-	row_current_out = pval + idx1 * ncplx; //Output
-	w1 = iflux1 * static_cast<double>(idx1);
-	meanprod1 = shift1 * w1;
-	for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
-	  didx2 = static_cast<double>(idx2);
-	  w2 = iflux2 * didx2;
-	  rval = r_input_rowptr[idx2][0] - r0;
-	  ival = r_input_rowptr[idx2][1] - meanprod1 - shift2 * w2;
-	  expfac = exp(rval);
-	  row_current_out[idx2][0] = expfac * cos(ival);
-	  row_current_out[idx2][1] = expfac * sin(ival);
-	}
-      }
-      //Now, Neg freq
-      for (unsigned int idx1 = ncplx; idx1 < n; ++idx1) {
-	r_input_rowptr = rtrans + idx1 * ncplx; //Input
-	row_current_out = pval + idx1 * ncplx; //Output
-	w1 = - iflux1 * static_cast<double>(n - idx1);
-	meanprod1 = shift1 * w1;
-	for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
-	  didx2 = static_cast<double>(idx2);
-	  w2 = iflux2 * didx2;
-	  rval = r_input_rowptr[idx2][0] - r0;
-	  ival = r_input_rowptr[idx2][1] - meanprod1 - shift2 * w2;
-	  expfac = exp(rval);
-	  row_current_out[idx2][0] = expfac * cos(ival);
-	  row_current_out[idx2][1] = expfac * sin(ival);
-	}
+    fftw_complex *r_input_rowptr;
+    fftw_complex *row_current_out;
+    
+    double iflux1 = mcmc_affine::two_pi / (n * dflux1);
+    double iflux2 = mcmc_affine::two_pi / (n * dflux2);
+    double sigfac1 = -0.5 * sigma1 * sigma1 * iflux1 * iflux1;
+    double sigfac2 = -0.5 * sigma2 * sigma2 * iflux2 * iflux2;
+    double expfac, sigprod1, didx1, didx2;
+    //First, Pos freq
+    for (unsigned int idx1 = 0; idx1 < ncplx; ++idx1) {
+      r_input_rowptr = prtrans + idx1 * ncplx;
+      row_current_out = pval + idx1 * ncplx;
+      didx1 = static_cast<double>(idx1);
+      sigprod1  = sigfac1 * didx1 * didx1; // -1/2 sigma1^2 w1^2
+      for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
+	didx2 = static_cast<double>(idx2);
+	//  exp(-1/2 sigma1^2 w1^2 - 1/2 sigma2^2 w2^2)
+	expfac = exp(sigprod1 + sigfac2 * didx2 * didx2);
+	row_current_out[idx2][0] = expfac * r_input_rowptr[idx2][0];
+	row_current_out[idx2][1] = expfac * r_input_rowptr[idx2][1];
       }
     }
+    // Negative frequency bit; needs to be a separate loop because
+    //  the direction that w1 increases flips
+    for (unsigned int idx1 = ncplx; idx1 < n; ++idx1) {
+      r_input_rowptr = prtrans + idx1 * ncplx;
+      row_current_out = pval + idx1 * ncplx;
+      didx1 = static_cast<double>(n - idx1); // Drop - sgn since we only ^2
+      sigprod1 = sigfac1 * didx1 * didx1; // -1/2 sigma1^2 w1^2
+      for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
+	didx2 = static_cast<double>(idx2);
+	//  exp(-1/2 sigma1^2 w1^2 - 1/2 sigma2^2 w2^2)
+	expfac = exp(sigprod1 + sigfac2 * didx2 * didx2);
+	row_current_out[idx2][0] = expfac * r_input_rowptr[idx2][0];
+	row_current_out[idx2][1] = expfac * r_input_rowptr[idx2][1];
+      }
+    }
+    pval[0][0] = 1.0;
+    pval[0][1] = 0.0;
+
+#ifdef TIMING
+    p0Time += std::clock() - starttime;
+#endif
+
+    //Now transform back
+    if (verbose) std::cout << " Reverse transform" << std::endl;
+#ifdef TIMING
+    starttime = std::clock();
+#endif
+    // From pval into pofd
+    fftw_execute_dft_c2r(plan_inv, pval, pofd);
+#ifdef TIMING
+    fftTime += std::clock() - starttime;
+#endif
   } else {
-    // No shifts, but there may be sigmas
-    // TODO -- is there a symmetry here which simplifies this case,
-    //  since the sigmas are quadratic?
-    if (sigma1 > 0 || sigma2 > 0) {
-      double w1, w2, didx2;
-      double sigfac1 = 0.5 * sigma1 * sigma1;
-      double sigfac2 = 0.5 * sigma2 * sigma2;
-      double sigprod1;
-      //First, Pos freq
-      for (unsigned int idx1 = 0; idx1 < ncplx; ++idx1) {
-	r_input_rowptr = rtrans + idx1 * ncplx; //Input
-	row_current_out = pval + idx1 * ncplx; //Output
-	w1 = iflux1 * static_cast<double>(idx1);
-	sigprod1  = sigfac1 * w1 * w1;
-	for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
-	  didx2 = static_cast<double>(idx2);
-	  w2 = iflux2 * didx2;
-	  rval = r_input_rowptr[idx2][0] - r0 - sigprod1 - sigfac2 * w2 * w2;
-	  ival = r_input_rowptr[idx2][1];
-	  expfac = exp(rval);
-	  row_current_out[idx2][0] = expfac * cos(ival);
-	  row_current_out[idx2][1] = expfac * sin(ival);
-	}
-      }
-      //Now, Neg freq
-      for (unsigned int idx1 = ncplx; idx1 < n; ++idx1) {
-	r_input_rowptr = rtrans + idx1 * ncplx; //Input
-	row_current_out = pval + idx1 * ncplx; //Output
-	w1 = - iflux1 * static_cast<double>(n - idx1);
-	for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
-	  didx2 = static_cast<double>(idx2);
-	  w2 = iflux2 * didx2;
-	  rval = r_input_rowptr[idx2][0] - r0 - sigprod1 - sigfac2 * w2 * w2;
-	  ival = r_input_rowptr[idx2][1];
-	  expfac = exp(rval);
-	  row_current_out[idx2][0] = expfac * cos(ival);
-	  row_current_out[idx2][1] = expfac * sin(ival);
-	}
-      }
-    } else {
-      //No shifts, sigmas
-      for (unsigned int idx1 = 0; idx1 < n; ++idx1) {
-	r_input_rowptr = rtrans + idx1 * ncplx;
-	row_current_out = pval + idx1 * ncplx;
-	for (unsigned int idx2 = 0; idx2 < ncplx; ++idx2) {
-	  rval = r_input_rowptr[idx2][0] - r0;
-	  ival = r_input_rowptr[idx2][1];
-	  expfac = exp(rval);
-	  row_current_out[idx2][0] = expfac * cos(ival);
-	  row_current_out[idx2][1] = expfac * sin(ival);
-	}
-      }
-    }
+    // Noiseless, probably a test case.  We can just directly
+    // transform prtrans now.
+    if (verbose) std::cout << " Reverse transform" << std::endl;
+#ifdef TIMING
+    starttime = std::clock();
+#endif
+    // From pval into pofd
+    fftw_execute_dft_c2r(plan_inv, prtrans, pofd);
+#ifdef TIMING
+    fftTime += std::clock() - starttime;
+#endif
   }
-
-  //p(0,0) is special, but shared by all cases.
-  pval[0][0] = 1.0;
-  pval[0][1] = 0.0;
-
-#ifdef TIMING
-  p0Time += std::clock() - starttime;
-#endif
-
-  //Now transform back
-  if (verbose) std::cout << " Reverse transform" << std::endl;
-#ifdef TIMING
-  starttime = std::clock();
-#endif
-  // From pval into pofd
-  fftw_execute_dft_c2r(plan_inv, pval, pofd);
-#ifdef TIMING
-  fftTime += std::clock() - starttime;
-#endif
-
+  
   // Copy into output variable, also normalizing, mean subtracting, 
   // making positive.  Need sigma estimates for unwrapAndNormalize
   // As is the case for PDFactory, we are going to assume that there 
@@ -1461,7 +1476,7 @@ void PDFactoryDouble::getPD(double sigma1, double sigma2,
 		       newerrstr.str());
   }
 
-  //Turn PD to log for more efficient log computation of likelihood
+  //Turn PD to log for more efficient log computation of log likelihood
 #ifdef TIMING
   starttime = std::clock();
 #endif

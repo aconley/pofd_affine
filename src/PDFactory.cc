@@ -1106,7 +1106,7 @@ bool PDFactory::initPD(unsigned int n, double minflux, double maxflux,
   std::clock_t starttime = std::clock();
 #endif
 
-  double r0, expfac, rval, ival;
+  double r0, expfac, ival;
   double iflux = mcmc_affine::two_pi / (n * dflux);
   unsigned int ncplx = n / 2 + 1;
   r0 = prtrans[0][0]; // r[0] is pure real
@@ -1114,11 +1114,10 @@ bool PDFactory::initPD(unsigned int n, double minflux, double maxflux,
   prtrans[0][0] = 1.0;
   prtrans[0][1] = 0.0;
   if (doshift) {
-    double w;
+    double wfac = shift * iflux;
     for (unsigned int idx = 1; idx < ncplx; ++idx) {
-      w = iflux * static_cast<double>(idx);
       expfac = exp(prtrans[idx][0] - r0);
-      ival = prtrans[idx][1] - shift * w;
+      ival = prtrans[idx][1] - wfac * static_cast<double>(idx);
       prtrans[idx][0] = expfac * cos(ival);
       prtrans[idx][1] = expfac * sin(ival);
     }
@@ -1162,6 +1161,7 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog) {
 
   // The basic idea is to compute the P(D) from the previously filled
   // R values, adding in noise, filling pd for output
+  // Note that pval will not be filled if sigma is 0
   if (!initialized)
     throw affineExcept("PDFactory", "getPD", "Must call initPD first");
 
@@ -1200,8 +1200,8 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog) {
     fftTime += std::clock() - starttime;
 #endif
   } else {
-    // No need to copy or adjust anything, since sigma = 0
-      // Transform pvals into pofd
+    // Noiseless case, probably a test
+    // No need to copy or adjust anything, just transform from prtrans to pofd
     if (verbose) std::cout << " Reverse transform" << std::endl;
 #ifdef TIMING
     starttime = std::clock();
@@ -1231,7 +1231,7 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog) {
     sgneg = sgpos;
   unwrapAndNormalizePD(pd);
 
-  //Turn PD to log for more efficient log computation of likelihood
+  //Turn PD to log for more efficient log computation of log likelihood
 #ifdef TIMING
   starttime = std::clock();
 #endif
