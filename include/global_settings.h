@@ -62,7 +62,7 @@ namespace mcmc_affine {
   \brief P(D) convenience variables
 */
 namespace pofd_mcmc {
-  const char version[] = "0.4.1"; //!<Version number of P(D) library
+  const char version[] = "0.4.3"; //!<Version number of P(D) library
   const double n_zero_pad = 7.5; //!< Zero padding size in sigma
   const double logfac = log2(10.0); //!< Conversion to base 2 from base 10
   const double ilogfac = 1.0 / logfac; //!< Inverse conversion factor

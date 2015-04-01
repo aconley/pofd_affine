@@ -1109,8 +1109,10 @@ bool PDFactory::initPD(unsigned int n, double minflux, double maxflux,
   double r0, expfac, rval, ival;
   double iflux = mcmc_affine::two_pi / (n * dflux);
   unsigned int ncplx = n / 2 + 1;
-  r0 = prtrans[0][0]; //r[0] is pure real
+  r0 = prtrans[0][0]; // r[0] is pure real
 
+  prtrans[0][0] = 1.0;
+  prtrans[0][1] = 0.0;
   if (doshift) {
     double w;
     for (unsigned int idx = 1; idx < ncplx; ++idx) {
@@ -1128,8 +1130,6 @@ bool PDFactory::initPD(unsigned int n, double minflux, double maxflux,
       prtrans[idx][1] = expfac * sin(ival);
     }
   }
-  prtrans[0][0] = 1.0;
-  prtrans[0][1] = 0.0;
   
 #ifdef TIMING
   p0Time += std::clock() - starttime;
@@ -1177,11 +1177,13 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog) {
     double w, expfac;
     double iflux = mcmc_affine::two_pi / (n * dflux);
     double sigfac = - 0.5 * sigma * sigma;
+    pval[0][0] = 1.0;
+    pval[0][1] = 0.0;
     for (unsigned int idx = 1; idx < ncplx; ++idx) {
       w = iflux * static_cast<double>(idx);
       expfac = exp(sigfac * w * w);
       pval[idx][0] = expfac * prtrans[idx][0];
-      pval[idx][1] *= expfac * prtrans[idx][1];
+      pval[idx][1] = expfac * prtrans[idx][1];
     }
 #ifdef TIMING
     p0Time += std::clock() - starttime;
