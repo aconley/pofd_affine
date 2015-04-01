@@ -1020,7 +1020,7 @@ bool affineChainSet::getAcorVector(std::vector<float>& tau,
   bool succ, indiv_succ;
   succ = true;
   for (unsigned int i = 0; i < nparams; ++i) {
-    if (param_state[i] & mcmc_affine::ACIGNORE)
+    if ((param_state[i] & mcmc_affine::ACIGNORE) != 0)
       tau[i] = std::numeric_limits<float>::quiet_NaN();
     else {
       tau[i] = static_cast<float>(getAcor(i, mn, sigma, indiv_succ));

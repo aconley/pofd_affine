@@ -13,9 +13,11 @@ namespace mcmc_affine {
   // Just in case this cmath doesn't have PI (not all do)
   const double pi = 3.141592653589793238462643383279502884197; //!< \f$\pi\f$
 
- //Messages we understand
-  //These are hardwired to particular values to ease debugging if
-  // we get a message we don't expect.
+  // Messages we understand
+  // These are hardwired to particular values to ease debugging if
+  //  we get a message we don't expect.
+  // Note that we don't use enum class because MPI excpects integers as
+  //  tags.
   /*! \brief MPI message numbers */
   enum affine_messages { ERROR=1, STOP=2, REQUESTPOINT=3, SENDINGPOINT=4,
 			 SENDINGRESULT=5, SENDINGPARREJ=6,
@@ -39,6 +41,7 @@ namespace mcmc_affine {
 	  and store that information in the chain as a bonus parameter.
 	  Such a parameter will also always be ignored in the autocorrelation.
   */
+  // Note that we don't use enum class because we do bitwise operations here
   enum { FIXED=1, ACIGNORE=2, BONUS=4 };
   
   const useconds_t msleeplen = 1000; //!< Master sleep time if no message ready in usec

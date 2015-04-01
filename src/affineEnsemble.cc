@@ -260,7 +260,7 @@ void affineEnsemble::fixParam(unsigned int idx) {
 */
 bool affineEnsemble::isParamFixed(unsigned int idx) const {
   if (rank != 0) return false;
-  return param_state[idx] & mcmc_affine::FIXED;
+  return (param_state[idx] & mcmc_affine::FIXED) != 0;
 }
 
 /*!
@@ -279,7 +279,7 @@ void affineEnsemble::ignoreParamAcor(unsigned int idx) {
 */
 bool affineEnsemble::isParamIgnoredAcor(unsigned int idx) const {
   if (rank != 0) return false;
-  return param_state[idx] & mcmc_affine::ACIGNORE;
+  return (param_state[idx] & mcmc_affine::ACIGNORE) != 0;
 }
 
 /*!
@@ -303,7 +303,7 @@ void affineEnsemble::setParamBonus(unsigned int idx) {
 */
 bool affineEnsemble::isParamBonus(unsigned int idx) const {
   if (rank != 0) return false;
-  return param_state[idx] & mcmc_affine::BONUS;
+  return (param_state[idx] & mcmc_affine::BONUS) != 0;
 }
 
 /*!
@@ -471,7 +471,7 @@ void affineEnsemble::printStatistics(float conflevel,
       os.width(5);
       os.precision(2);
       os << conflevel * 100.0 << "% limit)";
-      if (param_state[i] & mcmc_affine::BONUS)
+      if ((param_state[i] & mcmc_affine::BONUS) != 0)
 	os << " (bonus param)";
       os << std::endl;
     }
@@ -1148,10 +1148,10 @@ void affineEnsemble::generateNewStep(unsigned int idx1, unsigned int idx2,
   prstep.z = generateZ();
   omz = 1.0 - prstep.z;
   for (unsigned int i = 0; i < nparams; ++i) 
-    if (param_state[i] & mcmc_affine::FIXED) {
+    if ((param_state[i] & mcmc_affine::FIXED) != 0) {
       //Fixed parameter, keep previous
       prstep.newStep.setParamValue(i, prstep.oldStep[i]);
-    } else if (param_state[i] & mcmc_affine::BONUS) {
+    } else if ((param_state[i] & mcmc_affine::BONUS) != 0) {
       prstep.newStep.setParamValue(i, qNaN);
     } else {
       val = prstep.z * prstep.oldStep[i] + omz * params_tmp[i];
@@ -1189,10 +1189,10 @@ void affineEnsemble::generateNewStep(unsigned int idx1, unsigned int idx2,
     prstep.z = generateZ();
     omz = 1.0 - prstep.z;
     for (unsigned int i = 0; i < nparams; ++i) 
-      if (param_state[i] & mcmc_affine::FIXED) {
+      if ((param_state[i] & mcmc_affine::FIXED) != 0) { 
 	//Fixed parameter, keep previous
 	prstep.newStep.setParamValue(i, prstep.oldStep[i]);
-      } else if (param_state[i] & mcmc_affine::BONUS) {
+      } else if ((param_state[i] & mcmc_affine::BONUS) != 0) {
 	// Don't have to do anything; should still be NaN
       } else {
 	val = prstep.z * prstep.oldStep[i] + omz * params_tmp[i];
@@ -1643,20 +1643,20 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
   batmp = new hbool_t[nparams];
   // Fixed first
   for (unsigned int i = 0; i < nparams; ++i) 
-    batmp[i] = (param_state[i] & mcmc_affine::FIXED) != 0;
+    batmp[i] = ((param_state[i] & mcmc_affine::FIXED) != 0);
   att_id = H5Acreate2(groupid, "IsParamFixed", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
   H5Aclose(att_id);
   // Ignored params
   for (unsigned int i = 0; i < nparams; ++i) 
-    batmp[i] = (param_state[i] & mcmc_affine::ACIGNORE) != 0;
+    batmp[i] = ((param_state[i] & mcmc_affine::ACIGNORE) != 0);
   att_id = H5Acreate2(groupid, "IsParamAutocorrIgnore", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
   // Bonus params
   for (unsigned int i = 0; i < nparams; ++i) 
-    batmp[i] = (param_state[i] & mcmc_affine::BONUS) != 0;
+    batmp[i] = ((param_state[i] & mcmc_affine::BONUS) != 0);
   att_id = H5Acreate2(groupid, "IsParamBonus", H5T_NATIVE_HBOOL,
 		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
