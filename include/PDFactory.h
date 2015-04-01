@@ -31,7 +31,7 @@ class PDFactory {
   bool rinitialized; //!< R initialized
   bool initialized; //!< R forward transform is filled
 
-  unsigned int currsize; //!< Current memory allocation for R, rtrans, etc.
+  unsigned int currsize; //!< Current memory allocation for R, prtrans, etc.
   double mn; //!< Expected mean
   double var_noi; //!< Expected variance without instrument noise
   double sgpos; //!< Expected sigma, positive flux density, inc instrument noise, of most recent P(D)
@@ -54,8 +54,8 @@ class PDFactory {
   bool rvars_allocated; //!< Are R variables allocated (rest of this block)
   double* rvals; //!< Working space for R computation 
   bool rdflux; //!< Has R been multiplied by dflux
-  fftw_complex *rtrans; //!< Holds FFTed rvals 
-  fftw_complex* pval; //!< Working variable holding p = exp( stuff ) 
+  fftw_complex *prtrans; //!< Holds exponentiated FFTed rvals 
+  fftw_complex* pval; //!< Working variable that is prtrans plus the sigma bits
   double* pofd; //!< Internal P(D) variable.  
   void allocateRvars(); //!< Allocates R variables if needed
   void freeRvars(); //!< Free R variables

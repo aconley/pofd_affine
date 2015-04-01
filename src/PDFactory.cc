@@ -37,7 +37,7 @@ PDFactory::~PDFactory() {
   if (spline_neg != nullptr) gsl_spline_free(spline_neg);
 
   if (rvals != nullptr) fftw_free(rvals);
-  if (rtrans != nullptr) fftw_free(rtrans);
+  if (prtrans != nullptr) fftw_free(prtrans);
   if (pofd != nullptr) fftw_free(pofd);
   if (pval != nullptr) fftw_free(pval);
 
@@ -73,7 +73,7 @@ void PDFactory::init(unsigned int NINTERP) {
   rvars_allocated = false;
   rvals = nullptr;
   rdflux = false;
-  rtrans = nullptr;
+  prtrans = nullptr;
   pval = nullptr;
   pofd = nullptr;
 
@@ -131,7 +131,7 @@ void PDFactory::summarizeTime(unsigned int nindent) const {
 */
 //I don't check for 0 NSIZE because that should never happen
 // in practice, and it isn't worth the idiot-proofing
-// rtrans always gets nulled in here, then refilled when you
+// prtrans always gets nulled in here, then refilled when you
 //  call initPD
 bool PDFactory::resize(unsigned int NSIZE) {
   if (NSIZE == currsize) return false;
@@ -154,7 +154,7 @@ void PDFactory::allocateRvars() {
   rvals = (double*) fftw_malloc(sizeof(double) * currsize);
   pofd = (double*) fftw_malloc(sizeof(double) * currsize);
   unsigned int fsize = currsize / 2 + 1;
-  rtrans = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * fsize);
+  prtrans = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * fsize);
   pval = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * fsize);
   rvars_allocated = true;
 }
@@ -162,7 +162,7 @@ void PDFactory::allocateRvars() {
 // Doesn't necessarily invalidate the plans
 void PDFactory::freeRvars() {
   if (rvals != nullptr) { fftw_free(rvals); rvals=nullptr; }
-  if (rtrans != nullptr) {fftw_free(rtrans); rtrans=nullptr; }
+  if (prtrans != nullptr) {fftw_free(prtrans); prtrans=nullptr; }
   if (pval != nullptr) { fftw_free(pval); pval = nullptr; }
   if (pofd != nullptr) { fftw_free(pofd); pofd = nullptr; }
   rvars_allocated = false;
@@ -293,7 +293,7 @@ void PDFactory::addWisdom(const std::string& filename) {
 void PDFactory::setupTransforms(unsigned int n) {
 
   // The transform plan is that the forward transform
-  //  takes rvals to rtrans.  We then do things to rtrans
+  //  takes rvals to prtrans.  We then do things to prtrans
   //  to turn it into pval, including shifting, adding noise,
   //  etc, and then transform from pval to pofd.
   // However, because we may move around the arrays,
@@ -312,7 +312,7 @@ void PDFactory::setupTransforms(unsigned int n) {
   int intn = static_cast<int>(n);
   if (plan == nullptr) {
     if (plan != nullptr) fftw_destroy_plan(plan);
-    plan = fftw_plan_dft_r2c_1d(intn, rvals, rtrans,
+    plan = fftw_plan_dft_r2c_1d(intn, rvals, prtrans,
 				fftw_plan_style);
   }
   if (plan == nullptr) {
@@ -1019,9 +1019,13 @@ void PDFactory::unwrapAndNormalizePD(PD& pd) const {
 	   to false.
 
   Gets ready for P(D) computation by preparing R, including forward
-  transforming it.  The idea is to compute everything that doesn't
+  transforming it, and exponentiating the bits that can be computed
+  without knowing sigma.  The idea is to compute everything that doesn't
   require knowing sigma here so we can call this multiple times on
   maps with the same beam but different noise values.
+
+  As a result, after this, the internal variable prtrans holds
+   exp(R[i] - R[0] - i*shift*omega).
 */
 bool PDFactory::initPD(unsigned int n, double minflux, double maxflux, 
 		       const numberCounts& model, const beam& bm) {
@@ -1081,14 +1085,54 @@ bool PDFactory::initPD(unsigned int n, double minflux, double maxflux,
       std::cout << " Not applying additional shift" << std::endl;
   }
 
-  //Compute forward transform of this r value, store in rtrans
-  //Have to use argument version, since the address of rtrans, etc. can move
+  //Compute forward transform of this r value, store in prtrans
+  //Have to use argument version, since the address of prtrans, etc. can move
 #ifdef TIMING
   starttime = std::clock();
 #endif
-  fftw_execute_dft_r2c(plan, rvals, rtrans); 
+  fftw_execute_dft_r2c(plan, rvals, prtrans); 
 #ifdef TIMING
   fftTime += std::clock() - starttime;
+#endif
+
+  // Calculate prtrans = exp(R[i] - R[0] - shift bits)
+  //  getPD will add the sigma term to this and then FFT back into the P(D)
+  // The frequencies are
+  //      f = i / dflux * n
+  // but we actually work in terms of omega (w)
+  //      w = 2 pi f = 2 pi i / dflux * n
+  // Note that prtrans is overwritten in place by this operation
+#ifdef TIMING
+  std::clock_t starttime = std::clock();
+#endif
+
+  double r0, expfac, rval, ival;
+  double iflux = mcmc_affine::two_pi / (n * dflux);
+  unsigned int ncplx = n / 2 + 1;
+  r0 = prtrans[0][0]; //r[0] is pure real
+
+  if (doshift) {
+    double w;
+    for (unsigned int idx = 1; idx < ncplx; ++idx) {
+      w = iflux * static_cast<double>(idx);
+      expfac = exp(prtrans[idx][0] - r0);
+      ival = prtrans[idx][1] - shift * w;
+      prtrans[idx][0] = expfac * cos(ival);
+      prtrans[idx][1] = expfac * sin(ival);
+    }
+  } else {
+    for (unsigned int idx = 1; idx < ncplx; ++idx) {
+      expfac = exp(prtrans[idx][0] - r0);
+      ival = prtrans[idx][1];
+      prtrans[idx][0] = expfac * cos(ival);
+      prtrans[idx][1] = expfac * sin(ival);
+    }
+  }
+  prtrans[0][0] = 1.0;
+  prtrans[0][1] = 0.0;
+  
+#ifdef TIMING
+  p0Time += std::clock() - starttime;
 #endif
 
   initialized = true;
@@ -1117,107 +1161,64 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog) {
   const bool assume_negative_sharp = true;
 
   // The basic idea is to compute the P(D) from the previously filled
-  // R values, adding in noise and all that fun stuff, filling pd
-  // for output
+  // R values, adding in noise, filling pd for output
   if (!initialized)
     throw affineExcept("PDFactory", "getPD", "Must call initPD first");
 
   //Output array from 2D FFT is n/2+1
   unsigned int n = currsize;
   unsigned int ncplx = n / 2 + 1;
-      
-  //Calculate p(omega) = exp( r(omega) - r(0) ),
-  // which is what we will transform back into pofd.
-  // The forward transform of R is stored in rtrans 
-  // There are some complications because of shifts and all that.
-  // The frequencies are:
-  //  f = i/dflux*n  
-  // We work in w instead of f (2 pi f = 2 pi i / dflux * n)
-  // and actually compute 
-  //  exp(r(omega) - r(0) - i*shift*omega - 1/2 sigma^2 omega^2)
-  if (verbose) std::cout << "  Computing p(w)" << std::endl;
 
+  // Compute final p(omega), transform.
+  if (sigma > 0) {
 #ifdef TIMING
-  std::clock_t starttime = std::clock();
+    std::clock_t starttime = std::clock();
+#endif
+    double w, expfac;
+    double iflux = mcmc_affine::two_pi / (n * dflux);
+    double sigfac = - 0.5 * sigma * sigma;
+    for (unsigned int idx = 1; idx < ncplx; ++idx) {
+      w = iflux * static_cast<double>(idx);
+      expfac = exp(sigfac * w * w);
+      pval[idx][0] = expfac * prtrans[idx][0];
+      pval[idx][1] *= expfac * prtrans[idx][1];
+    }
+#ifdef TIMING
+    p0Time += std::clock() - starttime;
 #endif
 
-  double r0, expfac, rval, ival;
-  r0 = rtrans[0][0]; //r[0] is pure real
-  double iflux = mcmc_affine::two_pi / (n * dflux);
-
-  // Four cases -- with and without shifting, with and without sigma.
-  //  Write them out explicitly since this is inner loop stuff
-  if (doshift) {
-    double w;
-    if (sigma > 0) {
-      double sigfac = 0.5 * sigma * sigma;
-      for (unsigned int idx = 1; idx < ncplx; ++idx) {
-	w = iflux * static_cast<double>(idx);
-	rval = rtrans[idx][0] - r0 - sigfac * w * w;
-	ival = rtrans[idx][1] - shift * w;
-	expfac = exp(rval);
-	pval[idx][0] = expfac * cos(ival);
-	pval[idx][1] = expfac * sin(ival);
-      } 
-    } else {
-      for (unsigned int idx = 1; idx < ncplx; ++idx) {
-	w = iflux * static_cast<double>(idx);
-	rval = rtrans[idx][0] - r0;
-	ival = rtrans[idx][1] - shift * w;
-	expfac = exp(rval);
-	pval[idx][0] = expfac * cos(ival);
-	pval[idx][1] = expfac * sin(ival);
-      } 
-    }
+  // Transform pvals into pofd
+    if (verbose) std::cout << " Reverse transform" << std::endl;
+#ifdef TIMING
+    starttime = std::clock();
+#endif
+    // From pval into pofd
+    fftw_execute_dft_c2r(plan_inv, pval, pofd);
+#ifdef TIMING
+    fftTime += std::clock() - starttime;
+#endif
   } else {
-    double expfac, ival;
-    if (sigma > 0.0) {
-      double w, rval;
-      double sigfac = 0.5 * sigma * sigma;
-      for (unsigned int idx = 1; idx < ncplx; ++idx) {
-	w = iflux * static_cast<double>(idx);
-	rval = rtrans[idx][0] - r0 - sigfac * w * w;
-	ival = rtrans[idx][1];
-	expfac = exp(rval);
-	pval[idx][0] = expfac * cos(ival);
-	pval[idx][1] = expfac * sin(ival);
-      }
-    } else {
-      for (unsigned int idx = 1; idx < ncplx; ++idx) {
-	expfac = exp(rtrans[idx][0]-r0);
-	ival = rtrans[idx][1];
-	pval[idx][0] = expfac * cos(ival);
-	pval[idx][1] = expfac * sin(ival);
-      }
-    }
+    // No need to copy or adjust anything, since sigma = 0
+      // Transform pvals into pofd
+    if (verbose) std::cout << " Reverse transform" << std::endl;
+#ifdef TIMING
+    starttime = std::clock();
+#endif
+    // From prtrans into pofd
+    fftw_execute_dft_c2r(plan_inv, prtrans, pofd);
+#ifdef TIMING
+    fftTime += std::clock() - starttime;
+#endif
   }
-  //p(0) is special
-  pval[0][0] = 1.0;
-  pval[0][1] = 0.0;
-
-#ifdef TIMING
-  p0Time += std::clock() - starttime;
-#endif
-
-  //Transform back
-  if (verbose) std::cout << " Reverse transform" << std::endl;
-#ifdef TIMING
-  starttime = std::clock();
-#endif
-  // From pval into pofd
-  fftw_execute_dft_c2r(plan_inv, pval, pofd);
-#ifdef TIMING
-  fftTime += std::clock() - starttime;
-#endif
 
   // Copy into output variable, also normalizing, mean subtracting, 
   // making positive.  We are assuming the beam doesn't have that
   // much negative contribution so that instrument noise dominates the
   // downside cutoff unless sigma is quite small
-  // That is, we are ASSUMING something about the beams here,
-  //  which is that they don't have too much in the way of negative
-  //  flux densities, which is true of the Herschel beams but not
-  //  true in general
+  // That is, if assume_negative_sharp is set, we are ASSUMING something
+  //  about the beams here, which is that they don't have too much in the
+  //  way of negative flux densities, which is true of the Herschel beams
+  //  but not true in general
   sgpos = sqrt(var_noi + sigma * sigma); // Used in unwrapPD
   if (assume_negative_sharp)
     if (9 * sigma * sigma > var_noi)
