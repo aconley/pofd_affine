@@ -118,7 +118,8 @@ int main(int argc, char** argv) {
 		  << " is then" << std::endl;
 	std::cerr << "\t\tused to re-seed the initial conditions before "
 		  << "burn-in" << std::endl;
-	std::cerr << "\t\tis started (def: 30)." << std::endl;
+	std::cerr << "\t\tis started.  If zero, no initial steps performed "
+		  << "(def: 30)." << std::endl;
 	std::cerr << "\t-I, --inittemp VALUE" << std::endl;
 	std::cerr << "\t\tTemperature used during initial steps (def: 2.0)"
 		  << std::endl;
