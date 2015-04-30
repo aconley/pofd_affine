@@ -21,7 +21,8 @@ double qNaN = std::numeric_limits<double>::quiet_NaN();
   \param[in] NSAMPLES Number of samples (across all walkers) to do after burn;
                       realized to the closest larger multiple of nwalkers
   \param[in] INIT_STEPS Number of initialization steps, which are thrown away
-                         even before starting burn-in process
+                         even before starting burn-in process.  If set to
+			 zero, none are done.
   \param[in] INIT_TEMP Temperature factor used during initial steps
   \param[in] MIN_BURN Minimum number of steps before burn-in
   \param[in] FIXED_BURN Do a fixed burn in of length MIN_BURN, not using
@@ -831,6 +832,9 @@ void affineEnsemble::doBurnIn(bool dohash) throw(affineExcept) {
     // Autocorrelation based burn-in test
     // Compute the autocorrelation -- we may need to add more steps
     // to get this to work
+    if (verbosity >= 1)
+      std::cout << "Checking burn-in convergence using autocorrelation"
+		<< std::endl;
     bool acor_success = computeAcor();
   
     //If it failed, we need more steps.  Add 25% of min burn
