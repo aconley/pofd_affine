@@ -630,8 +630,8 @@ void affineEnsemble::masterSample() {
       if (verbosity >= 2) 
 	std::cout << "**********************************************"
 		  << std::endl;
-      std::cout << "Doing " << init_steps << " initial steps per walker"
-		<< std::endl;
+      std::cout << "Doing " << init_steps << " initial steps per walker at"
+		<< " temp: " << init_temp << std::endl;
       if (verbosity >= 2) 
 	std::cout << "**********************************************"
 		  << std::endl;
@@ -682,10 +682,10 @@ void affineEnsemble::masterSample() {
     
     // Get the likelihoods
     calcLastLikelihood();
-  }
+  } else if (verbosity >= 1)
+    std::cout << "Not doing initial step exploration" << std::endl;
 
-  // Do burn in.  No progress bar because we don't know how
-  // many steps we are going to take
+  // Do burn in.
   doBurnIn(verbosity == 1);
 
   // Now do the main loop.  If the verbosity level is 1,
@@ -791,7 +791,7 @@ void affineEnsemble::doBurnIn(bool dohash) throw(affineExcept) {
   //First do min_burn steps in each walker
   chains.addChunk(min_burn);
   if (dohash) {
-    progbar = new hashbar(60, init_steps, '=');
+    progbar = new hashbar(60, min_burn, '=');
     progbar->initialize(std::cout);
   }
   for (unsigned int i = 0; i < min_burn; ++i) {
