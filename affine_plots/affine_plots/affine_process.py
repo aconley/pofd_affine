@@ -1,6 +1,7 @@
-from __future__ import print_function
+from __future__ import print_function, division
 from collections import namedtuple
 import numpy as np
+from scipy.interpolate import interp1d
 
 """ Routines related to plotting the results from
     pofd_affine fits"""
@@ -18,7 +19,6 @@ def find_bandname(h5filename):
     import re
     regex = re.compile("P[SML]W", re.IGNORECASE)
     return [m.upper() for m in regex.findall(h5filename)][:2]
-
 
 def read_data(h5file):
     """ Read data from HDF5 file"""
@@ -93,6 +93,47 @@ def get_stats(data, thin=5, percentiles=[15.85, 84.15]):
 
     return stats
 
+def make_errorsnake_1D(data, nsamples=200, ninterp=100,
+                       percentiles=[15.85, 84.15]):
+    """ Makes 1D error snake using sampling.
+
+    This may be a bit slow.
+
+    This is split off from the offset, spline knots because it is 
+    a log-log spline, while the others are just log on the abcissa."""
+
+    if ninterp <= 2:
+        raise ValueError("Ninterp must be > 2")
+    if nsamples <= 2:
+        raise ValueError("Nsamples must be > 2")
+
+    interpvals_log = np.linspace(np.log10(data.knots1D[0]),
+                                 np.log10(data.knots1D[-1]),
+                                 ninterp, dtype=np.float32)
+
+    n1D = len(data.knots1D)
+    n1 = data.steps.shape[0]
+    n2 = data.steps.shape[1]
+    logpos = np.log10(data.knots1D)
+
+    # We unfortunately have to keep track of every intermediate element
+    #  so that we can later percentile them
+    errorsnake_vals = np.empty((nsamples, ninterp), dtype=np.float32)
+    
+    for i in range(nsamples):
+        idx1 = np.random.randint(0, n1)
+        idx2 = np.random.randint(0, n2)
+        curr_interp = interp1d(logpos, np.log10(data.steps[idx1, idx2, 0:n1D]),
+                               kind='cubic')
+        errorsnake_vals[i, :] = curr_interp(interpvals_log)
+
+    errorsnake_perc = np.percentile(errorsnake_vals,
+                                    sorted(percentiles), axis=0)
+    errorsnake_m = 10.0**errorsnake_perc[0, :]
+    errorsnake_p = 10.0**errorsnake_perc[1, :]
+        
+    return 10.0**interpvals_log, errorsnake_p, errorsnake_m
+
 
 def print_summary(data, stats):
     """ Prints summary statistics"""
@@ -142,10 +183,9 @@ def _other_helper(other, ax, ms, fmt, label):
 
 def band1_plot(ax, data, stats, showglenn=False, showbeth=False,
                showoliver=False, showinit=False, euclidean=False,
-               skipfirst=False):
+               skipfirst=False, simple_errorsnake=True):
     """ Does plot for 1D band model"""
     from pkg_resources import resource_filename
-    from functools import partial
 
     npointsinterp = 100
 
@@ -177,38 +217,43 @@ def band1_plot(ax, data, stats, showglenn=False, showbeth=False,
     bestplot = stats.best[sidx:n1D].copy()
     initplot = data.initvals[sidx:n1D].copy()
 
-    # Construct error snake using log-log interpolation.
-    # The error snake is not really being done correctly here,
-    # since that would be expensive.
-    fit_interp = interp1d(np.log10(knots1Dplot), fit1Dplot,
-                          kind='cubic')
-    fit_interp_plus = interp1d(np.log10(knots1Dplot),
-                               fit1Dplot + unc_plus_plot,
-                               kind='cubic')
-    fit_interp_minus = interp1d(np.log10(knots1Dplot),
-                                fit1Dplot + unc_minus_plot,
-                                kind='cubic')
+    # Construct central curve through points
+    fit_interp = interp1d(np.log10(knots1Dplot), fit1Dplot, kind='cubic')
     plot_fvals_log = np.linspace(np.log10(knots1Dplot[0]),
                                  np.log10(knots1Dplot[-1]),
                                  npointsinterp)
+    plot_fvals = 10.0**plot_fvals_log
     plot_curve = fit_interp(plot_fvals_log)
-    plot_curve_plus = fit_interp_plus(plot_fvals_log)
-    plot_curve_minus = fit_interp_minus(plot_fvals_log)
-    plot_fvals = 10**plot_fvals_log
+
+    # Construct the errorsnake; one way is just to plot to the
+    #  uncertainties.  The better -- but more expensive way -- is
+    #  to sample the curve and take the extrema
+    if simple_errorsnake:
+        fit_interp_plus = interp1d(np.log10(knots1Dplot),
+                                   fit1Dplot + unc_plus_plot,
+                                   kind='cubic')
+        fit_interp_minus = interp1d(np.log10(knots1Dplot),
+                                    fit1Dplot + unc_minus_plot,
+                                    kind='cubic')
+        errsnk_f = plot_fvals
+        errsnk_p = fit_interp_plus(plot_fvals_log)
+        errsnk_m = fit_interp_minus(plot_fvals_log)
+    else:
+        # The expensive way...
+        errsnk_f, errsnk_p, errsnk_m = make_errorsnake_1D(data)
 
     if euclidean:
-        e1 = partial(euclideanize, knots1Dplot)
-        fit1Dplot = e1(fit1Dplot)
-        initplot = e1(initplot)
-        plot_curve = e1(plot_curve)
-        plot_curve_plus = e1(plot_curve_plus)
-        plot_curve_minus = e1(plot_curve_minus)
+        fit1Dplot = euclideanize(knots1Dplot, fit1Dplot)
+        initplot = euclideanize(knots1Dplot, initplot)
+        plot_curve = euclideanize(plot_fvals, plot_curve)
+        errsnk_p = euclideanize(errsnk_f, errsnk_p)
+        errsnk_m = euclideanize(errsnk_f, errsnk_m)
         if showglenn:
-            glenn[:, 1] = e1(glenn[:, 1])
+            glenn[:, 1] = euclideanize(glenn[:, 0], glenn[:, 1])
         if showbeth:
-            beth[:, 1] = e1(beth[:, 1])
+            beth[:, 1] = euclideanize(beth[:, 0], beth[:, 1])
         if showoliver:
-            oliver[:, 1] = e1(oliver[:, 1])
+            oliver[:, 1] = euclideanize(oliver[:, 0], oliver[:, 1])
 
     # Finally, do the acutal plotting
     fiterr = np.empty((2, len(knots1Dplot)), dtype=np.float32)
@@ -217,7 +262,7 @@ def band1_plot(ax, data, stats, showglenn=False, showbeth=False,
     ax.plot(plot_fvals, plot_curve, 'r', alpha=0.3)
     ax.errorbar(knots1Dplot, fit1Dplot, yerr=fiterr, fillstyle='full',
                 fmt='ro', alpha=0.7, label="This Fit")
-    ax.fill_between(plot_fvals, plot_curve_minus, plot_curve_plus,
+    ax.fill_between(errsnk_f, errsnk_m, errsnk_p,
                     facecolor='grey', alpha=0.5, lw=0, edgecolor='white')
 
     # Oliver 2010
@@ -226,11 +271,11 @@ def band1_plot(ax, data, stats, showglenn=False, showbeth=False,
 
     # Glenn 2010
     if showglenn:
-        _other_helper(glenn, ax, None, 'bs', "Glenn et al. (2010)")
+        _other_helper(glenn, ax, 5, 'bs', "Glenn et al. (2010)")
 
     # Bethermin 2012
     if showbeth:
-        _other_helper(beth, ax, None, 'gD', "Bethermin et al. (2012)")
+        _other_helper(beth, ax, 5, 'gD', "Bethermin et al. (2012)")
 
     # Plot initial values
     if showinit:
@@ -274,7 +319,7 @@ def sigma_plot(ax, data, stats, sigma_interp, offset_interp):
     var = np.exp(2 * offset_interp(np.log10(data.sigmaknots)) +
                  sigmavals**2) * (np.exp(sigmavals**2) - 1)
     var_p = np.exp(2 * offset_interp(np.log10(data.sigmaknots)) +
-                   sigmavals_p**2) * (np.exp(sigmavals_plus**2) - 1)
+                   sigmavals_p**2) * (np.exp(sigmavals_p**2) - 1)
     var_m = np.exp(2 * offset_interp(np.log10(data.sigmaknots)) +
                    sigmavals_m**2) * (np.exp(sigmavals_m**2) - 1)
 
@@ -299,8 +344,6 @@ def sigma_plot(ax, data, stats, sigma_interp, offset_interp):
 def offset_plot(ax, data, stats, sigma_interp, offset_interp):
     # This will be plotted in terms of the actual mean of f2/f1
     # rather than the model mu parameter.
-
-    # TODO: Add error snake
 
     n1D = len(data.knots1D)
     nsigma = len(data.sigmaknots)
@@ -341,9 +384,9 @@ def offset_plot(ax, data, stats, sigma_interp, offset_interp):
                 1.5 * data.offsetknots.max())
 
 
-def make_plots(data, stats, showglenn=False, showbeth=False,
-               showoliver=False, showinit=False, euclidean=False,
-               skipfirst=False):
+def make_plots(data, stats, simple_errorsnake=True,
+               showglenn=False, showbeth=False, showoliver=False,
+               showinit=False, euclidean=False, skipfirst=False):
     """ Plot results of a fit"""
 
     import matplotlib
@@ -351,16 +394,16 @@ def make_plots(data, stats, showglenn=False, showbeth=False,
     import matplotlib.pyplot as plt
     import matplotlib.gridspec as gridspec
 
-    # In the 2D general case, we plot 3 panels:
+    # Use the same machinery for 1D and 2D, even though
+    #  it's ridiculous overkill in 1D.
+    # We are potentially plotting up to 3 panels in the 2D case: 
     #  1D fit, sigma, offset
-    # In 1D, of course, we only plot the first.  However,
-    #  sigma and offset could be single points, in which
+    # However, sigma and offset could be single points, in which
     #  case plotting is pointless
     do_sigmaplot = False
     do_offsetplot = False
     is2D = hasattr(data, 'sigmaknots')
     if is2D:
-        # 2D
         do_sigmaplot = len(data.sigmaknots) > 1
         do_offsetplot = len(data.offsetknots) > 1
 
@@ -379,7 +422,8 @@ def make_plots(data, stats, showglenn=False, showbeth=False,
     ax1 = plt.subplot(gs[:, 0:2])
     band1_plot(ax1, data, stats, showglenn=showglenn, showbeth=showbeth,
                showoliver=showoliver, showinit=showinit,
-               euclidean=euclidean, skipfirst=skipfirst)
+               euclidean=euclidean, skipfirst=skipfirst,
+               simple_errorsnake=simple_errorsnake)
 
     # The sigma and offset are plotted as constraints on f2 / f1
     #  rather than the raw parameters.  That means we need

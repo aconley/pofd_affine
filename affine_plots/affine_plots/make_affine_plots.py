@@ -4,6 +4,7 @@ from __future__ import print_function
 
 if __name__ == "__main__":
     import argparse
+    import os.path
     from affine_plots import *
     
     desc = """Plot and print the results of a P(D) fit"""
@@ -15,6 +16,8 @@ if __name__ == "__main__":
                         default=5, help="Thinning")
     parser.add_argument('--beth', action='store_true', default=False,
                         help="Show Bethermin 2012 data")
+    parser.add_argument('--errorsnake', action='store_true', default=False,
+                        help="Plot full errorsnake instead of simplified")
     parser.add_argument('--euclidean', action='store_true', default=False,
                         help="Plot as euclidean normalized counts")
     parser.add_argument('--glenn', action='store_true', default=False,
@@ -39,12 +42,13 @@ if __name__ == "__main__":
     print_summary(data, stats)
 
     if not parse_results.noplot:
-      f = plot_results(data, stats, showglenn=parse_results.glenn,
-                       showbeth=parse_results.beth,
-                       showoliver=parse_results.oliver,
-                       showinit=parse_results.plotinit,
-                       euclidean=parse_results.euclidean,
-                       skipfirst=parse_results.skipfirst)
+      f = make_plots(data, stats, showglenn=parse_results.glenn,
+                     showbeth=parse_results.beth,
+                     showoliver=parse_results.oliver,
+                     showinit=parse_results.plotinit,
+                     euclidean=parse_results.euclidean,
+                     skipfirst=parse_results.skipfirst,
+                     simple_errorsnake = not parse_results.errorsnake)
 
       if parse_results.outfile is None:
           outfile = os.path.splitext(parse_results.h5file)[0] + '.pdf'
