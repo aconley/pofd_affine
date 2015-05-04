@@ -5,6 +5,9 @@
 .*
 *.lo
 *.tar.gz
+*.py[cod]
+*.egg
+*.egg-info
 INSTALL
 ChangeLog
 confscript.sh
@@ -51,3 +54,14 @@ beam_test
 data_test
 m4
 *.m4
+plot_pofd_results/build
+plot_pofd_results/dist
+plot_pofd_results/eggs
+plot_pofd_results/bin
+plot_pofd_results/parts
+plot_pofd_results/var
+plot_pofd_results/sdist
+plot_pofd_results/develop-eggs
+plot_pofd_results/.installed.cfg
+plot_pofd_results/lib
+plot_pofd_results/lib64
