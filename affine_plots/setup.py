@@ -4,16 +4,16 @@ import sys
 major, minor1, minor2, release, serial = sys.version_info
 
 if (major < 3) and (minor1 < 7):
-    raise SystemExit("analyze_coverage requires at least python 2.7")
+    raise SystemExit("affine_plots requires at least python 2.7")
 
 setup(
-    name="plot_pofd_results",
+    name="affine_plots",
     version="0.1.0",
     author="Alexander Conley",
     author_email="alexander.conley@colorado.edu",
-    packages=["plot_pofd_results"],
-    package_data = {'plot_pofd_results': ['resources/*.txt']},
-    scripts=["plot_pofd_results/plot_pofd_results.py"],
+    packages=["affine_plots"],
+    package_data = {'affine_plots': ['resources/*.txt']},
+    scripts = ["affine_plots/make_affine_plots.py"],
     license="GPL",
     description="Plot results from pofd_affine",
     classifiers=[
@@ -24,6 +24,6 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
     ],
-    requires = ['numpy (>1.7.0)', 'scipy (>0.8.0)', 'h5py (>2.0.0)']
+    requires = ['numpy (>1.7.0)', 'scipy (>0.8.0)', 
+                'h5py (>2.0.0)', 'matplotlib (>1.3.0)']
 )
-

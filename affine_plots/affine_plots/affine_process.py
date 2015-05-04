@@ -1,11 +1,12 @@
+from __future__ import print_function
+from collections import namedtuple
+import numpy as np
+
 """ Routines related to plotting the results from
     pofd_affine fits"""
 
-from __future__ import print_function
-from collections import namedtuple
-import np as np
 
-__all__ = ["read_data", "get_stats", "print_summary", "plot_results"]
+__all__ = ["read_data", "get_stats", "print_summary", "make_plots"]
 
 
 def find_bandname(h5filename):
@@ -41,33 +42,33 @@ def read_data(h5file):
             offsetknots = f['LikelihoodParams/Model/OffsetKnotPositions'][...]
 
     if is1D:
-        mcmc_data = namedtuple('mcmc_data1D',
-                               ['steps', 'like', 'knots1D', 'initvals',
-                                'param_names', 'band',
-                                'npars', 'nparsfit', 'nbonus'])
+        mcmc_data1D = namedtuple('mcmc_data1D',
+                                 ['steps', 'like', 'knots1D', 'allknots',
+                                  'initvals', 'param_names', 'band',
+                                  'npars', 'nparsfit', 'nbonus'])
         bands = find_bandname(h5file)
         band = bands[0] if len(bands) > 0 else "Unknown"
-        data = mcmc_data1D(steps, like, knots1D, initvals,
+        data = mcmc_data1D(steps, like, knots1D, knots1D, initvals,
                            param_names, band, steps.shape[2],
                            steps.shape[2] - 2, 2)
     else:
         mcmc_data2D = namedtuple('mcmc_data2D',
-                                 ['steps', 'like', 'knots1D',
-                                  'sigmaknots', 'offsetknots',
+                                 ['steps', 'like', 'knots1D', 'sigmaknots',
+                                  'offsetknots', 'allknots',
                                   'initvals', 'param_names',
                                   'band1', 'band2', 'npars',
                                   'nparsfit', 'nbonus'])
         bands = find_bandname(h5file)
         band1 = bands[0] if len(bands) >= 2 else "Unknown"
         band2 = bands[1] if len(bands) >= 2 else "Unknown"
-        data = mcmc_data2D(steps, like, knots1D, initvals,
-                           sigmaknots, offsetknots,
-                           param_names, band1, band2,
+        allknots = np.hstack([knots1D, sigmaknots, offsetknots])
+        data = mcmc_data2D(steps, like, knots1D, sigmaknots, offsetknots,
+                           allknots, initvals, param_names, band1, band2,
                            steps.shape[2], steps.shape[2] - 4, 4)
     return data
 
 
-def get_stats(data, thin=5, perc=[15.85, 84.15]):
+def get_stats(data, thin=5, percentiles=[15.85, 84.15]):
     """ Compute statistics on mcmc results"""
 
     if thin <= 0:
@@ -86,7 +87,7 @@ def get_stats(data, thin=5, perc=[15.85, 84.15]):
     for i in range(data.npars):
         vals = data.steps[:, ::thin, i]
         stats.fit[i] = vals.mean()
-        perc = np.percentile(vals, perc)
+        perc = np.percentile(vals, percentiles)
         stats.unc_plus[i] = perc[1] - stats.fit[i]
         stats.unc_minus[i] = perc[0] - stats.fit[i]
 
@@ -102,7 +103,7 @@ def print_summary(data, stats):
           ("#Param", "Knot", "Init", "Best", "Fit", "Unc+", "Unc-"))
     for i in range(data.nparsfit - 2):  # -2 for sigma multipliers
         print("%-11s  %6g  %5.2f %6.3f %6.3f %+6.3f %+6.3f" %
-              (data.param_names[i], data.knots1D[i], data.initvals[i],
+              (data.param_names[i], data.allknots[i], data.initvals[i],
                stats.best[i], stats.fit[i],
                stats.unc_plus[i], stats.unc_minus[i]))
 
@@ -340,9 +341,9 @@ def offset_plot(ax, data, stats, sigma_interp, offset_interp):
                 1.5 * data.offsetknots.max())
 
 
-def plot_results(data, stats, showglenn=False, showbeth=False,
-                 showoliver=False, showinit=False, euclidean=False,
-                 skipfirst=False):
+def make_plots(data, stats, showglenn=False, showbeth=False,
+               showoliver=False, showinit=False, euclidean=False,
+               skipfirst=False):
     """ Plot results of a fit"""
 
     import matplotlib
@@ -372,9 +373,8 @@ def plot_results(data, stats, showglenn=False, showbeth=False,
     gs.update(left=0.08, right=0.92, wspace=0.35)
 
     if is2D:
+        # 1D doesn't really need a supertitle
         f.suptitle("{0:s} vs. {1:s}".format(data.band1, data.band2))
-    else:
-        f.suptitle("{0:s}".format(data.band))
 
     ax1 = plt.subplot(gs[:, 0:2])
     band1_plot(ax1, data, stats, showglenn=showglenn, showbeth=showbeth,

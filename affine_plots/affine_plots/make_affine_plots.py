@@ -2,12 +2,10 @@
 
 from __future__ import print_function
 
-from plot_affine_results import *
-
 if __name__ == "__main__":
     import argparse
-    import plot_affine_results
-
+    from affine_plots import *
+    
     desc = """Plot and print the results of a P(D) fit"""
 
     parser = argparse.ArgumentParser(description=desc)
@@ -40,15 +38,16 @@ if __name__ == "__main__":
 
     print_summary(data, stats)
 
-    f = plot_results(data, stats, showglenn=parse_results.glenn,
-                     showbeth=parse_results.beth,
-                     showoliver=parse_results.oliver,
-                     showinit=parse_results.plotinit,
-                     euclidean=parse_results.euclidean,
-                     skipfirst=parse_results.skipfirst)
+    if not parse_results.noplot:
+      f = plot_results(data, stats, showglenn=parse_results.glenn,
+                       showbeth=parse_results.beth,
+                       showoliver=parse_results.oliver,
+                       showinit=parse_results.plotinit,
+                       euclidean=parse_results.euclidean,
+                       skipfirst=parse_results.skipfirst)
 
-    if parse_results.outfile is None:
-        outfile = os.path.splitext(parse_results.h5file)[0] + '.pdf'
-        f.savefig(outfile)
-    else:
-        f.savefig(outfile)
+      if parse_results.outfile is None:
+          outfile = os.path.splitext(parse_results.h5file)[0] + '.pdf'
+          f.savefig(outfile)
+      else:
+          f.savefig(outfile)
