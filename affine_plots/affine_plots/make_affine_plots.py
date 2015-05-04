@@ -16,8 +16,6 @@ if __name__ == "__main__":
                         default=5, help="Thinning")
     parser.add_argument('--beth', action='store_true', default=False,
                         help="Show Bethermin 2012 data")
-    parser.add_argument('--errorsnake', action='store_true', default=False,
-                        help="Plot full errorsnake instead of simplified")
     parser.add_argument('--euclidean', action='store_true', default=False,
                         help="Plot as euclidean normalized counts")
     parser.add_argument('--glenn', action='store_true', default=False,
@@ -47,8 +45,7 @@ if __name__ == "__main__":
                      showoliver=parse_results.oliver,
                      showinit=parse_results.plotinit,
                      euclidean=parse_results.euclidean,
-                     skipfirst=parse_results.skipfirst,
-                     simple_errorsnake = not parse_results.errorsnake)
+                     skipfirst=parse_results.skipfirst)
 
       if parse_results.outfile is None:
           outfile = os.path.splitext(parse_results.h5file)[0] + '.pdf'

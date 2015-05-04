@@ -10,6 +10,53 @@ from scipy.interpolate import interp1d
 __all__ = ["read_data", "get_stats", "print_summary", "make_plots"]
 
 
+class interpolator:
+    """ Wrapper around interp1d that handles edges correctly"""
+    def __init__(self, knotpos, knotval):
+        self._npos = len(knotpos)
+        self._pos = knotpos.copy()
+        self._val = knotval.copy()
+
+        if self._npos == 1:
+            self._interp = None
+            if not np.isscalar(self._val):
+                self._val = self._val[0]
+        elif self._npos == 2:
+            self._interp = interp1d(self._pos, self._val, kind='slinear')
+        elif self._npos == 3:
+            self._interp = interp1d(self._pos, self._val, kind='quadratic')
+        elif self._npos > 3:
+            self._interp = interp1d(self._pos, self._val, kind='cubic')
+        else:
+            raise ValueError("Not enough points")
+
+    def __call__(self, xvals):
+        if self._interp is None:
+            retvals = self._val * np.ones_like(xvals)
+        else:
+            retvals = np.empty_like(xvals)
+            leftpos = self._pos[0]
+            leftval = self._val[0]
+            rightpos = self._pos[-1]
+            rightval = self._val[-1]
+            for idx, x in enumerate(xvals):
+                if x < leftpos:
+                    retvals[idx] = leftval
+                elif x > rightpos:
+                    retvals[idx] = rightval
+                else:
+                    retvals[idx] = self._interp(x)
+
+        return retvals   
+
+def convert_to_f1f2(sigma, offset):
+    """ Convert from lognormal param space to f1 / f2"""
+
+    var_f1of2 = np.exp(2 * offset + sigma**2) * np.expm1(sigma**2)
+    mu_f1of2 = np.exp(offset + 0.5 * sigma**2)
+    return np.sqrt(var_f1of2), mu_f1of2
+    
+
 def find_bandname(h5filename):
     """ Tries to guess the band from h5file name.
 
@@ -93,46 +140,109 @@ def get_stats(data, thin=5, percentiles=[15.85, 84.15]):
 
     return stats
 
-def make_errorsnake_1D(data, nsamples=200, ninterp=100,
+def make_errorsnake_1D(data, nsamples=250, ninterp=100,
                        percentiles=[15.85, 84.15]):
     """ Makes 1D error snake using sampling.
 
     This may be a bit slow.
 
     This is split off from the offset, spline knots because it is 
-    a log-log spline, while the others are just log on the abcissa."""
+    a log spline on f, while the others are linear."""
 
     if ninterp <= 2:
         raise ValueError("Ninterp must be > 2")
     if nsamples <= 2:
         raise ValueError("Nsamples must be > 2")
 
-    interpvals_log = np.linspace(np.log10(data.knots1D[0]),
-                                 np.log10(data.knots1D[-1]),
+    logpos = np.log10(data.knots1D)
+    interpvals_log = np.linspace(logpos[0], logpos[-1],
                                  ninterp, dtype=np.float32)
 
     n1D = len(data.knots1D)
     n1 = data.steps.shape[0]
     n2 = data.steps.shape[1]
-    logpos = np.log10(data.knots1D)
+    
 
     # We unfortunately have to keep track of every intermediate element
     #  so that we can later percentile them
     errorsnake_vals = np.empty((nsamples, ninterp), dtype=np.float32)
-    
+
+    # Recall that the knot values are already logged
     for i in range(nsamples):
         idx1 = np.random.randint(0, n1)
         idx2 = np.random.randint(0, n2)
-        curr_interp = interp1d(logpos, np.log10(data.steps[idx1, idx2, 0:n1D]),
+        curr_interp = interp1d(logpos, data.steps[idx1, idx2, 0:n1D],
                                kind='cubic')
         errorsnake_vals[i, :] = curr_interp(interpvals_log)
 
     errorsnake_perc = np.percentile(errorsnake_vals,
                                     sorted(percentiles), axis=0)
-    errorsnake_m = 10.0**errorsnake_perc[0, :]
-    errorsnake_p = 10.0**errorsnake_perc[1, :]
         
-    return 10.0**interpvals_log, errorsnake_p, errorsnake_m
+    return 10.0**interpvals_log, errorsnake_perc[0, :], errorsnake_perc[1, :]
+
+
+def make_color_errorsnakes(data, nsamples=150, ninterp=60,
+                           percentiles=[15.85, 84.15]):
+    """ Makes color param error snakes for sigma and offset.
+
+    This may be a bit slow.
+
+    This is split off from the 1D model because it is 
+    a linear spline, while the 1D one is log on the flux density.
+    Furthermore, we do these together because the conversion from
+    model parameter space to physical space depends on both.
+    """
+
+    if ninterp <= 2:
+        raise ValueError("Ninterp must be > 2")
+    if nsamples <= 2:
+        raise ValueError("Nsamples must be > 2")
+
+    n1D = len(data.knots1D)
+    nsigma = len(data.sigmaknots)
+    noffset = len(data.offsetknots)
+    s_interpvals = np.logspace(np.log10(data.sigmaknots[0]),
+                               np.log10(data.sigmaknots[-1]),
+                               ninterp, dtype=np.float32)
+    o_interpvals = np.logspace(np.log10(data.offsetknots[0]),
+                               np.log10(data.offsetknots[-1]),
+                               ninterp, dtype=np.float32)
+
+    n1 = data.steps.shape[0]
+    n2 = data.steps.shape[1]
+
+    # We unfortunately have to keep track of every intermediate element
+    #  so that we can later percentile them
+    # These will be the values in -model- space (i.e., lognorm params)
+    sig_f1f2_vals = np.empty((nsamples, ninterp), dtype=np.float32)
+    mu_f1f2_vals = np.empty_like(sig_f1f2_vals)
+
+    lim1, lim2, lim3 = n1D, n1D + nsigma, n1D + nsigma + noffset
+    # Part of the fun here is that the sigma and offset can be
+    #  on different x scales.  So we have to do the interpolation twice
+    #  and store each.
+    for i in range(nsamples):
+        idx1 = np.random.randint(0, n1)
+        idx2 = np.random.randint(0, n2)
+        s_vals = data.steps[idx1, idx2, lim1:lim2]
+        s_interp = interpolator(data.sigmaknots, s_vals)
+        o_vals = data.steps[idx1, idx2, lim2:lim3]
+        o_interp = interpolator(data.offsetknots, o_vals)
+
+        # Sigma f1 / f2
+        s_vals = s_interp(s_interpvals)
+        o_vals = o_interp(s_interpvals)
+        sig_f1f2_vals[i, :] = convert_to_f1f2(s_vals, o_vals)[0]
+
+        # Now mu
+        s_vals = s_interp(o_interpvals)
+        o_vals = o_interp(o_interpvals)
+        mu_f1f2_vals[i, :] = convert_to_f1f2(s_vals, o_vals)[1]
+
+    sig_f1f2_perc = np.percentile(sig_f1f2_vals, sorted(percentiles), axis=0)
+    mu_f1f2_perc = np.percentile(mu_f1f2_vals, sorted(percentiles), axis=0)
+
+    return s_interpvals, sig_f1f2_perc, o_interpvals, mu_f1f2_perc
 
 
 def print_summary(data, stats):
@@ -183,7 +293,7 @@ def _other_helper(other, ax, ms, fmt, label):
 
 def band1_plot(ax, data, stats, showglenn=False, showbeth=False,
                showoliver=False, showinit=False, euclidean=False,
-               skipfirst=False, simple_errorsnake=True):
+               skipfirst=False):
     """ Does plot for 1D band model"""
     from pkg_resources import resource_filename
 
@@ -225,22 +335,7 @@ def band1_plot(ax, data, stats, showglenn=False, showbeth=False,
     plot_fvals = 10.0**plot_fvals_log
     plot_curve = fit_interp(plot_fvals_log)
 
-    # Construct the errorsnake; one way is just to plot to the
-    #  uncertainties.  The better -- but more expensive way -- is
-    #  to sample the curve and take the extrema
-    if simple_errorsnake:
-        fit_interp_plus = interp1d(np.log10(knots1Dplot),
-                                   fit1Dplot + unc_plus_plot,
-                                   kind='cubic')
-        fit_interp_minus = interp1d(np.log10(knots1Dplot),
-                                    fit1Dplot + unc_minus_plot,
-                                    kind='cubic')
-        errsnk_f = plot_fvals
-        errsnk_p = fit_interp_plus(plot_fvals_log)
-        errsnk_m = fit_interp_minus(plot_fvals_log)
-    else:
-        # The expensive way...
-        errsnk_f, errsnk_p, errsnk_m = make_errorsnake_1D(data)
+    errsnk_f, errsnk_p, errsnk_m = make_errorsnake_1D(data)
 
     if euclidean:
         fit1Dplot = euclideanize(knots1Dplot, fit1Dplot)
@@ -298,11 +393,10 @@ def band1_plot(ax, data, stats, showglenn=False, showbeth=False,
         ax.legend(fontsize='small')
 
 
-def sigma_plot(ax, data, stats, sigma_interp, offset_interp):
+def sigma_plot(ax, data, stats, sigma_interp, offset_interp,
+               snake=None):
     # This will be plotted in terms of the actual sigma in
     #  f2 / f1, not the parameter.
-
-    # TODO: Add error snake
 
     n1D = len(data.knots1D)
     nsigma = len(data.sigmaknots)
@@ -316,23 +410,23 @@ def sigma_plot(ax, data, stats, sigma_interp, offset_interp):
     # Convert from parameter to physical sigma
     # Note the uncertainty in mu is not being included, which is wrong
     # but is simpler
-    var = np.exp(2 * offset_interp(np.log10(data.sigmaknots)) +
-                 sigmavals**2) * (np.exp(sigmavals**2) - 1)
-    var_p = np.exp(2 * offset_interp(np.log10(data.sigmaknots)) +
-                   sigmavals_p**2) * (np.exp(sigmavals_p**2) - 1)
-    var_m = np.exp(2 * offset_interp(np.log10(data.sigmaknots)) +
-                   sigmavals_m**2) * (np.exp(sigmavals_m**2) - 1)
-
-    y = np.sqrt(var)
-    y_minus = y - np.sqrt(var_m)
-    y_plus = np.sqrt(var_p) - y
+    y = convert_to_f1f2(sigmavals, offset_interp(data.sigmaknots))[0]
+    y_m = convert_to_f1f2(sigmavals_m, offset_interp(data.sigmaknots))[0]
+    y_p = convert_to_f1f2(sigmavals_p, offset_interp(data.sigmaknots))[0]
 
     fiterr = np.empty((2, nsigma), dtype=np.float32)
-    fiterr[0, :] = y_minus
-    fiterr[1, :] = y_plus
+    fiterr[0, :] = y - y_m
+    fiterr[1, :] = y_p - y
     ax.plot(data.sigmaknots, y, 'r', alpha=0.3)
     ax.errorbar(data.sigmaknots, y, yerr=fiterr, fillstyle='full',
                 fmt='ro', alpha=0.7, label="This Fit")
+
+    # Add errorsnake if present
+    if snake is not None:
+        ax.fill_between(snake[0], snake[1][0, :], snake[1][1, :],
+                        facecolor='grey', alpha=0.5, lw=0, edgecolor='white')
+
+    
     ax.set_title("Sigma model")
     ax.set_xlabel("{0:s} Flux Density [Jy]".format(data.band1))
     ax.set_xscale('log')
@@ -341,7 +435,7 @@ def sigma_plot(ax, data, stats, sigma_interp, offset_interp):
                 1.5 * data.sigmaknots.max())
 
 
-def offset_plot(ax, data, stats, sigma_interp, offset_interp):
+def offset_plot(ax, data, stats, sigma_interp, offset_interp, snake=None):
     # This will be plotted in terms of the actual mean of f2/f1
     # rather than the model mu parameter.
 
@@ -354,28 +448,28 @@ def offset_plot(ax, data, stats, sigma_interp, offset_interp):
     idx1 = n1D + nsigma
     idx2 = idx1 + noffset
     offsetvals = stats.fit[idx1:idx2]
-    offsetvals_plus = offsetvals + stats.unc_plus[idx1:idx2]
-    offsetvals_minus = offsetvals + stats.unc_minus[idx1:idx2]
+    offsetvals_p = offsetvals + stats.unc_plus[idx1:idx2]
+    offsetvals_m = offsetvals + stats.unc_minus[idx1:idx2]
 
     # Convert from parameter to physical offset
     # Note the uncertainty in sigma is not being included, which is wrong
     # but is simpler
-    mn = np.exp(offsetvals +
-                0.5 * sigma_interp(np.log10(data.offsetknots))**2)
-    mn_plus = np.exp(offsetvals_plus +
-                     0.5 * sigma_interp(np.log10(data.offsetknots))**2)
-    mn_minus = np.exp(offsetvals_minus +
-                      0.5 * sigma_interp(np.log10(data.offsetknots))**2)
-
-    y_minus = mn - mn_minus
-    y_plus = mn_plus - mn
+    y = convert_to_f1f2(sigma_interp(data.offsetknots), offsetvals)[1]
+    y_m = convert_to_f1f2(sigma_interp(data.offsetknots), offsetvals_p)[1]
+    y_p = convert_to_f1f2(sigma_interp(data.offsetknots), offsetvals_m)[1]
 
     fiterr = np.empty((2, noffset), dtype=np.float32)
-    fiterr[0, :] = y_minus
-    fiterr[1, :] = y_plus
-    ax.plot(data.offsetknots, mn, 'r', alpha=0.3)
-    ax.errorbar(data.offsetknots, mn, yerr=fiterr, fillstyle='full',
+    fiterr[0, :] = y - y_m
+    fiterr[1, :] = y_p - y
+    ax.plot(data.offsetknots, y, 'r', alpha=0.3)
+    ax.errorbar(data.offsetknots, y, yerr=fiterr, fillstyle='full',
                 fmt='ro', alpha=0.7, label="This Fit")
+
+    # Add errorsnake if present
+    if snake is not None:
+        ax.fill_between(snake[0], snake[1][0, :], snake[1][1, :],
+                        facecolor='grey', alpha=0.5, lw=0, edgecolor='white')
+
     ax.set_title("Offset model")
     ax.set_xlabel("{0:s} Flux Density [Jy]".format(data.band1))
     ax.set_xscale('log')
@@ -384,8 +478,7 @@ def offset_plot(ax, data, stats, sigma_interp, offset_interp):
                 1.5 * data.offsetknots.max())
 
 
-def make_plots(data, stats, simple_errorsnake=True,
-               showglenn=False, showbeth=False, showoliver=False,
+def make_plots(data, stats, showglenn=False, showbeth=False, showoliver=False,
                showinit=False, euclidean=False, skipfirst=False):
     """ Plot results of a fit"""
 
@@ -422,8 +515,7 @@ def make_plots(data, stats, simple_errorsnake=True,
     ax1 = plt.subplot(gs[:, 0:2])
     band1_plot(ax1, data, stats, showglenn=showglenn, showbeth=showbeth,
                showoliver=showoliver, showinit=showinit,
-               euclidean=euclidean, skipfirst=skipfirst,
-               simple_errorsnake=simple_errorsnake)
+               euclidean=euclidean, skipfirst=skipfirst)
 
     # The sigma and offset are plotted as constraints on f2 / f1
     #  rather than the raw parameters.  That means we need
@@ -432,37 +524,28 @@ def make_plots(data, stats, simple_errorsnake=True,
     if do_sigmaplot or do_offsetplot:
         n1D = len(data.knots1D)
         nsigma = len(data.sigmaknots)
-        if nsigma > 1:
-            sigma_interp = interp1d(np.log10(data.sigmaknots),
-                                    stats.fit[n1D:(n1D+nsigma)],
-                                    bounds_error=False,
-                                    fill_value=stats.fit[n1D])
-        else:
-            # A small cheat -- just replicate the value
-            sknot = np.log10(data.sigmaknots[0])
-            sknotval = stats.fit[n1D]
-            sigma_interp = interp1d([sknot, sknot], [sknotval, sknotval],
-                                    bounds_error=False, fill_value=sknotval)
+        sigma_interp = interpolator(data.sigmaknots,
+                                    stats.fit[n1D:(n1D+nsigma)])
+
         noffset = len(data.offsetknots)
-        if noffset > 1:
-            offsetvals = stats.fit[(n1D+nsigma):(n1D+nsigma+noffset)]
-            offset_interp = interp1d(np.log10(data.offsetknots),
-                                     offsetvals, bounds_error=False,
-                                     fill_value=offsetvals[0])
+        lim1 = n1D + nsigma
+        lim2 = lim1 + noffset
+        offset_interp = interpolator(data.offsetknots,
+                                     stats.fit[lim1:lim2])
 
-        else:
-            oknot = np.log10(data.offsetknots[0])
-            oknotval = stats.fit[n1D + nsigma]
-            offset_interp = interp1d([oknot, oknot], [oknotval, oknotval],
-                                     bounds_error=False,
-                                     fill_value=oknotval)
-
+        # Get the errorsnake
+        clr_errsnake = make_color_errorsnakes(data)
+        sig_errsnake = (clr_errsnake[0], clr_errsnake[1])
+        mu_errsnake = (clr_errsnake[2], clr_errsnake[3])
+                                     
         if do_sigmaplot:
             ax2 = plt.subplot(gs[:, 2])
-            sigma_plot(ax2, data, stats, sigma_interp, offset_interp)
+            sigma_plot(ax2, data, stats, sigma_interp, offset_interp,
+                       sig_errsnake)
 
         if do_offsetplot:
             ax3 = plt.subplot(gs[:, 3 if do_sigmaplot else 2])
-            offset_plot(ax3, data, stats, sigma_interp, offset_interp)
+            offset_plot(ax3, data, stats, sigma_interp, offset_interp,
+                        mu_errsnake)
 
     return f
