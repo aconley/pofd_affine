@@ -834,9 +834,8 @@ unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
 
   // Step 3
   // Figure out the search index range from -n1signeg to +n1sigpos
-  unsigned int topidx = 
-    currsize - static_cast<unsigned int>(n1signeg / dflux) - 1;
-  unsigned int botidx = static_cast<unsigned int>(n1sigpos / dflux);
+  int topidx = currsize - static_cast<int>(n1signeg / dflux) - 1;
+  int botidx = static_cast<int>(n1sigpos / dflux);
   // Find minimum value
   unsigned int minidx;
   double minval;

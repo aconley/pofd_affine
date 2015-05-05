@@ -785,13 +785,14 @@ unsigned int PDFactory::findSplitPoint() const {
 
   // Step 3
   // Range we are searching
-  unsigned int botidx, topidx;
-  botidx = static_cast<unsigned int>(n1sigpos / dflux);
+  int botidx, topidx;
+  botidx = static_cast<int>(n1sigpos / dflux);
   if (n1sigpos > fabs(minflux_R))
     topidx = wrapRidx;
   else
     topidx =
-      static_cast<unsigned int>(-(n1signeg + minflux_R) / dflux + wrapRidx + 1);
+      static_cast<int>(-(n1signeg + minflux_R) / dflux +
+				wrapRidx + 1);
   if (botidx >= currsize) 
     throw affineExcept("PDFactory", "findSplitPoint",
 		       "Logic error; invalid botidx (wrapped) in split search");

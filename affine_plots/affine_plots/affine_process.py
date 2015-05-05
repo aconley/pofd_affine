@@ -12,6 +12,12 @@ __all__ = ["read_data", "get_stats", "print_summary", "make_plots"]
 
 class interpolator:
     """ Wrapper around interp1d that handles edges correctly"""
+
+    # An issue here is that none of the scipy splines actually
+    # match what we are using (GSL cspline).  However, it is clear
+    # from experimentation that the cubic spline from scipy is a lot
+    # more prone to wild excursions than the GSL one, so we stick
+    # to that
     def __init__(self, knotpos, knotval):
         self._npos = len(knotpos)
         self._pos = knotpos.copy()
@@ -23,10 +29,8 @@ class interpolator:
                 self._val = self._val[0]
         elif self._npos == 2:
             self._interp = interp1d(self._pos, self._val, kind='slinear')
-        elif self._npos == 3:
+        elif self._npos > 2:
             self._interp = interp1d(self._pos, self._val, kind='quadratic')
-        elif self._npos > 3:
-            self._interp = interp1d(self._pos, self._val, kind='cubic')
         else:
             raise ValueError("Not enough points")
 
@@ -66,6 +70,7 @@ def find_bandname(h5filename):
     import re
     regex = re.compile("P[SML]W", re.IGNORECASE)
     return [m.upper() for m in regex.findall(h5filename)][:2]
+
 
 def read_data(h5file):
     """ Read data from HDF5 file"""
@@ -230,18 +235,18 @@ def make_color_errorsnakes(data, nsamples=150, ninterp=60,
         o_interp = interpolator(data.offsetknots, o_vals)
 
         # Sigma f1 / f2
-        s_vals = s_interp(s_interpvals)
-        o_vals = o_interp(s_interpvals)
-        sig_f1f2_vals[i, :] = convert_to_f1f2(s_vals, o_vals)[0]
+        curr_s = s_interp(s_interpvals)
+        curr_o = o_interp(s_interpvals)
+        sig_f1f2_vals[i, :] = convert_to_f1f2(curr_s, curr_o)[0]
 
         # Now mu
-        s_vals = s_interp(o_interpvals)
-        o_vals = o_interp(o_interpvals)
-        mu_f1f2_vals[i, :] = convert_to_f1f2(s_vals, o_vals)[1]
+        curr_s = s_interp(o_interpvals)
+        curr_o = o_interp(o_interpvals)
+        mu_f1f2_vals[i, :] = convert_to_f1f2(curr_s, curr_o)[1]
 
     sig_f1f2_perc = np.percentile(sig_f1f2_vals, sorted(percentiles), axis=0)
     mu_f1f2_perc = np.percentile(mu_f1f2_vals, sorted(percentiles), axis=0)
-
+    
     return s_interpvals, sig_f1f2_perc, o_interpvals, mu_f1f2_perc
 
 
