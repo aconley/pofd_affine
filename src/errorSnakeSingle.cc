@@ -28,8 +28,7 @@ errorSnakeSingle::~errorSnakeSingle() {
   \param[in] logspace Logarithmically space the interpolant points
 */
 void errorSnakeSingle::build(const std::string& infile,
-			     unsigned int nsamples,
-			     bool logspace) {
+			     unsigned int nsamples, bool logspace) {
   if (nsamples < 1000)
     throw affineExcept("errorSnakeSingle", "build",
 		       "Number of samples too small to build all snakes");
@@ -56,18 +55,13 @@ void errorSnakeSingle::build(const std::string& infile,
   hsize_t datasize[3];
   hsize_t maxdatasize[3];
   H5Sget_simple_extent_dims(spaceid, datasize, maxdatasize);
-  unsigned int nwalkers = static_cast<int>(datasize[0]);
-  unsigned int nsteps = static_cast<int>(datasize[1]);
-  unsigned int nparams = static_cast<int>(datasize[2]);
+  unsigned int nwalkers = static_cast<unsigned int>(datasize[0]);
+  unsigned int nsteps = static_cast<unsigned int>(datasize[1]);
+  unsigned int nparams = static_cast<unsigned int>(datasize[2]);
 
-  // Allocate and read
-  float ***steps;
-  steps = new float**[nwalkers];
-  for (unsigned int i = 0; i < nwalkers; ++i) {
-    steps[i] = new float*[nsteps];
-    for (unsigned int j = 0; j < nsteps; ++j)
-      steps[i][j] = new float[nparams];
-  }
+  // Allocate and read. Flattened because HDF5 works with
+  //  flattened arrays
+  float *steps = new float[nwalkers * nsteps * nparams];
   H5Dread(stepsid, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
 	  H5P_DEFAULT, steps);
   H5Sclose(spaceid);
@@ -77,6 +71,7 @@ void errorSnakeSingle::build(const std::string& infile,
   // Set up flux densities
   double minflux = model.getMinFlux();
   double maxflux = model.getMaxFlux();
+  maxflux -= 1e-4 * (maxflux - minflux); // maxflux counts are 0, avoid
   if (logspace) {
     double log_minflux = log(minflux);
     double dflux = (log(maxflux) - log_minflux) /
@@ -103,15 +98,17 @@ void errorSnakeSingle::build(const std::string& infile,
   // Main evaluation loop
   unsigned int nknots = model.getNKnots();
   paramSet p(nknots);
-  unsigned int idx1, idx2;
+  unsigned int idx1, idx2, sidx;
   for (unsigned int i = 0; i < nsamples; ++i) {
     // Grab a random set of parameters
     idx1 = r.selectFromRange(0, nwalkers);
     idx2 = r.selectFromRange(0, nsteps);
-    p.setParamValues(nknots, steps[idx1][idx2]);
+    sidx = (idx1 * nsteps + idx2) * nparams;
+    p.setParamValues(nknots, &steps[sidx]);
     model.setParams(p);
+    // Convert to log10 so that in same units as params
     for (unsigned int j = 0; j < npoints; ++j)
-      working[j * nsamples + i] = model.getNumberCounts(s[j]);
+      working[j * nsamples + i] = log10(model.getNumberCounts(s[j]));    
   }
 
   // Build statistics at each point, linearly interpolating in
@@ -126,24 +123,20 @@ void errorSnakeSingle::build(const std::string& infile,
     wptr = working + j * nsamples;
     std::sort(wptr, wptr + nsamples);
     for (unsigned int k = 0; k < nprob; ++k) {
+      sidx = 2 * (k * npoints + j);
       // Lower value
       unsigned int idxl = static_cast<unsigned int>(lowidx[k]);
-      snake[2 * k * npoints] = wptr[idxl] + (wptr[idxl+1] - wptr[idxl]) *
+      snake[sidx] = wptr[idxl] + (wptr[idxl+1] - wptr[idxl]) *
 	(lowidx[k] - idxl);
       // And upper
       unsigned int idxu = static_cast<unsigned int>(highidx[k]);
-      snake[2 * k * npoints + 1] =
+      snake[sidx + 1] =
 	wptr[idxu] + (wptr[idxu+1] - wptr[idxu]) * (highidx[k] - idxu);
     }
   }
 
   // Clean up and go home
   delete[] working;
-  for (unsigned int i = 0; i < nwalkers; ++i) {
-    for (unsigned int j = 0; j < nsteps; ++j)
-      delete[] steps[i][j];
-    delete[] steps[i];
-  }
   delete[] steps;
   
 }
