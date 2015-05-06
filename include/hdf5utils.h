@@ -29,12 +29,18 @@ namespace hdf5utils {
   void writeAttStrings(hid_t, const std::string&, 
 		       const std::vector<std::string>&);
 
+  /*! \brief Read a single string as an attribute */
+  std::string readAttString(hid_t, const std::string&);
+  
   /*! \brief Write array of unsigned ints as attribute */
   void writeAttUnsignedInts(hid_t, const std::string&, unsigned int,
 			    const unsigned int* const);
   /*! \brief Write vector of unsigned ints as attribute */
   void writeAttUnsignedInts(hid_t, const std::string&, 
 			    const std::vector<unsigned int>&);
+  /*! \brief Read unsigned int attribute */
+  unsigned int readAttUInt(hid_t objid, const std::string& name);
+
   /*! \brief Write array of ints as attribute */
   void writeAttInts(hid_t, const std::string&, unsigned int,
 		    const int* const);
@@ -96,12 +102,18 @@ namespace hdf5utils {
   /*! \brief Write vector of floats as data */
   void writeDataFloats(hid_t, const std::string&,
 		       const std::vector<float>&);
+  /*! \brief Read 1D array of floats as data */
+  void readDataFloats(hid_t, const std::string&, unsigned int, float* const);
+  
   /*! \brief Write 1D array of doubles as data */
   void writeDataDoubles(hid_t, const std::string&, unsigned int,
 			const double* const);
   /*! \brief Write vector of doubles as data */
   void writeDataDoubles(hid_t, const std::string&,
 			const std::vector<double>&);
+  /*! \brief Read 1D array of doubles as data */
+  void readDataDoubles(hid_t, const std::string&, unsigned int,
+		       double* const);
   
   // 2D
   /*! \brief Write 2D array of floats as data */

@@ -1,5 +1,6 @@
 // Utilities for writing things to HDF5 handles
 #include<algorithm>
+#include<sstream>
 
 #include "../include/hdf5utils.h"
 #include "../include/affineExcept.h"
@@ -37,6 +38,30 @@ hdf5utils::outfiletype hdf5utils::getOutputFileType(const std::string& str) {
 // doesn't quite work because the HDF5 interface isn't quite that
 // consistent
 
+
+/*!
+  \param[in] objid HDF5 handle to read from
+  \param[in] name Name of attribute to read
+  \returns Value read
+*/
+unsigned int hdf5utils::readAttUInt(hid_t objid, const std::string& name) {
+  
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("hdf5utils", "readAttUint",
+		       "Input handle is not valid when writing " + name);
+
+  hsize_t adims;
+  hid_t att_id;
+  unsigned int val;
+  
+  adims = 1;
+  att_id = H5Aopen(objid, name.c_str(), H5P_DEFAULT);
+  H5Aread(att_id, H5T_NATIVE_UINT, &val);
+  H5Aclose(att_id);
+  return val;
+}
+
+
 /*!
   \param[in] objid HDF5 handle to write to
   \param[in] name Name of attribute to write
@@ -65,7 +90,37 @@ void hdf5utils::writeAttString(hid_t objid, const std::string& name,
   H5Awrite(att_id, datatype, &ctmp);
   H5Aclose(att_id);
   H5Sclose(mems_id);
+  H5Tclose(datatype);
 }
+
+/*!
+  \param[in] objid HDF5 handle to read from
+  \param[in] name Name of attribute to read
+  \returns Value read
+*/
+std::string hdf5utils::readAttString(hid_t objid, const std::string& name) {
+  
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("hdf5utils", "readAttString",
+		       "Input handle is not valid when writing " + name);
+
+  // String datatype
+  hid_t datatype = H5Tcopy(H5T_C_S1);
+  H5Tset_size(datatype, H5T_VARIABLE);
+
+  hsize_t adims;
+  hid_t att_id;
+
+  char *ctmp = nullptr;
+
+  adims = 1;
+  att_id = H5Aopen(objid, name.c_str(), H5P_DEFAULT);
+  H5Aread(att_id, datatype, &ctmp);
+  H5Aclose(att_id);
+  H5Tclose(datatype);  
+  return std::string(ctmp);
+}
+
 
 /*!
   \param[in] objid HDF5 handle to write to
@@ -141,6 +196,7 @@ void hdf5utils::writeAttStrings(hid_t objid, const std::string& name,
   H5Awrite(att_id, datatype, ctmp);
   H5Aclose(att_id);
   H5Sclose(mems_id);
+  H5Tclose(datatype);
   delete[] ctmp;
 }
 
@@ -839,6 +895,48 @@ void hdf5utils::writeDataFloats(hid_t objid, const std::string& name,
   delete[] v;
 }
 
+/*!
+  \param[in] objid HDF5 handle to read from
+  \param[in] name Name of data to read
+  \param[in] n Number of elements in value
+  \param[in] value Value to read into; must be preallocated of size n
+*/
+void hdf5utils::readDataFloats(hid_t objid, const std::string& name, 
+			       unsigned int n, float* const value) {
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("hdf5utils", "readDataFloats",
+		       "Input handle is not valid when reading " + name);
+
+  hid_t dat_id, space_id;
+
+  dat_id = H5Dopen(objid, name.c_str(), H5P_DEFAULT);
+  space_id = H5Dget_space(dat_id);
+
+  // Check dimensions
+  int ndims = H5Sget_simple_extent_ndims(space_id);
+  if (ndims != 1) {
+    H5Dclose(dat_id);
+    H5Sclose(space_id);
+    throw affineExcept("hdf5utils", "readDataFloats",
+		       "Input data set was not 1D");
+  }
+  hsize_t ndata[1], maxndata[1];
+  H5Sget_simple_extent_dims(space_id, ndata, maxndata);
+  if (ndata[0] != n) {
+    H5Dclose(dat_id);
+    H5Sclose(space_id);
+    std::stringstream errstr;
+    errstr << "Input data size unexpected: wanted " << n << " got "
+	   << ndata[0];
+    throw affineExcept("hdf5utils", "readDataFloats", errstr.str());
+  }
+
+  H5Dread(dat_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
+	  H5P_DEFAULT, value);
+  
+  H5Sclose(space_id);
+  H5Dclose(dat_id);
+}
 
 /*!
   \param[in] objid HDF5 handle to write to
@@ -899,6 +997,50 @@ void hdf5utils::writeDataDoubles(hid_t objid, const std::string& name,
   H5Sclose(mems_id);
   delete[] v;
 }
+
+/*!
+  \param[in] objid HDF5 handle to read from
+  \param[in] name Name of data to read
+  \param[in] n Number of elements in value
+  \param[in] value Value to read into; must be preallocated of size n
+*/
+void hdf5utils::readDataDoubles(hid_t objid, const std::string& name, 
+				unsigned int n, double* const value) {
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("hdf5utils", "readDataDoubles",
+		       "Input handle is not valid when reading " + name);
+
+  hid_t dat_id, space_id;
+
+  dat_id = H5Dopen(objid, name.c_str(), H5P_DEFAULT);
+  space_id = H5Dget_space(dat_id);
+
+  // Check dimensions
+  int ndims = H5Sget_simple_extent_ndims(space_id);
+  if (ndims != 1) {
+    H5Dclose(dat_id);
+    H5Sclose(space_id);
+    throw affineExcept("hdf5utils", "readDataDoubles",
+		       "Input data set was not 1D");
+  }
+  hsize_t ndata[1], maxndata[1];
+  H5Sget_simple_extent_dims(space_id, ndata, maxndata);
+  if (ndata[0] != n) {
+    H5Dclose(dat_id);
+    H5Sclose(space_id);
+    std::stringstream errstr;
+    errstr << "Input data size unexpected: wanted " << n << " got "
+	   << ndata[0];
+    throw affineExcept("hdf5utils", "readDataDoubles", errstr.str());
+  }
+
+  H5Dread(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
+	  H5P_DEFAULT, value);
+  
+  H5Sclose(space_id);
+  H5Dclose(dat_id);
+}
+
 
 /*!
   \param[in] objid HDF5 handle to write to
