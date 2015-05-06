@@ -73,7 +73,7 @@ int getErrorSnakeSingle(int argc, char **argv) {
   // Actual computation
   try {
     errorSnakeSingle errsnk(nflux);
-    errsnk.build(infile, nsamples, false);
+    errsnk.build(infile, nsamples, true);
     errsnk.writeAsHDF5(outputfile);
   } catch (const affineExcept& ex) {
     std::cerr << "Error encountered" << std::endl;
