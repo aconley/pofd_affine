@@ -44,6 +44,7 @@ pofd_affine_getR
 pofd_affine_getLike
 pofd_affine_getdNdS
 pofd_affine_mcmc
+pofd_affine_errorsnake
 libpd.la
 initFile_test
 specFile_test

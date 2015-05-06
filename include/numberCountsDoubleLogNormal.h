@@ -220,9 +220,9 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   void getParams(paramSet&) const override; //!< Get parameters
   void setParams(const paramSet&) override; //!< Set parameters
  
-  /*! \brief Evaluates Sigma */
+  /*! \brief Evaluates Sigma at specified value of S_1 */
   double getSigma(double) const;
-  /*! \brief Evaluates Offset */
+  /*! \brief Evaluates Offset at specified value of S_1 */
   double getOffset(double) const;
   
   /*! \brief Evaluates number counts model */

@@ -81,6 +81,8 @@ class numberCountsKnots : public numberCounts {
   virtual void writeToHDF5Handle(hid_t objid, bool=false) const; //!< Output to HDF5
   virtual bool writeToStream(std::ostream& os) const; //<! Output to stream
 
+  virtual void readFromHDF5Handle(hid_t); //!< Read from HDF5
+  
   virtual void sendSelf(MPI_Comm, int dest) const; //!< Send self
   virtual void receiveCopy(MPI_Comm, int src); //!< Receive
 };

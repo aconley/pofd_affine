@@ -67,6 +67,7 @@ class numberCountsKnotsSpline : public numberCountsKnots {
   double differenceRegularize(double) const override; //!< Tikhonov regularization log Likelihood penalty
 
   void writeToHDF5Handle(hid_t, bool=false) const override; //!< Write to HDF5 handle
+  void readFromHDF5Handle(hid_t) override; //!< Read from HDF5 Handle
 
   virtual void sendSelf(MPI_Comm, int dest) const override; //!< Send self
   virtual void receiveCopy(MPI_Comm, int src) override; //!< Receive

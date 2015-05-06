@@ -455,6 +455,30 @@ void numberCountsKnots::writeToHDF5Handle(hid_t objid, bool writevals) const {
   }
 }
 
+
+/*!
+  \param[in] objid HDF5 handle to read from
+
+  Initializes a model from an HDF5 file, setting the knot positions
+  but not values.
+*/
+void numberCountsKnots::readFromHDF5Handle(hid_t objid) {
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("numberCountsKnots", "readFromHDF5Handle",
+		       "Input handle is not valid");
+
+  unsigned int f_nknots = hdf5utils::readAttUInt(objid, "NKnots");
+  setNKnots(f_nknots);
+  if (f_nknots > 0) {
+    // We could read directly into knots, but that could be a problem
+    // for subclasses, which might want to do extra work.
+    double *newknots = new double[nknots];
+    hdf5utils::readDataDoubles(objid, "KnotPositions", nknots, newknots);
+    setKnotPositions(nknots, newknots);
+    delete[] newknots;
+  }
+}
+
 /*!
   \param[inout] os Stream to write to
 */
@@ -467,8 +491,15 @@ bool numberCountsKnots::writeToStream(std::ostream& os) const {
     for (unsigned int i = 0; i < nknots; ++i)
       os << " " << std::left << std::setw(13) << knots[i] << "  "
 	 << std::setw(13) << pofd_mcmc::ilogfac * logknotvals[i] << std::endl; 
-  } else
+  } else {
     os << "Number of knots: " << nknots << std::endl;
+    if (nknots > 0) {
+      os << "Knot positions: " << knots[0];
+      for (unsigned int i = 1; i < nknots; ++i)
+	os << " " << knots[i];
+      os << std::endl;
+    }
+  }
   return true;
 }
 

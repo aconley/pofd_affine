@@ -578,6 +578,30 @@ void numberCountsKnotsSpline::writeToHDF5Handle(hid_t objid,
 }
 
 /*!
+  \param[in] objid HDF5 handle to read from
+
+  Initializes a model from an HDF5 file, setting the knot positions
+  but not values.  Checks to make sure the model type is correct
+*/
+void numberCountsKnotsSpline::readFromHDF5Handle(hid_t objid) {
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("numberCountsKnotsSpline", "readFromHDF5Handle",
+		       "Input handle is not valid");
+
+  std::string mtype = hdf5utils::readAttString(objid, "ModelType");
+  if (mtype != "numberCountsKnotsSpline") {
+    std::stringstream errstr;
+    errstr << "Unexpected model type; wanted numberCountsKnotsSpline"
+	   << " got " << mtype;
+    throw affineExcept("numberCountsKnotsSpline", "readFromHDF5Handle",
+		       errstr.str());
+  }
+
+  numberCountsKnots::readFromHDF5Handle(objid);
+}
+
+
+/*!
   \param[in] comm Communicator
   \param[in] dest Destination of messages
 */
