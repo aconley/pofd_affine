@@ -31,7 +31,9 @@ namespace hdf5utils {
 
   /*! \brief Read a single string as an attribute */
   std::string readAttString(hid_t, const std::string&);
-  
+  /*! \brief Read array of strings as an attribute */
+  std::vector<std::string> readAttStrings(hid_t, const std::string&);
+
   /*! \brief Write array of unsigned ints as attribute */
   void writeAttUnsignedInts(hid_t, const std::string&, unsigned int,
 			    const unsigned int* const);
