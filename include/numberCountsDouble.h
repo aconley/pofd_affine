@@ -75,6 +75,8 @@ class numberCountsDouble {
   virtual double differenceRegularize(double) const { return 0.0; } //!< Tikhonov regularization log Likelihood penalty
 
   virtual void writeToHDF5Handle(hid_t, bool=false) const=0; //!< Write to HDF5 handle
+  virtual void readFromHDF5Handle(hid_t) = 0; //!< Read from HDF5 Handle
+
   virtual bool writeToStream(std::ostream& os) const=0; //!< Output to stream
 };
 

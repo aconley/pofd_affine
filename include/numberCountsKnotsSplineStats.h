@@ -1,9 +1,7 @@
 #ifndef __numberCountsKnotsSplineError__
 #define __numberCountsKnotsSplineError__
 
-#include<string>
-#include<iostream>
-
+#include "../include/statsAccumulator.h"
 #include "../include/numberCountsKnotsSpline.h"
 
 /*!
@@ -18,7 +16,7 @@
 
   \ingroup models
 */
-class numberCountsKnotsSplineError final {
+class numberCountsKnotsSplineStats final : public statsAccumulator {
 private:
   static const unsigned int nprob = 3;
   const float plevels[nprob] = {0.683, 0.954, 0.997};
@@ -47,8 +45,8 @@ private:
 
   mutable numberCountsKnotsSpline model; //!< For doing interpolation
 public:
-  numberCountsKnotsSplineError(unsigned int);
-  ~numberCountsKnotsSplineError();
+  numberCountsKnotsSplineStats(unsigned int);
+  ~numberCountsKnotsSplineStats();
 
   // Main processing function
   void build(const std::string&, unsigned int=5, bool=true);

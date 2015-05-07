@@ -739,15 +739,16 @@ void numberCountsDoubleLogNormal::setSigmaPositions(unsigned int n,
   setNSigmas(n); //Invalidates
   for (unsigned int i = 0; i < n; ++i)
     if (S[i] <= 0.0)
-      throw affineExcept("numberCountsDoubleLogNormal", "setKnots",
-			 "Non-positive sigma knot positions not allowed");
+      throw affineExcept("numberCountsDoubleLogNormal", 
+                         "setSigmaPositions",
+			                   "Non-positive sigma knot positions not allowed");
   for (unsigned int i = 1; i < nsigmaknots; ++i)
     if (S[i] <= S[i-1]) {
       std::stringstream errstr;
       errstr << "Sigma positions not monotonically increasing: S[" << i-1 
 	     << "]=" << S[i-1] << " S[" << i <<"]=" << S[i] << std::endl;
-      throw affineExcept("numberCountsDoubleLogNormal", "setSigmaPositions",
-			 errstr.str());
+      throw affineExcept("numberCountsDoubleLogNormal", 
+                         "setSigmaPositions", errstr.str());
     }
   for (unsigned int i = 0; i < n; ++i)
     sigmaknots[i] = static_cast<double>(S[i]);
@@ -1655,7 +1656,7 @@ getFluxPowerPerArea(double p1, double p2) const {
   \returns R 
 */
 double numberCountsDoubleLogNormal::getR(double f1, double f2,
-					 const doublebeam& bm) const {
+                                         const doublebeam& bm) const {
   
   // Validity
   if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
@@ -1896,86 +1897,86 @@ void numberCountsDoubleLogNormal::getR(unsigned int n1, const double* const f1,
       // Skip stuff out of range; note we set RWork[:, 0] to 0 below
       //  in the else, which we use to mark values to skip
       if (curr_n > 0 && f1val < maxf1[sgn]) {
-	iparr1 = ibmptr1[sgn]; // Band 1 beam pixel array pointer
-	plogratio = logratioptr[sgn]; // log (beam1 / beam2) pointer
-	// &RWork[k * np, 0] -- piece of RWork for this sign
-	RWptr = RWork + k * np * 3; 
-	if (ishist[sgn]) {
-	  // With beam hist
-	  wptr = wtptr[sgn];
-	  //Loop over beam pixels in band 1
-	  for (unsigned int j = 0; j < curr_n; ++j) { 
-	    ieta1 = iparr1[j];
-	    f1prod = f1val * ieta1;
-	    // cRW will be the RWork piece for this sign and beam pixel
-	    cRW = RWptr + 3 * j; 
-	    if (f1prod >= minknot && f1prod < maxknot) {
-	      // Band 1 number counts
-	      cts = exp2(gsl_spline_eval(splinelog, log2(f1prod), acc));
-	      if (cts > 0) {
-		// Pieces we can pre-compute
-		isigma = 1.0 / getSigmaInner(f1prod);
-		cRW[0] = wptr[j] * ieta1 * isigma * cts * prefac;
-		cRW[1] = logf1val + getOffsetInner(f1prod) - plogratio[j];
-		cRW[2] = -0.5 * isigma * isigma * pofd_mcmc::ilog2toe;
-	      } else cRW[0] = 0; // Mark as no-use
-	    } else cRW[0] = 0; // Same
-	  }
-	} else {
-	  // No beam hist; same basic plan, but no weights
-	  for (unsigned int j = 0; j < curr_n; ++j) {
-	    ieta1 = iparr1[j];
-	    f1prod = f1val * ieta1;
-	    cRW = RWptr + 3*j;
-	    if (f1prod >= minknot && f1prod < maxknot) {
-	      cts = exp2(gsl_spline_eval(splinelog, log2(f1prod), acc));
-	      if (cts > 0) {
-		isigma = 1.0 / getSigmaInner(f1prod);
-		cRW[0] = cts * ieta1 * isigma * prefac;
-		cRW[1] = logf1val + getOffsetInner(f1prod) - plogratio[j];
-		cRW[2] = -0.5 * isigma * isigma * pofd_mcmc::ilog2toe;
-	      } else cRW[0] = 0;
-	    } else cRW[0] = 0;
-	  }
-	}
-      } else {
-	// Zero out Rwork[:,0] to mark as not valid, but only the
-	//  part for this sign component
-	unsigned int minidx = (k == 0) ? 0 : np;
-	unsigned int maxidx = (k == 0) ? np : (np+nn);
-	for (unsigned int j = minidx; j < maxidx; ++j)
-	  RWork[3 * j] = 0.0;
+          iparr1 = ibmptr1[sgn]; // Band 1 beam pixel array pointer
+	        plogratio = logratioptr[sgn]; // log (beam1 / beam2) pointer
+	        // &RWork[k * np, 0] -- piece of RWork for this sign
+	        RWptr = RWork + k * np * 3; 
+	        if (ishist[sgn]) {
+	          // With beam hist
+	          wptr = wtptr[sgn];
+	          //Loop over beam pixels in band 1
+	          for (unsigned int j = 0; j < curr_n; ++j) { 
+	            ieta1 = iparr1[j];
+	            f1prod = f1val * ieta1;
+	            // cRW will be the RWork piece for this sign and beam pixel
+	            cRW = RWptr + 3 * j; 
+	            if (f1prod >= minknot && f1prod < maxknot) {
+	              // Band 1 number counts
+	              cts = exp2(gsl_spline_eval(splinelog, log2(f1prod), acc));
+	              if (cts > 0) {
+		              // Pieces we can pre-compute
+		              isigma = 1.0 / getSigmaInner(f1prod);
+		              cRW[0] = wptr[j] * ieta1 * isigma * cts * prefac;
+		              cRW[1] = logf1val + getOffsetInner(f1prod) - plogratio[j];
+		              cRW[2] = -0.5 * isigma * isigma * pofd_mcmc::ilog2toe;
+	              } else cRW[0] = 0; // Mark as no-use
+	            } else cRW[0] = 0; // Same
+	          }
+	        } else {
+	          // No beam hist; same basic plan, but no weights
+	          for (unsigned int j = 0; j < curr_n; ++j) {
+	            ieta1 = iparr1[j];
+	            f1prod = f1val * ieta1;
+	            cRW = RWptr + 3*j;
+	            if (f1prod >= minknot && f1prod < maxknot) {
+	              cts = exp2(gsl_spline_eval(splinelog, log2(f1prod), acc));
+	              if (cts > 0) {
+		              isigma = 1.0 / getSigmaInner(f1prod);
+		              cRW[0] = cts * ieta1 * isigma * prefac;
+		              cRW[1] = logf1val + getOffsetInner(f1prod) - plogratio[j];
+		              cRW[2] = -0.5 * isigma * isigma * pofd_mcmc::ilog2toe;
+	              } else cRW[0] = 0;
+	            } else cRW[0] = 0;
+	          }
+	        }
+        } else {
+	        // Zero out Rwork[:,0] to mark as not valid, but only the
+	        //  part for this sign component
+	        unsigned int minidx = (k == 0) ? 0 : np;
+	        unsigned int maxidx = (k == 0) ? np : (np+nn);
+	        for (unsigned int j = minidx; j < maxidx; ++j)
+            RWork[3 * j] = 0.0;
+        }
       }
-    }
 
-    // Now that we have pre-computed all the things that only
-    //  depend on the flux in band 1, do the band 2 loop, writing
-    //  the final values into R.
-    rowptr = R + i * n2; // row pointer into R
-    double cRW0;
-    for (unsigned int j = 0; j < n2; ++j) {
-      if2val = f2work_inv[j]; 
-      // Testing on this is -much- faster, oddly, than testing on sgn
-      if (if2val == 0) continue; // f2 = 0, R will be 0
+      // Now that we have pre-computed all the things that only
+      //  depend on the flux in band 1, do the band 2 loop, writing
+      //  the final values into R.
+      rowptr = R + i * n2; // row pointer into R
+      double cRW0;
+      for (unsigned int j = 0; j < n2; ++j) {
+        if2val = f2work_inv[j]; 
+        // Testing on this is -much- faster, oddly, than testing on sgn
+        if (if2val == 0) continue; // f2 = 0, R will be 0
 
-      // sgn will be pp, pn, np, nn component
-      f2sgn = f2work_sgn[j];
-      sgn = sgn1 + f2sgn; // Recall sgn1 is from f1
+        // sgn will be pp, pn, np, nn component
+        f2sgn = f2work_sgn[j];
+        sgn = sgn1 + f2sgn; // Recall sgn1 is from f1
 
-      if (hassign[sgn]) {
-	workval = 0;
-	curr_n = npsf[sgn];
-	RWptr = RWork + f2sgn * np * 3; //&RWork[sgnoff*sgnbreak, 0]
-	logf2val = f2work_log[j];
-	for (unsigned int k = 0; k < curr_n; ++k) {
-	  cRW = RWptr + k * 3; //&RWork[sgnoff*sgnbreak + k, 0]
-	  cRW0 = cRW[0]; //RWork[sgnoff*sgnbreak + k, 0]
-	  if (cRW0 != 0) {
-	    tfac = logf2val - cRW[1];
-	    workval += cRW0 * exp2(tfac * tfac * cRW[2]);
-	  }
-	}
-	rowptr[j] = workval * f2work_inv[j];
+        if (hassign[sgn]) {
+	        workval = 0;
+	        curr_n = npsf[sgn];
+	        RWptr = RWork + f2sgn * np * 3; //&RWork[sgnoff*sgnbreak, 0]
+	        logf2val = f2work_log[j];
+	        for (unsigned int k = 0; k < curr_n; ++k) {
+	          cRW = RWptr + k * 3; //&RWork[sgnoff*sgnbreak + k, 0]
+	          cRW0 = cRW[0]; //RWork[sgnoff*sgnbreak + k, 0]
+	          if (cRW0 != 0) {
+	          tfac = logf2val - cRW[1];
+	          workval += cRW0 * exp2(tfac * tfac * cRW[2]);
+	        }
+	      }
+	      rowptr[j] = workval * f2work_inv[j];
       } // Recall that R was zeroed
     } // End loop over RFlux2
   } // End loop over RFlux1
@@ -2207,6 +2208,57 @@ void numberCountsDoubleLogNormal::writeToHDF5Handle(hid_t objid,
   if (writevals && offsetvals_loaded)
     hdf5utils::writeDataDoubles(objid, "OffsetKnotValues", noffsetknots,
 				offsetvals);
+}
+
+/*!
+  \param[in] objid HDF5 handle to read from
+
+  Initializes a model from an HDF5 file, setting the knot positions
+  but not values.  Checks to make sure the model type is correct
+*/
+void numberCountsDoubleLogNormal::readFromHDF5Handle(hid_t objid) {
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("numberCountsDoubleLogNormal", 
+                       "readFromHDF5Handle",
+                       "Input handle is not valid");
+
+  std::string mtype = hdf5utils::readAttString(objid, "ModelType");
+  if (mtype != "numberCountsDoubleLogNormal") {
+    std::stringstream errstr;
+    errstr << "Unexpected model type; wanted numberCountsDoubleLogNormal"
+           << " got " << mtype;
+    throw affineExcept("numberCountsDoubleLogNormal", 
+                       "readFromHDF5Handle", errstr.str());
+  }
+
+  unsigned int f_nknots = hdf5utils::readAttUInt(objid, "NKnots");
+  setNKnots(f_nknots);
+  if (f_nknots > 0) {
+    // We could read directly into knots, but that could be a problem
+    // for subclasses, which might want to do extra work.
+    double *newknots = new double[f_nknots];
+    hdf5utils::readDataDoubles(objid, "KnotPositions", f_nknots, newknots);
+    setKnotPositions(f_nknots, newknots);
+    delete[] newknots;
+  }
+  f_nknots = hdf5utils::readAttUInt(objid, "NSigmaKnots");
+  setNSigmas(f_nknots);
+  if (f_nknots > 0) {
+    double *newknots = new double[f_nknots];
+    hdf5utils::readDataDoubles(objid, "SigmaKnotPositions", 
+                               f_nknots, newknots);
+    setSigmaPositions(f_nknots, newknots);
+    delete[] newknots;
+  }
+  f_nknots = hdf5utils::readAttUInt(objid, "NOffsetKnots");
+  setNOffsets(f_nknots);
+  if (f_nknots > 0) {
+    double *newknots = new double[f_nknots];
+    hdf5utils::readDataDoubles(objid, "OffsetKnotPositions", 
+                               f_nknots, newknots);
+    setOffsetPositions(f_nknots, newknots);
+    delete[] newknots;
+  }
 }
 
 /*!
@@ -3204,7 +3256,6 @@ void initFileDoubleLogNormal::writeToHDF5Handle(hid_t objid) const {
     }
   }
 }
-
 
 /*!
   \param[in] comm MPI communication handle

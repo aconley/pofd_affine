@@ -8,7 +8,8 @@ libpd_la_SOURCES = utility.cc numberCounts.cc numberCountsKnots.cc \
 	numberCountsDoubleLogNormal.cc doublebeam.cc PD.cc PDDouble.cc \
 	PDFactory.cc PDFactoryDouble.cc fitsData.cc fitsDataDouble.cc \
 	calcLike.cc calcLikeDouble.cc specFile.cc specFileDouble.cc \
-	numberCountsKnotsSplineError.cc
+	statsAccumulator.cc numberCountsKnotsSplineStats.cc \
+        numberCountsDoubleLogNormalStats.cc
 libpd_la_LIBADD = libaffine.la
 
 bin_PROGRAMS = pofd_affine_getdNdS pofd_affine_getR pofd_affine_getPD \

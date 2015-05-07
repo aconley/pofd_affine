@@ -259,6 +259,7 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
 
   void writeToHDF5Handle(hid_t, bool=false) const override; //!< Write to HDF5 handle
   bool writeToStream(std::ostream& os) const override; //<! Output to stream
+  void readFromHDF5Handle(hid_t) override; //!< Read from HDF5 Handle
   
   void sendSelf(MPI_Comm, int dest) const; //!< Send self
   void receiveCopy(MPI_Comm, int src); //!< Receive

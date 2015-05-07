@@ -1,8 +1,7 @@
-#include<ctime>
 #include<sstream>
 #include<iomanip>
 
-#include "../include/numberCountsKnotsSplineError.h"
+#include "../include/numberCountsKnotsSplineStats.h"
 #include "../include/affineExcept.h"
 #include "../include/paramSet.h"
 #include "../include/hdf5utils.h"
@@ -10,8 +9,8 @@
 /*!
   \param[in] npoints  Number of flux density points
 */
-numberCountsKnotsSplineError::
-numberCountsKnotsSplineError(unsigned int NPOINTS):
+numberCountsKnotsSplineStats::
+numberCountsKnotsSplineStats(unsigned int NPOINTS):
   nparams(0), nknots(0), knotPositions(nullptr), 
   bestParams(nullptr), meanParams(nullptr), 
   medParams(nullptr), uncertaintyParams(nullptr), 
@@ -22,7 +21,7 @@ numberCountsKnotsSplineError(unsigned int NPOINTS):
   snake = new float[2 * nprob * npoints];
 }
 
-numberCountsKnotsSplineError::~numberCountsKnotsSplineError() {
+numberCountsKnotsSplineStats::~numberCountsKnotsSplineStats() {
   if (knotPositions != nullptr) delete[] knotPositions;
   if (bestParams != nullptr) delete[] bestParams;
   if (meanParams != nullptr) delete[] meanParams;
@@ -37,7 +36,7 @@ numberCountsKnotsSplineError::~numberCountsKnotsSplineError() {
 /*!
   \param[in] n New number of parameters
 */
-void numberCountsKnotsSplineError::setNParams(unsigned int n) {
+void numberCountsKnotsSplineStats::setNParams(unsigned int n) {
   if (n == nparams) return;
   if (bestParams != nullptr) delete[] bestParams;
   bestParams = new float[n];
@@ -55,7 +54,7 @@ void numberCountsKnotsSplineError::setNParams(unsigned int n) {
   \param[in] thin Thinning to use on inputs
   \param[in] logspace Logarithmically space the interpolant points
 */
-void numberCountsKnotsSplineError::build(const std::string& infile,
+void numberCountsKnotsSplineStats::build(const std::string& infile,
                                          unsigned int thin, bool logspace) {
 
   hid_t fileid = H5Fopen(infile.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
@@ -81,7 +80,7 @@ void numberCountsKnotsSplineError::build(const std::string& infile,
     H5Sclose(spaceid);
     H5Dclose(stepsid);
     H5Fclose(fileid);
-    throw affineExcept("numberCountsKnotsSplineError", "build",
+    throw affineExcept("numberCountsKnotsSplineStats", "build",
 		                   "Chains of unexpected dimensionality");
   }
   hsize_t datasize[3];
@@ -142,50 +141,10 @@ void numberCountsKnotsSplineError::build(const std::string& infile,
       working[j * nsamples + i] = steps[sidx + j];
   }
 
-  // Do statistics
-  // We will interpolate to get the ranges.  So it's convenient
-  //  to pre-calculate the effective index in nsamples after we sort.
-  float lowidx[nprob], highidx[nprob]; // Fractional index of interpolation
-  for (unsigned int i = 0; i < nprob; ++i)
-    lowidx[i] = 0.5 * (1.0 - plevels[i]) * nsamples;
-  for (unsigned int i = 0; i < nprob; ++i)
-    highidx[i] = 0.5 * (1 + plevels[i]) * nsamples;
-  
-  float *wptr;
-  for (unsigned int j = 0; j < nparams; ++j) {
-    wptr = working + j * nsamples;
-    // Sort so we can get the percentiles.  This could be slightly
-    //  more efficient if we used O(n) selection techniques instead
-    //  of O(n ln n) sorting, but it's easily fast enough
-    std::sort(wptr, wptr + nsamples);
-
-    // Mean
-    double mnval = wptr[0];  // accumulate in double
-    for (unsigned int k = 1; k < nsamples; ++k)
-      mnval += wptr[k];
-    meanParams[j] = 
-      static_cast<float>(mnval / static_cast<double>(nsamples));
-
-    // Median.  We should, in principle, interpolate here as well,
-    //  but in practice it's hardly worth it for any realistic
-    //  number of samples
-    medParams[j] = wptr[nsamples / 2];
-
-    // Error snake
-    for (unsigned int k = 0; k < nprob; ++k) {
-      sidx = 2 * (k * nparams + j);
-      // Lower value
-      unsigned int idxl = static_cast<unsigned int>(lowidx[k]);
-      uncertaintyParams[sidx] = wptr[idxl] + 
-        (wptr[idxl+1] - wptr[idxl]) * (lowidx[k] - idxl);
-      // And upper
-      unsigned int idxu = static_cast<unsigned int>(highidx[k]);
-      uncertaintyParams[sidx + 1] = wptr[idxu] + 
-        (wptr[idxu+1] - wptr[idxu]) * (highidx[k] - idxu);
-    }
-  }
+  accumulateStats(nparams, nsamples, working, meanParams,
+                  medParams, uncertaintyParams);
   delete[] working;
-  
+
   // Now the smoother curves -- that is, the error snake
   //  Same thing, pretty much, more points, and we have
   //  to explicitly load up the model.
@@ -193,18 +152,8 @@ void numberCountsKnotsSplineError::build(const std::string& infile,
   double minflux = model.getMinFlux();
   double maxflux = model.getMaxFlux();
   maxflux -= 1e-4 * (maxflux - minflux); // maxflux counts are 0, avoid
-  if (logspace) {
-    double log_minflux = log(minflux);
-    double dflux = (log(maxflux) - log_minflux) /
-      static_cast<double>(npoints - 1);
-    for (unsigned int i = 0; i < npoints; ++i)
-      s[i] = exp(log_minflux + dflux * static_cast<double>(i));
-  } else {
-    double dflux = (maxflux - minflux) / static_cast<double>(npoints - 1);
-    for (unsigned int i = 0; i < npoints; ++i)
-      s[i] = minflux + dflux * static_cast<double>(i);
-  }
-
+  setupFluxes(minflux, maxflux, logspace, npoints, s);
+  
   // Note that we only process knots here, not bonus params,
   //  since there is not such thing as 
   working = new float[npoints * nsamples];
@@ -218,36 +167,17 @@ void numberCountsKnotsSplineError::build(const std::string& infile,
       working[j * nsamples + i] = log10(model.getNumberCounts(s[j]));    
   }
 
-  for (unsigned int j = 0; j < npoints; ++j) {
-    wptr = working + j * nsamples;
-    std::sort(wptr, wptr + nsamples);
-    double mnval = wptr[0];
-    for (unsigned int k = 1; k < nsamples; ++k)
-      mnval += wptr[k];
-    mean[j] = 
-      static_cast<float>(mnval / static_cast<double>(nsamples));
-    median[j] = wptr[nsamples / 2];
-    for (unsigned int k = 0; k < nprob; ++k) {
-      sidx = 2 * (k * npoints + j);
-      // Lower value
-      unsigned int idxl = static_cast<unsigned int>(lowidx[k]);
-      snake[sidx] = wptr[idxl] + 
-        (wptr[idxl+1] - wptr[idxl]) * (lowidx[k] - idxl);
-      // And upper
-      unsigned int idxu = static_cast<unsigned int>(highidx[k]);
-      snake[sidx + 1] = wptr[idxu] + 
-        (wptr[idxu+1] - wptr[idxu]) * (highidx[k] - idxu);
-    }
-  }
-  delete[] working;
-  
   delete[] steps;
+
+  accumulateStats(npoints, nsamples, working, mean,
+                  median, snake);
+  delete[] working;
 }
 
 /*!
-  \param[in] filename File to write error snake to.
+  \param[in] filename File to write stats to.
 */
-void numberCountsKnotsSplineError::
+void numberCountsKnotsSplineStats::
 writeAsHDF5(const std::string& filename) const {
 
   hid_t file_id;
@@ -256,7 +186,7 @@ writeAsHDF5(const std::string& filename) const {
 
   if (H5Iget_ref(file_id) < 0) {
     H5Fclose(file_id);
-    throw affineExcept("numberCountsKnotsSplineError", "writeToHDF5",
+    throw affineExcept("numberCountsKnotsSplineStats", "writeToHDF5",
 		                   "Failed to open HDF5 file to write");
   }
 
