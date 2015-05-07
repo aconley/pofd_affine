@@ -4,7 +4,7 @@
 
 #include<getopt.h>
 
-#include "../include/errorSnakeSingle.h"
+#include "../include/numberCountsKnotsSplineError.h"
 #include "../include/affineExcept.h"
 
 //See pofd_affine_getdNdS comment to explain why I do this as a global
@@ -13,16 +13,16 @@ static struct option long_options[] = {
   {"double", no_argument, 0, 'd'},
   {"version", no_argument, 0, 'V'}, //Below here not parsed in main routine
   {"nflux", required_argument, 0, 'n'},
-  {"nsamples", required_argument, 0, 'N'},
+  {"thin", required_argument, 0, 't'},
   {"verbose", no_argument, 0, 'v'},
   {0, 0, 0, 0}
 };
 
-char optstring[] = "hdVn:N:v";
+char optstring[] = "hdVn:t:v";
 
-int getErrorSnakeSingle(int argc, char **argv) {
+int getStatsSingle(int argc, char **argv) {
 
-  unsigned int nflux, nsamples;
+  unsigned int nflux, thin;
   bool verbose;
   
   std::string infile; // pofd_affine_mcmc output file to process
@@ -30,7 +30,7 @@ int getErrorSnakeSingle(int argc, char **argv) {
   
   //Defaults
   nflux               = 1024;
-  nsamples            = 1000;
+  thin                = 5;
   verbose             = false;
 
   int c;
@@ -42,8 +42,8 @@ int getErrorSnakeSingle(int argc, char **argv) {
     case 'n' :
       nflux = static_cast<unsigned int>(atoi(optarg));
       break;
-    case 'N' :
-      nsamples = static_cast<unsigned int>(atoi(optarg));
+    case 't' :
+      thin = static_cast<unsigned int>(atoi(optarg));
       break;
     case 'v' :
       verbose = true;
@@ -65,16 +65,16 @@ int getErrorSnakeSingle(int argc, char **argv) {
 	      << std::endl;
     return 1;
   }
-  if (nsamples == 0) {
-    std::cerr << "Error -- nsamples is zero." << std::endl;
+  if (thin == 0) {
+    std::cerr << "Error -- thin is invalid (zero)." << std::endl;
       return 1;
   }
 
   // Actual computation
   try {
-    errorSnakeSingle errsnk(nflux);
-    errsnk.build(infile, nsamples, true);
-    errsnk.writeAsHDF5(outputfile);
+    numberCountsKnotsSplineError stats(nflux);
+    stats.build(infile, thin, true);
+    stats.writeAsHDF5(outputfile);
   } catch (const affineExcept& ex) {
     std::cerr << "Error encountered" << std::endl;
     std::cerr << ex.what() << std::endl;
@@ -105,31 +105,36 @@ int main( int argc, char** argv ) {
     switch(c) {
     case 'h' :
       std::cerr << "NAME" << std::endl;
-      std::cerr << "\tpofd_affine_errorsnake -- build an error snake for a"
-		<< std::endl;
-      std::cerr << "\t pofd_affine_mcmc fit." << std::endl;
+      std::cerr << "\tpofd_affine_getStats -- get summary statistics for" 
+                << std::endl;
+      std::cerr << "\ta pofd_affine_mcmc fit." << std::endl;
       std::cerr << std::endl;
       std::cerr << "SYNOPSIS" << std::endl;
-      std::cerr << "\t pofd_affine_errorsnake infile outfile" << std::endl;
+      std::cerr << "\t pofd_affine_getStats infile outfile" << std::endl;
       std::cerr << std::endl;
       std::cerr << "DESCRIPTION" << std::endl;
-      std::cerr << "\tBuilds error snakes from the results of a"
-		<< "pofd_affine_mcmc" << std::endl;
-      std::cerr << "\tfit." << std::endl;
+      std::cerr << "\tBuilds summary statistics from the results of a"
+                << std::endl;
+		  std::cerr << "\t pofd_affine_mcmc fit." << std::endl;
       std::cerr << "\tinfile is the HDF5 output of pofd_affine_mcmc."
 		<< std::endl;
-      std::cerr << "\toutfile is the output error snake, also as HDF5."
+      std::cerr << "\toutfile is the output statistics, also as HDF5."
 		<< std::endl;
     case 'd' :
       twod = true;
       break;
     case 'V' :
       std::cerr << "pofd_mcmc version number: " << pofd_mcmc::version 
-		<< std::endl;
+                << std::endl;
       return 0;
       break;
     }
 
   if (!twod)
-    return getErrorSnakeSingle(argc, argv);
+    return getStatsSingle(argc, argv);
+  else {
+    std::cerr << "2D stats not implemented yet" << std::endl;
+    return 1;
+  }
+
 }

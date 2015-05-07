@@ -465,19 +465,13 @@ def make_plots(data, stats, errorsnake=None,
         offset_interp = interpolator(data.offsetknots,
                                      stats.fit[lim1:lim2])
 
-        # Get the errorsnake
-        clr_errsnake = make_color_errorsnakes(data)
-        sig_errsnake = (clr_errsnake[0], clr_errsnake[1])
-        mu_errsnake = (clr_errsnake[2], clr_errsnake[3])
                                      
         if do_sigmaplot:
             ax2 = plt.subplot(gs[:, 2])
-            sigma_plot(ax2, data, stats, sigma_interp, offset_interp,
-                       sig_errsnake)
+            sigma_plot(ax2, data, stats, sigma_interp, offset_interp)
 
         if do_offsetplot:
             ax3 = plt.subplot(gs[:, 3 if do_sigmaplot else 2])
-            offset_plot(ax3, data, stats, sigma_interp, offset_interp,
-                        mu_errsnake)
+            offset_plot(ax3, data, stats, sigma_interp, offset_interp)
 
     return f
