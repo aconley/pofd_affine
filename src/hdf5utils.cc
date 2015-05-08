@@ -40,29 +40,6 @@ hdf5utils::outfiletype hdf5utils::getOutputFileType(const std::string& str) {
 
 
 /*!
-  \param[in] objid HDF5 handle to read from
-  \param[in] name Name of attribute to read
-  \returns Value read
-*/
-unsigned int hdf5utils::readAttUInt(hid_t objid, const std::string& name) {
-  
-  if (H5Iget_ref(objid) < 0)
-    throw affineExcept("hdf5utils", "readAttUint",
-		       "Input handle is not valid when writing " + name);
-
-  hsize_t adims;
-  hid_t att_id;
-  unsigned int val;
-  
-  adims = 1;
-  att_id = H5Aopen(objid, name.c_str(), H5P_DEFAULT);
-  H5Aread(att_id, H5T_NATIVE_UINT, &val);
-  H5Aclose(att_id);
-  return val;
-}
-
-
-/*!
   \param[in] objid HDF5 handle to write to
   \param[in] name Name of attribute to write
   \param[in] value Value to write
@@ -335,11 +312,97 @@ void hdf5utils::writeAttBools(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT);
+		                  mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_HBOOL, bl);
   H5Aclose(att_id);
   H5Sclose(mems_id);
   delete[] bl;
+}
+
+/*!
+  \param[in] objid HDF5 handle to read from
+  \param[in] name Name of attribute to read
+  \returns Value read
+*/
+bool hdf5utils::readAttBool(hid_t objid, const std::string& name) {
+  
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("hdf5utils", "readAttBool",
+           "Input handle is not valid when writing " + name);
+
+  hsize_t adims;
+  hid_t att_id;
+  hbool_t val;
+  
+  adims = 1;
+  att_id = H5Aopen(objid, name.c_str(), H5P_DEFAULT);
+  H5Aread(att_id, H5T_NATIVE_HBOOL, &val);
+  H5Aclose(att_id);
+  return static_cast<bool>(val);
+}
+
+/*!
+  \param[in] objid HDF5 handle to read from
+  \param[in] name Name of attribute to read
+  \returns Values read
+*/
+std::vector<bool>
+hdf5utils::readAttBools(hid_t objid, const std::string& name) {
+  
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("hdf5utils", "readAttBools",
+                       "Input handle is not valid when writing " + name);
+
+  // Get dimensions
+  hid_t att_id = H5Aopen(objid, name.c_str(), H5P_DEFAULT);
+  hid_t space_id = H5Aget_space(att_id);
+  int ndims = H5Sget_simple_extent_ndims(space_id);
+  if (ndims != 1) {
+    H5Aclose(att_id);
+    H5Sclose(space_id);
+    throw affineExcept("hdf5utils", "readAttBools",
+                       "Input data set was not 1D");
+  }
+  hsize_t ndata[1], maxndata[1];
+  H5Sget_simple_extent_dims(space_id, ndata, maxndata);
+  H5Sclose(space_id);
+
+  hbool_t *data; // Thing we will read into
+  data = new hbool_t[ndata[0]];
+
+  H5Aread(att_id, H5T_NATIVE_HBOOL, data);
+
+  H5Aclose(att_id);
+
+  std::vector<bool> outvec(ndata[0]);
+  for (hsize_t i = 0; i < ndata[0]; ++i) {
+    outvec[i] = static_cast<bool>(data[i]);
+  }
+  delete[] data;
+
+  return outvec;
+}
+/*!
+  \param[in] objid HDF5 handle to write to
+  \param[in] name Name of attribute to write
+  \param[in] value Value to write
+*/
+void hdf5utils::writeAttUnsignedInt(hid_t objid, const std::string& name,
+                                    unsigned int value) { 
+             
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("hdf5utils", "writeAttUnsignedInt",
+           "Input handle is not valid when writing " + name);
+
+  hsize_t adims = static_cast<hsize_t>(1);
+  hid_t mems_id, att_id;
+
+  mems_id = H5Screate_simple(1, &adims, nullptr);
+  att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_UINT,
+                      mems_id, H5P_DEFAULT);
+  H5Awrite(att_id, H5T_NATIVE_UINT, &value);
+  H5Aclose(att_id);
+  H5Sclose(mems_id);
 }
 
 /*!
@@ -405,6 +468,94 @@ void hdf5utils::writeAttUnsignedInts(hid_t objid, const std::string& name,
 }
 
 /*!
+  \param[in] objid HDF5 handle to read from
+  \param[in] name Name of attribute to read
+  \returns Value read
+*/
+unsigned int hdf5utils::readAttUnsignedInt(hid_t objid, 
+                                           const std::string& name) {
+  
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("hdf5utils", "readAttUnsignedInt",
+           "Input handle is not valid when writing " + name);
+
+  hsize_t adims;
+  hid_t att_id;
+  unsigned int val;
+  
+  adims = 1;
+  att_id = H5Aopen(objid, name.c_str(), H5P_DEFAULT);
+  H5Aread(att_id, H5T_NATIVE_UINT, &val);
+  H5Aclose(att_id);
+  return val;
+}
+
+/*!
+  \param[in] objid HDF5 handle to read from
+  \param[in] name Name of attribute to read
+  \returns Values read
+*/
+std::vector<unsigned int>
+hdf5utils::readAttUnsignedInts(hid_t objid, const std::string& name) {
+  
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("hdf5utils", "readAttUnsignedInts",
+                       "Input handle is not valid when writing " + name);
+
+  // Get dimensions
+  hid_t att_id = H5Aopen(objid, name.c_str(), H5P_DEFAULT);
+  hid_t space_id = H5Aget_space(att_id);
+  int ndims = H5Sget_simple_extent_ndims(space_id);
+  if (ndims != 1) {
+    H5Aclose(att_id);
+    H5Sclose(space_id);
+    throw affineExcept("hdf5utils", "readAttUnsignedInts",
+                       "Input data set was not 1D");
+  }
+  hsize_t ndata[1], maxndata[1];
+  H5Sget_simple_extent_dims(space_id, ndata, maxndata);
+  H5Sclose(space_id);
+
+  unsigned int *data; // Thing we will read into
+  data = new unsigned int[ndata[0]];
+
+  H5Aread(att_id, H5T_NATIVE_UINT, data);
+
+  H5Aclose(att_id);
+
+  std::vector<unsigned int> outvec(ndata[0]);
+  for (hsize_t i = 0; i < ndata[0]; ++i) {
+    outvec[i] = data[i];
+  }
+  delete[] data;
+
+  return outvec;
+}
+
+/*!
+  \param[in] objid HDF5 handle to write to
+  \param[in] name Name of attribute to write
+  \param[in] value Value to write
+*/
+void hdf5utils::writeAttInt(hid_t objid, const std::string& name,
+                            int value) { 
+             
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("hdf5utils", "writeAttInt",
+           "Input handle is not valid when writing " + name);
+
+  hsize_t adims = static_cast<hsize_t>(1);
+  hid_t mems_id, att_id;
+
+  mems_id = H5Screate_simple(1, &adims, nullptr);
+  att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_INT,
+                      mems_id, H5P_DEFAULT);
+  H5Awrite(att_id, H5T_NATIVE_INT, &value);
+  H5Aclose(att_id);
+  H5Sclose(mems_id);
+}
+
+/*!
   \param[in] objid HDF5 handle to write to
   \param[in] name Name of attribute to write
   \param[in] n Number of elements in value
@@ -466,6 +617,29 @@ void hdf5utils::writeAttInts(hid_t objid, const std::string& name,
 /*!
   \param[in] objid HDF5 handle to write to
   \param[in] name Name of attribute to write
+  \param[in] value Value to write
+*/
+void hdf5utils::writeAttFloat(hid_t objid, const std::string& name,
+                              float value) { 
+             
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("hdf5utils", "writeAttFloat",
+           "Input handle is not valid when writing " + name);
+
+  hsize_t adims = static_cast<hsize_t>(1);
+  hid_t mems_id, att_id;
+
+  mems_id = H5Screate_simple(1, &adims, nullptr);
+  att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_FLOAT,
+                      mems_id, H5P_DEFAULT);
+  H5Awrite(att_id, H5T_NATIVE_FLOAT, &value);
+  H5Aclose(att_id);
+  H5Sclose(mems_id);
+}
+
+/*!
+  \param[in] objid HDF5 handle to write to
+  \param[in] name Name of attribute to write
   \param[in] n Number of elements in value
   \param[in] value Value to write
 */
@@ -490,6 +664,7 @@ void hdf5utils::writeAttFloats(hid_t objid, const std::string& name,
   H5Aclose(att_id);
   H5Sclose(mems_id);
 }
+
 
 /*!
   \param[in] objid HDF5 handle to write to
@@ -522,6 +697,93 @@ void hdf5utils::writeAttFloats(hid_t objid, const std::string& name,
   H5Aclose(att_id);
   H5Sclose(mems_id);
   delete[] v;
+}
+
+/*!
+  \param[in] objid HDF5 handle to read from
+  \param[in] name Name of attribute to read
+  \returns Value read
+*/
+float hdf5utils::readAttFloat(hid_t objid, const std::string& name) {
+  
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("hdf5utils", "readAttFloat",
+           "Input handle is not valid when writing " + name);
+
+  hsize_t adims;
+  hid_t att_id;
+  float val;
+  
+  adims = 1;
+  att_id = H5Aopen(objid, name.c_str(), H5P_DEFAULT);
+  H5Aread(att_id, H5T_NATIVE_FLOAT, &val);
+  H5Aclose(att_id);
+  return val;
+}
+
+/*!
+  \param[in] objid HDF5 handle to read from
+  \param[in] name Name of attribute to read
+  \returns Values read
+*/
+std::vector<float>
+hdf5utils::readAttFloats(hid_t objid, const std::string& name) {
+  
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("hdf5utils", "readAttFloats",
+                       "Input handle is not valid when writing " + name);
+
+  // Get dimensions
+  hid_t att_id = H5Aopen(objid, name.c_str(), H5P_DEFAULT);
+  hid_t space_id = H5Aget_space(att_id);
+  int ndims = H5Sget_simple_extent_ndims(space_id);
+  if (ndims != 1) {
+    H5Aclose(att_id);
+    H5Sclose(space_id);
+    throw affineExcept("hdf5utils", "readAttFloats",
+                       "Input data set was not 1D");
+  }
+  hsize_t ndata[1], maxndata[1];
+  H5Sget_simple_extent_dims(space_id, ndata, maxndata);
+  H5Sclose(space_id);
+
+  float *data; // Thing we will read into
+  data = new float[ndata[0]];
+
+  H5Aread(att_id, H5T_NATIVE_FLOAT, data);
+
+  H5Aclose(att_id);
+
+  std::vector<float> outvec(ndata[0]);
+  for (hsize_t i = 0; i < ndata[0]; ++i) {
+    outvec[i] = data[i];
+  }
+  delete[] data;
+
+  return outvec;
+}
+
+/*!
+  \param[in] objid HDF5 handle to write to
+  \param[in] name Name of attribute to write
+  \param[in] value Value to write
+*/
+void hdf5utils::writeAttDouble(hid_t objid, const std::string& name,
+                               double value) { 
+             
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("hdf5utils", "writeAttDouble",
+           "Input handle is not valid when writing " + name);
+
+  hsize_t adims = static_cast<hsize_t>(1);
+  hid_t mems_id, att_id;
+
+  mems_id = H5Screate_simple(1, &adims, nullptr);
+  att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_DOUBLE,
+                      mems_id, H5P_DEFAULT);
+  H5Awrite(att_id, H5T_NATIVE_DOUBLE, &value);
+  H5Aclose(att_id);
+  H5Sclose(mems_id);
 }
 
 /*!
@@ -583,6 +845,70 @@ void hdf5utils::writeAttDoubles(hid_t objid, const std::string& name,
   H5Aclose(att_id);
   H5Sclose(mems_id);
   delete[] v;
+}
+
+/*!
+  \param[in] objid HDF5 handle to read from
+  \param[in] name Name of attribute to read
+  \returns Value read
+*/
+double hdf5utils::readAttDouble(hid_t objid, const std::string& name) {
+  
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("hdf5utils", "readAttDouble",
+                       "Input handle is not valid when writing " + name);
+
+  hsize_t adims;
+  hid_t att_id;
+  float val;
+  
+  adims = 1;
+  att_id = H5Aopen(objid, name.c_str(), H5P_DEFAULT);
+  H5Aread(att_id, H5T_NATIVE_DOUBLE, &val);
+  H5Aclose(att_id);
+  return val;
+}
+
+/*!
+  \param[in] objid HDF5 handle to read from
+  \param[in] name Name of attribute to read
+  \returns Values read
+*/
+std::vector<double>
+hdf5utils::readAttDoubles(hid_t objid, const std::string& name) {
+  
+  if (H5Iget_ref(objid) < 0)
+    throw affineExcept("hdf5utils", "readAttDoubles",
+                       "Input handle is not valid when writing " + name);
+
+  // Get dimensions
+  hid_t att_id = H5Aopen(objid, name.c_str(), H5P_DEFAULT);
+  hid_t space_id = H5Aget_space(att_id);
+  int ndims = H5Sget_simple_extent_ndims(space_id);
+  if (ndims != 1) {
+    H5Aclose(att_id);
+    H5Sclose(space_id);
+    throw affineExcept("hdf5utils", "readAttDoubles",
+                       "Input data set was not 1D");
+  }
+  hsize_t ndata[1], maxndata[1];
+  H5Sget_simple_extent_dims(space_id, ndata, maxndata);
+  H5Sclose(space_id);
+
+  double *data; // Thing we will read into
+  data = new double[ndata[0]];
+
+  H5Aread(att_id, H5T_NATIVE_DOUBLE, data);
+
+  H5Aclose(att_id);
+
+  std::vector<double> outvec(ndata[0]);
+  for (hsize_t i = 0; i < ndata[0]; ++i) {
+    outvec[i] = data[i];
+  }
+  delete[] data;
+
+  return outvec;
 }
 
 /*!

@@ -34,6 +34,8 @@ namespace hdf5utils {
   /*! \brief Read array of strings as an attribute */
   std::vector<std::string> readAttStrings(hid_t, const std::string&);
 
+  /*! \brief Write a single unsigned int as an attribute */
+  void writeAttUnsignedInt(hid_t, const std::string&, unsigned int);
   /*! \brief Write array of unsigned ints as attribute */
   void writeAttUnsignedInts(hid_t, const std::string&, unsigned int,
 			    const unsigned int* const);
@@ -41,8 +43,13 @@ namespace hdf5utils {
   void writeAttUnsignedInts(hid_t, const std::string&, 
 			    const std::vector<unsigned int>&);
   /*! \brief Read unsigned int attribute */
-  unsigned int readAttUInt(hid_t objid, const std::string& name);
+  unsigned int readAttUnsignedInt(hid_t objid, const std::string& name);
+  /*! \brief Read vector of unsigned ints attribute */
+  std::vector<unsigned int> readAttUnsignedInts(hid_t objid, 
+                                                const std::string& name);
 
+  /*! \brief Write a single int as an attribute */
+  void writeAttInt(hid_t, const std::string&, int);
   /*! \brief Write array of ints as attribute */
   void writeAttInts(hid_t, const std::string&, unsigned int,
 		    const int* const);
@@ -57,20 +64,36 @@ namespace hdf5utils {
   /*! \brief Write vector of booleans as attribute */
   void writeAttBools(hid_t, const std::string&, 
 		     const std::vector<bool>&);
+  /*! \brief Read bool attribute */
+  bool readAttBool(hid_t objid, const std::string& name);
+  /*! \brief Read vector of booleans attribute */
+  std::vector<bool> readAttBools(hid_t objid, const std::string& name);
 
+  /*! \brief Write single float as attribute */
+  void writeAttFloat(hid_t, const std::string&, float);
   /*! \brief Write array of floats as attribute */
   void writeAttFloats(hid_t, const std::string&, unsigned int,
 		      const float* const);
   /*! \brief Write vector of floats as attribute */
   void writeAttFloats(hid_t, const std::string&, 
 		      const std::vector<float>&);
+  /*! \brief Read float attribute */
+  float readAttFloat(hid_t objid, const std::string& name);
+  /*! \brief Read vector of floats attribute */
+  std::vector<float> readAttFloats(hid_t objid, const std::string& name);
 
+  /*! \brief Write single double as attribute */
+  void writeAttDouble(hid_t, const std::string&, double);
   /*! \brief Write array of doubles as attribute */
   void writeAttDoubles(hid_t, const std::string&, unsigned int,
 		       const double* const);
   /*! \brief Write vector of doubles as attribute */
   void writeAttDoubles(hid_t, const std::string&, 
 		       const std::vector<double>&);
+  /*! \brief Read double attribute */
+  double readAttDouble(hid_t objid, const std::string& name);
+  /*! \brief Read vector of doubles attribute */
+  std::vector<double> readAttDoubles(hid_t objid, const std::string& name);
 
   // Data writers
   // 1D
