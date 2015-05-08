@@ -44,14 +44,12 @@ int main(int argc, char** argv) {
     {"version", no_argument, 0, 'V'},
     {"nflux", required_argument, 0, 'n'},
     {"thin", required_argument, 0, 't'},
-    {"verbose", no_argument, 0, 'v'},
     {0, 0, 0, 0}
   };
 
-  char optstring[] = "hdVn:t:v";
+  char optstring[] = "hdVn:t:";
 
   unsigned int nflux, thin;
-  bool verbose;
 
   std::string infile; // pofd_affine_mcmc output file to process
   std::string outputfile; //Ouput pofd option
@@ -59,7 +57,6 @@ int main(int argc, char** argv) {
   //Defaults
   nflux               = 1024;
   thin                = 5;
-  verbose             = false;
 
   int c;
   int option_index = 0;
@@ -88,9 +85,6 @@ int main(int argc, char** argv) {
       break;
     case 't' :
       thin = static_cast<unsigned int>(atoi(optarg));
-      break;
-    case 'v' :
-      verbose = true;
       break;
     case 'V' :
       std::cerr << "pofd_mcmc version number: " << pofd_mcmc::version 
