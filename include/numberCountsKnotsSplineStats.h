@@ -26,6 +26,7 @@ private:
   std::vector<std::string> paramNames; //!< Names of parameters
   unsigned int nknots; //!< Number of knots
   float *knotPositions; //!< Knot positions, len nknots
+  float *initParams; //!< Initial values of parameters
   double bestLike; //!< Likelihood of best fit
   float *bestParams; //!< Best fit values of params
   float *meanParams; //!< Mean parameter values

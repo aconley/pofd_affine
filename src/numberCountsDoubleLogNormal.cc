@@ -2231,7 +2231,7 @@ void numberCountsDoubleLogNormal::readFromHDF5Handle(hid_t objid) {
                        "readFromHDF5Handle", errstr.str());
   }
 
-  unsigned int f_nknots = hdf5utils::readAttUInt(objid, "NKnots");
+  unsigned int f_nknots = hdf5utils::readAttUnsignedInt(objid, "NKnots");
   setNKnots(f_nknots);
   if (f_nknots > 0) {
     // We could read directly into knots, but that could be a problem
@@ -2241,7 +2241,7 @@ void numberCountsDoubleLogNormal::readFromHDF5Handle(hid_t objid) {
     setKnotPositions(f_nknots, newknots);
     delete[] newknots;
   }
-  f_nknots = hdf5utils::readAttUInt(objid, "NSigmaKnots");
+  f_nknots = hdf5utils::readAttUnsignedInt(objid, "NSigmaKnots");
   setNSigmas(f_nknots);
   if (f_nknots > 0) {
     double *newknots = new double[f_nknots];
@@ -2250,7 +2250,7 @@ void numberCountsDoubleLogNormal::readFromHDF5Handle(hid_t objid) {
     setSigmaPositions(f_nknots, newknots);
     delete[] newknots;
   }
-  f_nknots = hdf5utils::readAttUInt(objid, "NOffsetKnots");
+  f_nknots = hdf5utils::readAttUnsignedInt(objid, "NOffsetKnots");
   setNOffsets(f_nknots);
   if (f_nknots > 0) {
     double *newknots = new double[f_nknots];

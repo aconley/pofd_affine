@@ -7,60 +7,8 @@ from scipy.interpolate import interp1d
     pofd_affine fits"""
 
 
-__all__ = ["read_data", "get_stats", "print_summary", "make_plots",
-           "read_errorsnake"]
+__all__ = ["read_data", "print_summary", "make_plots"]
 
-
-class interpolator:
-    """ Wrapper around interp1d that handles edges correctly"""
-
-    # An issue here is that none of the scipy splines actually
-    # match what we are using (GSL cspline).  However, it is clear
-    # from experimentation that the cubic spline from scipy is a lot
-    # more prone to wild excursions than the GSL one, so we stick
-    # to that
-    def __init__(self, knotpos, knotval):
-        self._npos = len(knotpos)
-        self._pos = knotpos.copy()
-        self._val = knotval.copy()
-
-        if self._npos == 1:
-            self._interp = None
-            if not np.isscalar(self._val):
-                self._val = self._val[0]
-        elif self._npos == 2:
-            self._interp = interp1d(self._pos, self._val, kind='slinear')
-        elif self._npos > 2:
-            self._interp = interp1d(self._pos, self._val, kind='quadratic')
-        else:
-            raise ValueError("Not enough points")
-
-    def __call__(self, xvals):
-        if self._interp is None:
-            retvals = self._val * np.ones_like(xvals)
-        else:
-            retvals = np.empty_like(xvals)
-            leftpos = self._pos[0]
-            leftval = self._val[0]
-            rightpos = self._pos[-1]
-            rightval = self._val[-1]
-            for idx, x in enumerate(xvals):
-                if x < leftpos:
-                    retvals[idx] = leftval
-                elif x > rightpos:
-                    retvals[idx] = rightval
-                else:
-                    retvals[idx] = self._interp(x)
-
-        return retvals   
-
-def convert_to_f1f2(sigma, offset):
-    """ Convert from lognormal param space to f1 / f2"""
-
-    var_f1of2 = np.exp(2 * offset + sigma**2) * np.expm1(sigma**2)
-    mu_f1of2 = np.exp(offset + 0.5 * sigma**2)
-    return np.sqrt(var_f1of2), mu_f1of2
-    
 
 def find_bandname(h5filename):
     """ Tries to guess the band from h5file name.
@@ -74,140 +22,157 @@ def find_bandname(h5filename):
 
 
 def read_data(h5file):
-    """ Read data from HDF5 file"""
+    """ Read data from HDF5 stats file"""
     import os.path
     import h5py
 
     if not os.path.isfile(h5file):
         raise IOError("Can't open HDF5 input file {0:s}".format(h5file))
 
-    is1D = True
     with h5py.File(h5file, 'r') as f:
-        steps = f['Chains/Chain'][...]
-        like = f['Chains/Likelihood'][...]
-        knots1D = f['LikelihoodParams/Model/KnotPositions'][...]
-        initvals = f['ParamInfo/InitialPosition'][...]
-        param_names = [b.decode() for b in
-                       f['ParamInfo'].attrs['ParamNames']]
-        if 'LikelihoodParams/Model/SigmaKnotPositions' in f:
-            is1D = False
-            sigmaknots = f['LikelihoodParams/Model/SigmaKnotPositions'][...]
-            offsetknots = f['LikelihoodParams/Model/OffsetKnotPositions'][...]
+        modelType = f['ModelType'][...][0].decode()
+        if f['NDims'][0] == 1:
+            stats1D = namedtuple('stats1D',
+                                 ['Band', 'ModelType', 'ParamNames',
+                                  'KnotPositions', 'ParamsInit',
+                                  'BestLikelihood', 'ParamsBest', 
+                                  'ParamsMean', 'Params1Sig', 
+                                  'Snake1DFlux', 'Snake1DMean', 
+                                  'Snake1D1Sig', 'Snake1D2Sig'])
 
-    if is1D:
-        mcmc_data1D = namedtuple('mcmc_data1D',
-                                 ['steps', 'like', 'knots1D', 'allknots',
-                                  'initvals', 'param_names', 'band',
-                                  'npars', 'nparsfit', 'nbonus'])
-        bands = find_bandname(h5file)
-        band = bands[0] if len(bands) > 0 else "Unknown"
-        data = mcmc_data1D(steps, like, knots1D, knots1D, initvals,
-                           param_names, band, steps.shape[2],
-                           steps.shape[2] - 2, 2)
-    else:
-        mcmc_data2D = namedtuple('mcmc_data2D',
-                                 ['steps', 'like', 'knots1D', 'sigmaknots',
-                                  'offsetknots', 'allknots',
-                                  'initvals', 'param_names',
-                                  'band1', 'band2', 'npars',
-                                  'nparsfit', 'nbonus'])
-        bands = find_bandname(h5file)
-        band1 = bands[0] if len(bands) >= 2 else "Unknown"
-        band2 = bands[1] if len(bands) >= 2 else "Unknown"
-        allknots = np.hstack([knots1D, sigmaknots, offsetknots])
-        data = mcmc_data2D(steps, like, knots1D, sigmaknots, offsetknots,
-                           allknots, initvals, param_names, band1, band2,
-                           steps.shape[2], steps.shape[2] - 4, 4)
+            # Values of actual params
+            param_names = [p.decode() for p in f['Params/ParamNames']]
+            knot_positions = f['Params/KnotPositions'][...]
+            best_like = f['Params/BestLikelihood'][0]
+            params_init = f['Params/ParamsInit'][...]
+            params_best = f['Params/ParamsBest'][...]
+            params_mean = f['Params/ParamsMean'][...]
+            params_1sig = f['Params/Paramsp=0.683'][...]
+            params_1sig -= params_mean[:, np.newaxis]
+
+            bands = find_bandname(h5file)
+            band = bands[0] if len(bands) > 0 else "Unknown"
+
+            # Smooth plotting curves (errorsnakes, etc.)
+            curve_f = f['Curves/FluxDensity'][...]
+            curve_mean = f['Curves/Log10CountsMean'][...]
+            curve_1sig = f['Curves/Log10Countsp=0.683'][...]
+            curve_2sig = f['Curves/Log10Countsp=0.954'][...]
+        
+            data = stats1D(band, modelType, param_names, knot_positions,
+                           params_init, best_like, params_best, 
+                           params_mean, params_1sig, curve_f, 
+                           curve_mean, curve_1sig, curve_2sig)
+        elif f['NDims'][0] == 2:
+            stats2D = namedtuple('stats2D',
+                                 ['Band1', 'Band2', 'ModelType',
+                                  'AreRatios', 'ParamNames',
+                                  'KnotPositions', 'SigmaKnotPositions',
+                                  'OffsetKnotPositions', 'ParamsInit',
+                                  'BestLikelihood', 'ParamsBest', 
+                                  'ParamsMean', 'Params1Sig', 
+                                  'Snake1DFlux', 'Snake1DMean', 
+                                  'Snake1D1Sig', 'Snake1D2Sig',
+                                  'SnakeSigmaFlux', 'SnakeSigmaMean',
+                                  'SnakeSigma1Sig', 'SnakeSigma2Sig',
+                                  'SnakeOffsetFlux','SnakeOffsetMean', 
+                                  'SnakeOffset1Sig', 'SnakeOffset2Sig'])
+
+            # Values of actual params
+            are_ratios = f['AreF2F1Ratios'][0]
+            param_names = [p.decode() for p in f['Params/ParamNames']]
+            knot_positions = f['Params/KnotPositions'][...]
+            sigma_positions = f['Params/SigmaKnotPositions'][...]
+            offset_positions = f['Params/OffsetKnotPositions'][...]
+            params_init = f['Params/ParamsInit'][...]
+            best_like = f['Params/BestLikelihood'][0]
+            params_best = f['Params/ParamsBest'][...]
+            params_mean = f['Params/ParamsMean'][...]
+            params_1sig = f['Params/Paramsp=0.683'][...]
+            params_1sig -= params_mean[:, np.newaxis]
+
+            # Smooth plotting curves (errorsnakes, etc.)
+            curve1D_f = f['Curves/Band1/FluxDensity'][...]
+            curve1D_mean = f['Curves/Band1/Log10CountsMean'][...]
+            curve1D_1sig = f['Curves/Band1/Log10Countsp=0.683'][...]
+            curve1D_2sig = f['Curves/Band1/Log10Countsp=0.954'][...]
+            curveSigma_f = f['Curves/Color/SigmaFluxDensity'][...]
+            curveSigma_mean = f['Curves/Color/SigmaMean'][...]
+            curveSigma_1sig = f['Curves/Color/Sigmap=0.683'][...]
+            curveSigma_2sig = f['Curves/Color/Sigmap=0.954'][...]
+            curveOffset_f = f['Curves/Color/OffsetFluxDensity'][...]
+            curveOffset_mean = f['Curves/Color/OffsetMean'][...]
+            curveOffset_1sig = f['Curves/Color/Offsetp=0.683'][...]
+            curveOffset_2sig = f['Curves/Color/Offsetp=0.954'][...]
+  
+            bands = find_bandname(h5file)
+            band1 = bands[0] if len(bands) >= 2 else "Unknown"
+            band2 = bands[1] if len(bands) >= 2 else "Unknown"
+
+            data = stats2D(band1, band2, modelType, are_ratios, 
+                           param_names, knot_positions,
+                           sigma_positions, offset_positions, params_init,
+                           best_like, params_best, params_mean, params_1sig,
+                           curve1D_f, curve1D_mean, curve1D_1sig,
+                           curve1D_2sig, curveSigma_f, curveSigma_mean, 
+                           curveSigma_1sig, curveSigma_2sig, curveOffset_f, 
+                           curveOffset_mean, curveOffset_1sig,
+                           curveOffset_2sig)
+        else:
+            raise ValueError("Unknown model type {0:s}".format(modelType))
     return data
 
 
-def read_errorsnake(h5file):
-    """ Read errorsnake from HDF5 file"""
-    import os.path
-    import h5py
-
-    if not os.path.isfile(h5file):
-        raise IOError("Can't open HDF5 input file {0:s}".format(h5file))
-
-    is1D = True
-    with h5py.File(h5file, 'r') as f:
-        flux1D = f['Flux'][...]
-        mean1D = f['MeanLog10Counts'][...]
-        median1D = f['MedianLog10Counts'][...]
-        snake1D_0p683 = f['Log10CountsSnakep=0.683'][...]
-        snake1D_0p954 = f['Log10CountsSnakep=0.954'][...]
-        if 'FluxSigma' in f:
-            is1D = False
-
-    if is1D:
-        snake_data1D = namedtuple('snake_data1D',
-                                  ['flux1D', 'mean1D', 'median1D',
-                                   'snake1D_0p683', 'snake1D_0p954'])
-        data = snake_data1D(flux1D, mean1D, median1D, snake1D_0p683,
-                            snake1D_0p954)
-    else:
-        raise NotImplementedError("2D error snake not yet implemented")
-
-    return data
-
-
-def get_stats(data, thin=5, percentiles=[15.85, 84.15]):
-    """ Compute statistics on mcmc results"""
-
-    if thin <= 0:
-        raise ValueError("Invalid thinning value: {0:d}".format(thin))
-
-    bidx = np.unravel_index(data.like.argmax(), data.like.shape)
-
-    stats_type = namedtuple('stats', ['fit', 'unc_plus', 'unc_minus',
-                                      'best', 'bestlike'])
-
-    stats = stats_type(np.empty(data.npars, dtype=np.float32),
-                       np.empty(data.npars, dtype=np.float32),
-                       np.empty(data.npars, dtype=np.float32),
-                       data.steps[bidx[0], bidx[1], :], data.like[bidx])
-
-    for i in range(data.npars):
-        vals = data.steps[:, ::thin, i]
-        stats.fit[i] = vals.mean()
-        perc = np.percentile(vals, percentiles)
-        stats.unc_plus[i] = perc[1] - stats.fit[i]
-        stats.unc_minus[i] = perc[0] - stats.fit[i]
-
-    return stats
-
-
-def print_summary(data, stats):
+def print_summary(stats):
     """ Prints summary statistics"""
+
+    is2D = stats.ModelType == "numberCountsDoubleLogNormal"
 
     # Print
     print("#### Model ####")
+    print(" Model type: {0:s}".format(stats.ModelType))
+    # First -- model knots, which have positions to show
+    nknots = len(stats.KnotPositions)
+    if is2D:
+        nsigmas = len(stats.SigmaKnotPositions)
+        noffsets = len(stats.OffsetKnotPositions)
+        allknots = np.hstack([stats.KnotPositions, 
+                              stats.SigmaKnotPositions,
+                              stats.OffsetKnotPositions])
+    else:
+        allknots = stats.KnotPositions
+    ndparams = len(allknots)
+    nmult = 2 if is2D else 1
+    nparams = len(stats.ParamsBest)
+
     print("%-11s  %-6s  %5s %6s %6s %6s %6s" %
           ("#Param", "Knot", "Init", "Best", "Fit", "Unc+", "Unc-"))
-    for i in range(data.nparsfit - 2):  # -2 for sigma multipliers
-        print("%-11s  %6g  %5.2f %6.3f %6.3f %+6.3f %+6.3f" %
-              (data.param_names[i], data.allknots[i], data.initvals[i],
-               stats.best[i], stats.fit[i],
-               stats.unc_plus[i], stats.unc_minus[i]))
+    for i in range(ndparams):
+        print("%-11s  %-6g  %5.2f %6.3f %6.3f %+6.3f %+6.3f" %
+              (stats.ParamNames[i], allknots[i], 
+               stats.ParamsInit[i], stats.ParamsBest[i],
+               stats.ParamsMean[i], stats.Params1Sig[i, 1],
+               stats.Params1Sig[i, 0]))
 
     print("#### Sigma multipliers ####")
     print("%-11s  %5s %6s %6s %6s %6s" %
           ("#Param", "Init", "Best", "Fit", "Unc+", "Unc-"))
-    for i in range(data.nparsfit - 2, data.nparsfit):
+    for i in range(ndparams, ndparams + nmult):
         print("%-11s  %5.2f %6.3f %6.3f %+6.3f %+6.3f" %
-              (data.param_names[i], data.initvals[i],
-               stats.best[i], stats.fit[i],
-               stats.unc_plus[i], stats.unc_minus[i]))
+              (stats.ParamNames[i], stats.ParamsInit[i], 
+               stats.ParamsBest[i], stats.ParamsMean[i], 
+               stats.Params1Sig[i, 1], stats.Params1Sig[i, 0]))
 
     print("#### Bonus params ####")
     print("%-11s  %8s %8s %7s %7s" %
           ("#Param", "Best", "Fit", "Unc+", "Unc-"))
-    for i in range(data.nparsfit, data.npars):
+    for i in range(ndparams + nmult, nparams):
         print("%-11s  %8.3f %8.3f %+7.3f %+7.3f" %
-              (data.param_names[i], stats.best[i], stats.fit[i],
-               stats.unc_plus[i], stats.unc_minus[i]))
+              (stats.ParamNames[i], stats.ParamsBest[i], 
+               stats.ParamsMean[i], stats.Params1Sig[i, 1], 
+               stats.Params1Sig[i, 0]))
 
-    print("Best log like: %0.2f" % stats.bestlike)
+    print("Best log like: {0:0.2f}".format(stats.BestLikelihood))
 
 
 def euclideanize(knotpos, knotvals):
@@ -223,7 +188,7 @@ def otherdata_helper(other, ax, ms, fmt, label):
                 label=label)
 
 
-def band1_plot(ax, data, stats, errorsnake=None,
+def band1_plot(ax, stats, errorsnake=None,
                showglenn=False, showbeth=False,
                showoliver=False, showinit=False, euclidean=False,
                skipfirst=False):
@@ -233,7 +198,17 @@ def band1_plot(ax, data, stats, errorsnake=None,
     npointsinterp = 100
 
     # Read in comparison data if needed
-    bandname = data.band1 if hasattr(data, 'band1') else data.band
+    bandname = stats.Band1 if hasattr(stats, 'Band1') else stats.Band
+    if bandname not in ['PSW', 'PMW', 'PLW']:
+        if showglenn:
+            errstr = "Don't have Gleen et al. 2010 for band %s" % bandname
+            raise ValueError(errstr)
+        if showoliver:
+            errstr = "Don't have Oliver et al. 2010 for band %s" % bandname
+            raise ValueError(errstr)
+        if showbeth:
+            errstr = "Don't have Bethermin et al. 2012 for band %s"
+            raise ValueError(errstr % bandname)
     if showglenn:
         glennfile = resource_filename(__name__,
                                       'resources/power_nocfirb_{0:s}.txt')
@@ -248,27 +223,20 @@ def band1_plot(ax, data, stats, errorsnake=None,
         oliver = np.loadtxt(oliverfile.format(bandname.lower()))
 
     # Peel off points we will actually plot
-    if skipfirst:
-        sidx = 1
-    else:
-        sidx = 0
-    n1D = len(data.knots1D)
-    knots1Dplot = data.knots1D[sidx:].copy()
-    fit1Dplot = stats.fit[sidx:n1D].copy()
-    unc_plus_plot = stats.unc_plus[sidx:n1D].copy()
-    unc_minus_plot = stats.unc_minus[sidx:n1D].copy()
-    bestplot = stats.best[sidx:n1D].copy()
-    initplot = data.initvals[sidx:n1D].copy()
+    sidx = 1 if skipfirst else 0
+    n1D = len(stats.KnotPositions)
+    knots1Dplot = stats.KnotPositions[sidx:].copy()
+    fit1Dplot = stats.ParamsMean[sidx:n1D].copy()
+    unc_plus_plot = stats.Params1Sig[sidx:n1D, 1].copy()
+    unc_minus_plot = stats.Params1Sig[sidx:n1D, 0].copy()
+    initplot = stats.ParamsInit[sidx:n1D].copy()
 
-    # Error snake if present
-    if errorsnake is not None:
-        errsnake_f = errorsnake.flux1D.copy()
-        errsnake_med = errorsnake.median1D.copy()
-        errsnake_mn = errorsnake.mean1D.copy()
-        errsnake_m1 = errorsnake.snake1D_0p683[:, 0].copy()
-        errsnake_p1 = errorsnake.snake1D_0p683[:, 1].copy()
-        errsnake_m2 = errorsnake.snake1D_0p954[:, 0].copy()
-        errsnake_p2 = errorsnake.snake1D_0p954[:, 1].copy()
+    errsnake_f = stats.Snake1DFlux.copy()
+    errsnake_mn = stats.Snake1DMean.copy()
+    errsnake_m1 = stats.Snake1D1Sig[:, 0].copy()
+    errsnake_p1 = stats.Snake1D1Sig[:, 1].copy()
+    errsnake_m2 = stats.Snake1D2Sig[:, 0].copy()
+    errsnake_p2 = stats.Snake1D2Sig[:, 1].copy()
 
     if euclidean:
         fit1Dplot = euclideanize(knots1Dplot, fit1Dplot)
@@ -279,13 +247,11 @@ def band1_plot(ax, data, stats, errorsnake=None,
             beth[:, 1] = euclideanize(beth[:, 0], beth[:, 1])
         if showoliver:
             oliver[:, 1] = euclideanize(oliver[:, 0], oliver[:, 1])
-        if errorsnake is not None:
-            errsnake_mn = euclideanize(errsnake_f, errsnake_mn)
-            errsnake_med = euclideanize(errsnake_f, errsnake_med)
-            errsnake_m1 = euclideanize(errsnake_f, errsnake_m1)
-            errsnake_p1 = euclideanize(errsnake_f, errsnake_p1)
-            errsnake_m2 = euclideanize(errsnake_f, errsnake_m2)
-            errsnake_p2 = euclideanize(errsnake_f, errsnake_p2)
+        errsnake_mn = euclideanize(errsnake_f, errsnake_mn)
+        errsnake_m1 = euclideanize(errsnake_f, errsnake_m1)
+        errsnake_p1 = euclideanize(errsnake_f, errsnake_p1)
+        errsnake_m2 = euclideanize(errsnake_f, errsnake_m2)
+        errsnake_p2 = euclideanize(errsnake_f, errsnake_p2)
 
     # Finally, do the acutal plotting
     fiterr = np.empty((2, len(knots1Dplot)), dtype=np.float32)
@@ -294,12 +260,11 @@ def band1_plot(ax, data, stats, errorsnake=None,
     ax.errorbar(knots1Dplot, fit1Dplot, yerr=fiterr, fillstyle='full',
                 fmt='ro', alpha=0.7, label="This Fit")
 
-    if errorsnake is not None:
-        ax.plot(errsnake_f, errsnake_mn, 'r', alpha=0.3)
-        ax.fill_between(errsnake_f, errsnake_m2, errsnake_p2,
-                        facecolor='grey', alpha=0.2, lw=0, edgecolor='grey')
-        ax.fill_between(errsnake_f, errsnake_m1, errsnake_p1,
-                        facecolor='grey', alpha=0.4, lw=0, edgecolor='grey')
+    ax.plot(errsnake_f, errsnake_mn, 'r', alpha=0.3)
+    ax.fill_between(errsnake_f, errsnake_m2, errsnake_p2,
+                    facecolor='grey', alpha=0.2, lw=0, edgecolor='grey')
+    ax.fill_between(errsnake_f, errsnake_m1, errsnake_p1,
+                    facecolor='grey', alpha=0.4, lw=0, edgecolor='grey')
 
     # Oliver 2010
     if showoliver:
@@ -334,82 +299,106 @@ def band1_plot(ax, data, stats, errorsnake=None,
         ax.legend(fontsize='small')
 
 
-def sigma_plot(ax, data, stats, sigma_interp, offset_interp):
-    # This will be plotted in terms of the actual sigma in
-    #  f2 / f1, not the parameter.
-
-    n1D = len(data.knots1D)
-    nsigma = len(data.sigmaknots)
+def sigma_plot(ax, stats):
+    n1D = len(stats.KnotPositions)
+    nsigma = len(stats.SigmaKnotPositions)
     if nsigma < 2:
         raise ValueError("Don't call sigma_plot with one sigma knot")
 
-    sigmavals = stats.fit[n1D:(n1D + nsigma)]
-    sigmavals_p = sigmavals + stats.unc_plus[n1D:(n1D + nsigma)]
-    sigmavals_m = sigmavals + stats.unc_minus[n1D:(n1D + nsigma)]
-
-    # Convert from parameter to physical sigma
-    # Note the uncertainty in mu is not being included, which is wrong
-    # but is simpler
-    y = convert_to_f1f2(sigmavals, offset_interp(data.sigmaknots))[0]
-    y_m = convert_to_f1f2(sigmavals_m, offset_interp(data.sigmaknots))[0]
-    y_p = convert_to_f1f2(sigmavals_p, offset_interp(data.sigmaknots))[0]
-
+    # There is a tricky issue here: ParamsMean are in model
+    # space, but if we are plotting ratios then we need them
+    # to be in ratio space.  If that is the case, we will just
+    # interpolate on the error snake at the knot positions.
     fiterr = np.empty((2, nsigma), dtype=np.float32)
-    fiterr[0, :] = y - y_m
-    fiterr[1, :] = y_p - y
-    ax.plot(data.sigmaknots, y, 'r', alpha=0.3)
-    ax.errorbar(data.sigmaknots, y, yerr=fiterr, fillstyle='full',
+    if stats.AreRatios:
+        i1D = interp1d(stats.SnakeSigmaFlux, stats.SnakeSigmaMean,
+                       kind='linear')
+        sigmavals = i1D(stats.SigmaKnotPositions)
+        i1D = interp1d(stats.SnakeSigmaFlux, stats.SnakeSigma1Sig[:, 0])
+        fiterr[0, :] = sigmavals - i1D(stats.SigmaKnotPositions)
+        i1D = interp1d(stats.SnakeSigmaFlux, stats.SnakeSigma1Sig[:, 1])
+        fiterr[1, :] = i1D(stats.SigmaKnotPositions) - sigmavals
+    else:
+        # Can just take them as they are
+        sigmavals = stats.ParamsMean[n1D:(n1D + nsigma)]
+        fiterr[0, :] = np.abs(stats.Params1Sig[n1D:(n1D + nsigma), 0])
+        fiterr[1, :] = stats.Params1Sig[n1D:(n1D + nsigma), 1]
+    ax.plot(stats.SigmaKnotPositions, sigmavals, 'ro', alpha=0.3)
+    ax.errorbar(stats.SigmaKnotPositions, sigmavals, 
+                yerr=fiterr, fillstyle='full',
                 fmt='ro', alpha=0.7, label="This Fit")
+
+    ax.plot(stats.SnakeSigmaFlux, stats.SnakeSigmaMean, 'r', alpha=0.3)
+    ax.fill_between(stats.SnakeSigmaFlux, stats.SnakeSigma2Sig[:, 0],
+                    stats.SnakeSigma2Sig[:, 1],facecolor='grey', 
+                    alpha=0.2, lw=0, edgecolor='grey')
+    ax.fill_between(stats.SnakeSigmaFlux, stats.SnakeSigma1Sig[:, 0],
+                    stats.SnakeSigma1Sig[:, 1],
+                    facecolor='grey', alpha=0.4, lw=0, edgecolor='grey')
 
     
     ax.set_title("Sigma model")
-    ax.set_xlabel("{0:s} Flux Density [Jy]".format(data.band1))
+    ax.set_xlabel("{0:s} Flux Density [Jy]".format(stats.Band1))
     ax.set_xscale('log')
-    ax.set_ylabel(r"""$\sigma_{f_2 / f_1}$""")
-    ax.set_xlim(0.5 * data.sigmaknots.min(),
-                1.5 * data.sigmaknots.max())
+    if stats.AreRatios:
+        ax.set_ylabel(r"""$\sigma_{f_2 / f_1}$""")
+    else:
+        ax.set_ylabel(r"""$\sigma_{\log f_2 / f_1}$""")
+    ax.set_xlim(0.5 * stats.SigmaKnotPositions.min(),
+                1.5 * stats.SigmaKnotPositions.max())
 
 
-def offset_plot(ax, data, stats, sigma_interp, offset_interp):
-    # This will be plotted in terms of the actual mean of f2/f1
-    # rather than the model mu parameter.
-
-    n1D = len(data.knots1D)
-    nsigma = len(data.sigmaknots)
-    noffset = len(data.offsetknots)
+def offset_plot(ax, stats):
+    n1D = len(stats.KnotPositions)
+    nsigma = len(stats.SigmaKnotPositions)
+    noffset = len(stats.OffsetKnotPositions)
     if noffset < 2:
         raise ValueError("Don't call offset_plot with one offset knot")
 
     idx1 = n1D + nsigma
     idx2 = idx1 + noffset
-    offsetvals = stats.fit[idx1:idx2]
-    offsetvals_p = offsetvals + stats.unc_plus[idx1:idx2]
-    offsetvals_m = offsetvals + stats.unc_minus[idx1:idx2]
 
-    # Convert from parameter to physical offset
-    # Note the uncertainty in sigma is not being included, which is wrong
-    # but is simpler
-    y = convert_to_f1f2(sigma_interp(data.offsetknots), offsetvals)[1]
-    y_m = convert_to_f1f2(sigma_interp(data.offsetknots), offsetvals_p)[1]
-    y_p = convert_to_f1f2(sigma_interp(data.offsetknots), offsetvals_m)[1]
-
+    # See discussion in sigma_plot
     fiterr = np.empty((2, noffset), dtype=np.float32)
-    fiterr[0, :] = y - y_m
-    fiterr[1, :] = y_p - y
-    ax.plot(data.offsetknots, y, 'r', alpha=0.3)
-    ax.errorbar(data.offsetknots, y, yerr=fiterr, fillstyle='full',
+    if stats.AreRatios:
+        i1D = interp1d(stats.SnakeOffsetFlux, stats.SnakeOffsetMean,
+                       kind='linear')
+        offsetvals = i1D(stats.OffsetKnotPositions)
+        i1D = interp1d(stats.SnakeOffsetFlux, stats.SnakeOffset1Sig[:, 0])
+        fiterr[0, :] = offsetvals - i1D(stats.OffsetKnotPositions)
+        i1D = interp1d(stats.SnakeOffsetFlux, stats.SnakeOffset1Sig[:, 1])
+        fiterr[1, :] = i1D(stats.OffsetKnotPositions) - offsetvals
+    else:
+        # Can just take them as they are
+        offsetvals = stats.ParamsMean[idx1:idx2]
+        fiterr[0, :] = np.abs(stats.Params1Sig[idx1:idx2, 0])
+        fiterr[1, :] = stats.Params1Sig[idx1:idx2, 1]
+    ax.plot(stats.OffsetKnotPositions, offsetvals, 'ro', alpha=0.3)
+    ax.errorbar(stats.OffsetKnotPositions, offsetvals, 
+                yerr=fiterr, fillstyle='full',
                 fmt='ro', alpha=0.7, label="This Fit")
 
+    ax.plot(stats.SnakeOffsetFlux, stats.SnakeOffsetMean, 'r', alpha=0.3)
+    ax.fill_between(stats.SnakeOffsetFlux, stats.SnakeOffset2Sig[:, 0],
+                    stats.SnakeOffset2Sig[:, 1],facecolor='grey', 
+                    alpha=0.2, lw=0, edgecolor='grey')
+    ax.fill_between(stats.SnakeOffsetFlux, stats.SnakeOffset1Sig[:, 0],
+                    stats.SnakeOffset1Sig[:, 1],
+                    facecolor='grey', alpha=0.4, lw=0, edgecolor='grey')
+
     ax.set_title("Offset model")
-    ax.set_xlabel("{0:s} Flux Density [Jy]".format(data.band1))
+    ax.set_xlabel("{0:s} Flux Density [Jy]".format(stats.Band1))
     ax.set_xscale('log')
+    if stats.AreRatios:
+        ax.set_ylabel(r"""$\left<f_2 / f_1\right>$""")
+    else:
+        ax.set_ylabel(r"""$\left<\log f_2 / f_1\right>$""")
     ax.set_ylabel(r"""$\left<f_2 / f_1\right>$""")
-    ax.set_xlim(0.5 * data.offsetknots.min(),
-                1.5 * data.offsetknots.max())
+    ax.set_xlim(0.5 * stats.OffsetKnotPositions.min(),
+                1.5 * stats.OffsetKnotPositions.max())
 
 
-def make_plots(data, stats, errorsnake=None,
-               showglenn=False, showbeth=False, showoliver=False,
+def make_plots(stats, showglenn=False, showbeth=False, showoliver=False,
                showinit=False, euclidean=False, skipfirst=False):
     """ Plot results of a fit"""
 
@@ -426,10 +415,10 @@ def make_plots(data, stats, errorsnake=None,
     #  case plotting is pointless
     do_sigmaplot = False
     do_offsetplot = False
-    is2D = hasattr(data, 'sigmaknots')
+    is2D = stats.ModelType == "numberCountsDoubleLogNormal"
     if is2D:
-        do_sigmaplot = len(data.sigmaknots) > 1
-        do_offsetplot = len(data.offsetknots) > 1
+        do_sigmaplot = len(stats.SigmaKnotPositions) > 1
+        do_offsetplot = len(stats.OffsetKnotPositions) > 1
 
     # The band 1 uses 2 panels, others use at most 1
     n_panels = 2 + (1 if do_sigmaplot else 0) + (1 if do_offsetplot else 0)
@@ -441,37 +430,19 @@ def make_plots(data, stats, errorsnake=None,
 
     if is2D:
         # 1D doesn't really need a supertitle
-        f.suptitle("{0:s} vs. {1:s}".format(data.band1, data.band2))
+        f.suptitle("{0:s} vs. {1:s}".format(stats.Band1, stats.Band2))
 
     ax1 = plt.subplot(gs[:, 0:2])
-    band1_plot(ax1, data, stats, errorsnake=errorsnake,
-               showglenn=showglenn, showbeth=showbeth,
+    band1_plot(ax1, stats, showglenn=showglenn, showbeth=showbeth,
                showoliver=showoliver, showinit=showinit,
                euclidean=euclidean, skipfirst=skipfirst)
 
-    # The sigma and offset are plotted as constraints on f2 / f1
-    #  rather than the raw parameters.  That means we need
-    #  interpolation support on sigma and offset, and it makes
-    #  sense to do that once and share
-    if do_sigmaplot or do_offsetplot:
-        n1D = len(data.knots1D)
-        nsigma = len(data.sigmaknots)
-        sigma_interp = interpolator(data.sigmaknots,
-                                    stats.fit[n1D:(n1D+nsigma)])
+    if do_sigmaplot:
+        ax2 = plt.subplot(gs[:, 2])
+        sigma_plot(ax2, stats)
 
-        noffset = len(data.offsetknots)
-        lim1 = n1D + nsigma
-        lim2 = lim1 + noffset
-        offset_interp = interpolator(data.offsetknots,
-                                     stats.fit[lim1:lim2])
-
-                                     
-        if do_sigmaplot:
-            ax2 = plt.subplot(gs[:, 2])
-            sigma_plot(ax2, data, stats, sigma_interp, offset_interp)
-
-        if do_offsetplot:
-            ax3 = plt.subplot(gs[:, 3 if do_sigmaplot else 2])
-            offset_plot(ax3, data, stats, sigma_interp, offset_interp)
+    if do_offsetplot:
+        ax3 = plt.subplot(gs[:, 3 if do_sigmaplot else 2])
+        offset_plot(ax3, stats)
 
     return f

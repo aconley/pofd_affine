@@ -467,7 +467,8 @@ void numberCountsKnots::readFromHDF5Handle(hid_t objid) {
     throw affineExcept("numberCountsKnots", "readFromHDF5Handle",
 		       "Input handle is not valid");
 
-  unsigned int f_nknots = hdf5utils::readAttUInt(objid, "NKnots");
+  unsigned int f_nknots = 
+    hdf5utils::readAttUnsignedInt(objid, "NKnots");
   setNKnots(f_nknots);
   if (f_nknots > 0) {
     // We could read directly into knots, but that could be a problem

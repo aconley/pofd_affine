@@ -31,9 +31,11 @@ numberCountsDoubleLogNormalStats(unsigned int NPOINTS,
                                  bool RATIOS):
   nparams(0), nknots(0), nsigmas(0), noffsets(0),
   knotPositions(nullptr), sigmaKnotPositions(nullptr),
-  offsetKnotPositions(nullptr), bestParams(nullptr), 
-  meanParams(nullptr), medParams(nullptr), uncertaintyParams(nullptr), 
+  offsetKnotPositions(nullptr), initParams(nullptr), 
+  bestParams(nullptr), meanParams(nullptr), 
+  medParams(nullptr), uncertaintyParams(nullptr), 
   npoints(NPOINTS), areRatios(RATIOS) {
+
   s1D = new float[npoints];
   mean1D = new float[npoints];
   median1D = new float[npoints];
@@ -53,6 +55,7 @@ numberCountsDoubleLogNormalStats::~numberCountsDoubleLogNormalStats() {
   if (sigmaKnotPositions != nullptr) delete[] sigmaKnotPositions;
   if (offsetKnotPositions != nullptr) delete[] offsetKnotPositions;
 
+  if (initParams != nullptr) delete[] initParams;
   if (bestParams != nullptr) delete[] bestParams;
   if (meanParams != nullptr) delete[] meanParams;
   if (medParams != nullptr) delete[] medParams;
@@ -77,14 +80,17 @@ numberCountsDoubleLogNormalStats::~numberCountsDoubleLogNormalStats() {
 */
 void numberCountsDoubleLogNormalStats::setNParams(unsigned int n) {
   if (n == nparams) return;
+  if (initParams != nullptr) delete[] initParams;
+  if (n > 0) initParams = new float[n]; else initParams = nullptr;
   if (bestParams != nullptr) delete[] bestParams;
-  bestParams = new float[n];
+  if (n > 0) bestParams = new float[n]; else bestParams = nullptr;
   if (meanParams != nullptr) delete[] meanParams;
-  meanParams = new float[n];
+  if (n > 0) meanParams = new float[n]; else meanParams = nullptr;
   if (medParams != nullptr) delete[] medParams;
-  medParams = new float[n];
+  if (n > 0) medParams = new float[n]; else medParams = nullptr;
   if (uncertaintyParams != nullptr) delete[] uncertaintyParams;
-  uncertaintyParams = new float[2 * nprob * n];
+  if (n > 0) uncertaintyParams = new float[2 * nprob * n];
+  else uncertaintyParams = nullptr;
   nparams = n;
  }
 
@@ -144,6 +150,8 @@ void numberCountsDoubleLogNormalStats::
   // Get names of parameters
   groupid = H5Gopen(fileid, "ParamInfo", H5P_DEFAULT);
   paramNames = hdf5utils::readAttStrings(groupid, "ParamNames");
+  hdf5utils::readDataFloats(groupid, "InitialPosition", 
+                            nparams, initParams);
   H5Gclose(groupid);
 
   // Allocate and read steps. Flattened because HDF5 works with
@@ -273,7 +281,7 @@ void numberCountsDoubleLogNormalStats::
 void numberCountsDoubleLogNormalStats::
 writeAsHDF5(const std::string& filename) const {
 
-  hid_t file_id;
+  hid_t file_id, group_id, subgroup_id;
   file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
               H5P_DEFAULT);
 
@@ -283,75 +291,81 @@ writeAsHDF5(const std::string& filename) const {
                        "Failed to open HDF5 file to write");
   }
 
-  hdf5utils::writeDataFloats(file_id, "KnotPositions", 
+  hdf5utils::writeDataUnsignedInt(file_id, "NDims", 2);
+  hdf5utils::writeDataString(file_id, "ModelType", 
+                             "numberCountsDoubleLogNormal");
+  hdf5utils::writeDataBool(file_id, "AreF2F1Ratios", areRatios);
+
+
+  group_id = H5Gcreate(file_id, "Params", H5P_DEFAULT, H5P_DEFAULT, 
+                       H5P_DEFAULT);
+  hdf5utils::writeDataFloats(group_id, "KnotPositions", 
                              nknots, knotPositions);
-  hdf5utils::writeDataFloats(file_id, "SigmaKnotPositions", 
+  hdf5utils::writeDataFloats(group_id, "SigmaKnotPositions", 
                              nsigmas, sigmaKnotPositions);
-  hdf5utils::writeDataFloats(file_id, "offsetKnotPositions", 
+  hdf5utils::writeDataFloats(group_id, "OffsetKnotPositions", 
                              noffsets, offsetKnotPositions);
-  hdf5utils::writeDataStrings(file_id, "ParamNames", paramNames);
+  hdf5utils::writeDataStrings(group_id, "ParamNames", paramNames);
+  hdf5utils::writeDataFloats(group_id, "ParamsInit", nparams, initParams);
 
-  hsize_t adims;
-  hid_t mems_id ,att_id;
-  adims = static_cast<size_t>(1);
-  mems_id = H5Screate_simple(1, &adims, nullptr);
-  att_id = H5Acreate1(file_id, "BestLikelihood", H5T_NATIVE_DOUBLE,
-                      mems_id, H5P_DEFAULT);
-  H5Awrite(att_id, H5T_NATIVE_DOUBLE, &bestLike);
-  H5Aclose(att_id);
-  hbool_t btmp = static_cast<hbool_t>(areRatios);
-  att_id = H5Acreate1(file_id, "AreF2F1Ratios", H5T_NATIVE_HBOOL,
-                      mems_id, H5P_DEFAULT);
-  H5Awrite(att_id, H5T_NATIVE_HBOOL, &btmp);
-  H5Aclose(att_id);
-  H5Sclose(mems_id);
+  hdf5utils::writeDataDouble(group_id, "BestLikelihood", bestLike);
+  hdf5utils::writeDataFloats(group_id, "ParamsBest", nparams, bestParams);
 
-  hdf5utils::writeDataFloats(file_id, "BestParams", nparams, bestParams);
-  hdf5utils::writeDataFloats(file_id, "MeanParams", nparams, meanParams);
-  hdf5utils::writeDataFloats(file_id, "MedianParams", nparams, medParams);
+  hdf5utils::writeDataFloats(group_id, "ParamsMean", nparams, meanParams);
+  hdf5utils::writeDataFloats(group_id, "ParamsMedian", nparams, medParams);
   for (unsigned int i = 0; i < nprob; ++i) {
     std::stringstream pname;
     pname << "Paramsp=" << std::setprecision(3) << plevels[i];
-    hdf5utils::writeData2DFloats(file_id, pname.str(), nparams, 2,
+    hdf5utils::writeData2DFloats(group_id, pname.str(), nparams, 2,
                                  &uncertaintyParams[i * nparams * 2]);
   }
+  H5Gclose(group_id);
 
-  hdf5utils::writeDataFloats(file_id, "FluxDensity1D", npoints, s1D);
-  hdf5utils::writeDataFloats(file_id, "MeanLog10Counts", 
+  group_id = H5Gcreate(file_id, "Curves", H5P_DEFAULT, H5P_DEFAULT, 
+                       H5P_DEFAULT);
+  subgroup_id = H5Gcreate(group_id, "Band1", H5P_DEFAULT, H5P_DEFAULT, 
+                          H5P_DEFAULT);
+  hdf5utils::writeDataFloats(subgroup_id, "FluxDensity", npoints, s1D);
+  hdf5utils::writeDataFloats(subgroup_id, "Log10CountsMean", 
                              npoints, mean1D);
-  hdf5utils::writeDataFloats(file_id, "MedianLog10Counts", 
+  hdf5utils::writeDataFloats(subgroup_id, "Log10CountsMedian", 
                              npoints, median1D);
   for (unsigned int i = 0; i < nprob; ++i) {
     std::stringstream pname;
-    pname << "Log10CountsSnakep=" << std::setprecision(3) << plevels[i];
-    hdf5utils::writeData2DFloats(file_id, pname.str(),
+    pname << "Log10Countsp=" << std::setprecision(3) << plevels[i];
+    hdf5utils::writeData2DFloats(subgroup_id, pname.str(),
                                  npoints, 2, &snake1D[i * npoints * 2]);
   }
+  H5Gclose(subgroup_id);
 
-  hdf5utils::writeDataFloats(file_id, "FluxDensitySigma", 
+  subgroup_id = H5Gcreate(group_id, "Color", H5P_DEFAULT, H5P_DEFAULT, 
+                          H5P_DEFAULT);
+  hdf5utils::writeDataFloats(subgroup_id, "SigmaFluxDensity", 
                              npoints, sSigma);
-  hdf5utils::writeDataFloats(file_id, "MeanSigma", 
+  hdf5utils::writeDataFloats(subgroup_id, "SigmaMean", 
                              npoints, meanSigma);
-  hdf5utils::writeDataFloats(file_id, "MedianSigma", 
+  hdf5utils::writeDataFloats(subgroup_id, "SigmaMedian", 
                              npoints, medianSigma);
   for (unsigned int i = 0; i < nprob; ++i) {
     std::stringstream pname;
-    pname << "SigmaSnakep=" << std::setprecision(3) << plevels[i];
-    hdf5utils::writeData2DFloats(file_id, pname.str(), npoints, 2,
+    pname << "Sigmap=" << std::setprecision(3) << plevels[i];
+    hdf5utils::writeData2DFloats(subgroup_id, pname.str(), npoints, 2,
                                  &snakeSigma[i * npoints * 2]);
   }
-  hdf5utils::writeDataFloats(file_id, "FluxDensityOffset", 
+  hdf5utils::writeDataFloats(subgroup_id, "OffsetFluxDensity", 
                              npoints, sOffset);
-  hdf5utils::writeDataFloats(file_id, "MeanOffset", 
+  hdf5utils::writeDataFloats(subgroup_id, "OffsetMean", 
                              npoints, meanOffset);
-  hdf5utils::writeDataFloats(file_id, "MedianOffset", 
+  hdf5utils::writeDataFloats(subgroup_id, "OffsetMedian", 
                              npoints, medianOffset);
   for (unsigned int i = 0; i < nprob; ++i) {
     std::stringstream pname;
-    pname << "OffsetSnakep=" << std::setprecision(3) << plevels[i];
-    hdf5utils::writeData2DFloats(file_id, pname.str(), npoints, 2,
+    pname << "Offsetp=" << std::setprecision(3) << plevels[i];
+    hdf5utils::writeData2DFloats(subgroup_id, pname.str(), npoints, 2,
                                  &snakeOffset[i * npoints * 2]);
   }
+  H5Gclose(subgroup_id);
+  H5Gclose(group_id);
 
   H5Fclose(file_id);
 }

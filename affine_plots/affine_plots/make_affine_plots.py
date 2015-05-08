@@ -11,11 +11,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('h5file', action='store',
-                        help="HDF5 file to load")
-    parser.add_argument('--errorsnake', action='store', default=None,
-                        help="HDF5 file to load error snake from")
-    parser.add_argument('--thin', action='store', type=int,
-                        default=5, help="Thinning")
+                        help="HDF5 stats file to load")
     parser.add_argument('--beth', action='store_true', default=False,
                         help="Show Bethermin 2012 data")
     parser.add_argument('--euclidean', action='store_true', default=False,
@@ -35,19 +31,12 @@ if __name__ == "__main__":
 
     parse_results = parser.parse_args()  # Runs on sys.argv by default
 
-    data = read_data(parse_results.h5file)
+    stats = read_data(parse_results.h5file)
 
-    errorsnake = None
-    if parse_results.errorsnake is not None:
-        errorsnake = read_errorsnake(parse_results.errorsnake)
-        
-    stats = get_stats(data, thin=parse_results.thin)
-
-    print_summary(data, stats)
+    print_summary(stats)
 
     if not parse_results.noplot:
-      f = make_plots(data, stats, errorsnake=errorsnake,
-                     showglenn=parse_results.glenn,
+      f = make_plots(stats, showglenn=parse_results.glenn,
                      showbeth=parse_results.beth,
                      showoliver=parse_results.oliver,
                      showinit=parse_results.plotinit,

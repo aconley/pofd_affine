@@ -28,6 +28,7 @@ private:
   float *knotPositions; //!< 1D model Knot positions, len nknots
   float *sigmaKnotPositions; //!< Sigma knot positions
   float *offsetKnotPositions; //!< Offset knot positions
+  float *initParams; //!< Initial values for parameters
   double bestLike; //!< Likelihood of best fit
   float *bestParams; //!< Best fit values of params
   float *meanParams; //!< Mean parameter values
