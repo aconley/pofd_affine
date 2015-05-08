@@ -95,7 +95,7 @@ namespace hdf5utils {
   /*! \brief Read vector of doubles attribute */
   std::vector<double> readAttDoubles(hid_t objid, const std::string& name);
 
-  // Data writers
+  // Data writers and readers
   // 1D
   /*! \brief Write string as data */
   void writeDataString(hid_t, const std::string&, const std::string&);
@@ -105,37 +105,71 @@ namespace hdf5utils {
   /*! \brief Write vector of strings as data */
   void writeDataStrings(hid_t, const std::string&,
 			const std::vector<std::string>&);
+  /*! \brief Read a single string as data */
+  std::string readDataString(hid_t, const std::string&);
+  /*! \brief Read a vector of strings string as data */
+  std::vector<std::string> readDataStrings(hid_t, const std::string&);
+
+  /*! \brief Write a single boolean as data */
+  void writeDataBool(hid_t, const std::string&, bool);
   /*! \brief Write 1D array of bools as data */
   void writeDataBools(hid_t, const std::string&, unsigned int,
-		      const bool* const);
+		                  const bool* const);
   /*! \brief Write vector of bools as data */
   void writeDataBools(hid_t, const std::string&, const std::vector<bool>&);
+  /*! \brief Read a single bool as data */
+  bool readDataBool(hid_t, const std::string&);
+  /*! \brief Read a vector of bools as data */
+  std::vector<bool> readDataBools(hid_t, const std::string&);
+
+  /*! \brief Write a single unsigned int as data */
+  void writeDataUnsignedInt(hid_t, const std::string&, unsigned int);
   /*! \brief Write 1D array of unsigned ints as data */
   void writeDataUnsignedInts(hid_t, const std::string&, unsigned int,
 			     const unsigned int* const);
   /*! \brief Write vector of unsigned ints as data */
   void writeDataUnsignedInts(hid_t, const std::string&,
 			     const std::vector<unsigned int>&);
+  /*! \brief Read a single unsigned int as data */
+  unsigned int readDataUnsignedInt(hid_t, const std::string&);
+  /*! \brief Read a vector of unsigned ints as data */
+  std::vector<unsigned int> readDataUnsignedInts(hid_t, const std::string&);
+
+  /*! \brief Write a single int as data */
+  void writeDataInt(hid_t, const std::string&, int);
   /*! \brief Write 1D array of ints as data */
   void writeDataInts(hid_t, const std::string&, unsigned int,
 		     const int* const);
   /*! \brief Write vector of ints as data */
   void writeDataInts(hid_t, const std::string&, const std::vector<int>&);
+  /*! \brief Read a single int as data */
+  int readDataInt(hid_t, const std::string&);
+  /*! \brief Read a vector of ints as data */
+  std::vector<int> readDataInts(hid_t, const std::string&);
+
+  /*! \brief Write a single float as data */
+  void writeDataFloat(hid_t, const std::string&, float);
   /*! \brief Write 1D array of floats as data */
   void writeDataFloats(hid_t, const std::string&, unsigned int,
 			const float* const);
   /*! \brief Write vector of floats as data */
   void writeDataFloats(hid_t, const std::string&,
 		       const std::vector<float>&);
+  /*! \brief Read a single float as data */
+  float readDataFloat(hid_t, const std::string&);
   /*! \brief Read 1D array of floats as data */
   void readDataFloats(hid_t, const std::string&, unsigned int, float* const);
   
+  /*! \brief Write a single double as data */
+  void writeDataDouble(hid_t, const std::string&, double);
   /*! \brief Write 1D array of doubles as data */
   void writeDataDoubles(hid_t, const std::string&, unsigned int,
 			const double* const);
   /*! \brief Write vector of doubles as data */
   void writeDataDoubles(hid_t, const std::string&,
 			const std::vector<double>&);
+  /*! \brief Read a single double as data */
+  double readDataDouble(hid_t, const std::string&);
   /*! \brief Read 1D array of doubles as data */
   void readDataDoubles(hid_t, const std::string&, unsigned int,
 		       double* const);
