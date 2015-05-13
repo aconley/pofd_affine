@@ -13,16 +13,22 @@
 void statsAccumulator::setupFluxes(float minval, float maxval, 
                                    bool logspace, unsigned int n,
                                    float* s) {
+  // Accumulate as doubles
   if (logspace) {
-    float log_minval = log(minval);
-    float delta = (log(maxval) - log_minval) /
+    double log_minval = log(static_cast<double>(minval));
+    double delta = (log(static_cast<double>(maxval)) - log_minval) /
       static_cast<double>(n - 1);
-    for (unsigned int i = 0; i < n; ++i)
-      s[i] = exp(log_minval + delta * static_cast<float>(i));
+    double val;
+    for (unsigned int i = 0; i < n; ++i) {
+      val = exp(log_minval + delta * static_cast<double>(i));
+      s[i] = static_cast<float>(val);
+    }
   } else {
-    float delta = (maxval - minval) / static_cast<float>(n - 1);
+    double dminval = static_cast<double>(minval);
+    double dmaxval = static_cast<double>(maxval);
+    double delta = (dmaxval - dminval) / static_cast<double>(n - 1);
     for (unsigned int i = 0; i < n; ++i)
-      s[i] = minval + delta * static_cast<float>(i);
+      s[i] = static_cast<float>(dminval + delta * static_cast<double>(i));
   }
 }
 

@@ -27,6 +27,19 @@ Installation is via the standard UNIX `configure` and
 It may be necessary to tell configure where to look for these
 libraries -- see `configure --help`.
 
+In addition, pofd_affine comes with an optional Python script 
+to print summaries and make plots of the results.  This
+can be installed by going into the affine_plots subdirectory
+and executing `python setup.py install`.
+
+This requires the Python libraries:
+* [h5py](http://www.h5py.org/)
+* [matplotlib](http://matplotlib.org/)
+* [numpy](http://www.numpy.org/)
+* [scipy](http://www.scipy.org)
+Although probably the best way to install them is to use `pip`,
+if for some reason they aren't already present.
+
 ### Documentation
 
 There isn't much.  Doxygen style documentation can be
@@ -49,6 +62,23 @@ if you have used --enable-test when configuring, and then do
 
 There are also some examples, which can be built if --enable-examples
 is set while configuring.
+
+The basic idea is to create a specfile that tells the code about
+the data, an initfile that specifies the model and initial position,
+and then run something like
+
+      mpiexec pofd_affine_mcmc -H initfile specfile outfile.h5
+
+Note that this can take a while to run.  Summary statistics are
+then created using
+
+    pofd_affine_getStats outfile.h5 stats.h5
+
+and can be plotted if the optional python package is installed using
+
+    make_affine_plots stats.h5  
+
+All of these routines have numerous additional options.
 
 ### Branches
 
