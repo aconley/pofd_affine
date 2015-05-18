@@ -21,12 +21,15 @@ struct proposedStep {
   /*! \brief  Constructor with number of parameters */
   explicit proposedStep(unsigned int);
   proposedStep(const proposedStep&); //!< Copy constructor
+  proposedStep(proposedStep&&); //!< Move constructor
   ~proposedStep(); //!< Destructor
 
   void clear(); //!<Clear contents
   void setNParams(unsigned int); //!< Set number of parameters
+  unsigned int getNParams() const { return oldStep.getNParams(); }
 
   proposedStep& operator=(const proposedStep&); //!< Copy operator
+  proposedStep& operator=(proposedStep&&); //!< Move assignment
 
   /*! MPI copy send operation */
   void sendSelf(MPI_Comm comm, int dest) const;

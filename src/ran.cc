@@ -35,7 +35,7 @@ unsigned long long int ran::int64() {
      maxidx can't be generated
 */
 unsigned int ran::selectFromRange(unsigned int minidx,
-				  unsigned int maxidx) {
+                                  unsigned int maxidx) {
   double relidx = (maxidx - minidx) * doub();
   return static_cast<unsigned int>(relidx) + minidx;
 }

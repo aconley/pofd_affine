@@ -28,9 +28,11 @@ template <class Item> class affineQueue {
 
   affineQueue(); //!< Constructor
   explicit affineQueue(unsigned int); //!< Constructor with specified capacity
+  affineQueue(const affineQueue&)=delete;
+  affineQueue(affineQueue&&)=delete;
   ~affineQueue(); //!< Destructor
 
-  unsigned int capacity() const { return cap; } //!< Get capactity
+  unsigned int capacity() const { return cap; } //!< Get capacity
   unsigned int size() const { return nelem; } //!< Get number of elements in queue
   bool empty() const { return nelem == 0; } //!< Is queue empty?
 
@@ -38,6 +40,7 @@ template <class Item> class affineQueue {
   void setCapacity(unsigned int); //!< Change capacity -- does not preserve contents
 
   void push(const Item&) throw (affineExcept);  //!< Push something onto queue
+  void push(Item&&); //!< Push onto queue with move semantics
   Item pop() throw (affineExcept); //!< Pull item off of queue
 };
 
@@ -100,8 +103,25 @@ template< class Item > void affineQueue<Item>::push(const Item& item)
   //Note this also checks for zero cap
   if (nelem >= cap) 
     throw affineExcept("affineQueue", "push", 
-		       "No room to add another element");
+                       "No room to add another element");
   data[tail] = item;
+  tail += 1;
+  if (tail == cap) tail = 0;
+  nelem += 1;
+}
+
+/*!
+  \param[in] item Item to push onto queue
+
+  Throws an exception if the queue is already full.
+*/
+template< class Item > void affineQueue<Item>::push(Item&& item) {
+  
+  //Note this also checks for zero cap
+  if (nelem >= cap) 
+    throw affineExcept("affineQueue", "push", 
+                       "No room to add another element");
+  data[tail] = std::move(item);
   tail += 1;
   if (tail == cap) tail = 0;
   nelem += 1;

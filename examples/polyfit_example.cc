@@ -31,7 +31,7 @@ private :
   double rms; //!< RMS of data around model, computed by getLogLike
 public:
   polyFit(const std::string&, unsigned int, unsigned int, 
-	  unsigned int, unsigned int, double, unsigned int, bool);
+          unsigned int, unsigned int, double, unsigned int, bool);
   virtual ~polyFit();
   void initChains();
   void generateInitialPosition(const paramSet&);
@@ -42,11 +42,11 @@ public:
 };
 
 polyFit::polyFit(const std::string& datafile, unsigned int NWALKERS, 
-		 unsigned int NPARAMS, unsigned int NSAMPLES,
-		 unsigned INIT_STEPS=0, double INIT_TEMP=2.0,
-		 unsigned int MIN_BURN=50, bool FIXED_BURN=false) :
+                 unsigned int NPARAMS, unsigned int NSAMPLES,
+                 unsigned INIT_STEPS=0, double INIT_TEMP=2.0,
+                 unsigned int MIN_BURN=50, bool FIXED_BURN=false) :
   affineEnsemble(NWALKERS, NPARAMS, NSAMPLES, INIT_STEPS, INIT_TEMP,
-		 MIN_BURN, FIXED_BURN) {
+                 MIN_BURN, FIXED_BURN) {
   ndata = 0;
   x = NULL;
   y = NULL;
@@ -123,7 +123,7 @@ void polyFit::generateInitialPosition(const paramSet& p) {
   unsigned int npar = p.getNParams();
   if (npar != getNParams())
     throw affineExcept("polyFit", "generateInitialPosition",
-		       "Wrong number of params in p");
+                       "Wrong number of params in p");
 
   paramSet p2(npar);
   unsigned int nwalk = getNWalkers();
@@ -214,60 +214,60 @@ int main(int argc, char** argv) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   while ((c = getopt_long(argc, argv, optstring, long_options,
-			  &option_index)) != -1) 
+                          &option_index)) != -1) 
     switch(c) {
     case 'h' :
       if (rank == 0) {
-	std::cerr << "NAME" << std::endl;
-	std::cerr << "\tpolyfit_example -- fits a polynomial to example" 
-		  << std::endl;
-	std::cerr << "\t\tdata set." << std::endl;
-	std::cerr << std::endl;
-	std::cerr << "SYNOPSIS" << std::endl;
-	std::cerr << "\tpolyfit_example nwalkers nsamples outfile"
-		  << std::endl;
-	std::cerr << "DESCRIPTION:" << std::endl;
-	std::cerr << "\tFits the polynomail using an affine-invariant " 
-		  << "MCMC code," << std::endl;
-	std::cerr << "\twith nwalkers walkers and generating (approximately)"
-		  << " nsamples samples." << std::endl;
-	std::cerr << "\tThe RMS of the data around the model is also computed"
-		  << std::endl;
-	std::cerr << "\tfor each step in the chain.  The chain is output to" 
-		  << std::endl;
-	std::cerr << "\toutfile in HDF5 format." << std::endl;
-	std::cerr << std::endl;
-	std::cerr << "\tThe input polynomial is: " << std::endl
-		  << "\t\t0.5 + 0.04 x - 0.15 x^2 + 0.3 x^3"
-		  << std::endl;
-	std::cerr << "OPTIONS" << std::endl;
-	std::cerr << "\t-h, --help" << std::endl;
-	std::cerr << "\t\tOutput this help." << std::endl;
-	std::cerr << "\t-f, --fixedburn" << std::endl;
+        std::cerr << "NAME" << std::endl;
+        std::cerr << "\tpolyfit_example -- fits a polynomial to example" 
+                  << std::endl;
+        std::cerr << "\t\tdata set." << std::endl;
+        std::cerr << std::endl;
+        std::cerr << "SYNOPSIS" << std::endl;
+        std::cerr << "\tpolyfit_example nwalkers nsamples outfile"
+                  << std::endl;
+        std::cerr << "DESCRIPTION:" << std::endl;
+        std::cerr << "\tFits the polynomail using an affine-invariant " 
+                  << "MCMC code," << std::endl;
+        std::cerr << "\twith nwalkers walkers and generating (approximately)"
+                  << " nsamples samples." << std::endl;
+        std::cerr << "\tThe RMS of the data around the model is also computed"
+                  << std::endl;
+        std::cerr << "\tfor each step in the chain.  The chain is output to" 
+                  << std::endl;
+        std::cerr << "\toutfile in HDF5 format." << std::endl;
+        std::cerr << std::endl;
+        std::cerr << "\tThe input polynomial is: " << std::endl
+                  << "\t\t0.5 + 0.04 x - 0.15 x^2 + 0.3 x^3"
+                  << std::endl;
+        std::cerr << "OPTIONS" << std::endl;
+        std::cerr << "\t-h, --help" << std::endl;
+        std::cerr << "\t\tOutput this help." << std::endl;
+        std::cerr << "\t-f, --fixedburn" << std::endl;
         std::cerr << "\t\tUsed a fixed burn in length before starting main"
                   << " sample," << std::endl;
         std::cerr << "\t\trather than using the autocorrelation."
-		  << std::endl;
-	std::cerr << "\t-i, --initsteps STEPS" << std::endl;
-	std::cerr << "\t\tTake this many initial steps per walker, then "
-		  << "recenter" << std::endl;
-	std::cerr << "\t\taround the best one before starting burn in"
-		  << " (def: 30)" << std::endl;
-	std::cerr << "\t-I, --inittemp VALUE" << std::endl;
-	std::cerr << "\t\tTemperature used during initial steps (def: 2.0)"
-		  << std::endl;
-	std::cerr << "\t-m, --minburn MINBURN" << std::endl;
-	std::cerr << "\t\tMinimum number of burn-in steps to do per "
-		  << "walker (def: 50)" << std::endl;
-	std::cerr << "\t-s, --scalefac SCALEFAC" << std::endl;
-	std::cerr << "\t\tScaling factor in MCMC proposal density (def: 2)"
-		  << std::endl;
-	std::cerr << "\t-v, --verbose" << std::endl;
-	std::cerr << "\t\tOuput informational messages as it runs"
-		  << std::endl;
-	std::cerr << "\t-V, --version" << std::endl;
-	std::cerr << "\t\tOuput the version number of mcmc_affine in use"
-		  << std::endl;
+                  << std::endl;
+        std::cerr << "\t-i, --initsteps STEPS" << std::endl;
+        std::cerr << "\t\tTake this many initial steps per walker, then "
+                  << "recenter" << std::endl;
+        std::cerr << "\t\taround the best one before starting burn in"
+                  << " (def: 30)" << std::endl;
+        std::cerr << "\t-I, --inittemp VALUE" << std::endl;
+        std::cerr << "\t\tTemperature used during initial steps (def: 2.0)"
+                  << std::endl;
+        std::cerr << "\t-m, --minburn MINBURN" << std::endl;
+        std::cerr << "\t\tMinimum number of burn-in steps to do per "
+                  << "walker (def: 50)" << std::endl;
+        std::cerr << "\t-s, --scalefac SCALEFAC" << std::endl;
+        std::cerr << "\t\tScaling factor in MCMC proposal density (def: 2)"
+                  << std::endl;
+        std::cerr << "\t-v, --verbose" << std::endl;
+        std::cerr << "\t\tOuput informational messages as it runs"
+                  << std::endl;
+        std::cerr << "\t-V, --version" << std::endl;
+        std::cerr << "\t\tOuput the version number of mcmc_affine in use"
+                  << std::endl;
       }
       MPI_Finalize();
       return 0;
@@ -292,8 +292,8 @@ int main(int argc, char** argv) {
       break;
     case 'V' :
       if (rank == 0) {
-	std::cerr << "mcmc_affine version number: " << mcmc_affine::version 
-		  << std::endl;
+        std::cerr << "mcmc_affine version number: " << mcmc_affine::version 
+                  << std::endl;
       }
       MPI_Finalize();
       return 0;
@@ -317,7 +317,7 @@ int main(int argc, char** argv) {
   if (scalefac <= 0) {
     if (rank == 0)
       std::cerr << "Invalid (non-positive) scaling factor " << scalefac
-		<< std::endl;
+                << std::endl;
     MPI_Finalize();
     return 1;
   }
@@ -333,7 +333,7 @@ int main(int argc, char** argv) {
   try {
     std::string infile="exampledata/polyexample.txt";
     polyFit ply(infile, nwalkers, nterms + 1, nsamples, init_steps,
-		init_temp, min_burn, fixed_burn);
+                init_temp, min_burn, fixed_burn);
     ply.setScalefac(scalefac);
 
     ply.setParamName(0, "c[0]");
@@ -346,7 +346,7 @@ int main(int argc, char** argv) {
     if (verbose) {
       ply.setVerbose();
       if (rank == 0)
-	std::cout << ply << std::endl;
+        std::cout << ply << std::endl;
     }
     
     // Do Fit
@@ -361,26 +361,26 @@ int main(int argc, char** argv) {
       ply.getAcceptanceFrac(accept);
       double mnacc = accept[0];
       for (unsigned int i = 1; i < nwalkers; ++i)
-	mnacc += accept[i];
+        mnacc += accept[i];
       std::cout.width(5);
       std::cout << "Mean acceptance: " << mnacc / static_cast<double>(nwalkers)
-		<< std::endl;
+                << std::endl;
 
       // Write
       hdf5utils::outfiletype ftype;
       ftype = hdf5utils::getOutputFileType(outfile);
       switch(ftype) {
       case hdf5utils::TXT:
-	ply.writeToFile(outfile);
-	break;
+        ply.writeToFile(outfile);
+        break;
       case hdf5utils::FITS:
-	throw affineExcept("polyfit_example", "main",
-			   "No support for FITS output");
-	break;
+        throw affineExcept("polyfit_example", "main",
+                           "No support for FITS output");
+        break;
       case hdf5utils::UNKNOWN:
       case hdf5utils::HDF5:
-	ply.writeToHDF5(outfile);
-	break;
+        ply.writeToHDF5(outfile);
+        break;
       }
     }
   } catch ( const affineExcept& ex ) {
@@ -389,7 +389,7 @@ int main(int argc, char** argv) {
     int jnk;
     if (rank == 0)
       for (int i = 1; i < nproc; ++i)
-	MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
+        MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
     MPI_Finalize();
     return 1;
   }

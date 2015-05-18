@@ -73,7 +73,28 @@ TEST(paramSetTest, Equality) {
   EXPECT_EQ(nparams, p3.getNParams()) << "Operator= size not expected";
   for (unsigned int i = 0; i < nparams; ++i)
     ASSERT_FLOAT_EQ(p3[i], p[i]) << "Operator= didn't set right values";
- 
+}
+
+//Test move semantics
+TEST(paramSetTest, Move) {
+  const unsigned int nparams = 3;
+  paramSet p(nparams);
+  const float pvals[nparams] = {1.0, 2.0, -4.0};
+  for (unsigned int i = 0; i < nparams; ++i)
+    p[i] = pvals[i];
+
+  paramSet p2(std::move(p));
+  EXPECT_EQ(nparams, p2.getNParams()) << "Move constructor size not expected";
+  for (unsigned int i = 0; i < nparams; ++i)
+    ASSERT_FLOAT_EQ(p2[i], pvals[i]) << "Move constructor didn't set right values";
+  EXPECT_EQ(0, p.getNParams()) << "Move constructor didn't zero moved value";
+
+  // Move assign back
+  p = std::move(p2);
+  EXPECT_EQ(nparams, p.getNParams()) << "Move assignment size not expected";
+  for (unsigned int i = 0; i < nparams; ++i)
+    ASSERT_FLOAT_EQ(p[i], pvals[i]) << "Move assignment didn't set right values";
+  EXPECT_EQ(0, p2.getNParams()) << "Move assignment didn't zero moved value";
 }
 
 //Test distance
@@ -89,7 +110,7 @@ TEST(paramSetTest, Distance) {
 ////////////////////////////////////////////
 
 GTEST_API_ int main(int argc, char **argv) {
-  std::cout << "Running chain_tests\n";
+  std::cout << "Running paramSet tests\n";
 
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

@@ -14,7 +14,7 @@
 /*!
   \brief Class for holding parameter values of the model
 */
-class paramSet {
+class paramSet final {
  private:
   unsigned int nparams; //!< Number of parameters
   float* paramvals;    //!< Array holding parameter values
@@ -28,6 +28,7 @@ class paramSet {
   paramSet(unsigned int, const float* const); //!< Constructor with parameter c array
   paramSet(unsigned int, const double* const); //!< Constructor with parameter c array
   paramSet(const paramSet&); //!< Copy constructor
+  paramSet(paramSet&&); //!< Move constructor
   ~paramSet(); //!< Destructor
 
   void setNParams(unsigned int); //!< Set number of parameters
@@ -49,6 +50,8 @@ class paramSet {
   void setParamValue(unsigned int i, float val) { paramvals[i]=val; }
   /*! \brief Copy from other paramSet */
   paramSet& operator=(const paramSet&);
+  /*! \brief Copy with move semantics */
+  paramSet& operator=(paramSet&&);
   /*! \brief Are parameter sets equal */
   bool operator==(const paramSet&) const;
   /*! \brief Get distance (euclidean) between two sets of parameters */

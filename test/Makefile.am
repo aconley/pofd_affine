@@ -3,11 +3,14 @@ if DOTEST
 OTHERDIR=../src/
 
 check_PROGRAMS = paramset_test chain_test ensemble_test queue_test \
-	mpi_copy_test initFile_test specFile_test beam_test model_test \
-	data_test pofd_test
+	proposedstep_test mpi_copy_test initFile_test specFile_test \
+	beam_test model_test data_test pofd_test
 
 paramset_test_SOURCES = paramset_test.cc
 paramset_test_LDADD = $(OTHERDIR)/libaffine.la
+
+proposedstep_test_SOURCES = proposedstep_test.cc
+proposedstep_test_LDADD = $(OTHERDIR)/libaffine.la
 
 chain_test_SOURCES = chain_test.cc
 chain_test_LDADD = $(OTHERDIR)/libaffine.la

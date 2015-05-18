@@ -6,6 +6,7 @@
 #include "../include/affineQueue.h"
 #include "../include/affineExcept.h"
 #include "../include/ran.h"
+#include "../include/paramSet.h"
 
 TEST(queueTest, Initialization) {
   const unsigned int cap = 25;
@@ -125,6 +126,50 @@ TEST(queueTest, setCapacity) {
   EXPECT_EQ(3U, queue.capacity()) << "Unexpected capacity after setCapacity";
   EXPECT_EQ(0U, queue.size()) << "Queue should have 0 elements after resize";
   EXPECT_TRUE(queue.empty()) << "Queue should be empty after resize";
+}
+
+// Tests move version of push on paramSet
+TEST(queueTest, pushMove) {
+  const unsigned int cap = 10;
+  const unsigned int nparams = 3;
+  affineQueue<paramSet> queue(cap);
+
+  paramSet p(nparams);
+  const float pvals[nparams] = {1.0, 2.0, -4.0};
+  for (unsigned int i = 0; i < nparams; ++i)
+    p[i] = pvals[i];
+  for (unsigned int i = 0; i < nparams; ++i)
+    ASSERT_FLOAT_EQ(p[i], pvals[i]) << "Assignment into paramSet didn't work";
+
+  queue.push(p);
+  // p should be unaffected
+  ASSERT_EQ(1U, queue.size()) << "Push gave wrong number of paramSets";
+  ASSERT_EQ(3U, p.getNParams()) << "Normal push affected number of params in p";
+  for (unsigned int i = 0; i < nparams; ++i)
+    ASSERT_FLOAT_EQ(p[i], pvals[i]) << "Normal push affected param vals in p";
+
+  // Pop and check
+  paramSet p2 = queue.pop();
+  ASSERT_EQ(0U, queue.size()) << "Pop gave wrong number of paramSets remaining";
+  ASSERT_EQ(3U, p2.getNParams()) << "Pop didn't return right number of params";
+  for (unsigned int i = 0; i < nparams; ++i)
+    ASSERT_FLOAT_EQ(p2[i], pvals[i]) << "Pop didn't give back right values";
+
+  // Now move push -- should empty p
+  queue.push(std::move(p));
+  ASSERT_EQ(1U, queue.size()) << "Push gave wrong number of paramSets";
+  ASSERT_EQ(0U, p.getNParams()) << "Move push didn't reset number of params in p";
+
+  // But still give back what we expect
+  paramSet p3 = queue.pop();
+  ASSERT_EQ(0U, queue.size()) 
+    << "Pop after move push gave wrong number of paramSets remaining";
+  ASSERT_EQ(3U, p3.getNParams()) 
+    << "Pop after move push didn't return right number of params";
+  for (unsigned int i = 0; i < nparams; ++i)
+    ASSERT_FLOAT_EQ(p2[i], pvals[i]) 
+      << "Pop after move push didn't give back right values";
+
 }
       
       

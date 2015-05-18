@@ -18,6 +18,13 @@
 
 class affineEnsemble {
 private:
+  static const unsigned int maxhash = 60; //!< Maximum hash length
+  static const unsigned int min_acor_extra = 10; //!< Min number of steps to add for Acor
+  /*! \brief Max number of times we try adding more steps for acor */
+  static const unsigned int max_acor_iters = 20; 
+  /*! \brief Max number of times we try adding more steps for burn in */
+  static const unsigned int max_burn_iters = 30;
+
   unsigned int nwalkers; //!< Number of walkers
   unsigned int nparams; //!< Number of params
   
@@ -60,7 +67,9 @@ private:
   void slaveSample(); //!< Slave node sampler routine
 
   //sampling sub-routines
+  unsigned int addStepsToGetAcor(); //!< Take more steps until acor is computable
   void doBurnIn(bool=false) throw (affineExcept); //!< Master node burn in routine
+  void doInitialSteps(bool=false); //!< Do initial steps
   void doMasterStep(double=1.0) throw (affineExcept); //!< Does a step for all walkers, master node
   void emptyMasterQueue(double=1.0) throw (affineExcept); //!< Runs all steps in stepqueue as master node
   void calcLastLikelihood(); //!< Compute the likelihoods of the last step
@@ -79,6 +88,8 @@ protected:
 
   mutable ran rangen; //!< Random number generator
 
+  int nproc; //!< Total number of nodes
+  unsigned int nslaves; //!< Number of slave nodes
   int rank; //!< Which node is this; if 0 master, otherwise slave
 
   // 0 is non-verbose, 1 is verbose, 2 is ultra-verbose, 3 is ultra-ultra, etc.
@@ -87,9 +98,11 @@ protected:
 public:
   /*! \brief Constructor */
   affineEnsemble(unsigned int, unsigned int, unsigned int,
-		 unsigned int=0, double=2.0, unsigned int=50, 
-		 bool=false, float=5, float=2);
+                 unsigned int=0, double=2.0, unsigned int=50, 
+                 bool=false, float=5, float=2);
   virtual ~affineEnsemble(); //!< Destructor
+  affineEnsemble(const affineEnsemble&)=delete;
+  affineEnsemble(affineEnsemble&&)=delete;
 
   bool isValid() const; //!< Are params valid?
 
@@ -145,7 +158,7 @@ public:
 
   float getParamMean(unsigned int) const; //!< Get parameter mean
   void getParamStats(unsigned int, float&, float&, float&,
-		     float&, float=0.683) const; //!< Get parameter statistics
+                     float&, float=0.683) const; //!< Get parameter statistics
   virtual void printStatistics(float=0.683, std::ostream& = std::cout) const; //!< Output statistics for run
 
   //User must subclass these for their use.

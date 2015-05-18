@@ -22,6 +22,22 @@ proposedStep::proposedStep(const proposedStep& other) :
   oldLogLike(other.oldLogLike), newLogLike(other.newLogLike),
   z (other.z) { }
 
+/*!
+  \param[in] other Other proposed step to apply move semantics from
+*/
+proposedStep::proposedStep(proposedStep&& other) {
+  update_idx = other.update_idx;
+  oldLogLike = other.oldLogLike;
+  newLogLike = other.newLogLike;
+  z = other.z;
+  oldStep = std::move(other.oldStep);
+  newStep = std::move(other.newStep);
+  other.update_idx = 0;
+  other.oldLogLike = std::numeric_limits<double>::quiet_NaN();
+  other.newLogLike = std::numeric_limits<double>::quiet_NaN();
+  other.z = std::numeric_limits<double>::quiet_NaN();
+}
+
 proposedStep::~proposedStep() {}
 
 void proposedStep::clear() {
@@ -58,20 +74,38 @@ proposedStep& proposedStep::operator=(const proposedStep& other) {
 }
 
 /*!
+  \param[in] other Other proposed step to apply move semantics from
+*/
+proposedStep& proposedStep::operator=(proposedStep&& other) {
+  if (this == &other) return *this; //Self copy
+  update_idx = other.update_idx;
+  oldLogLike = other.oldLogLike;
+  newLogLike = other.newLogLike;
+  z = other.z;
+  oldStep = std::move(other.oldStep);
+  newStep = std::move(other.newStep);
+  other.update_idx = 0;
+  other.oldLogLike = std::numeric_limits<double>::quiet_NaN();
+  other.newLogLike = std::numeric_limits<double>::quiet_NaN();
+  other.z = std::numeric_limits<double>::quiet_NaN();
+  return *this;
+}
+
+/*!
   \param[in] comm Communicator
   \param[in] dest Destination of messages
 */
 void proposedStep::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<unsigned int*>(&update_idx), 1, MPI_UNSIGNED, 
-	   dest, mcmc_affine::PSTSENDIDX, comm);
+           dest, mcmc_affine::PSTSENDIDX, comm);
   oldStep.sendSelf(comm, dest);
   newStep.sendSelf(comm, dest);
   MPI_Send(const_cast<double*>(&oldLogLike), 1, MPI_DOUBLE, dest, 
-	   mcmc_affine::PSTSENDOLIKE, comm);
+           mcmc_affine::PSTSENDOLIKE, comm);
   MPI_Send(const_cast<double*>(&newLogLike), 1, MPI_DOUBLE, dest, 
-	   mcmc_affine::PSTSENDNLIKE, comm);
+           mcmc_affine::PSTSENDNLIKE, comm);
   MPI_Send(const_cast<float*>(&z), 1, MPI_FLOAT, dest, 
-	   mcmc_affine::PSTSENDZ, comm);
+           mcmc_affine::PSTSENDZ, comm);
 }
 
 /*!
@@ -81,15 +115,15 @@ void proposedStep::sendSelf(MPI_Comm comm, int dest) const {
 void proposedStep::receiveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
   MPI_Recv(&update_idx, 1, MPI_UNSIGNED, src, mcmc_affine::PSTSENDIDX, 
-	   comm, &Info);
+           comm, &Info);
   oldStep.receiveCopy(comm, src);
   newStep.receiveCopy(comm, src);
   MPI_Recv(&oldLogLike, 1, MPI_DOUBLE, src, mcmc_affine::PSTSENDOLIKE, 
-	   comm, &Info);
+           comm, &Info);
   MPI_Recv(&newLogLike, 1, MPI_DOUBLE, src, mcmc_affine::PSTSENDNLIKE, 
-	   comm, &Info);
+           comm, &Info);
   MPI_Recv(&z, 1, MPI_FLOAT, src, mcmc_affine::PSTSENDZ, 
-	   comm, &Info);
+           comm, &Info);
 }
 
 /*!
