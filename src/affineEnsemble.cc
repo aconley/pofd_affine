@@ -19,24 +19,24 @@ const double qNaN = std::numeric_limits<double>::quiet_NaN();
   \param[in] NWALKERS Number of walkers
   \param[in] NPARAMS  Number of parameters
   \param[in] NSAMPLES Number of samples (across all walkers) to do after burn;
-                      realized to the closest larger multiple of nwalkers
+  realized to the closest larger multiple of nwalkers
   \param[in] INIT_STEPS Number of initialization steps, which are thrown away
-                         even before starting burn-in process.  If set to
-       zero, none are done.
+  even before starting burn-in process.  If set to
+  zero, none are done.
   \param[in] INIT_TEMP Temperature factor used during initial steps
   \param[in] MIN_BURN Minimum number of steps before burn-in
   \param[in] FIXED_BURN Do a fixed burn in of length MIN_BURN, not using
-                         autocorrelation length to decide when burn in is 
-                         finished.  If this is set, INIT_STEPS is ignored.
+  autocorrelation length to decide when burn in is 
+  finished.  If this is set, INIT_STEPS is ignored.
   \param[in] BURN_MULTIPLE This fraction of autocorrelation steps to add
-                            before checking burn-in again
+  before checking burn-in again
   \param[in] SCALEFAC Scale factor of Z distribution
 */
 affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
-             unsigned int NSAMPLES, unsigned int INIT_STEPS,
-             double INIT_TEMP, unsigned int MIN_BURN, 
-             bool FIXED_BURN, float BURN_MULTIPLE, 
-             float SCALEFAC) :
+                               unsigned int NSAMPLES, unsigned int INIT_STEPS,
+                               double INIT_TEMP, unsigned int MIN_BURN, 
+                               bool FIXED_BURN, float BURN_MULTIPLE, 
+                               float SCALEFAC) :
   nwalkers(NWALKERS), nparams(NPARAMS), has_any_names(false), 
   scalefac(SCALEFAC), init_steps(INIT_STEPS), init_temp(INIT_TEMP),
   min_burn(MIN_BURN), fixed_burn(FIXED_BURN), burn_multiple(BURN_MULTIPLE), 
@@ -50,7 +50,7 @@ affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
 
   //Set number of steps per walker, which won't quite match nsamples
   nsteps = static_cast<unsigned int>(NSAMPLES / static_cast<float>(nwalkers)
-             + 0.999999999999);
+                                     + 0.999999999999);
 
   acor_set = false;
 
@@ -141,7 +141,7 @@ void affineEnsemble::setNWalkers(unsigned int n) {
   
   unsigned int nsamples = nsteps * nwalkers;
   nsteps = static_cast<unsigned int>(nsamples / static_cast<float>(n)
-             + 0.999999999999);
+                                     + 0.999999999999);
 
   if (rank == 0) {
     stepqueue.setCapacity(n/2+1);  //Only store one half at a time
@@ -228,7 +228,7 @@ void affineEnsemble::clearParamState() {
 
 /*!
   \returns Number of parameters being fit (nparams minus number of 
-    fixed and bonus ones)
+  fixed and bonus ones)
 */
 unsigned int affineEnsemble::getNFitParams() const {
   return nparams - nfixed - nbonus;
@@ -281,7 +281,7 @@ void affineEnsemble::ignoreParamAcor(unsigned int idx) {
 /*!
   \param[in] idx Parameter index
   \returns True if that parameter is being ignored in autocorrelation 
-    computation, false otherwise
+  computation, false otherwise
 */
 bool affineEnsemble::isParamIgnoredAcor(unsigned int idx) const {
   if (rank != 0) return false;
@@ -366,7 +366,7 @@ bool affineEnsemble::computeAcor() const {
 
 /*!
   \param[out] retval Autocorrelation length for each parameter.  Resized
-    to nparams.  Some entries may not be set (if ignored)
+  to nparams.  Some entries may not be set (if ignored)
   \return True if the computation was successful
   
   Does not recompute the autocorrelation if already available
@@ -416,7 +416,7 @@ void affineEnsemble::getAcceptanceFrac(std::vector<float>& retval) const {
       retval[i] = std::numeric_limits<float>::quiet_NaN();
     else 
       retval[i] = static_cast<float>(naccept[i]) /
-  static_cast<float>(ncurrsteps);
+        static_cast<float>(ncurrsteps);
   }
 }
 
@@ -439,8 +439,8 @@ float affineEnsemble::getParamMean(unsigned int paridx) const {
   Requires temporary storage equal to the total number of steps
 */
 void affineEnsemble::getParamStats(unsigned int paridx, float& mean,
-           float& var, float& lowlimit,
-           float& uplimit, float conflevel) const {
+                                   float& var, float& lowlimit,
+                                   float& uplimit, float conflevel) const {
   chains.getParamStats(paridx, mean, var, lowlimit, uplimit, conflevel);
 }
 
@@ -449,7 +449,7 @@ void affineEnsemble::getParamStats(unsigned int paridx, float& mean,
   \param[inout] os Stream to write to (def: std::cout)
 */
 void affineEnsemble::printStatistics(float conflevel, 
-             std::ostream& os) const {
+                                     std::ostream& os) const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "printStatistics",
                        "Don't call on slave");
@@ -489,19 +489,19 @@ void affineEnsemble::printStatistics(float conflevel,
   Manages the sampling.  Should be called for both master and slave
   processes.
   It proceeds as follows:
-    1) Initialize the chains by calling initChains if not already done
-    2) Possibly do initsteps steps in each walker, and discard
-    3) Then do min_burn steps in each walker
-    4) If fixed_burn is not set:
-      4a) Compute the autocorrelation length, see if it is acceptable
-      4b) Do enough additional steps so that burn_multiple*acor steps have
-       been done
-      4c) Compute acor again and make sure we have done more than that 
-         many steps; if so, finish burn in.
-      4d) Otherwise do more steps and try again
-    5) Discard the previous steps, using the last ones as the first
-       of the new set
-    6) Then do nsteps additional steps
+  1) Initialize the chains by calling initChains if not already done
+  2) Possibly do initsteps steps in each walker, and discard
+  3) Then do min_burn steps in each walker
+  4) If fixed_burn is not set:
+  4a) Compute the autocorrelation length, see if it is acceptable
+  4b) Do enough additional steps so that burn_multiple*acor steps have
+  been done
+  4c) Compute acor again and make sure we have done more than that 
+  many steps; if so, finish burn in.
+  4d) Otherwise do more steps and try again
+  5) Discard the previous steps, using the last ones as the first
+  of the new set
+  6) Then do nsteps additional steps
   Note that this generally should not be called more than once -- this
   is a driver that tries to do a full fit.  For more fine grained/low level 
   control, use doSteps.
@@ -519,9 +519,9 @@ void affineEnsemble::sample() {
 /*!
   \param[in] nsteps  Number of steps to do in each walker
   \param[in] initsteps Number of initial steps to do then discard.
-                       If this is non-zero, the parameters are re-initialized
-           by calling generateInitialPosition with the best
-           step from this set.
+  If this is non-zero, the parameters are re-initialized
+  by calling generateInitialPosition with the best
+  step from this set.
 
   A quick and dirty routine to do a fixed number of steps.
   Assumes that initChains is already called.
@@ -594,7 +594,7 @@ void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
                 << std::endl;
       if (verbosity >= 2)
         std::cout << "**********************************************"
-      << std::endl;
+                  << std::endl;
     }
     chains.addChunk(nsteps);
     for (unsigned int i = 0; i < nsteps; ++i) {
@@ -625,9 +625,15 @@ void affineEnsemble::masterSample() {
   //Make sure we have valid likelihoods
   calcLastLikelihood();
 
+  std::cerr << "After calcLastLikelihood: " << procqueue.size()
+            << " procs available" << std::endl;
   // Setup: initial steps and burn in
   doInitialSteps(verbosity == 1);
+  std::cerr << "After doInitialSteps: " << procqueue.size()
+            << " procs available" << std::endl;
   doBurnIn(verbosity == 1);
+  std::cerr << "After doBurnIn: " << procqueue.size()
+            << " procs available" << std::endl;
 
   // Now do the main loop.  If the verbosity level is 1,
   // then output a hash progress bar.  If it's higher, don't,
@@ -687,10 +693,10 @@ void affineEnsemble::masterSample() {
 */
 void affineEnsemble::doInitialSteps(bool dohash) {
 
-   if (!isValid())
+  if (!isValid())
     throw affineExcept("affineEnsemble", "doInitialSteps",
                        "Calling with invalid model setup");  
-   if (rank != 0) 
+  if (rank != 0) 
     throw affineExcept("affineEnsemble", "doInitialSteps", 
                        "Don't call on slave");
 
@@ -703,7 +709,7 @@ void affineEnsemble::doInitialSteps(bool dohash) {
     if (verbosity >= 1) {
       if (!dohash) 
         std::cout << "**********************************************"
-          << std::endl;
+                  << std::endl;
       std::cout << "Doing " << init_steps << " initial steps per walker at"
                 << " temperature: " << init_temp << std::endl;
       if (!dohash) 
@@ -776,12 +782,12 @@ unsigned int affineEnsemble::addStepsToGetAcor() {
       if (verbosity >= 1) {
         if (verbosity >= 2)
           std::cout << "**********************************************"
-                      << std::endl;
-          std::cout << " Failed to compute acor after " << chains.getMinNIters()
-                    << " steps.  Adding " << nextra << " more" << std::endl;
-          if (verbosity >= 2)
-            std::cout << "**********************************************"
-                      << std::endl;
+                    << std::endl;
+        std::cout << " Failed to compute acor after " << chains.getMinNIters()
+                  << " steps.  Adding " << nextra << " more" << std::endl;
+        if (verbosity >= 2)
+          std::cout << "**********************************************"
+                    << std::endl;
       }
       chains.addChunk(nextra);
       for (unsigned int i = 0; i < nextra; ++i) {
@@ -804,21 +810,21 @@ unsigned int affineEnsemble::addStepsToGetAcor() {
 
 
 /*!
- This does the burn in.  Only called from master node
+  This does the burn in.  Only called from master node
 
- \param[in] dohash Show hashbar during initial burn in steps
+  \param[in] dohash Show hashbar during initial burn in steps
 
- 1) Possibly do init_steps, taking the best one to re-seed the
-     initial position for burn-in
- 2) Do the burn in 
-    a) if fixed_burn is set, just do that many steps
-    b) if not, do steps until the number of steps is greater than
-        burn_mult * autocorrelation 
- 3) Throw away all steps, keeping the last step as the first one of
-     the main loop (but don't count it in any statistics, etc.)
+  1) Possibly do init_steps, taking the best one to re-seed the
+  initial position for burn-in
+  2) Do the burn in 
+  a) if fixed_burn is set, just do that many steps
+  b) if not, do steps until the number of steps is greater than
+  burn_mult * autocorrelation 
+  3) Throw away all steps, keeping the last step as the first one of
+  the main loop (but don't count it in any statistics, etc.)
 */
 void affineEnsemble::doBurnIn(bool dohash) throw(affineExcept) {
-   hashbar *progbar = nullptr;
+  hashbar *progbar = nullptr;
   
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "doBurnIn", "Don't call on slave");
@@ -826,12 +832,12 @@ void affineEnsemble::doBurnIn(bool dohash) throw(affineExcept) {
   if (verbosity >= 1) {
     if (verbosity >= 2)
       std::cout << "**********************************************"
-    << std::endl;
+                << std::endl;
     std::cout << "Starting burn-in process with " << min_burn
-        << " steps" << std::endl;
+              << " steps" << std::endl;
     if (verbosity >= 2)
       std::cout << "**********************************************"
-    << std::endl;
+                << std::endl;
   }
 
   //First do min_burn steps in each walker
@@ -871,8 +877,8 @@ void affineEnsemble::doBurnIn(bool dohash) throw(affineExcept) {
         std::cout << " Maximum autocorrelation is: "
                   << getMaxAcor() << std::endl;
       if (verbosity >= 2)
-          std::cout << "**********************************************"
-                    << std::endl;
+        std::cout << "**********************************************"
+                  << std::endl;
     }
   } else {
     // Autocorrelation based burn-in test
@@ -979,7 +985,7 @@ void affineEnsemble::calcLastLikelihood() {
 
   if (rank != 0)
     throw affineExcept("affineEnsemble", "calcLastLikelihood",
-           "Should only be called from master node");
+                       "Should only be called from master node");
 
   MPI_Status Info;
   bool parrej;
@@ -999,85 +1005,97 @@ void affineEnsemble::calcLastLikelihood() {
   int nproc;
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
   
+  // HACK
+  std::cerr << "calcLastLikelihood processing " << nwalkers
+            << " points starting with " << procqueue.size()
+            << " processors in the queue" << std::endl;
+
   unsigned int ndone = 0;
   unsigned int this_update;
-  // This is pretty much a slightly modified version of what happens
-  // in emptyMasterQueue
+  // This is pretty much what happens in emptyMasterQueue, but with
+  //  small modifications
   while (ndone < nwalkers) {
     // If there are available procs, send them a step to do
     if (!procqueue.empty())
+      std::cerr << "Sending new points with " << procqueue.size()
+                << " procs available" << " and " << needCalc.size()
+                << " left to do" << std::endl;
       try {
-  for (unsigned int i = 0; i < needCalc.size(); ++i) {
-    if (procqueue.empty()) break; // No more procs available
-    this_rank = procqueue.pop();
-    this_update = needCalc.pop();
-    chains.getLastStep(this_update, pstep.newStep, pstep.newLogLike);
-    pstep.update_idx = this_update;
-    MPI_Send(&jnk, 1, MPI_INT, this_rank, mcmc_affine::SENDINGPOINT,
-       MPI_COMM_WORLD);
-    pstep.sendSelf(MPI_COMM_WORLD, this_rank);
-  }
+        for (unsigned int i = 0; i < needCalc.size(); ++i) {
+          if (procqueue.empty()) break; // No more procs available
+          this_rank = procqueue.pop();
+          this_update = needCalc.pop();
+          chains.getLastStep(this_update, pstep.newStep, pstep.newLogLike);
+          pstep.update_idx = this_update;
+          MPI_Send(&jnk, 1, MPI_INT, this_rank, mcmc_affine::SENDINGPOINT,
+                   MPI_COMM_WORLD);
+          pstep.sendSelf(MPI_COMM_WORLD, this_rank);
+        }
       } catch (const affineExcept& ex) {
-  for (int i = 1; i < nproc; ++i)
-    MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
-  throw ex;
+        for (int i = 1; i < nproc; ++i)
+          MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
+        throw ex;
       }
     
-    //No available procs, so wait for some sort of message
-    // We use Iprobe to see if a message is available, and if not
-    // sleep for 1/100th of a second and try again
+    std::cerr << "Processing messages with " << procqueue.size()
+              << " procs available" << " and " << needCalc.size()
+              << " left to do" << std::endl;
+    // Now we process through the message queue until it is empty
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     while (ismsg == 0) {
       usleep(mcmc_affine::msleeplen); //Sleep for 1/100th of a second
       MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     }
-    
+        
     //There is a message, grab it and figure out what to do
-    MPI_Recv(&jnk, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, 
-       MPI_COMM_WORLD, &Info);
-    this_tag = Info.MPI_TAG;
-    this_rank = Info.MPI_SOURCE;
+    while (ismsg != 0) {
+      MPI_Recv(&jnk, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, 
+               MPI_COMM_WORLD, &Info);
+      this_tag = Info.MPI_TAG;
+      this_rank = Info.MPI_SOURCE;
     
-    if (this_tag == mcmc_affine::ERROR) {
-      //Slave had a problem, so send stop message to all slaves
-      for (int i = 1; i < nproc; ++i)
-  MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
-      throw affineExcept("affineEnsemble", "calcLastLikelihood",
-       "Problem encountered in slave");
-    } else if (this_tag == mcmc_affine::SENDINGRESULT) {
-      //Slave finished a computation, is sending us the result
-      // First, find out if the parameter set was rejected
-      MPI_Recv(&parrej, 1, MPI::BOOL, this_rank, mcmc_affine::SENDINGPARREJ,
-         MPI_COMM_WORLD, &Info);
-      // And get the actual step
-      pstep.receiveCopy(MPI_COMM_WORLD, this_rank);
+      if (this_tag == mcmc_affine::ERROR) {
+        //Slave had a problem, so send stop message to all slaves
+        for (int i = 1; i < nproc; ++i)
+          MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
+        throw affineExcept("affineEnsemble", "calcLastLikelihood",
+                           "Problem encountered in slave");
+      } else if (this_tag == mcmc_affine::SENDINGRESULT) {
+        //Slave finished a computation, is sending us the result
+        // First, find out if the parameter set was rejected
+        MPI_Recv(&parrej, 1, MPI::BOOL, this_rank, mcmc_affine::SENDINGPARREJ,
+                 MPI_COMM_WORLD, &Info);
+        // And get the actual step
+        pstep.receiveCopy(MPI_COMM_WORLD, this_rank);
       
-      if (parrej) {
-  // If step was rejected, treat this as an error and crash
-  for (int i = 1; i < nproc; ++i)
-    MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
-  std::stringstream errstr;
-  errstr << "Unable to compute likelihood of requested step: "
-         << std::endl << " Walker: " << pstep.update_idx << std::endl
-         << pstep.newStep;
-  throw affineExcept("affineEnsemble", "calcLastLikelihood",
-         errstr.str());
+        if (parrej) {
+          // If step was rejected, treat this as an error and crash
+          for (int i = 1; i < nproc; ++i)
+            MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
+          std::stringstream errstr;
+          errstr << "Unable to compute likelihood of requested step: "
+                 << std::endl << " Walker: " << pstep.update_idx << std::endl
+                 << pstep.newStep;
+          throw affineExcept("affineEnsemble", "calcLastLikelihood",
+                             errstr.str());
+        }
+      
+        // Update likelihood
+        chains.replaceLastStep(pstep.update_idx, pstep.newStep, 
+                               pstep.newLogLike);
+      
+        ndone += 1;
+      } else if (this_tag == mcmc_affine::REQUESTPOINT) {
+        procqueue.push(this_rank);
+      } else {
+        std::stringstream sstream;
+        sstream << "Master got unexpected message from " << this_rank
+                << " with code: " << this_tag;
       }
-      
-      // Update likelihood
-      chains.replaceLastStep(pstep.update_idx, pstep.newStep, 
-           pstep.newLogLike);
-      
-      ndone += 1;
-    } else if (this_tag == mcmc_affine::REQUESTPOINT) {
-      procqueue.push(this_rank);
-    } else {
-      std::stringstream sstream;
-      sstream << "Master got unexpected message from " << this_rank
-        << " with code: " << this_tag;
+      // See if there are more messages waiting
+      MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     }
   }
-
 }
 
 /*!
@@ -1086,7 +1104,7 @@ void affineEnsemble::calcLastLikelihood() {
 float affineEnsemble::getMaxAcor() const {
   if (!acor_set) 
     throw affineExcept("affineEnsemble", "getMaxAcor",
-           "Called without acor available");
+                       "Called without acor available");
   float maxval;
   unsigned int start_idx;
   for (start_idx = 0; start_idx < nparams; ++start_idx)
@@ -1096,7 +1114,7 @@ float affineEnsemble::getMaxAcor() const {
   maxval = acor[start_idx];
   for (unsigned int i = start_idx+1; i < nparams; ++i)
     if (((param_state[i] & mcmc_affine::ACIGNORE) == 0) && 
-  acor[i] > maxval) maxval = acor[i];
+        acor[i] > maxval) maxval = acor[i];
   return maxval;
 }
 
@@ -1128,7 +1146,7 @@ double affineEnsemble::getLogLike(const paramSet& p) {
   parameters to NaN.
 */
 void affineEnsemble::generateNewStep(unsigned int idx1, unsigned int idx2,
-             proposedStep& prstep) const 
+                                     proposedStep& prstep) const 
   throw (affineExcept) {
 
   // Maximum number of times we will try to generate a new step
@@ -1175,22 +1193,22 @@ void affineEnsemble::generateNewStep(unsigned int idx1, unsigned int idx2,
       // if the input steps weren't valid.
       std::stringstream errstr;
       if (!areParamsValid(prstep.oldStep)) {
-  errstr << "Unable to generate new step; input step from idx1 was"
-         << " also not valid" << std::endl;
-  errstr << " " << prstep.oldStep;
-  throw affineExcept("affineEnsemble", "generateNewStep",
-         errstr.str());
+        errstr << "Unable to generate new step; input step from idx1 was"
+               << " also not valid" << std::endl;
+        errstr << " " << prstep.oldStep;
+        throw affineExcept("affineEnsemble", "generateNewStep",
+                           errstr.str());
       }
       if (!areParamsValid(params_tmp)) {
-  errstr << "Unable to generate new step; input step from idx2 was"
-         << " also not valid" << std::endl;
-  errstr << " " << params_tmp;
-  throw affineExcept("affineEnsemble", "generateNewStep",
-         errstr.str());
+        errstr << "Unable to generate new step; input step from idx2 was"
+               << " also not valid" << std::endl;
+        errstr << " " << params_tmp;
+        throw affineExcept("affineEnsemble", "generateNewStep",
+                           errstr.str());
       }
       errstr << "Unable to generate new step after " << maxiters << " tries";
       throw affineExcept("affineEnsemble", "generateNewStep",
-       errstr.str());
+                         errstr.str());
     }
 
     // Try a new one
@@ -1198,13 +1216,13 @@ void affineEnsemble::generateNewStep(unsigned int idx1, unsigned int idx2,
     omz = 1.0 - prstep.z;
     for (unsigned int i = 0; i < nparams; ++i) 
       if ((param_state[i] & mcmc_affine::FIXED) != 0) { 
-  //Fixed parameter, keep previous
-  prstep.newStep.setParamValue(i, prstep.oldStep[i]);
+        //Fixed parameter, keep previous
+        prstep.newStep.setParamValue(i, prstep.oldStep[i]);
       } else if ((param_state[i] & mcmc_affine::BONUS) != 0) {
-  // Don't have to do anything; should still be NaN
+        // Don't have to do anything; should still be NaN
       } else {
-  val = prstep.z * prstep.oldStep[i] + omz * params_tmp[i];
-  prstep.newStep.setParamValue(i, val);
+        val = prstep.z * prstep.oldStep[i] + omz * params_tmp[i];
+        prstep.newStep.setParamValue(i, val);
       }
     is_valid = areParamsValid(prstep.newStep);
 
@@ -1223,13 +1241,13 @@ void affineEnsemble::doMasterStep(double temp) throw (affineExcept) {
   //Fill in queue
   if (rank != 0)
     throw affineExcept("affineEnsemble", "doMasterStep",
-           "Should only be called from master node");
+                       "Should only be called from master node");
   if (!stepqueue.empty())
     throw affineExcept("affineEnsemble", "doMasterStep",
-           "step queue should be empty at start");
+                       "step queue should be empty at start");
   if (temp <= 0)
     throw affineExcept("affineEnsemble", "doMasterStep",
-           "Invalid temperature");
+                       "Invalid temperature");
 
   unsigned int minidx, maxidx;
   std::pair<unsigned int, unsigned int> pr;
@@ -1238,7 +1256,7 @@ void affineEnsemble::doMasterStep(double temp) throw (affineExcept) {
   maxidx = nwalkers;
   if (verbosity >= 3)
     std::cout << "  Generating new steps for 0:" << nwalkers/2
-        << " from " << minidx << ":" << maxidx << std::endl;
+              << " from " << minidx << ":" << maxidx << std::endl;
   for (unsigned int i = 0; i < nwalkers / 2; ++i) {
     pr.first  = i;
     pr.second = rangen.selectFromRange(minidx, maxidx);
@@ -1255,7 +1273,7 @@ void affineEnsemble::doMasterStep(double temp) throw (affineExcept) {
   maxidx = nwalkers/2;
   if (verbosity >= 3)
     std::cout << "  Generating new steps for " << nwalkers/2 << ":" << nwalkers
-        << " from " << minidx << ":" << maxidx << std::endl;
+              << " from " << minidx << ":" << maxidx << std::endl;
   for (unsigned int i = nwalkers/2; i < nwalkers; ++i) {
     pr.first  = i;
     pr.second = rangen.selectFromRange(minidx, maxidx);
@@ -1292,151 +1310,165 @@ void affineEnsemble::emptyMasterQueue(double temp) throw (affineExcept) {
 
   if (nsteps == 0) return; //Nothing to do...
 
+  // HACK
+  std::cerr << "Doing " << nsteps << " steps with " << procqueue.size()
+            << " available processors" << std::endl;
+
   while (ndone < nsteps) {
     //First, if there are available procs, send them a step if we can
-    if (!procqueue.empty()) 
+    if (!procqueue.empty()) {
       try {
-  for (unsigned int i = 0; i < stepqueue.size(); ++i) {
-    if (procqueue.empty()) break; //No more available procs
-    this_rank = procqueue.pop();
-    
-    //Figure out next thing to update
-    pr = stepqueue.pop();
-    //Generate actual value into pstep
-    generateNewStep(pr.first, pr.second, pstep);
-    
-    if (verbosity >= 3)
-      std::cout << "  Evaluating new step for walker: " << pr.first
-          << " using slave: " << this_rank << std::endl;
-    MPI_Send(&jnk, 1, MPI_INT, this_rank, mcmc_affine::SENDINGPOINT,
-       MPI_COMM_WORLD);
-    pstep.sendSelf(MPI_COMM_WORLD, this_rank);
-  }
+        for (unsigned int i = 0; i < stepqueue.size(); ++i) {
+          if (procqueue.empty()) break; //No more available procs
+          this_rank = procqueue.pop();
+          
+          //Figure out next thing to update
+          pr = stepqueue.pop();
+          //Generate actual value into pstep
+          generateNewStep(pr.first, pr.second, pstep);
+          
+          // HACK
+          std::cerr << "Evaluating new step for walker " << pr.first
+                    << " on slave node " << this_rank << "; there are "
+                    << stepqueue.size() << " steps left to do and "
+                    << procqueue.size() << " procs still available"
+                    << std::endl;
+          if (verbosity >= 3)
+            std::cout << "  Evaluating new step for walker: " << pr.first
+                      << " using slave: " << this_rank << std::endl;
+          MPI_Send(&jnk, 1, MPI_INT, this_rank, mcmc_affine::SENDINGPOINT,
+                   MPI_COMM_WORLD);
+          pstep.sendSelf(MPI_COMM_WORLD, this_rank);
+        }
       } catch (const affineExcept& ex) {
-  for (int i = 1; i < nproc; ++i)
-    MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
-  throw ex;
+        for (int i = 1; i < nproc; ++i)
+          MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
+        throw ex;
       }
+    }
 
-    //No available procs, so wait for some sort of message
-    // We use Iprobe to see if a message is available, and if not
-    // sleep for 1/100th of a second and try again
+    // Now wait for a message.  If there aren't any messages, sleep
+    //  for a bit, then check again until there is some message.
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     while (ismsg == 0) {
       usleep(mcmc_affine::msleeplen); //Sleep and then check again
       MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     }
 
-    //There is a message, grab it and figure out what to do
-    MPI_Recv(&jnk, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, 
-       MPI_COMM_WORLD, &Info);
-    this_tag = Info.MPI_TAG;
-    this_rank = Info.MPI_SOURCE;
-    if (this_tag == mcmc_affine::ERROR) {
-      //Slave had a problem
-      //Send stop message to all slaves
-      for (int i = 1; i < nproc; ++i)
-  MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
-      throw affineExcept("affineEnsemble", "emptyMasterQueue",
-       "Problem encountered in slave");
-    } else if (this_tag == mcmc_affine::SENDINGRESULT) {
-      //Slave finished a computation, is sending us the result
-      //Note we wait for a REQUESTPOINT to actually add it to the
-      // list of available procs, which makes initialization easier
-
-      // First, find out if the parameter set was rejected
-      MPI_Recv(&parrej, 1, MPI::BOOL, this_rank, mcmc_affine::SENDINGPARREJ,
-         MPI_COMM_WORLD, &Info);
-      // And get the actual step
-      pstep.receiveCopy(MPI_COMM_WORLD, this_rank);
+    // Loop until all messages are handled
+    while (ismsg != 0) {
+      MPI_Recv(&jnk, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, 
+               MPI_COMM_WORLD, &Info);
+      this_tag = Info.MPI_TAG;
+      this_rank = Info.MPI_SOURCE;
+      if (this_tag == mcmc_affine::ERROR) {
+        //Slave had a problem
+        //Send stop message to all slaves
+        for (int i = 1; i < nproc; ++i)
+          MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
+        throw affineExcept("affineEnsemble", "emptyMasterQueue",
+                           "Problem encountered in slave");
+      } else if (this_tag == mcmc_affine::SENDINGRESULT) {
+        //Slave finished a computation, is sending us the result
+        //Note we wait for a REQUESTPOINT to actually add it to the
+        // list of available procs, which makes initialization easier
       
-      if (parrej) {
-  // Parameters were invalid in some way, so automatically reject
-  // the step.  
-  if (verbosity >= 3)
-      std::cout << "  Rejecting new step as likelihood rejected params"
-          << std::endl;
-  chains.addNewStep(pstep.update_idx, pstep.oldStep,
-        pstep.oldLogLike);
+        // First, find out if the parameter set was rejected
+        MPI_Recv(&parrej, 1, MPI::BOOL, this_rank, mcmc_affine::SENDINGPARREJ,
+                 MPI_COMM_WORLD, &Info);
+        // And get the actual step
+        pstep.receiveCopy(MPI_COMM_WORLD, this_rank);
+      
+        if (parrej) {
+          // Parameters were invalid in some way, so automatically reject
+          // the step.  Note that this is different than calcLastLike,
+          // which doesn't allow this
+          if (verbosity >= 3)
+            std::cout << "  Rejecting new step as likelihood rejected params"
+                      << std::endl;
+          chains.addNewStep(pstep.update_idx, pstep.oldStep,
+                            pstep.oldLogLike);
+        } else {
+          // It liked the params, so we have to figure out if we want to
+          // keep the results
+          // First, make sure the values are valid
+          if (std::isinf(pstep.newLogLike) ||
+              std::isnan(pstep.newLogLike)) {
+            //That's not good -- exit
+            for (int i = 1; i < nproc; ++i)
+              MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
+            throw affineExcept("affineEnsemble", "emptyMasterQueue",
+                               "Invalid likelihood");
+          }
+        
+          //Decide whether to accept the step or reject it, add to
+          // chunk.  Note that the acceptance rule has a dependence
+          // on z, the strech step, so isn't just the same as for MH MCMC.
+          // In particular, we don't always accept a step with better logLike!
+          //The probability of acceptance is
+          // min(1, z^(n-1) P(new) / P(old)
+          //We also allow this to happen at a different temperature.
+          prob = exp((nparams - nfixed - 1) * log(pstep.z) + 
+                     inv_temp * (pstep.newLogLike - pstep.oldLogLike));
+          if (verbosity >= 3) {
+            std::cout << "  Got new step for " << pstep.update_idx 
+                      << " from slave " << this_rank << std::endl;
+            std::cout << "   " << pstep << std::endl;
+            std::cout << "   Delta likelihood: "
+                      << pstep.newLogLike - pstep.oldLogLike << std::endl;
+          } 
+        
+          if (prob >= 1) {
+            //Will always be accepted; this is the min(1, p), part
+            // This saves us a call to rangen.doub
+            if (verbosity >= 3)
+              std::cout << "  Accepting new step" << std::endl;
+            chains.addNewStep(pstep.update_idx, pstep.newStep,
+                              pstep.newLogLike);
+            naccept[pstep.update_idx] += 1;
+          } else {
+            rval = rangen.doub();
+            if (rval < prob) {
+              //Accept!
+              if (verbosity >= 3)
+                std::cout << "  Accepting new step (prob: "
+                          << prob << " rval: " << rval <<")" << std::endl;
+              chains.addNewStep(pstep.update_idx, pstep.newStep,
+                                pstep.newLogLike);
+              naccept[pstep.update_idx] += 1;
+            } else {
+              //reject, keep old step
+              if (verbosity >= 3)
+                std::cout << "  Rejecting new step (prob: "
+                          << prob << " rval: " << rval <<")" << std::endl;
+              chains.addNewStep(pstep.update_idx, pstep.oldStep,
+                                pstep.oldLogLike);
+            }
+          }
+        }
+        ndone += 1;
+      } else if (this_tag == mcmc_affine::REQUESTPOINT) {
+        procqueue.push(this_rank);
       } else {
-  // It liked the params, so we have to figure out if we want to
-  // keep the results
-  // First, make sure the values are valid
-  if (std::isinf(pstep.newLogLike) ||
-      std::isnan(pstep.newLogLike)) {
-    //That's not good -- exit
-    for (int i = 1; i < nproc; ++i)
-      MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
-    throw affineExcept("affineEnsemble", "emptyMasterQueue",
-           "Invalid likelihood");
-  }
-
-  //Decide whether to accept the step or reject it, add to
-  // chunk.  Note that the acceptance rule has a dependence
-  // on z, the strech step, so isn't just the same as for MH MCMC.
-  // In particular, we don't always accept a step with better logLike!
-  //The probability of acceptance is
-  // min(1, z^(n-1) P(new) / P(old)
-  //We also allow this to happen at a different temperature.
-  prob = exp((nparams - nfixed - 1) * log(pstep.z) + 
-       inv_temp * (pstep.newLogLike - pstep.oldLogLike));
-  if (verbosity >= 3) {
-    std::cout << "  Got new step for " << pstep.update_idx 
-        << " from slave " << this_rank << std::endl;
-    std::cout << "   " << pstep << std::endl;
-    std::cout << "   Delta likelihood: "
-        << pstep.newLogLike - pstep.oldLogLike << std::endl;
-  }
-
-  if (prob >= 1) {
-    //Will always be accepted; this is the min(1, part
-    // This saves us a call to rangen.doub
-    if (verbosity >= 3)
-      std::cout << "  Accepting new step" << std::endl;
-    chains.addNewStep(pstep.update_idx, pstep.newStep,
-          pstep.newLogLike);
-    naccept[pstep.update_idx] += 1;
-  } else {
-    rval = rangen.doub();
-    if (rval < prob) {
-      //Accept!
-      if (verbosity >= 3)
-        std::cout << "  Accepting new step (prob: "
-      << prob << " rval: " << rval <<")" << std::endl;
-      chains.addNewStep(pstep.update_idx, pstep.newStep,
-            pstep.newLogLike);
-      naccept[pstep.update_idx] += 1;
-    } else {
-      //reject, keep old step
-      if (verbosity >= 3)
-        std::cout << "  Rejecting new step (prob: "
-      << prob << " rval: " << rval <<")" << std::endl;
-      chains.addNewStep(pstep.update_idx, pstep.oldStep,
-            pstep.oldLogLike);
-    }
-  }
+        std::stringstream sstream;
+        sstream << "Master got unexpected message from " << this_rank
+                << " with code: " << this_tag;
+        //Tell slaves to stop
+        for (int i = 1; i < nproc; ++i)
+          MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
+        throw affineExcept("affineEnsemble", "emptyMasterQueue", sstream.str());
       }
-      ndone += 1;
-    } else if (this_tag == mcmc_affine::REQUESTPOINT) {
-      procqueue.push(this_rank);
-    } else {
-      std::stringstream sstream;
-      sstream << "Master got unexpected message from " << this_rank
-        << " with code: " << this_tag;
-      //Tell slaves to stop
-      for (int i = 1; i < nproc; ++i)
-  MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
-      throw affineExcept("affineEnsemble", "emptyMasterQueue", sstream.str());
+      // See if there are any more
+      MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     }
   }
-
 }
 
 void affineEnsemble::slaveSample() {
   //This one just sits here and computes likelihoods
   if (rank == 0)
     throw affineExcept("affineEnsemble", "slaveSample",
-           "Should not be called from master node");
+                       "Should not be called from master node");
   
   int jnk, ismsg;
   MPI_Status Info;
@@ -1446,15 +1478,15 @@ void affineEnsemble::slaveSample() {
     while (true) { //Runs until we get a STOP message
       //Ask for a new point
       MPI_Send(&jnk, 1, MPI_INT, 0, mcmc_affine::REQUESTPOINT,
-         MPI_COMM_WORLD);
+               MPI_COMM_WORLD);
 
       //Now wait for one.  We use the same sleep while waiting
       // for a response trick as emptyMasterQueue, but with a shorter
       // sleep.
       MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
       while (ismsg == 0) {
-  usleep(mcmc_affine::ssleeplen); //Sleep and then check again
-  MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
+        usleep(mcmc_affine::ssleeplen); //Sleep and then check again
+        MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
       }
 
       // Now there's a message -- grab it
@@ -1463,26 +1495,26 @@ void affineEnsemble::slaveSample() {
       int tag = Info.MPI_TAG;
       if (tag == mcmc_affine::STOP) return; //Master says -- we're done!
       else if (tag == mcmc_affine::SENDINGPOINT) {
-  pstep.receiveCopy(MPI_COMM_WORLD, 0);
+        pstep.receiveCopy(MPI_COMM_WORLD, 0);
   
-  // Compute likelihood
-  pstep.newLogLike = getLogLike(pstep.newStep, parrej);
+        // Compute likelihood
+        pstep.newLogLike = getLogLike(pstep.newStep, parrej);
 
-  // Fill bonus params (if any)
-  fillBonusParams(pstep.newStep, parrej);
+        // Fill bonus params (if any)
+        fillBonusParams(pstep.newStep, parrej);
 
-  //Send it back
-  MPI_Send(&jnk, 1, MPI_INT, 0, mcmc_affine::SENDINGRESULT,
-     MPI_COMM_WORLD);
-  MPI_Send(const_cast<bool*>(&parrej), 1, MPI::BOOL, 0, 
-     mcmc_affine::SENDINGPARREJ, MPI_COMM_WORLD);
-  pstep.sendSelf(MPI_COMM_WORLD, 0);
+        //Send it back
+        MPI_Send(&jnk, 1, MPI_INT, 0, mcmc_affine::SENDINGRESULT,
+                 MPI_COMM_WORLD);
+        MPI_Send(const_cast<bool*>(&parrej), 1, MPI::BOOL, 0, 
+                 mcmc_affine::SENDINGPARREJ, MPI_COMM_WORLD);
+        pstep.sendSelf(MPI_COMM_WORLD, 0);
       } else {
-  std::cerr << "Unexpected message from master: "
+        std::cerr << "Unexpected message from master: "
                   << tag << " in slave: " << rank << std::endl;
-  MPI_Send(&jnk, 1, MPI_INT, 0, mcmc_affine::ERROR,
-     MPI_COMM_WORLD);
-  return;
+        MPI_Send(&jnk, 1, MPI_INT, 0, mcmc_affine::ERROR,
+                 MPI_COMM_WORLD);
+        return;
       }
     }
   } catch (const affineExcept& ex) {
@@ -1492,7 +1524,7 @@ void affineEnsemble::slaveSample() {
     return;
   } catch (const std::bad_alloc& ba) {
     std::cerr << "Allocation error encountered for process: " << rank 
-        << std::endl;
+              << std::endl;
     std::cerr << ba.what() << std::endl;
     MPI_Send(&jnk, 1, MPI_INT, 0, mcmc_affine::ERROR, MPI_COMM_WORLD);
     return;
@@ -1517,8 +1549,8 @@ void affineEnsemble::writeToStream(std::ostream& os) const {
     if (has_any_names) {
       os << std::endl << "Parameter names: ";
       for (unsigned int i = 0; i < nparams; ++i)
-  if (has_name[i]) os << std::endl << " " << i << ": " 
-          << parnames[i];
+        if (has_name[i]) os << std::endl << " " << i << ": " 
+                            << parnames[i];
     }
   }
 
@@ -1532,13 +1564,13 @@ void affineEnsemble::writeToStream(std::ostream& os) const {
   if (min_burn > 0) {
     if (fixed_burn) {
       os << std::endl << "Will do fixed burn in of " << min_burn 
-   << " steps per walker";
+         << " steps per walker";
     } else {
       os << std::endl << "Will do autocorrelation based burn-in";
       os << std::endl << " Minimum number of burn in steps: " << min_burn 
-   << " per walker";
+         << " per walker";
       if (verbosity >= 2)
-  os << std::endl << " Burn multiple: " << burn_multiple;
+        os << std::endl << " Burn multiple: " << burn_multiple;
     }
   }
 
@@ -1552,7 +1584,7 @@ void affineEnsemble::writeToStream(std::ostream& os) const {
 void affineEnsemble::writeToFile(const std::string& filename) const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "writeToFile",
-           "Should only be called from master node");  
+                       "Should only be called from master node");  
   chains.writeToFile(filename);
 }
 
@@ -1562,10 +1594,10 @@ void affineEnsemble::writeToFile(const std::string& filename) const {
 void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "writeToHDF5Handle",
-           "Should only be called from master node");  
+                       "Should only be called from master node");  
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("affineEnsemble", "writeToHDF5Handle",
-           "Input handle is not valid");
+                       "Input handle is not valid");
 
   // This will get subgrouped in a few ways;
   //  AffineSettings has stuff related to how the affineMCMC worked
@@ -1582,37 +1614,37 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
   // Start with affineSettings
   hid_t groupid;
   groupid = H5Gcreate(objid, "AffineSettings", H5P_DEFAULT, H5P_DEFAULT, 
-          H5P_DEFAULT);
+                      H5P_DEFAULT);
   if (H5Iget_ref(groupid) < 0)
     throw affineExcept("affineEnsemble", "writeToHDF5Handle",
-           "Failed to create AffineSettings HDF5 group");
+                       "Failed to create AffineSettings HDF5 group");
 
   // First, simple 1 element objects
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate2(groupid, "ScaleFactor", H5T_NATIVE_FLOAT,
-          mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_FLOAT, &scalefac);
   H5Aclose(att_id);
   att_id = H5Acreate2(groupid, "NInitSteps", H5T_NATIVE_UINT,
-          mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &init_steps);
   H5Aclose(att_id);
   att_id = H5Acreate2(groupid, "MinBurn", H5T_NATIVE_UINT,
-          mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &min_burn);
   H5Aclose(att_id);
   btmp = static_cast<hbool_t>(fixed_burn);
   att_id = H5Acreate2(groupid, "FixedBurn", H5T_NATIVE_HBOOL,
-          mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_HBOOL, &btmp);
   H5Aclose(att_id);
   att_id = H5Acreate2(groupid, "BurnMultiple", H5T_NATIVE_FLOAT,
-          mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_FLOAT, &burn_multiple);
   H5Aclose(att_id);
   att_id = H5Acreate2(groupid, "NSteps", H5T_NATIVE_UINT,
-          mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nsteps);
   H5Aclose(att_id);
   H5Sclose(mems_id);
@@ -1622,24 +1654,24 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
   ////////////////
   // now ParamInfo
   groupid = H5Gcreate(objid, "ParamInfo", H5P_DEFAULT, H5P_DEFAULT, 
-          H5P_DEFAULT);
+                      H5P_DEFAULT);
   if (H5Iget_ref(groupid) < 0)
     throw affineExcept("affineEnsemble", "writeToHDF5Handle",
-           "Failed to create ParamInfo HDF5 group");
+                       "Failed to create ParamInfo HDF5 group");
   // Again, start with single value stuff
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, nullptr);
 
   att_id = H5Acreate2(groupid, "NFixed", H5T_NATIVE_UINT,
-          mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nfixed);
   H5Aclose(att_id);
   att_id = H5Acreate2(groupid, "NIgnore", H5T_NATIVE_UINT,
-          mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nignore);
   H5Aclose(att_id);
   att_id = H5Acreate2(groupid, "NBonus", H5T_NATIVE_UINT,
-          mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nbonus);
   H5Aclose(att_id);
   H5Sclose(mems_id);
@@ -1653,20 +1685,20 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
   for (unsigned int i = 0; i < nparams; ++i) 
     batmp[i] = ((param_state[i] & mcmc_affine::FIXED) != 0);
   att_id = H5Acreate2(groupid, "IsParamFixed", H5T_NATIVE_HBOOL,
-          mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
   H5Aclose(att_id);
   // Ignored params
   for (unsigned int i = 0; i < nparams; ++i) 
     batmp[i] = ((param_state[i] & mcmc_affine::ACIGNORE) != 0);
   att_id = H5Acreate2(groupid, "IsParamAutocorrIgnore", H5T_NATIVE_HBOOL,
-          mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
   // Bonus params
   for (unsigned int i = 0; i < nparams; ++i) 
     batmp[i] = ((param_state[i] & mcmc_affine::BONUS) != 0);
   att_id = H5Acreate2(groupid, "IsParamBonus", H5T_NATIVE_HBOOL,
-          mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_HBOOL, batmp);
   delete[] batmp;
   H5Aclose(att_id);
@@ -1679,7 +1711,7 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
     for (unsigned int i = 0; i < nparams; ++i) 
       ftmp[i] = initStep[i];
     hdf5utils::writeDataFloats(groupid, "InitialPosition",
-             nparams, ftmp);
+                               nparams, ftmp);
     delete[] ftmp;
   }
   if (has_regenFirstStep) {
@@ -1688,7 +1720,7 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
     for (unsigned int i = 0; i < nparams; ++i) 
       ftmp[i] = regenFirstStep[i];
     hdf5utils::writeDataFloats(groupid, "RegeneratedFirstStep",
-             nparams, ftmp);
+                               nparams, ftmp);
     delete[] ftmp;
   }
 
@@ -1700,10 +1732,10 @@ void affineEnsemble::writeToHDF5Handle(hid_t objid) const {
 
   // And the actual chains and likelihoods to the Chains group
   groupid = H5Gcreate(objid, "Chains", H5P_DEFAULT, H5P_DEFAULT, 
-          H5P_DEFAULT);
+                      H5P_DEFAULT);
   if (H5Iget_ref(groupid) < 0)
     throw affineExcept("affineEnsemble", "writeToHDF5Handle",
-           "Failed to create Chains HDF5 group");
+                       "Failed to create Chains HDF5 group");
 
   // Number of accepted steps
   hdf5utils::writeDataUnsignedInts(groupid, "NAccept", naccept);
@@ -1721,17 +1753,17 @@ void affineEnsemble::writeToHDF5(const std::string& filename) const {
 
   if (rank != 0) 
     throw affineExcept("affineEnsemble", "writeToHDF5",
-           "Should only be called from master node");  
+                       "Should only be called from master node");  
 
   // Create
   hid_t file_id;
   file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
-          H5P_DEFAULT);
+                      H5P_DEFAULT);
 
   if (H5Iget_ref(file_id) < 0) {
     H5Fclose(file_id);
     throw affineExcept("affineEnsemble", "writeToHDF5",
-           "Failed to open HDF5 file to write");
+                       "Failed to open HDF5 file to write");
   }
 
   //Write
