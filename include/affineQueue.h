@@ -28,9 +28,10 @@ template <class Item> class affineQueue {
 
   affineQueue(); //!< Constructor
   explicit affineQueue(unsigned int); //!< Constructor with specified capacity
+  affineQueue(const affineQueue&)=delete;
   ~affineQueue(); //!< Destructor
 
-  unsigned int capacity() const { return cap; } //!< Get capactity
+  unsigned int capacity() const { return cap; } //!< Get capacity
   unsigned int size() const { return nelem; } //!< Get number of elements in queue
   bool empty() const { return nelem == 0; } //!< Is queue empty?
 
@@ -100,7 +101,7 @@ template< class Item > void affineQueue<Item>::push(const Item& item)
   //Note this also checks for zero cap
   if (nelem >= cap) 
     throw affineExcept("affineQueue", "push", 
-		       "No room to add another element");
+                       "No room to add another element");
   data[tail] = item;
   tail += 1;
   if (tail == cap) tail = 0;

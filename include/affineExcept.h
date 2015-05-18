@@ -13,7 +13,7 @@
 class affineExcept : public std::exception {
  private:
   void init(const std::string&, const std::string&,
-	    const std::string&);  //!< Initializer
+            const std::string&);  //!< Initializer
 
   std::string errclass;          //!< Class throwing the exception
   std::string errmethod;         //!< Method throwing the exception
@@ -25,8 +25,8 @@ class affineExcept : public std::exception {
   explicit affineExcept(const std::string& errstr); //!< Just with errstring
   /*! \brief Class, method, error string*/
   explicit affineExcept(const std::string& errclass, 
-			const std::string& errmethod,
-			const std::string& errstr); 
+                        const std::string& errmethod,
+                        const std::string& errstr); 
   ~affineExcept() throw() {}
 
   std::string getErrClass() const { return errclass; }

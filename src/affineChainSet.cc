@@ -20,8 +20,8 @@ const unsigned int affineChainSet::minfac = 5;
   \param[in] NPARAMS Number of parameters in this chunk
 */
 affineStepChunk::affineStepChunk(unsigned int NWALKERS,
-				 unsigned int NITERS,
-				 unsigned int NPARAMS) {
+                                 unsigned int NITERS,
+                                 unsigned int NPARAMS) {
   nwalkers = NWALKERS;
   niters = NITERS;
   nparams = NPARAMS;
@@ -85,10 +85,10 @@ void affineStepChunk::fillFromLastStep(const affineStepChunk& other)
   sz = other.nwalkers * other.niters * other.nparams;
   if (sz == 0)
     throw affineExcept("affineStepChunk", "fillFromLastStep",
-		       "Other chunk has zero size");
+                       "Other chunk has zero size");
   if (other.getMinNSteps() < 1)
     throw affineExcept("affineStepChunk", "fillFromLastStep",
-		       "Other chunk doesn't have steps for all walkers");
+                       "Other chunk doesn't have steps for all walkers");
   //Resize as needed
   if (nwalkers != other.nwalkers || nparams != other.nparams || niters != 1) {
     clear();
@@ -101,7 +101,7 @@ void affineStepChunk::fillFromLastStep(const affineStepChunk& other)
       logLike = new double[nwalkers*niters];
       nsteps = new unsigned int[nwalkers];
       for (unsigned int i = 0; i < nwalkers; ++i)
-	nsteps[i] = 0;
+        nsteps[i] = 0;
     } else {
       steps = nullptr;
       logLike = nullptr;
@@ -259,8 +259,8 @@ void affineStepChunk::getMaxLogLikeParam(double& maxval, paramSet& p) const {
     for (unsigned int j = 0; j < curr_nsteps; ++j) {
       val = sgl_ptr[j];
       if (val > maxval) {
-	iloc = i; jloc = j;
-	maxval = val;
+        iloc = i; jloc = j;
+        maxval = val;
       }
     }
   }
@@ -276,7 +276,7 @@ void affineStepChunk::getMaxLogLikeParam(double& maxval, paramSet& p) const {
   \returns true if the parameter was set, false otherwise
 */
 bool affineStepChunk::addStep(unsigned int walker_idx, 
-			      const paramSet& pars, double lglike) {
+                              const paramSet& pars, double lglike) {
   if (walker_idx >= nwalkers) return false;
   if (pars.getNParams() != nparams) return false;
   
@@ -299,7 +299,7 @@ bool affineStepChunk::addStep(unsigned int walker_idx,
   \returns true if it got the step, false otherwise
 */
 bool affineStepChunk::getLastStep(unsigned int walker_idx,
-				  paramSet& pars, double& lglike) const {
+                                  paramSet& pars, double& lglike) const {
   if (walker_idx >= nwalkers) return false;
   if (pars.getNParams() != nparams) return false;
 
@@ -320,7 +320,7 @@ bool affineStepChunk::getLastStep(unsigned int walker_idx,
   This should be used with care!
 */
 bool affineStepChunk::replaceLastStep(unsigned int walker_idx,
-				      const paramSet& pars, double lglike) {
+                                      const paramSet& pars, double lglike) {
   if (walker_idx >= nwalkers) return false;
   if (pars.getNParams() > nparams) return false;
 
@@ -342,7 +342,7 @@ bool affineStepChunk::replaceLastStep(unsigned int walker_idx,
   \returns true if it got the step, false otherwise
 */
 bool affineStepChunk::getStep(unsigned int walker_idx, unsigned int iter_idx,
-			      paramSet& pars, double& lglike) const {
+                              paramSet& pars, double& lglike) const {
   if (walker_idx >= nwalkers) return false;
   if (pars.getNParams() != nparams) return false;
 
@@ -359,7 +359,7 @@ bool affineStepChunk::getStep(unsigned int walker_idx, unsigned int iter_idx,
   \returns Pointer to that set of parameters, nullptr if invalid step
 */
 float* affineStepChunk::getParamPointer(unsigned int walker_idx,
-					unsigned int iter_idx) {
+                                        unsigned int iter_idx) {
   if (walker_idx >= nwalkers) return nullptr;
   if (iter_idx >= niters) return nullptr;
   return steps + (niters * walker_idx + iter_idx) * nparams;
@@ -371,7 +371,7 @@ float* affineStepChunk::getParamPointer(unsigned int walker_idx,
   \returns Pointer to const of that set of parameters, nullptr if invalid step
 */
 float* const affineStepChunk::getParamPointer(unsigned int walker_idx,
-					      unsigned int iter_idx) const {
+                                              unsigned int iter_idx) const {
   if (walker_idx >= nwalkers) return nullptr;
   if (iter_idx >= niters) return nullptr;
   return steps + (niters * walker_idx + iter_idx) * nparams;
@@ -417,9 +417,9 @@ void affineStepChunk::writeToStream(std::ostream& os) const {
       os << std::setw(13) << std::setprecision(6);
       os << ptr[0];
       for (unsigned int k = 1; k < nparams; ++k)
-	os << " " << ptr[k];
+        os << " " << ptr[k];
       os << " " << std::setw(15) << std::setprecision(8)
-	 << logLike[i * niters + j] << " " << i << std::endl;
+         << logLike[i * niters + j] << " " << i << std::endl;
     }
   }
 }
@@ -431,7 +431,7 @@ void affineStepChunk::writeToStream(std::ostream& os) const {
   \param[out] NPARAMS Number of parameters
 */
 affineChainSet::affineChainSet(unsigned int NWALKERS,
-			       unsigned int NPARAMS) {
+                               unsigned int NPARAMS) {
   nwalkers = NWALKERS;
   nparams = NPARAMS;
   skipfirst = false;
@@ -455,7 +455,7 @@ void affineChainSet::clear() {
 void affineChainSet::clearPreserveLast() throw (affineExcept) {
   if (steps.size() == 0)
     throw affineExcept("affineChainSet", "clearPreserveLast",
-		       "No previous entries to preserve");
+                       "No previous entries to preserve");
   affineStepChunk *newchunk = new affineStepChunk(nwalkers, 1, nparams);
   newchunk->fillFromLastStep(*steps.back());
   for (unsigned int i = 0; i < steps.size(); ++i)
@@ -475,7 +475,7 @@ void affineChainSet::setNWalkers(unsigned int n) throw (affineExcept) {
 
   if (n == 0)
     throw affineExcept("affineChainSet", "setNWalkers",
-		       "n must be positive");
+                       "n must be positive");
 
   //We have to delete all previous steps
   clear();
@@ -494,7 +494,7 @@ void affineChainSet::setNParams(unsigned int n) throw (affineExcept) {
 
   if (n == 0)
     throw affineExcept("affineChainSet", "setNParams",
-		       "n must be positive");
+                       "n must be positive");
 
   //We have to delete all previous steps
   clear();
@@ -509,7 +509,7 @@ void affineChainSet::setNParams(unsigned int n) throw (affineExcept) {
   \returns true if the step was added
 */
 bool affineChainSet::addNewStep(unsigned int walker_idx, const paramSet& p, 
-				double logLike) {
+                                double logLike) {
   return steps.back()->addStep(walker_idx, p, logLike);
 }
 
@@ -530,7 +530,7 @@ void affineChainSet::addChunk(unsigned int sz) {
   Throws an exception if no steps taken
 */
 void affineChainSet::getLastStep(unsigned int walker_idx,
-				 paramSet& par, double& lglike) const 
+                                 paramSet& par, double& lglike) const 
   throw (affineExcept) {
 
   // The complication here is that the last step may not be in the current
@@ -538,10 +538,10 @@ void affineChainSet::getLastStep(unsigned int walker_idx,
   int nchunks = static_cast<int>(steps.size());
   if (nchunks == 0) 
     throw affineExcept("affineChainSet", "getLastStep",
-		       "No steps taken");
+                       "No steps taken");
   if (walker_idx >= nwalkers)
     throw affineExcept("affineChainSet", "getLastStep",
-		       "Walker index invalid");
+                       "Walker index invalid");
 
   if (par.getNParams() != nparams)
     par.setNParams(nparams);
@@ -557,14 +557,14 @@ void affineChainSet::getLastStep(unsigned int walker_idx,
 
     // Found one with a step -- copy it over and end
     par.setParamValues(nparams, 
-		       chunk_ptr->getParamPointer(walker_idx, csteps-1));
+                       chunk_ptr->getParamPointer(walker_idx, csteps-1));
     lglike = chunk_ptr->getLogLike(walker_idx, csteps-1);
     succ = true;
     break;
   }
   if (!succ)
     throw affineExcept("affineChainSet", "getLastStep",
-		       "Error getting last step");
+                       "Error getting last step");
 }
 
 /*!
@@ -576,14 +576,14 @@ void affineChainSet::getLastStep(unsigned int walker_idx,
   is no last step to replace.
 */
 void affineChainSet::replaceLastStep(unsigned int walker_idx,
-				     const paramSet& pars, double lglike) {
+                                     const paramSet& pars, double lglike) {
   int nchunks = static_cast<int>(steps.size());
   if (nchunks == 0) 
     throw affineExcept("affineChainSet", "replaceLastStep",
-		       "No steps taken");
+                       "No steps taken");
   if (walker_idx >= nwalkers)
     throw affineExcept("affineChainSet", "replaceLastStep",
-		       "Walker index invalid");
+                       "Walker index invalid");
 
   bool succ;
   unsigned int csteps;
@@ -600,7 +600,7 @@ void affineChainSet::replaceLastStep(unsigned int walker_idx,
   }
   if (!succ)
     throw affineExcept("affineChainSet", "replaceLastStep",
-		       "Error replacing last step");
+                       "Error replacing last step");
 }
 
 /*!
@@ -613,17 +613,17 @@ void affineChainSet::replaceLastStep(unsigned int walker_idx,
   Throws an exception if no steps taken
 */
 void affineChainSet::getStep(unsigned int chunkidx, 
-			     unsigned int walker_idx, 
-			     unsigned int iter_idx,
-			     paramSet& par, double& lglike) 
+                             unsigned int walker_idx, 
+                             unsigned int iter_idx,
+                             paramSet& par, double& lglike) 
   const throw (affineExcept) {
   if (chunkidx >= steps.size()) 
     throw affineExcept("affineChainSet", "getStep",
-		       "Chunk idx invalid");
+                       "Chunk idx invalid");
   bool succ = steps[chunkidx]->getStep(walker_idx, iter_idx, par, lglike);
   if (!succ)
     throw affineExcept("affineChainSet", "getStep",
-		       "Error getting specified step");
+                       "Error getting specified step");
 }
 
 /*!
@@ -654,10 +654,10 @@ affineChainSet& affineChainSet::operator+=(const affineChainSet& other)
   //Now things like the number of params and walkers have to be the same
   if (nwalkers != other.nwalkers)
     throw affineExcept("affineChainSet", "operator+=",
-		       "nwalkers doesn't match");
+                       "nwalkers doesn't match");
   if (nparams != other.nparams)
     throw affineExcept("affineChainSet", "operator+=",
-		       "nparams doesn't match");
+                       "nparams doesn't match");
 
   unsigned int nchunk1 = steps.size();
   unsigned int nchunk2 = other.steps.size();
@@ -695,7 +695,7 @@ unsigned int affineChainSet::getNIters(unsigned int walker) const
   unsigned int ntotiter = 0;
  if (walker >= nwalkers) 
      throw affineExcept("affineChainSet", "getNIters",
-			"Specified walker exceeds number available");
+                        "Specified walker exceeds number available");
  unsigned int firststep = 0;
  if (skipfirst) firststep = 1;
  for (unsigned int i = firststep; i < steps.size(); ++i)
@@ -785,15 +785,15 @@ void affineChainSet::getMaxLogLikeParam(double& maxval, paramSet& p) const {
      walker
 */
 void affineChainSet::getParamVector(unsigned int walkeridx,
-				    unsigned int paramidx,
-				    std::vector<float>& pvec) const 
+                                    unsigned int paramidx,
+                                    std::vector<float>& pvec) const 
   throw (affineExcept) {
   if (walkeridx >= nwalkers) 
     throw affineExcept("affineChainSet", "getParamVector",
-		       "Specified walkeridx exceeds number available");
+                       "Specified walkeridx exceeds number available");
   if (paramidx >= nparams) 
     throw affineExcept("affineChainSet", "getParamVector",
-		       "Specified paramidx exceeds number available");
+                       "Specified paramidx exceeds number available");
   
   unsigned int sz = getNIters(walkeridx);
   pvec.resize(sz);
@@ -823,11 +823,11 @@ void affineChainSet::getParamVector(unsigned int walkeridx,
   Only includes steps where all walkers have that step.
 */
 void affineChainSet::getAverageParamVector(unsigned int paramidx,
-					   std::vector<float>& pvec) const 
+                                           std::vector<float>& pvec) const 
   throw (affineExcept) {
   if (paramidx >= nparams) 
     throw affineExcept("affineChainSet", "getAverageParamVector",
-		       "Specified paramidx exceeds number available");
+                       "Specified paramidx exceeds number available");
   
   pvec.resize(getMinNIters());
 
@@ -860,7 +860,7 @@ void affineChainSet::getAverageParamVector(unsigned int paramidx,
     for (unsigned int j = 0; j < nsteps; ++j) {
       cumval = chunkptr->steps[j * ncpars + paramidx]; //Walker 0
       for (unsigned int k = 1; k < nwalkers; ++k)
-	cumval += chunkptr->steps[(k * nciters + j) * ncpars + paramidx];
+        cumval += chunkptr->steps[(k * nciters + j) * ncpars + paramidx];
       pvec[ctr++] = static_cast<float>(norm * cumval);
     }
   }
@@ -883,8 +883,8 @@ void affineChainSet::getAverageParamVector(unsigned int paramidx,
 //  code.  Basically, it's a good idea to do the first L < minfac*maxlag
 //  test before calling this.
 int affineChainSet::acor(double& mean, double& sigma,
-			 double& tau, std::vector<float>& X,
-			 unsigned int L) 
+                         double& tau, std::vector<float>& X,
+                         unsigned int L) 
   const throw (affineExcept) {
 
   // Compute tau directly only if tau < taumax, otherwise use the pairwise sum
@@ -959,11 +959,11 @@ int affineChainSet::acor(double& mean, double& sigma,
   \returns \f$\tau\f$, the estimated autocorrelation length
 */
 double affineChainSet::getAcor(unsigned int paramidx, double& mean,
-			       double& sigma, bool& succ) 
+                               double& sigma, bool& succ) 
   const throw (affineExcept) {
   if (paramidx >= nparams) 
     throw affineExcept("affineChainSet", "getAcor",
-		       "Specified paramidx exceeds number available");
+                       "Specified paramidx exceeds number available");
 
   double tau;
   sigma = std::numeric_limits<double>::quiet_NaN();
@@ -1009,12 +1009,12 @@ bool affineChainSet::getAcorVector(std::vector<float>& tau) const
             that were not ignored
 */
 bool affineChainSet::getAcorVector(std::vector<float>& tau,
-				   const std::vector<int> param_state) 
+                                   const std::vector<int> param_state) 
   const 
   throw (affineExcept) {
   if (param_state.size() < nparams)
     throw affineExcept("affineChainSet", "getAcorVector",
-		       "param_state is shorter than number of params");
+                       "param_state is shorter than number of params");
   double mn, sigma; //Throw away
   tau.resize(nparams);
   bool succ, indiv_succ;
@@ -1038,7 +1038,7 @@ float affineChainSet::getParamMean(unsigned int paridx) const
   throw (affineExcept) {
   if (paridx >= nparams)
     throw affineExcept("affineChainSet", "getParamMean",
-		       "Invalid parameter index");
+                       "Invalid parameter index");
   double mean = 0; //Do computation internally in double
   unsigned int chunksz, nciters, ncpars, ctr = 0;
   const affineStepChunk* chunkptr;
@@ -1051,8 +1051,8 @@ float affineChainSet::getParamMean(unsigned int paridx) const
       chunksz = chunkptr->nsteps[j];
       ptr = chunkptr->steps + j * nciters * ncpars;
       for (unsigned int k = 0; k < chunksz; ++k) {
-	mean += ptr[j * ncpars + paridx];
-	++ctr;
+        mean += ptr[j * ncpars + paridx];
+        ++ctr;
       }
     }
   }
@@ -1074,12 +1074,12 @@ float affineChainSet::getParamMean(unsigned int paridx) const
   Requires temporary storage equal to the total number of steps
 */
 void affineChainSet::getParamStats(unsigned int paridx, float& mean,
-				   float& var, float& lowlimit,
-				   float& uplimit, float conflevel) const 
+                                   float& var, float& lowlimit,
+                                   float& uplimit, float conflevel) const 
   throw (affineExcept) {
   if (paridx >= nparams)
     throw affineExcept("affineChainSet", "getParamStats",
-		       "Invalid parameter index");
+                       "Invalid parameter index");
 
   mean = std::numeric_limits<float>::quiet_NaN();
   var = std::numeric_limits<float>::quiet_NaN();
@@ -1113,18 +1113,18 @@ void affineChainSet::getParamStats(unsigned int paridx, float& mean,
       chunksz = chunkptr->nsteps[i];
       ptr = chunkptr->steps + i * nciters * ncpars;
       for (unsigned int j = 0; j < chunksz; ++j) {
-	//For each step in each chunk
-	//ptr = chunkptr->getParamPointer(i,j);
-	//val = ptr[ paridx ];
-	val = ptr[j * ncpars + paridx];
-	imean += val;
-	pvec[ctr++] = val;
+        //For each step in each chunk
+        //ptr = chunkptr->getParamPointer(i,j);
+        //val = ptr[ paridx ];
+        val = ptr[j * ncpars + paridx];
+        imean += val;
+        pvec[ctr++] = val;
       }
     }
   }
   if (ctr != sz) 
     throw affineExcept("affineChainSet", "getParamStats",
-		       "Didn't get the number of expected steps");
+                       "Didn't get the number of expected steps");
 
   double norm = 1.0 / static_cast<double>(sz);
   imean *= norm;
@@ -1148,10 +1148,10 @@ void affineChainSet::getParamStats(unsigned int paridx, float& mean,
   //Compute limits
   if (conflevel < 0)
     throw affineExcept("affineChainSet", "getParamStats",
-		       "Invalid (negative) conf level");
+                       "Invalid (negative) conf level");
   if (conflevel > 1)
     throw affineExcept("affineChainSet", "getParamStats",
-		       "Invalid (>1) conf level");
+                       "Invalid (>1) conf level");
 
   std::sort(pvec.begin(), pvec.end());
   //Now do the lower limit, rounding to get that index
@@ -1180,7 +1180,7 @@ void affineChainSet::makeCovMatrix(float** covmat) const {
   if (sz < 2) {
     for (unsigned int i = 0; i < nparams; ++i)
       for (unsigned int j = 0; j < nparams; ++j)
-	covmat[i][j] = std::numeric_limits<float>::quiet_NaN();
+        covmat[i][j] = std::numeric_limits<float>::quiet_NaN();
     return;
   }
 
@@ -1195,17 +1195,17 @@ void affineChainSet::makeCovMatrix(float** covmat) const {
     ctrbase = sz * i;
     ctr = 0;
     for (unsigned int j = 0; j < steps.size(); ++j) if (ctr <= sz) {
-	chunkptr = steps[j];
-	nciters = chunkptr->niters;
-	ncpars = chunkptr->nparams;
-	for (unsigned int k = 0; k < nwalkers; ++k) if (ctr <= sz) {
-	    chunksz = chunkptr->nsteps[k];
-	    ptr = chunkptr->steps + k * nciters * ncpars;
-	    for (unsigned int m = 0; (m < chunksz) && (ctr <= sz); ++m) {
-	      tmpdata[ctrbase + ctr] = ptr[j * ncpars + i];
-	      ++ctr;
-	    }
-	  }
+        chunkptr = steps[j];
+        nciters = chunkptr->niters;
+        ncpars = chunkptr->nparams;
+        for (unsigned int k = 0; k < nwalkers; ++k) if (ctr <= sz) {
+            chunksz = chunkptr->nsteps[k];
+            ptr = chunkptr->steps + k * nciters * ncpars;
+            for (unsigned int m = 0; (m < chunksz) && (ctr <= sz); ++m) {
+              tmpdata[ctrbase + ctr] = ptr[j * ncpars + i];
+              ++ctr;
+            }
+          }
       }
   }
 
@@ -1242,7 +1242,7 @@ void affineChainSet::makeCovMatrix(float** covmat) const {
       ptr2 = tmpdata + sz * j;
       sumsq = static_cast<double>(ptr[0] * ptr2[0]);
       for (unsigned int k = 1; k < sz; ++k)
-	sumsq += static_cast<double>(ptr[k] * ptr2[k]);
+        sumsq += static_cast<double>(ptr[k] * ptr2[k]);
       covmat[i][j] = covmat[j][i] = static_cast<float>(sumsq * norm2);
     }
   }
@@ -1261,7 +1261,7 @@ void affineChainSet::writeToFile(const std::string& outfile) const
   if (! ofs) {
     ofs.close();
     throw affineExcept("affineChainSet","writeToFile",
-		       "Failed to open file");
+                       "Failed to open file");
   }
   unsigned int startidx = 0;
   if (skipfirst) startidx = 1;
@@ -1281,12 +1281,12 @@ void affineChainSet::writeToHDF5(const std::string& filename) const {
   // Open
   hid_t file_id;
   file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
-		      H5P_DEFAULT);
+                      H5P_DEFAULT);
 
   if (H5Iget_ref(file_id) < 0) {
     H5Fclose(file_id);
     throw affineExcept("affineChainSet", "writeToHDF5",
-		       "Failed to open HDF5 file to write");
+                       "Failed to open HDF5 file to write");
   }
 
   // Write
@@ -1315,14 +1315,14 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
     if (nc != nit) {
       std::stringstream errstr;
       errstr << "Walker " << i << " has different number of steps ("
-	     << nc << ") than first walker (" << nit << ")";
+             << nc << ") than first walker (" << nit << ")";
       throw affineExcept("affineChainSet", "writeToHDF5", errstr.str());
     }
   }
 
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("affineChainSet", "writeToHDF5Handle",
-		       "Input handle is not valid");
+                       "Input handle is not valid");
 
   // Two datasets to write -- the steps (nwalkers * nsteps * nparams)
   //  and the likelihoods (nwalkers * nsteps).  
@@ -1346,8 +1346,8 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
   // Data set
   hid_t dataset_idsteps;
   dataset_idsteps = H5Dcreate2(objid, "Chain", H5T_NATIVE_FLOAT, 
-			       dataspace_idsteps, H5P_DEFAULT, H5P_DEFAULT, 
-			       H5P_DEFAULT);
+                               dataspace_idsteps, H5P_DEFAULT, H5P_DEFAULT, 
+                               H5P_DEFAULT);
   
   // Write some attributes for that dataset
   hsize_t adims;
@@ -1355,15 +1355,15 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
   hid_t mems_id, att_id;
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate2(dataset_idsteps, "NWalkers", H5T_NATIVE_UINT,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nwalkers);
   H5Aclose(att_id);
   att_id = H5Acreate2(dataset_idsteps, "NSteps", H5T_NATIVE_UINT,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nit);
   H5Aclose(att_id);
   att_id = H5Acreate2(dataset_idsteps, "NParams", H5T_NATIVE_UINT,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nparams);
   H5Aclose(att_id);
   H5Sclose(mems_id);
@@ -1379,22 +1379,22 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
     // Copy all steps for this walker into fwrkarr
     cntr = 0;
     for (unsigned int chunkidx = firststep; 
-	 chunkidx < steps.size(); ++chunkidx) {
+         chunkidx < steps.size(); ++chunkidx) {
       chunk = steps[chunkidx];
       nstp = chunk->nsteps[chunkidx];
       for (unsigned int iteridx = 0; iteridx < nstp; ++iteridx) {
-	sptr = chunk->getParamPointer(walkidx, iteridx);
-	for (unsigned int pidx = 0; pidx < nparams; ++pidx)
-	  fwrkarr[cntr++] = sptr[pidx];
+        sptr = chunk->getParamPointer(walkidx, iteridx);
+        for (unsigned int pidx = 0; pidx < nparams; ++pidx)
+          fwrkarr[cntr++] = sptr[pidx];
       }
     }
 
     // Now write chunk
     offset_steps[0] = static_cast<hsize_t>(walkidx);
     H5Sselect_hyperslab(dataspace_idsteps, H5S_SELECT_SET, 
-			offset_steps, nullptr, count_steps, memsdim_steps);
+                        offset_steps, nullptr, count_steps, memsdim_steps);
     H5Dwrite(dataset_idsteps, H5T_NATIVE_FLOAT, mems_id,
-	     dataspace_idsteps, H5P_DEFAULT, fwrkarr);
+             dataspace_idsteps, H5P_DEFAULT, fwrkarr);
   }
   delete[] fwrkarr;
 
@@ -1416,15 +1416,15 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
   hid_t dataspace_idlike, dataset_idlike;
   dataspace_idlike = H5Screate_simple(2, dims_like, nullptr);
   dataset_idlike = H5Dcreate2(objid, "Likelihood", H5T_NATIVE_DOUBLE, 
-			      dataspace_idlike, H5P_DEFAULT, H5P_DEFAULT, 
-			      H5P_DEFAULT);
+                              dataspace_idlike, H5P_DEFAULT, H5P_DEFAULT, 
+                              H5P_DEFAULT);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate2(dataset_idlike, "NWalkers", H5T_NATIVE_UINT,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nwalkers);
   H5Aclose(att_id);
   att_id = H5Acreate2(dataset_idlike, "NSteps", H5T_NATIVE_UINT,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nit);
   H5Aclose(att_id);
   H5Sclose(mems_id);
@@ -1434,19 +1434,19 @@ void affineChainSet::writeToHDF5Handle(hid_t objid) const {
   for (unsigned int walkidx = 0; walkidx < nwalkers; ++walkidx) {
     cntr = 0;
     for (unsigned int chunkidx = firststep; 
-	 chunkidx < steps.size(); ++chunkidx) {
+         chunkidx < steps.size(); ++chunkidx) {
       chunk = steps[chunkidx];
       nstp = chunk->nsteps[chunkidx];
       for (unsigned int iteridx = 0; iteridx < nstp; ++iteridx)
-	dwrkarr[cntr++] = chunk->getLogLike(walkidx, iteridx);
+        dwrkarr[cntr++] = chunk->getLogLike(walkidx, iteridx);
     }
 
     // Now write chunk
     offset_like[0] = static_cast<hsize_t>(walkidx);
     H5Sselect_hyperslab(dataspace_idlike, H5S_SELECT_SET, 
-			offset_like, nullptr, count_like, memsdim_like);
+                        offset_like, nullptr, count_like, memsdim_like);
     H5Dwrite(dataset_idlike, H5T_NATIVE_DOUBLE, mems_id,
-	     dataspace_idlike, H5P_DEFAULT, dwrkarr);
+             dataspace_idlike, H5P_DEFAULT, dwrkarr);
   }
   delete[] dwrkarr;
   H5Sclose(mems_id);

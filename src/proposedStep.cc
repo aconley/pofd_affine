@@ -63,15 +63,15 @@ proposedStep& proposedStep::operator=(const proposedStep& other) {
 */
 void proposedStep::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<unsigned int*>(&update_idx), 1, MPI_UNSIGNED, 
-	   dest, mcmc_affine::PSTSENDIDX, comm);
+           dest, mcmc_affine::PSTSENDIDX, comm);
   oldStep.sendSelf(comm, dest);
   newStep.sendSelf(comm, dest);
   MPI_Send(const_cast<double*>(&oldLogLike), 1, MPI_DOUBLE, dest, 
-	   mcmc_affine::PSTSENDOLIKE, comm);
+           mcmc_affine::PSTSENDOLIKE, comm);
   MPI_Send(const_cast<double*>(&newLogLike), 1, MPI_DOUBLE, dest, 
-	   mcmc_affine::PSTSENDNLIKE, comm);
+           mcmc_affine::PSTSENDNLIKE, comm);
   MPI_Send(const_cast<float*>(&z), 1, MPI_FLOAT, dest, 
-	   mcmc_affine::PSTSENDZ, comm);
+           mcmc_affine::PSTSENDZ, comm);
 }
 
 /*!
@@ -81,15 +81,15 @@ void proposedStep::sendSelf(MPI_Comm comm, int dest) const {
 void proposedStep::receiveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
   MPI_Recv(&update_idx, 1, MPI_UNSIGNED, src, mcmc_affine::PSTSENDIDX, 
-	   comm, &Info);
+           comm, &Info);
   oldStep.receiveCopy(comm, src);
   newStep.receiveCopy(comm, src);
   MPI_Recv(&oldLogLike, 1, MPI_DOUBLE, src, mcmc_affine::PSTSENDOLIKE, 
-	   comm, &Info);
+           comm, &Info);
   MPI_Recv(&newLogLike, 1, MPI_DOUBLE, src, mcmc_affine::PSTSENDNLIKE, 
-	   comm, &Info);
+           comm, &Info);
   MPI_Recv(&z, 1, MPI_FLOAT, src, mcmc_affine::PSTSENDZ, 
-	   comm, &Info);
+           comm, &Info);
 }
 
 /*!

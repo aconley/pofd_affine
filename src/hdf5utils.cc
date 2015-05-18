@@ -45,10 +45,10 @@ hdf5utils::outfiletype hdf5utils::getOutputFileType(const std::string& str) {
   \param[in] value Value to write
 */
 void hdf5utils::writeAttString(hid_t objid, const std::string& name,
-			       const std::string& value) {
+                               const std::string& value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeAttString",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
 
   // String datatype
   hid_t datatype = H5Tcopy(H5T_C_S1);
@@ -62,7 +62,7 @@ void hdf5utils::writeAttString(hid_t objid, const std::string& name,
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), datatype,
-		      mems_id, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT);
   ctmp = value.c_str();
   H5Awrite(att_id, datatype, &ctmp);
   H5Aclose(att_id);
@@ -78,15 +78,15 @@ void hdf5utils::writeAttString(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeAttStrings(hid_t objid, const std::string& name,
-				unsigned int n, 
-				const std::string* const value) {
+                                unsigned int n, 
+                                const std::string* const value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeAttStrings",
-		       "Input handle is not valid");
+                       "Input handle is not valid");
   if (n == 0)
     throw affineExcept("hdf5utils", "writeAttStrings",
-		       "Invalid number of elements in value when writing " +
-		       name);
+                       "Invalid number of elements in value when writing " +
+                       name);
 
   // String datatype
   hid_t datatype = H5Tcopy(H5T_C_S1);
@@ -103,7 +103,7 @@ void hdf5utils::writeAttStrings(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), datatype,
-		      mems_id, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, datatype, ctmp);
   H5Aclose(att_id);
   H5Sclose(mems_id);
@@ -116,15 +116,15 @@ void hdf5utils::writeAttStrings(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeAttStrings(hid_t objid, const std::string& name,
-				const std::vector<std::string>& value) {
+                                const std::vector<std::string>& value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeAttStrings",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   unsigned int n = value.size();
   if (n == 0)
     throw affineExcept("hdf5utils", "writeAttStrings",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   // String datatype
   hid_t datatype = H5Tcopy(H5T_C_S1);
@@ -141,7 +141,7 @@ void hdf5utils::writeAttStrings(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), datatype,
-		      mems_id, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, datatype, ctmp);
   H5Aclose(att_id);
   H5Sclose(mems_id);
@@ -231,10 +231,10 @@ hdf5utils::readAttStrings(hid_t objid, const std::string& name) {
   \param[in] value Value to write
 */
 void hdf5utils::writeAttBool(hid_t objid, const std::string& name,
-			     bool value) {
+                             bool value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeAttBool",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
 
   hsize_t adims;
   hid_t mems_id, att_id;
@@ -244,7 +244,7 @@ void hdf5utils::writeAttBool(hid_t objid, const std::string& name,
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &bl);
   H5Aclose(att_id);
   H5Sclose(mems_id);
@@ -257,14 +257,14 @@ void hdf5utils::writeAttBool(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeAttBools(hid_t objid, const std::string& name,
-			      unsigned int n, const bool* const value) {
+                              unsigned int n, const bool* const value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeAttBools",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   if (n == 0)
     throw affineExcept("hdf5utils", "writeAttBools",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims;
   hid_t mems_id, att_id;
@@ -277,7 +277,7 @@ void hdf5utils::writeAttBools(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_HBOOL, bl);
   H5Aclose(att_id);
   H5Sclose(mems_id);
@@ -290,15 +290,15 @@ void hdf5utils::writeAttBools(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeAttBools(hid_t objid, const std::string& name,
-			      const std::vector<bool>& value) {
+                              const std::vector<bool>& value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeAttBools",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   unsigned int n = value.size();
   if (n == 0)
     throw affineExcept("hdf5utils", "writeAttBools",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims;
   hid_t mems_id, att_id;
@@ -311,7 +311,7 @@ void hdf5utils::writeAttBools(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_HBOOL,
-		                  mems_id, H5P_DEFAULT);
+                                  mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_HBOOL, bl);
   H5Aclose(att_id);
   H5Sclose(mems_id);
@@ -411,15 +411,15 @@ void hdf5utils::writeAttUnsignedInt(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeAttUnsignedInts(hid_t objid, const std::string& name,
-				     unsigned int n, 
-				     const unsigned int* const value) {
+                                     unsigned int n, 
+                                     const unsigned int* const value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeAttUnsignedInts",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   if (n == 0)
     throw affineExcept("hdf5utils", "writeAttUnsignedInts",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims;
   hid_t mems_id, att_id;
@@ -427,7 +427,7 @@ void hdf5utils::writeAttUnsignedInts(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_UINT,
-		      mems_id, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, value);
   H5Aclose(att_id);
   H5Sclose(mems_id);
@@ -439,15 +439,15 @@ void hdf5utils::writeAttUnsignedInts(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeAttUnsignedInts(hid_t objid, const std::string& name,
-				     const std::vector<unsigned int>& value) {
+                                     const std::vector<unsigned int>& value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeAttUnsignedInts",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   unsigned int n = value.size();
   if (n == 0)
     throw affineExcept("hdf5utils", "writeAttUnsignedInts",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims;
   hid_t mems_id, att_id;
@@ -459,7 +459,7 @@ void hdf5utils::writeAttUnsignedInts(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_UINT,
-		      mems_id, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, v);
   H5Aclose(att_id);
   H5Sclose(mems_id);
@@ -561,14 +561,14 @@ void hdf5utils::writeAttInt(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeAttInts(hid_t objid, const std::string& name,
-			     unsigned int n, const int* const value) {
+                             unsigned int n, const int* const value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeAttInts",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   if (n == 0)
     throw affineExcept("hdf5utils", "writeAttInts",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims;
   hid_t mems_id, att_id;
@@ -576,7 +576,7 @@ void hdf5utils::writeAttInts(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_INT,
-		      mems_id, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_INT, value);
   H5Aclose(att_id);
   H5Sclose(mems_id);
@@ -588,15 +588,15 @@ void hdf5utils::writeAttInts(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeAttInts(hid_t objid, const std::string& name,
-			     const std::vector<int>& value) {
+                             const std::vector<int>& value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeAttInts",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   unsigned int n = value.size();
   if (n == 0)
     throw affineExcept("hdf5utils", "writeAttInts",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims;
   hid_t mems_id, att_id;
@@ -606,7 +606,7 @@ void hdf5utils::writeAttInts(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_INT,
-		      mems_id, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_INT, v);
   H5Aclose(att_id);
   H5Sclose(mems_id);
@@ -643,14 +643,14 @@ void hdf5utils::writeAttFloat(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeAttFloats(hid_t objid, const std::string& name,
-			       unsigned int n, const float* const value) {
+                               unsigned int n, const float* const value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeAttFloats",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   if (n == 0)
     throw affineExcept("hdf5utils", "writeAttFloats",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims;
   hid_t mems_id, att_id;
@@ -658,7 +658,7 @@ void hdf5utils::writeAttFloats(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_FLOAT,
-		      mems_id, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_FLOAT, value);
   H5Aclose(att_id);
   H5Sclose(mems_id);
@@ -671,15 +671,15 @@ void hdf5utils::writeAttFloats(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeAttFloats(hid_t objid, const std::string& name,
-			       const std::vector<float>& value) {
+                               const std::vector<float>& value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeAttFloats",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   unsigned int n = value.size();
   if (n == 0)
     throw affineExcept("hdf5utils", "writeAttFloats",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims;
   hid_t mems_id, att_id;
@@ -691,7 +691,7 @@ void hdf5utils::writeAttFloats(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_FLOAT,
-		      mems_id, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_FLOAT, v);
   H5Aclose(att_id);
   H5Sclose(mems_id);
@@ -792,14 +792,14 @@ void hdf5utils::writeAttDouble(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeAttDoubles(hid_t objid, const std::string& name,
-				unsigned int n, const double* const value) {
+                                unsigned int n, const double* const value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeAttDoubles",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   if (n == 0)
     throw affineExcept("hdf5utils", "writeAttDoubles",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims;
   hid_t mems_id, att_id;
@@ -807,7 +807,7 @@ void hdf5utils::writeAttDoubles(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_DOUBLE,
-		      mems_id, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, value);
   H5Aclose(att_id);
   H5Sclose(mems_id);
@@ -819,15 +819,15 @@ void hdf5utils::writeAttDoubles(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeAttDoubles(hid_t objid, const std::string& name,
-				const std::vector<double>& value) {
+                                const std::vector<double>& value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeAttDoubles",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   unsigned int n = value.size();
   if (n == 0)
     throw affineExcept("hdf5utils", "writeAttDoubles",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims;
   hid_t mems_id, att_id;
@@ -839,7 +839,7 @@ void hdf5utils::writeAttDoubles(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate1(objid, name.c_str(), H5T_NATIVE_DOUBLE,
-		      mems_id, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, v);
   H5Aclose(att_id);
   H5Sclose(mems_id);
@@ -917,15 +917,15 @@ hdf5utils::readAttDoubles(hid_t objid, const std::string& name) {
   \param[in] value Value to write
 */
 void hdf5utils::writeDataStrings(hid_t objid, const std::string& name,
-				 unsigned int n,
-				 const std::string* const value) {
+                                 unsigned int n,
+                                 const std::string* const value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeDataStrings",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   if (n == 0)
     throw affineExcept("hdf5utils", "writeDataStrings",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   // String datatype
   hid_t datatype = H5Tcopy(H5T_C_S1);
@@ -942,7 +942,7 @@ void hdf5utils::writeDataStrings(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), datatype, mems_id, H5P_DEFAULT, 
-		      H5P_DEFAULT, H5P_DEFAULT);
+                      H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, datatype, H5S_ALL, H5S_ALL, H5P_DEFAULT, ctmp);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
@@ -955,10 +955,10 @@ void hdf5utils::writeDataStrings(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeDataString(hid_t objid, const std::string& name,
-				const std::string& value) {
+                                const std::string& value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeDataString",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
 
   // String datatype
   hid_t datatype = H5Tcopy(H5T_C_S1);
@@ -971,7 +971,7 @@ void hdf5utils::writeDataString(hid_t objid, const std::string& name,
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), datatype, mems_id, H5P_DEFAULT, 
-		      H5P_DEFAULT, H5P_DEFAULT);
+                      H5P_DEFAULT, H5P_DEFAULT);
   ctmp = value.c_str();
   H5Dwrite(dat_id, datatype, H5S_ALL, H5S_ALL, H5P_DEFAULT, &ctmp);
   H5Dclose(dat_id);
@@ -984,15 +984,15 @@ void hdf5utils::writeDataString(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeDataStrings(hid_t objid, const std::string& name,
-				 const std::vector<std::string>& value) {
+                                 const std::vector<std::string>& value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeDataStrings",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   unsigned int n = value.size();
   if (n == 0)
     throw affineExcept("hdf5utils", "writeDataStrings",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   // String datatype
   hid_t datatype = H5Tcopy(H5T_C_S1);
@@ -1009,7 +1009,7 @@ void hdf5utils::writeDataStrings(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), datatype, mems_id, H5P_DEFAULT, 
-		      H5P_DEFAULT, H5P_DEFAULT);
+                      H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, datatype, H5S_ALL, H5S_ALL, H5P_DEFAULT, ctmp);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
@@ -1126,15 +1126,15 @@ void hdf5utils::writeDataBool(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeDataBools(hid_t objid, const std::string& name, 
-				unsigned int n,
-				const bool* const value) {
+                                unsigned int n,
+                                const bool* const value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeDataBools",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   if (n == 0)
     throw affineExcept("hdf5utils", "writeDataBools",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims;
   hid_t mems_id, dat_id;
@@ -1147,7 +1147,7 @@ void hdf5utils::writeDataBools(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_HBOOL, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
@@ -1160,15 +1160,15 @@ void hdf5utils::writeDataBools(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeDataBools(hid_t objid, const std::string& name, 
-			       const std::vector<bool>& value) {
+                               const std::vector<bool>& value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeDataBools",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   unsigned int n = value.size();
   if (n == 0)
     throw affineExcept("hdf5utils", "writeDataBools",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims;
   hid_t mems_id, dat_id;
@@ -1181,7 +1181,7 @@ void hdf5utils::writeDataBools(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_HBOOL,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_HBOOL, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
@@ -1279,15 +1279,15 @@ void hdf5utils::writeDataUnsignedInt(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeDataUnsignedInts(hid_t objid, const std::string& name, 
-				      unsigned int n,
-				      const unsigned int* const value) {
+                                      unsigned int n,
+                                      const unsigned int* const value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeDataUnsignedInts",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   if (n == 0)
     throw affineExcept("hdf5utils", "writeDataUnsignedInts",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims;
   hid_t mems_id, dat_id;
@@ -1295,7 +1295,7 @@ void hdf5utils::writeDataUnsignedInts(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_UINT,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_UINT, H5S_ALL, H5S_ALL, H5P_DEFAULT, value);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
@@ -1307,15 +1307,15 @@ void hdf5utils::writeDataUnsignedInts(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeDataUnsignedInts(hid_t objid, const std::string& name, 
-				      const std::vector<unsigned int>& value) {
+                                      const std::vector<unsigned int>& value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeDataUnsignedInts",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   unsigned int n = value.size();
   if (n == 0)
     throw affineExcept("hdf5utils", "writeDataUnsignedInts",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims;
   hid_t mems_id, dat_id;
@@ -1327,7 +1327,7 @@ void hdf5utils::writeDataUnsignedInts(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_UINT,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_UINT, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
@@ -1426,14 +1426,14 @@ void hdf5utils::writeDataInt(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeDataInts(hid_t objid, const std::string& name, 
-			      unsigned int n, const int* const value) {
+                              unsigned int n, const int* const value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeDataInts",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   if (n == 0)
     throw affineExcept("hdf5utils", "writeDataInts",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims;
   hid_t mems_id, dat_id;
@@ -1441,7 +1441,7 @@ void hdf5utils::writeDataInts(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_INT,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, value);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
@@ -1453,15 +1453,15 @@ void hdf5utils::writeDataInts(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeDataInts(hid_t objid, const std::string& name, 
-			      const std::vector<int>& value) {
+                              const std::vector<int>& value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeDataInts",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   unsigned int n = value.size();
   if (n == 0)
     throw affineExcept("hdf5utils", "writeDataInts",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims;
   hid_t mems_id, dat_id;
@@ -1473,7 +1473,7 @@ void hdf5utils::writeDataInts(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_INT,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
@@ -1572,14 +1572,14 @@ void hdf5utils::writeDataFloat(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeDataFloats(hid_t objid, const std::string& name, 
-				unsigned int n, const float* const value) {
+                                unsigned int n, const float* const value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeDataFloats",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   if (n == 0)
     throw affineExcept("hdf5utils", "writeDataFloats",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims;
   hid_t mems_id, dat_id;
@@ -1587,7 +1587,7 @@ void hdf5utils::writeDataFloats(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_FLOAT,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, value);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
@@ -1600,15 +1600,15 @@ void hdf5utils::writeDataFloats(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeDataFloats(hid_t objid, const std::string& name,
-				const std::vector<float>& value) {
+                                const std::vector<float>& value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeDataFloats",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   unsigned int n = value.size();
   if (n == 0)
     throw affineExcept("hdf5utils", "writeDataFloats",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims;
   hid_t mems_id, dat_id;
@@ -1619,7 +1619,7 @@ void hdf5utils::writeDataFloats(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_FLOAT,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
@@ -1653,10 +1653,10 @@ float hdf5utils::readDataFloat(hid_t objid, const std::string& name) {
   \param[in] value Value to read into; must be preallocated of size n
 */
 void hdf5utils::readDataFloats(hid_t objid, const std::string& name, 
-			       unsigned int n, float* const value) {
+                               unsigned int n, float* const value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "readDataFloats",
-		       "Input handle is not valid when reading " + name);
+                       "Input handle is not valid when reading " + name);
 
   hid_t dat_id, space_id;
 
@@ -1669,7 +1669,7 @@ void hdf5utils::readDataFloats(hid_t objid, const std::string& name,
     H5Dclose(dat_id);
     H5Sclose(space_id);
     throw affineExcept("hdf5utils", "readDataFloats",
-		       "Input data set was not 1D");
+                       "Input data set was not 1D");
   }
   hsize_t ndata[1], maxndata[1];
   H5Sget_simple_extent_dims(space_id, ndata, maxndata);
@@ -1678,12 +1678,12 @@ void hdf5utils::readDataFloats(hid_t objid, const std::string& name,
     H5Sclose(space_id);
     std::stringstream errstr;
     errstr << "Input data size unexpected: wanted " << n << " got "
-	   << ndata[0];
+           << ndata[0];
     throw affineExcept("hdf5utils", "readDataFloats", errstr.str());
   }
 
   H5Dread(dat_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
-	  H5P_DEFAULT, value);
+          H5P_DEFAULT, value);
   
   H5Sclose(space_id);
   H5Dclose(dat_id);
@@ -1720,14 +1720,14 @@ void hdf5utils::writeDataDouble(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeDataDoubles(hid_t objid, const std::string& name, 
-				 unsigned int n, const double* const value) {
+                                 unsigned int n, const double* const value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeDataDoubles",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   if (n == 0)
     throw affineExcept("hdf5utils", "writeDataDoubles",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims;
   hid_t mems_id, dat_id;
@@ -1735,7 +1735,7 @@ void hdf5utils::writeDataDoubles(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_DOUBLE,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, value);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
@@ -1747,15 +1747,15 @@ void hdf5utils::writeDataDoubles(hid_t objid, const std::string& name,
   \param[in] value Value to write
 */
 void hdf5utils::writeDataDoubles(hid_t objid, const std::string& name, 
-				 const std::vector<double>& value) {
+                                 const std::vector<double>& value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeDataDoubles",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   unsigned int n = value.size();
   if (n == 0)
     throw affineExcept("hdf5utils", "writeDataDoubles",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims;
   hid_t mems_id, dat_id;
@@ -1766,7 +1766,7 @@ void hdf5utils::writeDataDoubles(hid_t objid, const std::string& name,
   adims = static_cast<hsize_t>(n);
   mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_DOUBLE,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
@@ -1800,10 +1800,10 @@ double hdf5utils::readDataDouble(hid_t objid, const std::string& name) {
   \param[in] value Value to read into; must be preallocated of size n
 */
 void hdf5utils::readDataDoubles(hid_t objid, const std::string& name, 
-				unsigned int n, double* const value) {
+                                unsigned int n, double* const value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "readDataDoubles",
-		       "Input handle is not valid when reading " + name);
+                       "Input handle is not valid when reading " + name);
 
   hid_t dat_id, space_id;
 
@@ -1816,7 +1816,7 @@ void hdf5utils::readDataDoubles(hid_t objid, const std::string& name,
     H5Dclose(dat_id);
     H5Sclose(space_id);
     throw affineExcept("hdf5utils", "readDataDoubles",
-		       "Input data set was not 1D");
+                       "Input data set was not 1D");
   }
   hsize_t ndata[1], maxndata[1];
   H5Sget_simple_extent_dims(space_id, ndata, maxndata);
@@ -1825,12 +1825,12 @@ void hdf5utils::readDataDoubles(hid_t objid, const std::string& name,
     H5Sclose(space_id);
     std::stringstream errstr;
     errstr << "Input data size unexpected: wanted " << n << " got "
-	   << ndata[0];
+           << ndata[0];
     throw affineExcept("hdf5utils", "readDataDoubles", errstr.str());
   }
 
   H5Dread(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
-	  H5P_DEFAULT, value);
+          H5P_DEFAULT, value);
   
   H5Sclose(space_id);
   H5Dclose(dat_id);
@@ -1845,15 +1845,15 @@ void hdf5utils::readDataDoubles(hid_t objid, const std::string& name,
   \param[in] value Value to write, row major order
 */
 void hdf5utils::writeData2DFloats(hid_t objid, const std::string& name, 
-				  unsigned int n1, unsigned int n2, 
-				  const float* const value) {
+                                  unsigned int n1, unsigned int n2, 
+                                  const float* const value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeDataDoubles",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   if (n1 * n2 == 0)
     throw affineExcept("hdf5utils", "writeDataDoubles",
-		       "Invalid number of elements in value when writing " + 
-		       name);
+                       "Invalid number of elements in value when writing " + 
+                       name);
 
   hsize_t adims[2];
   hid_t mems_id, dat_id;
@@ -1862,7 +1862,7 @@ void hdf5utils::writeData2DFloats(hid_t objid, const std::string& name,
   adims[1] = static_cast<hsize_t>(n2);
   mems_id = H5Screate_simple(2, adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_FLOAT,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, value);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
@@ -1875,15 +1875,15 @@ void hdf5utils::writeData2DFloats(hid_t objid, const std::string& name,
   \param[in] value Value to write, row major order
 */
 void hdf5utils::writeData2DDoubles(hid_t objid, const std::string& name, 
-				   unsigned int n1, unsigned int n2, 
-				   const double* const value) {
+                                   unsigned int n1, unsigned int n2, 
+                                   const double* const value) {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("hdf5utils", "writeDataDoubles",
-		       "Input handle is not valid when writing " + name);
+                       "Input handle is not valid when writing " + name);
   if (n1 * n2 == 0)
     throw affineExcept("hdf5utils", "writeDataDoubles",
-		       "Invalid number of elements in value when writing " +
-		       name);
+                       "Invalid number of elements in value when writing " +
+                       name);
 
   hsize_t adims[2];
   hid_t mems_id, dat_id;
@@ -1892,7 +1892,7 @@ void hdf5utils::writeData2DDoubles(hid_t objid, const std::string& name,
   adims[1] = static_cast<hsize_t>(n2);
   mems_id = H5Screate_simple(2, adims, nullptr);
   dat_id = H5Dcreate2(objid, name.c_str(), H5T_NATIVE_DOUBLE,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, value);
   H5Dclose(dat_id);
   H5Sclose(mems_id);

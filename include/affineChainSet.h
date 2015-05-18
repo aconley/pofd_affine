@@ -102,12 +102,14 @@ class affineChainSet {
 
   /*! \brief Autocorrelation engine */
   int acor(double&, double&, double&, std::vector<float>&,
-	   unsigned int) const throw (affineExcept);
+           unsigned int) const throw (affineExcept);
 
   bool skipfirst; //!< True if the first chunk is just the initialization, and should be ignored in stats, etc.
 
  public:
   affineChainSet(unsigned int, unsigned int); //!< Constructor
+  affineChainSet(const affineChainSet&)=delete;
+  affineChainSet(const affineChainSet&&)=delete;
   ~affineChainSet(); //!< Destructor
 
   void clear(); //!< Clears the chain
@@ -143,21 +145,21 @@ class affineChainSet {
 
   /*! \brief Get a specified step */
   void getStep(unsigned int, unsigned int, unsigned int, paramSet&,
-	       double&) const throw (affineExcept);
+               double&) const throw (affineExcept);
 
   /*! \brief Fills vector with param info */
   void getParamVector(unsigned int, unsigned int,
-		      std::vector<float>& pvec) const throw (affineExcept);
+                      std::vector<float>& pvec) const throw (affineExcept);
   /*! \brief Fills vector with param info averaged over walkers*/
   void getAverageParamVector(unsigned int, std::vector<float>&) const 
     throw (affineExcept);
 
   /*! \brief Autocorrelation length for a particular parameter */
   double getAcor(unsigned int, double&, double&, 
-		 bool&) const throw (affineExcept);
+                 bool&) const throw (affineExcept);
   bool getAcorVector(std::vector<float>&) const throw (affineExcept); //!< Autocorrelation length for all params
   bool getAcorVector(std::vector<float>&, 
-		     const std::vector<int> param_state) 
+                     const std::vector<int> param_state) 
     const throw(affineExcept); //!< Autocorrelation length for all params
   
   affineChainSet& operator=(const affineChainSet&); //!< Replace this chain set with a copy of another
@@ -166,7 +168,7 @@ class affineChainSet {
   float getParamMean(unsigned int) const throw (affineExcept); //!< Get mean value of param across all walkers
   /*! \brief Get statistics on a given parameter across all walkers */
   void getParamStats(unsigned int, float&, float&, float&,
-		     float&, float=0.683) const
+                     float&, float=0.683) const
     throw (affineExcept); 
   void makeCovMatrix(float** covmat) const; //!< Get covariance of all params
 

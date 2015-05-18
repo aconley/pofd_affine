@@ -13,8 +13,8 @@ using namespace std;
   Does the work of the constructors, except for setting the flags
 */
 void affineExcept::init(const std::string& CLASS,
-			const std::string& METHOD,
-			const std::string& ERRSTR) {
+                        const std::string& METHOD,
+                        const std::string& ERRSTR) {
   errclass = CLASS;
   errmethod = METHOD;
   errstr = ERRSTR;
@@ -33,8 +33,8 @@ affineExcept::affineExcept(const std::string& errstr) {
   \param[in] errstr Error string
 */
 affineExcept::affineExcept(const std::string& errclass,
-			   const std::string& errmethod,
-			   const std::string& errstr) {
+                           const std::string& errmethod,
+                           const std::string& errstr) {
   init(errclass, errmethod, errstr);
 }
 
