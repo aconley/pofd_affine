@@ -329,11 +329,9 @@ bool hdf5utils::readAttBool(hid_t objid, const std::string& name) {
     throw affineExcept("hdf5utils", "readAttBool",
            "Input handle is not valid when reading " + name);
 
-  hsize_t adims;
   hid_t att_id;
   hbool_t val;
   
-  adims = 1;
   att_id = H5Aopen(objid, name.c_str(), H5P_DEFAULT);
   H5Aread(att_id, H5T_NATIVE_HBOOL, &val);
   H5Aclose(att_id);
@@ -478,11 +476,9 @@ unsigned int hdf5utils::readAttUnsignedInt(hid_t objid,
     throw affineExcept("hdf5utils", "readAttUnsignedInt",
            "Input handle is not valid when reading " + name);
 
-  hsize_t adims;
   hid_t att_id;
   unsigned int val;
   
-  adims = 1;
   att_id = H5Aopen(objid, name.c_str(), H5P_DEFAULT);
   H5Aread(att_id, H5T_NATIVE_UINT, &val);
   H5Aclose(att_id);
@@ -709,11 +705,9 @@ float hdf5utils::readAttFloat(hid_t objid, const std::string& name) {
     throw affineExcept("hdf5utils", "readAttFloat",
            "Input handle is not valid when reading " + name);
 
-  hsize_t adims;
   hid_t att_id;
   float val;
   
-  adims = 1;
   att_id = H5Aopen(objid, name.c_str(), H5P_DEFAULT);
   H5Aread(att_id, H5T_NATIVE_FLOAT, &val);
   H5Aclose(att_id);
@@ -857,11 +851,9 @@ double hdf5utils::readAttDouble(hid_t objid, const std::string& name) {
     throw affineExcept("hdf5utils", "readAttDouble",
                        "Input handle is not valid when reading " + name);
 
-  hsize_t adims;
   hid_t att_id;
   float val;
   
-  adims = 1;
   att_id = H5Aopen(objid, name.c_str(), H5P_DEFAULT);
   H5Aread(att_id, H5T_NATIVE_DOUBLE, &val);
   H5Aclose(att_id);
