@@ -58,7 +58,7 @@ affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
   if (nproc < 2)
     throw affineExcept("affineEnsemble", "affineEnsemble",
                        "Must have at least 2 nodes");
-  nslaves = nproc - 1;
+  nslaves = static_cast<unsigned int>(nproc - 1);
 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   if (rank == 0) {
@@ -622,15 +622,9 @@ void affineEnsemble::masterSample() {
   //Make sure we have valid likelihoods
   calcLastLikelihood();
 
-  std::cerr << "After calcLastLikelihood: " << procqueue.size()
-            << " procs available" << std::endl;
   // Setup: initial steps and burn in
   doInitialSteps(verbosity == 1);
-  std::cerr << "After doInitialSteps: " << procqueue.size()
-            << " procs available" << std::endl;
   doBurnIn(verbosity == 1);
-  std::cerr << "After doBurnIn: " << procqueue.size()
-            << " procs available" << std::endl;
 
   // Now do the main loop.  If the verbosity level is 1,
   // then output a hash progress bar.  If it's higher, don't,
@@ -998,48 +992,33 @@ void affineEnsemble::calcLastLikelihood() {
   for (unsigned int i = 0; i < nwalkers; ++i)
     needCalc.push(i);
   
-  // HACK
-  std::cerr << "calcLastLikelihood processing " << nwalkers
-            << " points starting with " << procqueue.size()
-            << " processors in the queue" << std::endl;
-
   // How do we decide we are done?  Two conditions:
   //  a) All the steps are done
   //  b) All the slaves are available again
   bool done = false;
   unsigned int ndone = 0; // Number done
-  unsigned int ntosend = nwalkers; // Total number undispatched
   unsigned int this_update;
   // This is pretty much what happens in emptyMasterQueue, but with
   //  small modifications
   while (!done) {
     // If there are available procs and steps to send, do so
-    if ((ntosend > 0) && (!procqueue.empty())) {
-      std::cerr << "Sending new points with " << procqueue.size()
-                << " procs available" << " and " << needCalc.size()
-                << " left to do" << std::endl;
-      try {
-        for (unsigned int i = 0; i < needCalc.size(); ++i) {
-          if (procqueue.empty()) break; // No more procs available
-          this_rank = procqueue.pop();
-          this_update = needCalc.pop();
-          chains.getLastStep(this_update, pstep.newStep, pstep.newLogLike);
-          pstep.update_idx = this_update;
-          MPI_Send(&jnk, 1, MPI_INT, this_rank, mcmc_affine::SENDINGPOINT,
-                   MPI_COMM_WORLD);
-          pstep.sendSelf(MPI_COMM_WORLD, this_rank);
-        }
-        ntosend = needCalc.size();
-      } catch (const affineExcept& ex) {
-        for (int i = 1; i < nproc; ++i)
-          MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
-        throw ex;
+    try {
+      while (!(procqueue.empty() || needCalc.empty())) {
+        this_rank = procqueue.pop();
+        this_update = needCalc.pop();
+        chains.getLastStep(this_update, pstep.newStep, pstep.newLogLike);
+        pstep.update_idx = this_update;
+        MPI_Send(&jnk, 1, MPI_INT, this_rank, mcmc_affine::SENDINGPOINT,
+                 MPI_COMM_WORLD);
+        pstep.sendSelf(MPI_COMM_WORLD, this_rank);
       }
+    } catch (const affineExcept& ex) {
+      // Kill slaves and rethrow
+      for (int i = 1; i < nproc; ++i)
+        MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
+      throw ex;
     }
     
-    std::cerr << "Processing messages with " << procqueue.size()
-              << " procs available" << " and " << needCalc.size()
-              << " left to do" << std::endl;
     // Now we process through the message queue until it is empty
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     while (ismsg == 0) {
@@ -1298,7 +1277,7 @@ void affineEnsemble::emptyMasterQueue(double temp) throw (affineExcept) {
   //Step loop
   MPI_Status Info;
   int jnk, this_rank, this_tag, ismsg;
-  unsigned int ndone, nsteps, ntosend;
+  unsigned int ndone, nsteps;
   std::pair<unsigned int, unsigned int> pr;
   double prob; // Probability of accepting a step
   double rval; // Random comparison value
@@ -1312,47 +1291,32 @@ void affineEnsemble::emptyMasterQueue(double temp) throw (affineExcept) {
 
   if (nsteps == 0) return; //Nothing to do...
 
-  // HACK
-  std::cerr << "Doing " << nsteps << " steps with " << procqueue.size()
-            << " available processors" << std::endl;
-
   // As in calcLastLikelihood -- we are done when
   //   a) All the steps are done
   //   b) All the slaves are available again
   bool done = false;
-  ntosend = nsteps;
   while (!done) {
     //First, if there are available procs, send them a step if we can
-    if ((ntosend > 0) && (!procqueue.empty())) {
-      try {
-        for (unsigned int i = 0; i < stepqueue.size(); ++i) {
-          if (procqueue.empty()) break; //No more available procs
-          this_rank = procqueue.pop();
+    try {
+      while (!(procqueue.empty() || stepqueue.empty())) {
+        this_rank = procqueue.pop();
           
-          //Figure out next thing to update
-          pr = stepqueue.pop();
-          //Generate actual value into pstep
-          generateNewStep(pr.first, pr.second, pstep);
+        //Figure out next thing to update
+        pr = stepqueue.pop();
+        //Generate actual value into pstep
+        generateNewStep(pr.first, pr.second, pstep);
           
-          // HACK
-          std::cerr << "Evaluating new step for walker " << pr.first
-                    << " on slave node " << this_rank << "; there are "
-                    << stepqueue.size() << " steps left to do and "
-                    << procqueue.size() << " procs still available"
-                    << std::endl;
-          if (verbosity >= 3)
-            std::cout << "  Evaluating new step for walker: " << pr.first
-                      << " using slave: " << this_rank << std::endl;
-          MPI_Send(&jnk, 1, MPI_INT, this_rank, mcmc_affine::SENDINGPOINT,
-                   MPI_COMM_WORLD);
-          pstep.sendSelf(MPI_COMM_WORLD, this_rank);
-        }
-        ntosend = stepqueue.size();
-      } catch (const affineExcept& ex) {
-        for (int i = 1; i < nproc; ++i)
-          MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
-        throw ex;
+        if (verbosity >= 3)
+          std::cout << "  Evaluating new step for walker: " << pr.first
+                    << " using slave: " << this_rank << std::endl;
+        MPI_Send(&jnk, 1, MPI_INT, this_rank, mcmc_affine::SENDINGPOINT,
+                 MPI_COMM_WORLD);
+        pstep.sendSelf(MPI_COMM_WORLD, this_rank);
       }
+    } catch (const affineExcept& ex) {
+      for (int i = 1; i < nproc; ++i)
+        MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
+      throw ex;
     }
 
     // Now wait for a message.  If there aren't any messages, sleep

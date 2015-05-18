@@ -89,7 +89,7 @@ protected:
   mutable ran rangen; //!< Random number generator
 
   int nproc; //!< Total number of nodes
-  int nslaves; //!< Number of slave nodes
+  unsigned int nslaves; //!< Number of slave nodes
   int rank; //!< Which node is this; if 0 master, otherwise slave
 
   // 0 is non-verbose, 1 is verbose, 2 is ultra-verbose, 3 is ultra-ultra, etc.
