@@ -35,6 +35,8 @@ private:
 public:
   /* \brief Constructor */
   explicit PD(unsigned int N=0, double MINFLUX=0.0, double DFLUX=0.0);
+  PD(const PD&)=delete;
+  PD(PD&&)=delete;
   ~PD(); //!< Destructor
 
   //Public for efficient filling -- bad form, but speed matters here

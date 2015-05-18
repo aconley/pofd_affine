@@ -83,8 +83,13 @@ class calcLikeDoubleSingle { //Odd name...
   static constexpr double bad_like = 1e25; //!< Bad log likelihood value
 
   /*!\brief Default constructor */
-  explicit calcLikeDoubleSingle(unsigned int NEDGE=256); 
+  explicit calcLikeDoubleSingle(unsigned int NEDGE=256);
+  calcLikeDoubleSingle(const calcLikeDoubleSingle&)=delete;
+  calcLikeDoubleSingle(calcLikeDoubleSingle&&)=delete;
   ~calcLikeDoubleSingle(); //!< Destructor
+
+  calcLikeDoubleSingle& operator=(const calcLikeDoubleSingle&)=delete;
+  calcLikeDoubleSingle& operator=(calcLikeDoubleSingle&&)=delete;
 
   void free(); //!< Frees memory for large structures, keeps some summary stats
 
@@ -236,7 +241,12 @@ class calcLikeDouble {
   explicit calcLikeDouble(unsigned int FFTSIZE=4096, unsigned int NEDGE=256, 
                           bool EDGEINTEG=true, bool BINNED=false, 
                           unsigned int NBINS=1000);
+  calcLikeDouble(const calcLikeDouble&)=delete;
+  calcLikeDouble(calcLikeDouble&&)=delete;
   ~calcLikeDouble(); //!< Destructor 
+
+  calcLikeDouble& operator=(const calcLikeDouble&)=delete;
+  calcLikeDouble& operator=(calcLikeDouble&&)=delete;
 
   void freeData(); //!< Remove internal data
 

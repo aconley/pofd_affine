@@ -837,11 +837,11 @@ unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
   int topidx = currsize - static_cast<int>(n1signeg / dflux) - 1;
   int botidx = static_cast<int>(n1sigpos / dflux);
   // Find minimum value
-  unsigned int minidx;
+  int minidx;
   double minval;
   minidx = botidx;
   minval = data[minidx];
-  for (unsigned int i = botidx + 1; i <= topidx; ++i) {
+  for (int i = botidx + 1; i <= topidx; ++i) {
     currval = data[i];
     if (currval < minval) {
       minidx = i;
@@ -864,15 +864,15 @@ unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
   }
 
   // Step 5
-  const unsigned int pre_jitter_n = 17; // Elements before jitter to check
+  const int pre_jitter_n = 17; // Elements before jitter to check
   double jitter = 0.0; // Estimate
   if (minidx > pre_jitter_n) {
     // Check if these values are decreasing
     bool monotonic_decrease = true;
-    unsigned int initidx = minidx - pre_jitter_n;
+    int initidx = minidx - pre_jitter_n;
     double currval, prevval;
     jitter = prevval = data[initidx];
-    for (unsigned int i = initidx + 1; i < minidx; ++i) {
+    for (int i = initidx + 1; i < minidx; ++i) {
       currval = data[i];
       if (currval >= prevval)
         monotonic_decrease = false;
@@ -880,7 +880,7 @@ unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
       prevval = currval;
     }
     if (monotonic_decrease) // Success
-      return minidx;
+      return static_cast<unsigned int>(minidx);
     else {
       // Seems to be in the jitter; use 1.1x the mean as a jitter estimator
       // estimate
@@ -892,19 +892,19 @@ unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
     // Just form an estimate from f1
     jitter = f1 * peak;
     if (minval > jitter) // Success!
-      return minidx;
+      return static_cast<unsigned int>(minidx);
   }
 
   // Step 6
   // Update jitter estimate.  Beware of minimum being zero!
   if (minval <= 0.0) {
     // Try to use some neighboring points to get nicer estimate
-    const unsigned int nminup = 3;
-    unsigned int bi, ti;
+    const int nminup = 3;
+    int bi, ti;
     if (minidx < botidx) bi = botidx; else bi = minidx - nminup;
     if (minidx > topidx - nminup ) ti = topidx - nminup; 
     else ti = minidx + nminup;
-    for (unsigned int i = bi; i < ti; ++i) {
+    for (int i = bi; i < ti; ++i) {
       currval = data[i];
       if (currval > minval) minval = currval;
     }
@@ -936,14 +936,14 @@ unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
                        errstr.str());
   }
   // Now search
-  for (unsigned int i = topidx - 1; i >= botidx; --i)
-    if (data[i] < jitter) return (i + 1); // Success
+  for (int i = topidx - 1; i >= botidx; --i)
+    if (data[i] < jitter) return static_cast<unsigned int>(i + 1); // Success
 
   // Step 8
   // Didn't find one -- throw exception.  But first find minimum
   //  so that error message is more useful
   minval = data[topidx];
-  for (unsigned int i = topidx - 1; i >= botidx; --i) 
+  for (int i = topidx - 1; i >= botidx; --i) 
     if (data[i] < minval) minval = data[i];
   std::stringstream errstr;
   errstr << "Unable to find split point in range "

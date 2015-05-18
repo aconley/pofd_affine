@@ -71,7 +71,9 @@ class calcLikeSingle {
   static constexpr double bad_like = 1e25; //!< Bad log likelihood value
 
   /*!\brief Default constructor */
-  explicit calcLikeSingle(unsigned int NINTERP=1024); 
+  explicit calcLikeSingle(unsigned int NINTERP=1024);
+  calcLikeSingle(const calcLikeSingle&)=delete;
+  calcLikeSingle(calcLikeSingle&&)=delete;
   ~calcLikeSingle(); //!< Destructor
 
   void free(); //!< Frees all memory
@@ -201,7 +203,12 @@ class calcLike {
   /*! \brief Constructor */
   explicit calcLike(unsigned int FFTSIZE=262144, unsigned int NINTERP=1024, 
                     bool BINNED=false, unsigned int NBINS=1000);
+  calcLike(const calcLike&)=delete;
+  calcLike(calcLike&&)=delete;
   ~calcLike(); //!< Destuctor
+
+  calcLike& operator=(const calcLike&)=delete;
+  calcLike& operator=(calcLike&&)=delete;
 
   void freeData(); //!< Remove internal data
 

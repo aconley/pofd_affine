@@ -50,6 +50,8 @@ class fitsDataDouble {
   fitsDataDouble(const std::string&, const std::string&, 
                  bool ignore_mask=false, 
                  bool meansub=false); //!< Constructor from file
+  fitsDataDouble(const fitsDataDouble&)=delete;
+  fitsDataDouble(fitsDataDouble&&)=delete;
   ~fitsDataDouble();
 
   void readData(const std::string&, const std::string&, bool=false, 

@@ -37,6 +37,8 @@ class PDDouble {
   explicit PDDouble(unsigned int N1=0, double MINFLUX1=0.0, double DFLUX1=0.0,
                     unsigned int N2=0, double MINFLUX2=0.0, double DFLUX2=0.0,
                     bool LOG=true); //!< Constructor
+  PDDouble(const PDDouble&)=delete;
+  PDDouble(PDDouble&&)=delete;
   ~PDDouble(); //!< Destructor
 
   //Public for efficient filling -- bad form, but speed matters here

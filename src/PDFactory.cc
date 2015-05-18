@@ -793,17 +793,17 @@ unsigned int PDFactory::findSplitPoint() const {
     topidx =
       static_cast<int>(-(n1signeg + minflux_R) / dflux +
                        wrapRidx + 1);
-  if (botidx >= currsize) 
+  if (botidx >= static_cast<int>(currsize)) 
     throw affineExcept("PDFactory", "findSplitPoint",
                        "Logic error; invalid botidx (wrapped) in split search");
-  if (topidx >= currsize) 
+  if (topidx >= static_cast<int>(currsize)) 
     throw affineExcept("PDFactory", "findSplitPoint",
                        "Logic error; invalid (large) topidx in split search");
-  unsigned int minidx;
+  int minidx;
   double minval;
   minidx = botidx;
   minval = pofd[minidx];
-  for (unsigned int i = botidx + 1; i <= topidx; ++i) {
+  for (int i = botidx + 1; i <= topidx; ++i) {
     currval = pofd[i];
     if (currval < minval) {
       minidx = i;
@@ -830,15 +830,15 @@ unsigned int PDFactory::findSplitPoint() const {
   //  decreasing before min, which implies they can't really be jitter.
   //  If they are, we can just accept.  Otherwise we take the information
   //  we gather to construct a jitter estimate.
-  const unsigned int pre_jitter_n = 17; // Elements before jitter to check
+  const int pre_jitter_n = 17; // Elements before jitter to check
   double jitter = 0.0; // Estimate
   if (minidx > pre_jitter_n) {
     // Check if these values are decreasing
     bool monotonic_decrease = true;
-    unsigned int initidx = minidx - pre_jitter_n;
+    int initidx = minidx - pre_jitter_n;
     double currval, prevval;
     jitter = prevval = pofd[initidx];
-    for (unsigned int i = initidx + 1; i < minidx; ++i) {
+    for (int i = initidx + 1; i < minidx; ++i) {
       currval = pofd[i];
       if (currval >= prevval)
         monotonic_decrease = false;
@@ -846,7 +846,7 @@ unsigned int PDFactory::findSplitPoint() const {
       prevval = currval;
     }
     if (monotonic_decrease) // Success!
-      return minidx;
+      return static_cast<unsigned int>(minidx);
     else {
       // Seems to be in the jitter; use 1.1x the mean as a jitter estimator
       // estimate.
@@ -858,19 +858,19 @@ unsigned int PDFactory::findSplitPoint() const {
     // Just form an estimate from f1
     jitter = f1 * peak;
     if (minval > jitter) // Success!
-      return minidx;
+      return static_cast<unsigned int>(minidx);
   }
     
   // Step 6
   // Update jitter estimate; beware of zero min!
   if (minval <= 0.0) {
     // Try to use some neighboring points to get nicer estimate
-    const unsigned int nminup = 3;
-    unsigned int bi, ti;
+    const int nminup = 3;
+    int bi, ti;
     if (minidx < botidx) bi = botidx; else bi = minidx - nminup;
     if (minidx > topidx - nminup ) ti = topidx - nminup; 
     else ti = minidx + nminup;
-    for (unsigned int i = bi; i < ti; ++i) {
+    for (int i = bi; i < ti; ++i) {
       currval = pofd[i];
       if (currval > minval) minval = currval;
     }
@@ -902,14 +902,14 @@ unsigned int PDFactory::findSplitPoint() const {
                        errstr.str());
   }
   // Now search
-  for (unsigned int i = topidx - 1; i >= botidx; --i)
-    if (pofd[i] < jitter) return (i + 1);
+  for (int i = topidx - 1; i >= botidx; --i)
+    if (pofd[i] < jitter) return static_cast<unsigned int>(i + 1);
 
   // Didn't find one -- throw exception.
   //  But find the smallest value we encountered
   //  to make a more useful error message
   minval = pofd[topidx];
-  for (unsigned int i = topidx - 1; i >= botidx; --i)
+  for (int i = topidx - 1; i >= botidx; --i)
     if (pofd[i] < minval) minval = pofd[i];
   std::stringstream errstr;
   errstr << "Unable to find split point in range "

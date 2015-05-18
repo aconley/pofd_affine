@@ -80,9 +80,14 @@ class doublebeam {
   doublebeam(); //!< Default constructor
   doublebeam(const std::string&, const std::string&, bool histogram=false, 
              unsigned int NBINS=150, double MINVAL=1e-6); //!< Reads beam from files
+  doublebeam(const doublebeam&)=delete;
+  doublebeam(doublebeam&&)=delete;
   ~doublebeam() { cleanup(); } //!< Destructor
 
   void free() { cleanup(); } //!< Free all memory
+
+  doublebeam& operator=(const doublebeam&)=delete;
+  doublebeam& operator=(doublebeam&&)=delete;
 
   /*! \brief Read in files */
   void readFiles(const std::string& filename1, const std::string& filename2,

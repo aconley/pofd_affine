@@ -35,6 +35,8 @@ class fitsData {
   fitsData(); //!< Default constructor
   fitsData(const std::string&, bool ignore_mask=false, 
            bool meansub=false); //!< Constructor from file
+  fitsData(const fitsData&)=delete;
+  fitsData(fitsData&&)=delete;
   ~fitsData();
 
   void readData(const std::string&, bool ignore_mask=false, 

@@ -27,6 +27,9 @@ Installation is via the standard UNIX `configure` and
 It may be necessary to tell configure where to look for these
 libraries -- see `configure --help`.
 
+Note that this package requires C++11 support from your compiler;
+it may be necessary to add compiler flags to turn this on.
+
 In addition, pofd_affine comes with an optional Python script 
 to print summaries and make plots of the results.  This
 can be installed by going into the affine_plots subdirectory
