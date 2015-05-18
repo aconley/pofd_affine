@@ -84,9 +84,9 @@ void specFile::readFile(const std::string& flname) {
     //Figure out what type of line
     if (words[0] == "dataset") {
       if (words.size() < 4) {
-	errstr << "dataset line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "dataset line doesn't have right number of entries: "
+               << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       //Datafile
@@ -95,9 +95,9 @@ void specFile::readFile(const std::string& flname) {
       //Sigma
       str.str(words[2]); str.clear(); str >> dblval;
       if (dblval < 0.0) {
-	errstr << "Invalid (negative) sigma " << dblval
-	       << " from line: " << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "Invalid (negative) sigma " << dblval
+               << " from line: " << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
       sigmas.push_back( dblval );
     
@@ -106,22 +106,22 @@ void specFile::readFile(const std::string& flname) {
 
       //Optional like norm
       if (words.size() >= 5) {
-	str.str(words[4]); str.clear(); str >> lnorm;
-	like_norm.push_back(lnorm);
+        str.str(words[4]); str.clear(); str >> lnorm;
+        like_norm.push_back(lnorm);
       } else like_norm.push_back(1.0);
 
     } else if (words[0] == "bin_data") {
       if (words.size() < 2) {
-	errstr << "bin_data line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "bin_data line doesn't have right number of entries: "
+               << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
       
       str.str(words[1]); str.clear(); str >> ival;
       
       if (ival <= 0) {
-	errstr << "bin_data value " << ival << " is invalid (non-positive)";
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "bin_data value " << ival << " is invalid (non-positive)";
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
       
       bin_data = true;
@@ -129,34 +129,34 @@ void specFile::readFile(const std::string& flname) {
 
     } else if (words[0] == "mean_sub") {
       if (words.size() < 2) {
-	errstr << "mean_sub line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "mean_sub line doesn't have right number of entries: "
+               << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       mean_sub = utility::string_true(words[1]);
 
     } else if (words[0] == "ignore_mask") {
       if (words.size() < 2) {
-	errstr << "ignore_mask line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "ignore_mask line doesn't have right number of entries: "
+               << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       ignore_mask = utility::string_true(words[1]);
 
     } else if (words[0] == "fftsize") {
       if (words.size() < 2) {
-	errstr << "fftsize line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "fftsize line doesn't have right number of entries: "
+               << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
       
       str.str(words[1]); str.clear(); str >> ival;
       
       if (ival <= 0) {
-	errstr << "fftsize value " << ival << " is invalid (non-positive)";
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "fftsize value " << ival << " is invalid (non-positive)";
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
       
       //Note we don't require this to be a power of 2
@@ -164,82 +164,82 @@ void specFile::readFile(const std::string& flname) {
 
     } else if (words[0] == "ninterp") {
       if (words.size() < 2) {
-	errstr << "ninterp line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "ninterp line doesn't have right number of entries: "
+               << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
       
       str.str(words[1]); str.clear(); str >> ival;
       
       if (ival <= 0) {
-	errstr << "ninterp value " << ival << " is invalid (non-positive)";
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "ninterp value " << ival << " is invalid (non-positive)";
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
       
       ninterp = static_cast<unsigned int>(ival);
 
     } else if (words[0] == "minbeamval") {
       if (words.size() < 2) {
-	errstr << "minbeamval line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "minbeamval line doesn't have right number of entries: "
+               << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       str.str(words[1]); str.clear(); str >> dblval;
       if (dblval < 0.0) {
-	errstr << "Invalid (non-positive) minbeamval value " << dblval
-	       << " from line: " << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "Invalid (non-positive) minbeamval value " << dblval
+               << " from line: " << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       minbeamval = dblval;
 
     } else if (words[0] == "beam_histogram") {
       if (words.size() < 2) {
-	errstr << "beam_histogram line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "beam_histogram line doesn't have right number of entries: "
+               << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       beam_histogram = utility::string_true(words[1]);
 
     } else if (words[0] == "nbeamhist") {
       if (words.size() < 2) {
-	errstr << "nbeamhist line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "nbeamhist line doesn't have right number of entries: "
+               << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       str.str(words[1]); str.clear(); str >> ival;
       if (ival <= 0) {
-	errstr << "Invalid (non positive) nbeamhist value " << ival
-	       << " from line: " << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "Invalid (non positive) nbeamhist value " << ival
+               << " from line: " << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       nbeamhist = static_cast<unsigned int>(ival);
 
     } else if (words[0] == "fit_sigma") {
       if (words.size() < 2) {
-	errstr << "fit_sigma line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "fit_sigma line doesn't have right number of entries: "
+               << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       fit_sigma = utility::string_true(words[1]);
 
     } else if (words[0] == "sigmaprior") {
       if (words.size() < 2) {
-	errstr << "sigmaprior line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "sigmaprior line doesn't have right number of entries: "
+               << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       str.str(words[1]); str.clear(); str >> dblval;
       if (dblval <= 0.0) {
-	errstr << "Invalid (non positive) sigma prior stdev " << dblval
-	       << " from line: " << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "Invalid (non positive) sigma prior stdev " << dblval
+               << " from line: " << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       has_sigprior = true;
@@ -248,16 +248,16 @@ void specFile::readFile(const std::string& flname) {
 
     } else if (words[0] == "exp_conf") {
       if (words.size() < 2) {
-	errstr << "exp_conf line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "exp_conf line doesn't have right number of entries: "
+               << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       str.str(words[1]); str.clear(); str >> dblval;
       if (dblval <= 0.0) {
-	errstr << "Invalid (non positive) expected confusion noise " << dblval
-	       << " from line: " << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "Invalid (non positive) expected confusion noise " << dblval
+               << " from line: " << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       exp_conf = dblval;
@@ -265,73 +265,73 @@ void specFile::readFile(const std::string& flname) {
     } else if (words[0] == "cfirbprior") {
 
       if (words.size() < 3) {
-	errstr << "cfirbprior line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "cfirbprior line doesn't have right number of entries: "
+               << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       has_cfirbprior = true;
 
       str.str(words[1]); str.clear(); str >> dblval;
       if (dblval <= 0.0) {
-	errstr << "Invalid (non positive) cfirb prior mean " << dblval
-	       << " from line: " << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "Invalid (non positive) cfirb prior mean " << dblval
+               << " from line: " << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
       cfirbprior_mean = dblval;
 
       str.str(words[2]); str.clear(); str >> dblval;
       if (dblval <= 0.0) {
-	errstr << "Invalid (non positive) cfirb prior stdev " << dblval
-	       << " from line: " << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "Invalid (non positive) cfirb prior stdev " << dblval
+               << " from line: " << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
       cfirbprior_stdev = dblval;
 
     } else if (words[0] == "poissonprior") {
       if (words.size() < 3) {
-	errstr << "poissonprior line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "poissonprior line doesn't have right number of entries: "
+               << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       has_poissonprior = true;
 
       str.str(words[1]); str.clear(); str >> dblval;
       if (dblval <= 0.0) {
-	errstr << "Invalid (non positive) poisson prior mean " << dblval
-	       << " from line: " << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "Invalid (non positive) poisson prior mean " << dblval
+               << " from line: " << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
       poissonprior_mean = dblval;
 
       str.str(words[2]); str.clear(); str >> dblval;
       if (dblval <= 0.0) {
-	errstr << "Invalid (non positive) poisson prior stdev " << dblval
-	       << " from line: " << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "Invalid (non positive) poisson prior stdev " << dblval
+               << " from line: " << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
       poissonprior_stdev = dblval;
     } else if (words[0] == "regularize_alpha") {
       if (words.size() < 2) {
-	errstr << "regularize_alpha line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "regularize_alpha line doesn't have right number of entries: "
+               << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       str.str(words[1]); str.clear(); str >> dblval;
       if (dblval < 0.0) {
-	errstr << "Invalid (negative) regularize_alpha value " << dblval
-	       << " from line: " << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "Invalid (negative) regularize_alpha value " << dblval
+               << " from line: " << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       regularization_alpha = dblval;
     } else if (words[0] == "wisdom_file") {
       if (words.size() < 2) {
-	errstr << "wisdom_file line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "wisdom_file line doesn't have right number of entries: "
+               << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       has_wisdom_file = true;
@@ -339,50 +339,50 @@ void specFile::readFile(const std::string& flname) {
 
     } else if (words[0] == "verbose") {
       if (words.size() < 2) {
-	errstr << "verbose line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "verbose line doesn't have right number of entries: "
+               << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       if (utility::string_true(words[1])) verbosity = 1;
 
     } else if (words[0] == "ultraverbose") {
       if (words.size() < 2) {
-	errstr << "ultraverbose line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "ultraverbose line doesn't have right number of entries: "
+               << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       if (utility::string_true(words[1])) verbosity = 2;
 
     } else if (words[0] == "verbosity") {
       if (words.size() < 2) {
-	errstr << "verbosity line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "verbosity line doesn't have right number of entries: "
+               << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       str.str(words[1]); str.clear(); str >> ival;
       if (ival <= 0) {
-	errstr << "Invalid (non positive) verbosity " << ival
-	       << " from line: " << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "Invalid (non positive) verbosity " << ival
+               << " from line: " << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       verbosity = static_cast<unsigned int>(ival);
 
     } else if (words[0] == "seed") {
       if (words.size() < 2) {
-	errstr << "seed line doesn't have right number of entries: "
-	       << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "seed line doesn't have right number of entries: "
+               << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       str.str(words[1]); str.clear(); str >> ival;
       if (ival <= 0) {
-	errstr << "Invalid (non positive) seed " << ival
-	       << " from line: " << line;
-	throw affineExcept("specFile", "readFile", errstr.str());
+        errstr << "Invalid (non positive) seed " << ival
+               << " from line: " << line;
+        throw affineExcept("specFile", "readFile", errstr.str());
       }
 
       seed = static_cast<unsigned long long int>(ival);
@@ -407,7 +407,7 @@ void specFile::writeToHDF5Handle(hid_t objid) const {
 
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("specFile", "writeToHDF5Handle",
-		       "Input handle is not valid");
+                       "Input handle is not valid");
 
   hdf5utils::writeDataStrings(objid, "DataFiles", datafiles);
   hdf5utils::writeDataStrings(objid, "BeamFiles", psffiles);

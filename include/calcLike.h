@@ -10,6 +10,7 @@
 #include "../include/PD.h"
 #include "../include/fitsData.h"
 #include "../include/numberCountsKnotsSpline.h"
+#include "../include/initFileKnots.h"
 #include "../include/beam.h"
 #include "../include/paramSet.h"
 #include "../include/utility.h"
@@ -83,17 +84,17 @@ class calcLikeSingle {
 
   /*! \brief Reads data to compute likelihood for a single file*/
   void readDataFromFile(const std::string&, bool IGNOREMASK=false,
-			bool MEANSUB=false,bool BINDATA=false,
-			unsigned int NBINS=1000);
+                        bool MEANSUB=false,bool BINDATA=false,
+                        unsigned int NBINS=1000);
 
   /*! \brief Reads data to compute likelihood for multiple data files*/
   void readDataFromFiles(const std::vector<std::string>&, 
-			 bool IGNOREMASK=false, bool MEANSUB=false,
-			 bool BINDATA=false, unsigned int NBINS=1000);
+                         bool IGNOREMASK=false, bool MEANSUB=false,
+                         bool BINDATA=false, unsigned int NBINS=1000);
 
   /*! \brief Read in beam file */
   void readBeam(const std::string&, double MINVAL=1e-5, bool histogram=false,
-		unsigned int NBINS=120);
+                unsigned int NBINS=120);
 
   /*! \brief Access to beam info */
   const beam& getBeam() const { return bm; }
@@ -124,7 +125,7 @@ class calcLikeSingle {
 
   /*! \brief Returns \f$\log L\f$ over all data sets.  Model must be set */
   double getLogLike(const numberCounts&, bool& pars_invalid, 
-		    double sigmult=1.0, unsigned int fftsize=131072) const;
+                    double sigmult=1.0, unsigned int fftsize=131072) const;
 
   void writeToHDF5Handle(hid_t) const; //!< Write dataset info to HDF5 handle
   /*! \brief Make a new group and write to it */
@@ -199,7 +200,7 @@ class calcLike {
  public:
   /*! \brief Constructor */
   explicit calcLike(unsigned int FFTSIZE=262144, unsigned int NINTERP=1024, 
-		    bool BINNED=false, unsigned int NBINS=1000);
+                    bool BINNED=false, unsigned int NBINS=1000);
   ~calcLike(); //!< Destuctor
 
   void freeData(); //!< Remove internal data
@@ -208,12 +209,12 @@ class calcLike {
 
   /*! \brief Reads data to compute likelihood for multiple data and beam files*/
   void readDataFromFiles(const std::vector<std::string>&, 
-			 const std::vector<std::string>&,
-			 const std::vector<double>&,
-			 const std::vector<double>&,
-			 bool IGNOREMASK=false, bool MEANSUB=false,
-			 double MINBEAMVAL=1e-5, bool HISTOGRAMBEAMS=false, 
-			 unsigned int NBEAMHIST=120, double EXPCONF=0.0);
+                         const std::vector<std::string>&,
+                         const std::vector<double>&,
+                         const std::vector<double>&,
+                         bool IGNOREMASK=false, bool MEANSUB=false,
+                         double MINBEAMVAL=1e-5, bool HISTOGRAMBEAMS=false, 
+                         unsigned int NBEAMHIST=120, double EXPCONF=0.0);
   
   void setVerbose() { verbose=true; } //!< Turn on verbose mode
   void unSetVerbose() { verbose = false; } //!< Turn off verbose mode

@@ -54,7 +54,7 @@ fitsData::~fitsData() {
   odd things will happen.
 */
 void fitsData::readData(const std::string& filename,
-			bool ignore_mask, bool meansub) {
+                        bool ignore_mask, bool meansub) {
 
   //Free up old arrays
   if (data != nullptr) { fftw_free(data); data = nullptr; }
@@ -101,18 +101,18 @@ void fitsData::readData(const std::string& filename,
     //  have to try to find the right one.
     int hdutype = IMAGE_HDU;
     fits_movnam_hdu(fptr, hdutype, const_cast<char*>("image"),
-		    0, &status);
+                    0, &status);
     if (status == BAD_HDU_NUM) {
       status = 0;
       fits_movnam_hdu(fptr, hdutype, const_cast<char*>("IMAGE"),
-		      0, &status);
+                      0, &status);
     }
     if (status == BAD_HDU_NUM) {
       status = 0;
       fits_movabs_hdu(fptr, 1, &hdutype, &status);
       if (hdutype != IMAGE_HDU) {
-	fits_close_file(fptr, &status);
-	throw affineExcept("fitsData", "readData", "Couldn't find image");
+        fits_close_file(fptr, &status);
+        throw affineExcept("fitsData", "readData", "Couldn't find image");
       }
     }
     if (status) {
@@ -143,7 +143,7 @@ void fitsData::readData(const std::string& filename,
   if (status) {
     fits_close_file(fptr, &status);
     throw affineExcept("fitsData", "readData", 
-		       "Error getting image dimensions");
+                       "Error getting image dimensions");
   }
   if (naxis != 2) {
     fits_close_file(fptr, &status);
@@ -154,7 +154,7 @@ void fitsData::readData(const std::string& filename,
   if (status) {
     fits_close_file(fptr, &status);
     throw affineExcept("fitsData", "readData", 
-		       "Error getting image dimensions");
+                       "Error getting image dimensions");
   }
   ndat_ = static_cast<unsigned int>(naxes[0] * naxes[1]);
   if (ndat_ == 0) {
@@ -176,25 +176,25 @@ void fitsData::readData(const std::string& filename,
   // Deal with mask
   if (!ignore_mask) {
     fits_movnam_hdu(fptr, IMAGE_HDU, const_cast<char*>("mask"),
-		    0, &status);
+                    0, &status);
     if (status == 0) has_mask = true; else {
       if (status != BAD_HDU_NUM) {
-	fits_report_error(stderr, status);
-	fits_close_file(fptr, &status);
-	fftw_free(data_);
-	throw affineExcept("fitsData", "readData", "Error looking for mask");
+        fits_report_error(stderr, status);
+        fits_close_file(fptr, &status);
+        fftw_free(data_);
+        throw affineExcept("fitsData", "readData", "Error looking for mask");
       } else {
-	//Try uppercase
-	fits_movnam_hdu(fptr, IMAGE_HDU, const_cast<char*>("MASK"),
-			0, &status);
-	if (status == 0) has_mask = true; else
-	  if (status != BAD_HDU_NUM) {
-	    fits_report_error(stderr, status);
-	    fits_close_file(fptr, &status);
-	    fftw_free(data_);
-	    throw affineExcept("fitsData", "readData",
-			       "Error looking for mask");
-	  }
+        //Try uppercase
+        fits_movnam_hdu(fptr, IMAGE_HDU, const_cast<char*>("MASK"),
+                        0, &status);
+        if (status == 0) has_mask = true; else
+          if (status != BAD_HDU_NUM) {
+            fits_report_error(stderr, status);
+            fits_close_file(fptr, &status);
+            fftw_free(data_);
+            throw affineExcept("fitsData", "readData",
+                               "Error looking for mask");
+          }
       }
     }
     fits_get_hdu_num(fptr, &st);
@@ -210,13 +210,13 @@ void fitsData::readData(const std::string& filename,
       fits_close_file(fptr, &status);
       fftw_free(data);
       throw affineExcept("fitsData", "readData",
-			 "Data in mask extension fails checksum test");
+                         "Data in mask extension fails checksum test");
     }
     if (hduok == -1) {
       fits_close_file(fptr, &status);
       fftw_free(data);
       throw affineExcept("fitsData", "readData",
-			 "Mask extension HDU fails checksum test");
+                         "Mask extension HDU fails checksum test");
     }
     
     fits_get_img_dim(fptr, &naxis, &status);
@@ -224,7 +224,7 @@ void fitsData::readData(const std::string& filename,
       fits_close_file(fptr, &status);
       fftw_free(data);
       throw affineExcept("fitsData", "readData", 
-			 "Error getting mask dimensions");
+                         "Error getting mask dimensions");
     }
     if (naxis != 2) {
       fits_close_file(fptr, &status);
@@ -237,7 +237,7 @@ void fitsData::readData(const std::string& filename,
       fits_close_file(fptr, &status);
       fftw_free(data);
       throw affineExcept("fitsData", "readData",
-			 "Mask failure getting mask extents");
+                         "Mask failure getting mask extents");
     }
     
     nmask = masknaxes[0] * masknaxes[1];
@@ -245,7 +245,7 @@ void fitsData::readData(const std::string& filename,
       fits_close_file(fptr, &status);
       fftw_free(data);
       throw affineExcept("fitsData", "readData",
-			 "Mask present zero extent");
+                         "Mask present zero extent");
     } 
 
     // Compare with image size
@@ -253,13 +253,13 @@ void fitsData::readData(const std::string& filename,
       fits_close_file(fptr, &status);
       fftw_free(data);
       throw affineExcept("fitsData", "readFile",
-			 "Mask does not match image extent along first dimension");
+                         "Mask does not match image extent along first dimension");
     }
     if (masknaxes[1] != naxes[1]) {
       fits_close_file(fptr, &status);
       fftw_free(data);
       throw affineExcept("fitsData", "readFile",
-			 "Mask does not match image extent along second dimension");
+                         "Mask does not match image extent along second dimension");
     }
 
     //The actual read.  Man fitsio takes a lot of code...
@@ -272,7 +272,7 @@ void fitsData::readData(const std::string& filename,
       fftw_free(data);
       fftw_free(mask);
       throw affineExcept("fitsData", "readData",
-			 "Error reading mask data");
+                         "Error reading mask data");
     }
   }
 
@@ -406,7 +406,7 @@ double fitsData::meanSubtract() {
 void fitsData::applyBinning(unsigned int NBINS) {
   if (n == 0) return;
   if (NBINS == 0) throw affineExcept("fitsData", "applyBinning",
-				     "Trying to bin with no bins");
+                                     "Trying to bin with no bins");
   if (is_binned && NBINS==nbins) return;
   if (NBINS != nbins) {
     if (binval != nullptr) fftw_free(binval);
@@ -449,21 +449,21 @@ void fitsData::removeBinning() {
 */
 void fitsData::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<unsigned int*>(&n), 1, MPI_UNSIGNED, dest,
-	   pofd_mcmc::FDSENDN, comm);
+           pofd_mcmc::FDSENDN, comm);
   if (n > 0) 
     MPI_Send(data, n, MPI_DOUBLE, dest, pofd_mcmc::FDSENDDATA, comm);
   MPI_Send(const_cast<bool*>(&is_binned), 1, MPI::BOOL,
-	   dest,pofd_mcmc::FDSENDISBINNED, comm);
+           dest,pofd_mcmc::FDSENDISBINNED, comm);
   if (is_binned) {
     MPI_Send(const_cast<unsigned int*>(&nbins), 1, MPI_UNSIGNED,
-	     dest, pofd_mcmc::FDSENDNBINS, comm);
+             dest, pofd_mcmc::FDSENDNBINS, comm);
     if (nbins > 0) {
       MPI_Send(binval, nbins, MPI_UNSIGNED, dest, 
-	       pofd_mcmc::FDSENDBINVAL, comm);
+               pofd_mcmc::FDSENDBINVAL, comm);
       MPI_Send(const_cast<double*>(&bincent0), 1, MPI_DOUBLE, dest, 
-	       pofd_mcmc::FDSENDBINCENT0, comm);
+               pofd_mcmc::FDSENDBINCENT0, comm);
       MPI_Send(const_cast<double*>(&bindelta), 1, MPI_DOUBLE, dest, 
-	       pofd_mcmc::FDSENDBINDELTA, comm);
+               pofd_mcmc::FDSENDBINDELTA, comm);
     }
   }
 }
@@ -494,23 +494,23 @@ void fitsData::receiveCopy(MPI_Comm comm, int src) {
     //Data inbound is binned
     unsigned int newnbins;
     MPI_Recv(&newnbins, 1, MPI_UNSIGNED, src, pofd_mcmc::FDSENDNBINS,
-	     comm, &Info);
+             comm, &Info);
     if (newnbins != nbins) {
       //Need to resize
       nbins = newnbins;
       if (binval != nullptr) fftw_free(binval);
       if (nbins > 0) 
-	binval = (unsigned int*) fftw_malloc(sizeof(unsigned int) * nbins);
+        binval = (unsigned int*) fftw_malloc(sizeof(unsigned int) * nbins);
       else
-	binval = nullptr;
+        binval = nullptr;
     }
     if (nbins > 0) {
       MPI_Recv(binval, nbins, MPI_UNSIGNED, src, pofd_mcmc::FDSENDBINVAL,
-	       comm, &Info);
+               comm, &Info);
       MPI_Recv(&bincent0, 1, MPI_DOUBLE, src, pofd_mcmc::FDSENDBINCENT0,
-	       comm, &Info);
+               comm, &Info);
       MPI_Recv(&bindelta, 1, MPI_DOUBLE, src, pofd_mcmc::FDSENDBINDELTA,
-	       comm, &Info);
+               comm, &Info);
       is_binned = true;
     } else is_binned = false;
   } else if (is_binned) {

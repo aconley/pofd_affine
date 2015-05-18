@@ -21,7 +21,7 @@
   The memory usage is something like std::vector -- each object
   has a capacity and a current size, with size < capacity.  This
   tries to avoid resizing if the memory is already allocated.
- */
+*/
 class PDDouble {
  private:
   static constexpr double lowsigval = 2.5; //!< Constant used in edgeFix
@@ -35,8 +35,8 @@ class PDDouble {
 
  public:
   explicit PDDouble(unsigned int N1=0, double MINFLUX1=0.0, double DFLUX1=0.0,
-		    unsigned int N2=0, double MINFLUX2=0.0, double DFLUX2=0.0,
-		    bool LOG=true); //!< Constructor
+                    unsigned int N2=0, double MINFLUX2=0.0, double DFLUX2=0.0,
+                    bool LOG=true); //!< Constructor
   ~PDDouble(); //!< Destructor
 
   //Public for efficient filling -- bad form, but speed matters here
@@ -68,8 +68,8 @@ class PDDouble {
 
   /*! \brief Fill contents from row major array */
   void fill(unsigned int, double, double,
-	    unsigned int, double, double,
-	    const double* const, bool LOG=true); 
+            unsigned int, double, double,
+            const double* const, bool LOG=true); 
 
   /*! \brief Get flux value (band 1) corresponding to index */
   double getFluxVal1(unsigned int i) const { return minflux1+static_cast<double>(i)*dflux1; }
@@ -77,7 +77,7 @@ class PDDouble {
   double getFluxVal2(unsigned int i) const { return minflux2+static_cast<double>(i)*dflux2; }
   /*! \brief Get PD value corresponding to indices */
   double getPDVal(unsigned int i, 
-		  unsigned int j) const { return pd_[n2*i+j]; }
+                  unsigned int j) const { return pd_[n2*i+j]; }
   /*! \brief Get PD value corresponding to flux values (using interpolation) */
   double getPDVal(double,double,bool=false) const; //!< Interpolation
 

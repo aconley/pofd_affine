@@ -9,15 +9,15 @@
   the numberCountsDoubleLogNormal model.
 
   Builds statistics about a fit from a fit output file, including
-    - Mean fit
-    - Best fit
-    - Uncertainties at knot values
-    - Error snakes
+  - Mean fit
+  - Best fit
+  - Uncertainties at knot values
+  - Error snakes
 
   \ingroup models
 */
 class numberCountsDoubleLogNormalStats final : public statsAccumulator {
-private:
+ private:
 
   // Stuff having to do with values and uncertainties at the knots
   unsigned int nparams; //!< Number of model parameters
@@ -60,7 +60,7 @@ private:
   void setNParams(unsigned int); //!< Set number of params
 
   mutable numberCountsDoubleLogNormal model; //!< For doing interpolation
-public:
+ public:
   numberCountsDoubleLogNormalStats(unsigned int, bool=true);
   ~numberCountsDoubleLogNormalStats();
 

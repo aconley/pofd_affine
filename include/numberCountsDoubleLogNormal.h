@@ -21,9 +21,9 @@
 
   The full expression is
   \f[
-    \frac{dN}{dS_1\, dS_2} = \frac{n_1\left(S_1 \right)}{S_1} 
-    \mathrm{L} \left( \frac{S_2}{S_1}; \mu\left(S_1\right),
-    \sigma\left(S_1\right) \right)
+  \frac{dN}{dS_1\, dS_2} = \frac{n_1\left(S_1 \right)}{S_1} 
+  \mathrm{L} \left( \frac{S_2}{S_1}; \mu\left(S_1\right),
+  \sigma\left(S_1\right) \right)
   \f] 
   where \f$n_1\f$ is just the spline as in the one-dimensional case
   as implemented in numberCountsKnotsSpline.
@@ -31,9 +31,9 @@
   distribution marginalized over \f$S_2\f$ is just \f$ n_1 \f$.
   \f$L\f$ is just the Log-Normal distribution:
   \f[
-    \mathrm{L}\left( x ; \mu, \sigma \right) =
-    \frac{1}{\sqrt{2 \pi} \sigma} \frac{1}{x}
-    \exp\left[ \frac{ - \left(\log x - \mu\right)^2 }{ 2 \sigma^2 } \right] .
+  \mathrm{L}\left( x ; \mu, \sigma \right) =
+  \frac{1}{\sqrt{2 \pi} \sigma} \frac{1}{x}
+  \exp\left[ \frac{ - \left(\log x - \mu\right)^2 }{ 2 \sigma^2 } \right] .
   \f]
   \f$\sigma\f$ and \f$\mu\f$ are stored as splines as functions of
   \f$S_1\f$.  Note that \f$\sigma\f$ and \f$\mu\f$ (the actual parameters 
@@ -42,14 +42,14 @@
   but rather the mean and square root of the variance of the 
   (natural) log quantities.  These are related by
   \f[
-    \left< S_2/S_1 \right> = \exp \left[ \mu\left(S_1\right) +
-       \frac{1}{2}\sigma^2\left(S_1\right) \right]
+  \left< S_2/S_1 \right> = \exp \left[ \mu\left(S_1\right) +
+  \frac{1}{2}\sigma^2\left(S_1\right) \right]
   \f]
   and
   \f[
-    Var[ S_2/S_1 ] = \exp \left( 2 \mu \left( S_1 \right) +
-       \sigma^2\left(S_1\right) \right) 
-       \left[ \exp \left( \sigma^2\left(S_1\right) \right) - 1 \right] .
+  Var[ S_2/S_1 ] = \exp \left( 2 \mu \left( S_1 \right) +
+  \sigma^2\left(S_1\right) \right) 
+  \left[ \exp \left( \sigma^2\left(S_1\right) \right) - 1 \right] .
   \f]
   Note that the number counts require that \f$S_2/S_1 > 0\f$.
   We also explicitly require that \f$S_1 > 0\f$.  Both are justified
@@ -134,24 +134,24 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
  public :
   numberCountsDoubleLogNormal(); //!< Default
   explicit numberCountsDoubleLogNormal(unsigned int, unsigned int, 
-				       unsigned int); //!< Constructor
+                                       unsigned int); //!< Constructor
 
   /*! \brief Constructor */
   numberCountsDoubleLogNormal(const std::vector<float>&, 
-			      const std::vector<float>&,
-			      const std::vector<float>&); //!< Constructor
+                              const std::vector<float>&,
+                              const std::vector<float>&); //!< Constructor
   /*! \brief Constructor */
   numberCountsDoubleLogNormal(const std::vector<double>&, 
-			      const std::vector<double>&,
-			      const std::vector<double>&); //!< Constructor
+                              const std::vector<double>&,
+                              const std::vector<double>&); //!< Constructor
   /*! \brief Constructor */
   numberCountsDoubleLogNormal(unsigned int, const float* const,
-			      unsigned int, const float* const,
-			      unsigned int, const float* const);
+                              unsigned int, const float* const,
+                              unsigned int, const float* const);
   /*! \brief Constructor */
   numberCountsDoubleLogNormal(unsigned int, const double* const,
-			      unsigned int, const double* const,
-			      unsigned int, const double* const);
+                              unsigned int, const double* const,
+                              unsigned int, const double* const);
   /*! \brief Copy constructor */
   numberCountsDoubleLogNormal(const numberCountsDoubleLogNormal& other);
   virtual ~numberCountsDoubleLogNormal(); //!< Destructor
@@ -209,13 +209,13 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   unsigned int getNParams() const { return nknots + nsigmaknots + noffsetknots; }
   /*! \brief Gets positions of all knots */
   void getPositions(std::vector<double>&, std::vector<double>&,
-		    std::vector<double>&) const;
+                    std::vector<double>&) const;
   /*! \brief Sets positions of all knots */
   void setPositions(const std::vector<float>&,const std::vector<float>&,
-		    const std::vector<float>&); 
+                    const std::vector<float>&); 
   /*! \brief Sets positions of all knots */
   void setPositions(const std::vector<double>&,const std::vector<double>&,
-		    const std::vector<double>&);
+                    const std::vector<double>&);
   
   void getParams(paramSet&) const override; //!< Get parameters
   void setParams(const paramSet&) override; //!< Set parameters
@@ -253,7 +253,7 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   double getR(double, double, const doublebeam&) const override;
   /*! \brief Gets R values, array version */
   void getR(unsigned int n1, const double* const, unsigned int n2,
-	    const double* const, const doublebeam&, double*) const override;
+            const double* const, const doublebeam&, double*) const override;
   
   double differenceRegularize(double) const; //!< Tikhonov regularization log Likelihood penalty
 
@@ -261,86 +261,6 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   bool writeToStream(std::ostream& os) const override; //<! Output to stream
   void readFromHDF5Handle(hid_t) override; //!< Read from HDF5 Handle
   
-  void sendSelf(MPI_Comm, int dest) const; //!< Send self
-  void receiveCopy(MPI_Comm, int src); //!< Receive
-};
-
-//////////////////////////////
-
-/*!
-  \brief A class to read in model specifications from init files, 2D case
-
-  \ingroup Models
- */
-class initFileDoubleLogNormal {
- private:
-  //These are all c arrays rather than vectors for ease of compatability
-  // with MPI.  We also store everything as one vector
-
-  //The first two (knotpos, knotval) are required
-  unsigned int nknots; //!< Number of knots in band 1 number counts
-  unsigned int nsigmas; //!< Number of knots in color sigma
-  unsigned int noffsets; //!< Number of knots in color offset
-  unsigned int sigmaidx; //!< Index of first sigma value
-  unsigned int offsetidx; //!< Index of first offset value
-  double* knotpos; //!< Positions of knots (all, including sigma and offsets)
-  double* knotval; //!< Initial value center for knot value (all, inc. sigmas and offsets)
-
-  //These are optional
-  bool has_range; //!< Has initial value range
-  double* range; //!< Range for initial positions
-  bool has_lower_limits; //!< Has some lower limit information
-  bool* has_lowlim; //!< Knots have lower limit
-  double* lowlim; //!< Value of lower limit
-  bool has_upper_limits; //!< Has some upper limit information
-  bool* has_uplim; //!< Knots have upper limit
-  double* uplim; //!< Value of upper limit
-
-  void checkLimitsDontCross() const; //!< Make sure limits make sense, throw if not
-  void checkRange() const; //!< Make sure param ranges make sense, throw if not
-
- public:
-  initFileDoubleLogNormal(); //!< Basic constructor
-  /*! \brief Constructor with file read */
-  initFileDoubleLogNormal(const std::string&, bool=false, bool=false);
-  ~initFileDoubleLogNormal(); //!< Destructor
-
-  unsigned int getNKnots() const { return nknots; } //!< Get number of knots in band 1
-  unsigned int getNSigmas() const { return nsigmas; } //!< Get number of knots in color model sigma
-  unsigned int getNOffsets() const { return noffsets; } //!< Get number of knots in color model offset
-  unsigned int getNTot() const { return nknots+nsigmas+noffsets; } //!< Get total number of model knots
-
-  std::pair<double,double> getKnot(unsigned int idx) const; //!< Get band 1 knot pos and value
-  std::pair<double,double> getSigma(unsigned int idx) const; //!< Get color sigma pos and value
-  std::pair<double,double> getOffset(unsigned int idx) const; //!< Get color offset pos and value
-
-  void readFile(const std::string&, bool=false, bool=false); //!< Read file
-
-  void getKnotPos(std::vector<double>&) const; //!< Gets the knot positions for band 1
-  void getKnotVals(std::vector<double>&) const; //!< Gets the knot values for band 1
-  void getSigmaPos(std::vector<double>&) const; //!< Gets the knot positions for color model sigma
-  void getSigmaVals(std::vector<double>&) const; //!< Gets the knot values for color model sigma
-  void getOffsetPos(std::vector<double>&) const; //!< Gets the knot positions for color model offset
-  void getOffsetVals(std::vector<double>&) const; //!< Gets the knot values for color model offset
-
-  void getModelPositions(numberCountsDoubleLogNormal&) const; //!< Sets knot locations in model for all model components
-  void getParams(paramSet& p) const; //!< Sets param values to central values
-  void generateRandomKnotValues(ran&, paramSet& pnew) const; //!< Seed knot values
-  void generateRandomKnotValues(ran&, paramSet& pnew, const paramSet& pcen) const; //!< Seed knot values
-
-  double getKnotRange(unsigned int) const; //!< Get knot range
-  bool isKnotFixed(unsigned int) const; //!< Is a knot fixed?
-
-  bool knotHasLowerLimit(unsigned int) const; //!< Does knot have a lower limit
-  double getLowerLimit(unsigned int) const; //!< Get knot lower limit
-
-  bool knotHasUpperLimit(unsigned int) const; //!< Does knot have a lower limit
-  double getUpperLimit(unsigned int) const; //!< Get knot lower limit
-
-  bool isValid(const paramSet&) const; //!< Checks if parameters are within allowed ranges
-
-  void writeToHDF5Handle(hid_t) const; //!< Write to HDF5 handle
-
   void sendSelf(MPI_Comm, int dest) const; //!< Send self
   void receiveCopy(MPI_Comm, int src); //!< Receive
 };

@@ -34,11 +34,11 @@ class fitsData {
  public:
   fitsData(); //!< Default constructor
   fitsData(const std::string&, bool ignore_mask=false, 
-	   bool meansub=false); //!< Constructor from file
+           bool meansub=false); //!< Constructor from file
   ~fitsData();
 
   void readData(const std::string&, bool ignore_mask=false, 
-		bool domeansub=false); //!< Read data from file
+                bool domeansub=false); //!< Read data from file
 
   bool isBinned() const { return is_binned; } //!< Is data binned?
   void applyBinning(unsigned int); //!< Takes an unbinned image and bins it

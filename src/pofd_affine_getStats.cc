@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
   int c;
   int option_index = 0;
   while ((c = getopt_long(argc, argv, optstring, long_options,
-			                    &option_index)) != -1) 
+                                            &option_index)) != -1) 
     switch(c) {
     case 'h' :
       std::cerr << "NAME" << std::endl;
@@ -75,11 +75,11 @@ int main(int argc, char** argv) {
       std::cerr << "DESCRIPTION" << std::endl;
       std::cerr << "\tBuilds summary statistics from the results of a"
                 << std::endl;
-		  std::cerr << "\t pofd_affine_mcmc fit, 1D or 2D." << std::endl;
+                  std::cerr << "\t pofd_affine_mcmc fit, 1D or 2D." << std::endl;
       std::cerr << "\tinfile is the HDF5 output of pofd_affine_mcmc."
-		<< std::endl;
+                << std::endl;
       std::cerr << "\toutfile is the output statistics, also as HDF5."
-		<< std::endl;
+                << std::endl;
     case 'n' :
       nflux = static_cast<unsigned int>(atoi(optarg));
       break;

@@ -79,18 +79,18 @@ class doublebeam {
  public :
   doublebeam(); //!< Default constructor
   doublebeam(const std::string&, const std::string&, bool histogram=false, 
-	     unsigned int NBINS=150, double MINVAL=1e-6); //!< Reads beam from files
+             unsigned int NBINS=150, double MINVAL=1e-6); //!< Reads beam from files
   ~doublebeam() { cleanup(); } //!< Destructor
 
   void free() { cleanup(); } //!< Free all memory
 
   /*! \brief Read in files */
   void readFiles(const std::string& filename1, const std::string& filename2,
-		 double MINVAL=1e-6); 
+                 double MINVAL=1e-6); 
 
   /*! \brief Sets beams from arrays */
   void setBeams(unsigned int n, const double* const beam1,
-		const double* const beam2, double PIXSIZE, double MINVAL=1e-6);
+                const double* const beam2, double PIXSIZE, double MINVAL=1e-6);
 
   /*! \brief Build histograms */
   void makeHistogram(unsigned int NBINS=150); //!< Prepare the histogram

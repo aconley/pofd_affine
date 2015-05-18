@@ -113,8 +113,8 @@ void calcLikeSingle::resize(unsigned int n) {
   Special case for only a single data file
 */
 void calcLikeSingle::readDataFromFile(const std::string& datafile, 
-				      bool IGNOREMASK, bool MEANSUB,
-				      bool BINDATA, unsigned int NBINS) {
+                                      bool IGNOREMASK, bool MEANSUB,
+                                      bool BINDATA, unsigned int NBINS) {
   resize(1);
   filenames[0] = datafile;
   data[0].readData(datafile, IGNOREMASK, MEANSUB);
@@ -127,7 +127,7 @@ void calcLikeSingle::readDataFromFile(const std::string& datafile,
   unsigned int nd = data[0].getN();
   if (nd == 0)
     throw affineExcept("calcLikeSingle", "readDataFromFile",
-		       "No unmasked pixels in data");
+                       "No unmasked pixels in data");
   if (BINDATA) data[0].applyBinning(NBINS);
   
   dblpair minmax = data[0].getMinMax();
@@ -136,7 +136,7 @@ void calcLikeSingle::readDataFromFile(const std::string& datafile,
   if (std::isnan(minDataFlux) || std::isinf(minDataFlux) ||
       std::isnan(maxDataFlux) || std::isinf(maxDataFlux))
     throw affineExcept("calcLikeSingle", "readDataFromFile",
-		       "Invalid data range encountered in data file");
+                       "Invalid data range encountered in data file");
 
   // We can't set the likelihood offset unless sigma base is set.
   like_offset[0] = 0.0;
@@ -154,12 +154,12 @@ void calcLikeSingle::readDataFromFile(const std::string& datafile,
 */
 void calcLikeSingle::
 readDataFromFiles(const std::vector<std::string>& datafiles, 
-		  bool IGNOREMASK, bool MEANSUB, bool BINDATA,
-		  unsigned int NBINS) {
+                  bool IGNOREMASK, bool MEANSUB, bool BINDATA,
+                  unsigned int NBINS) {
   unsigned int n = datafiles.size();
   if (n == 0)
     throw affineExcept("calcLikeSingle", "readDataFromFile",
-		       "No data sets");
+                       "No data sets");
   resize(n);
 
   for (unsigned int i = 0; i < n; ++i) {
@@ -175,12 +175,12 @@ readDataFromFiles(const std::vector<std::string>& datafiles,
     if (nd == 0) {
       std::stringstream errstr("");
       if (hasmask[i])
-	errstr << "No unmasked pixels in data file: ";
+        errstr << "No unmasked pixels in data file: ";
       else
-	errstr << "No pixels in data file: ";
+        errstr << "No pixels in data file: ";
       errstr << datafiles[i];
       throw affineExcept("calcLikeSingle", "readDataFromFile",
-			 errstr.str());
+                         errstr.str());
     }
     if (BINDATA) data[i].applyBinning(NBINS);
 
@@ -205,7 +205,7 @@ readDataFromFiles(const std::vector<std::string>& datafiles,
     cminflux = minmax.first;
     cmaxflux = minmax.second;
     if (std::isnan(cminflux) || std::isinf(cminflux) ||
-	std::isnan(cmaxflux) || std::isinf(cmaxflux)) {
+        std::isnan(cmaxflux) || std::isinf(cmaxflux)) {
       std::stringstream errstr;
       errstr << "Problem with data range in " << datafiles[i];
       throw affineExcept("calcLikeSingle", "readDataFromFile", errstr.str());
@@ -225,7 +225,7 @@ readDataFromFiles(const std::vector<std::string>& datafiles,
   \param[in] NBINS Number of beam histogram bins to use
 */
 void calcLikeSingle::readBeam(const std::string& fl, double MINVAL,
-			      bool histogram, unsigned int NBINS) {
+                              bool histogram, unsigned int NBINS) {
   bm.readFile(fl, MINVAL);
   if (histogram) bm.makeHistogram(NBINS);
   has_beam = true;
@@ -250,13 +250,13 @@ void calcLikeSingle::removeBinning() {
 
 /*!
   \param[in] lnorm Vector of likelihood normalization values, of length
-    the number of datasets
+  the number of datasets
 */
 void calcLikeSingle::setLikeNorm(const std::vector<double>& lnorm) {
   unsigned int n = lnorm.size();
   if (n != ndatasets)
     throw affineExcept("calcLikeSingle", "setLikeNorm",
-		       "like_norm vector not same size as number of data sets");
+                       "like_norm vector not same size as number of data sets");
   if (n == 0) return;
   for (unsigned int i = 0; i < ndatasets; ++i)
     like_norm[i] = lnorm[i];
@@ -267,10 +267,10 @@ void calcLikeSingle::setLikeNorm(const std::vector<double>& lnorm) {
   \param[in] lnorm Array of likelihood normalization values
 */
 void calcLikeSingle::setLikeNorm(unsigned int n, 
-				 const double* const lnorm) {
+                                 const double* const lnorm) {
   if (n != ndatasets)
     throw affineExcept("calcLikeSingle", "setLikeNorm",
-		       "like_norm array not same size as number of data sets");
+                       "like_norm array not same size as number of data sets");
   if (n == 0) return;
   for (unsigned int i = 0; i < ndatasets; ++i)
     like_norm[i] = lnorm[i];
@@ -278,13 +278,13 @@ void calcLikeSingle::setLikeNorm(unsigned int n,
 
 /*!
   \param[in] s Vector of instrument sigma base values, of length
-    the number of datasets
+  the number of datasets
 */
 void calcLikeSingle::setSigmaBase(const std::vector<double>& s) {
   unsigned int n = s.size();
   if (n != ndatasets)
     throw affineExcept("calcLikeSingle", "setSigmaBase",
-		       "sigma vectors not same size as number of data sets");
+                       "sigma vectors not same size as number of data sets");
   if (n == 0) return;
   for (unsigned int i = 0; i < ndatasets; ++i)
     sigma_base[i] = s[i];
@@ -300,8 +300,8 @@ void calcLikeSingle::setSigmaBase(const std::vector<double>& s) {
     for (unsigned int i = 0; i < ndatasets; ++i) {
       var = sigma_base[i] * sigma_base[i] + exp_conf * exp_conf;
       if (var > 0) {
-	double ndd = static_cast<double>(data[i].getN());
-	like_offset[i] = -0.5 * ndd * (log(mcmc_affine::two_pi * var) + 1.0);
+        double ndd = static_cast<double>(data[i].getN());
+        like_offset[i] = -0.5 * ndd * (log(mcmc_affine::two_pi * var) + 1.0);
       }
     }
   }
@@ -314,7 +314,7 @@ void calcLikeSingle::setSigmaBase(const std::vector<double>& s) {
 void calcLikeSingle::setSigmaBase(unsigned int n, const double* const s) {
   if (n != ndatasets)
     throw affineExcept("calcLikeSingle", "setSigmaBase",
-		       "sigma arrays not same size as number of data sets");
+                       "sigma arrays not same size as number of data sets");
   if (n == 0) return;
   for (unsigned int i = 0; i < ndatasets; ++i)
     sigma_base[i] = s[i];
@@ -329,8 +329,8 @@ void calcLikeSingle::setSigmaBase(unsigned int n, const double* const s) {
     for (unsigned int i = 0; i < ndatasets; ++i) {
       var = sigma_base[i] * sigma_base[i] + exp_conf * exp_conf;
       if (var > 0) {
-	double ndd = static_cast<double>(data[i].getN());
-	like_offset[i] = -0.5 * ndd * (log(mcmc_affine::two_pi * var) + 1.0);
+        double ndd = static_cast<double>(data[i].getN());
+        like_offset[i] = -0.5 * ndd * (log(mcmc_affine::two_pi * var) + 1.0);
       }
     }
   }
@@ -373,7 +373,7 @@ void calcLikeSingle::setRRange(const numberCounts& model) {
 /*
   \param[in] model   Model parameters must already be set
   \param[out] pars_invalid Set to true if parameters are determined to 
-                            be invalid
+  be invalid
   \param[in] sigmul  Sigma multiplier
   \param[in] fftsize Size of FFT to use
   
@@ -387,14 +387,14 @@ void calcLikeSingle::setRRange(const numberCounts& model) {
   the previous ones are the values of the number counts at the knots
 */
 double calcLikeSingle::getLogLike(const numberCounts& model, bool& pars_invalid,
-				  double sigmult, unsigned int fftsize) const {
+                                  double sigmult, unsigned int fftsize) const {
 
   if (!data_read)
     throw affineExcept("calcLikeSingle", "getNegLogLike",
-		       "Data not read");
+                       "Data not read");
   if (!has_beam)
     throw affineExcept("calcLikeSingle", "getNegLogLike",
-		       "Beam not read");
+                       "Beam not read");
 
   double LogLike = 0.0;
 
@@ -406,7 +406,7 @@ double calcLikeSingle::getLogLike(const numberCounts& model, bool& pars_invalid,
   // Use the pre-set min/maxR range. 
   if (std::isnan(minRFlux) || std::isnan(maxRFlux))
     throw affineExcept("calcLikeSingle", "getNegLogLike",
-		       "R range not set");
+                       "R range not set");
   pars_invalid = ! pdfac.initPD(fftsize, minRFlux, maxRFlux, model, bm);
   if (pars_invalid) return 0.0; // No point in continuing
   
@@ -415,26 +415,26 @@ double calcLikeSingle::getLogLike(const numberCounts& model, bool& pars_invalid,
   
   for (unsigned int i = 0; i < ndatasets; ++i) {
     try {
-    // Get PD for this particuar set of sigmas
-    pdfac.getPD(sigmult * sigma_base[i], pd, true);
+      // Get PD for this particuar set of sigmas
+      pdfac.getPD(sigmult * sigma_base[i], pd, true);
     
-    // Get log like
-    curr_LogLike = pd.getLogLike(data[i]);
+      // Get log like
+      curr_LogLike = pd.getLogLike(data[i]);
     
-    // Apply beam and zero offset factor
-    LogLike += (curr_LogLike - like_offset[i]) / like_norm[i];
+      // Apply beam and zero offset factor
+      LogLike += (curr_LogLike - like_offset[i]) / like_norm[i];
     } catch (const affineExcept& ex) {
       // We build a new exception with more information about what we were doing
       std::string errstr = ex.getErrStr();
       std::stringstream newerrstr("");
       newerrstr << errstr << std::endl
-		<< "Error encountered while processing model parameters: " 
-		<< std::endl << model
-		<< "While analyzing dataset " << i << " of " << ndatasets 
-		<< " using:" << std::endl
-		<< " fftsize: " << fftsize << std::endl
-		<< " RFlux range: " << minRFlux << " to " << maxRFlux 
-		<< std::endl << " sigmult: " << sigmult;
+                << "Error encountered while processing model parameters: " 
+                << std::endl << model
+                << "While analyzing dataset " << i << " of " << ndatasets 
+                << " using:" << std::endl
+                << " fftsize: " << fftsize << std::endl
+                << " RFlux range: " << minRFlux << " to " << maxRFlux 
+                << std::endl << " sigmult: " << sigmult;
       throw affineExcept(ex.getErrClass(), ex.getErrMethod(), newerrstr.str());
     }
   }
@@ -442,9 +442,9 @@ double calcLikeSingle::getLogLike(const numberCounts& model, bool& pars_invalid,
   return LogLike;
 }
 
-/*!						
+/*!                                             
   \param[in] objid HDF5 handle to write information to.  Must already be
-    open.
+  open.
 */
 void calcLikeSingle::writeToHDF5Handle(hid_t objid) const {
   hsize_t adims;
@@ -452,13 +452,13 @@ void calcLikeSingle::writeToHDF5Handle(hid_t objid) const {
 
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("calcLikeSingle", "writeToHDF5Handle",
-		       "Input handle is not valid");
+                       "Input handle is not valid");
 
   // Number of files
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate2(objid, "NFiles", H5T_NATIVE_UINT,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &ndatasets);
   H5Aclose(att_id);
   H5Sclose(mems_id);
@@ -468,10 +468,10 @@ void calcLikeSingle::writeToHDF5Handle(hid_t objid) const {
   if ((filenames != nullptr) && (filenames[0] != "")) {
     hdf5utils::writeDataStrings(objid, "Filenames", ndatasets, filenames);
     hdf5utils::writeDataUnsignedInts(objid, "DataExtension", 
-				     ndatasets, dataext);
+                                     ndatasets, dataext);
     hdf5utils::writeDataBools(objid, "HasMask", ndatasets, hasmask);
     hdf5utils::writeDataUnsignedInts(objid, "MaskExtension", 
-				     ndatasets, maskext);
+                                     ndatasets, maskext);
   }
   if (beamfile != "") 
     hdf5utils::writeDataString(objid, "BeamFilename", beamfile);
@@ -480,46 +480,46 @@ void calcLikeSingle::writeToHDF5Handle(hid_t objid) const {
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, nullptr);
   dat_id = H5Dcreate2(objid, "MinDataFlux", H5T_NATIVE_DOUBLE, 
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
-	   &minDataFlux);
+           &minDataFlux);
   H5Dclose(dat_id);
   dat_id = H5Dcreate2(objid, "MaxDataFlux", H5T_NATIVE_DOUBLE, 
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
-	   &maxDataFlux);
+           &maxDataFlux);
   H5Dclose(dat_id);
   dat_id = H5Dcreate2(objid, "MinRFlux", H5T_NATIVE_DOUBLE, 
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
-	   &minRFlux);
+           &minRFlux);
   H5Dclose(dat_id);
   dat_id = H5Dcreate2(objid, "MaxRFlux", H5T_NATIVE_DOUBLE, 
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Dwrite(dat_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, 
-	   &maxRFlux);
+           &maxRFlux);
   H5Dclose(dat_id);
   H5Sclose(mems_id);
 }
 
 /*!
   \param[in] objid HDF5 handle to write information to.  Must already be
-    open.
+  open.
   \param[in] groupname Name of subgroup to create in objid
 */
 void calcLikeSingle::writeToNewHDF5Group(hid_t objid, 
-					 const std::string& groupname) const {
+                                         const std::string& groupname) const {
 
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("calcLikeSingle", "writeToNewHDF5Group",
-		       "Input handle is not valid");
+                       "Input handle is not valid");
 
   hid_t groupid;
   groupid = H5Gcreate(objid, groupname.c_str(), H5P_DEFAULT, H5P_DEFAULT, 
-		      H5P_DEFAULT);
+                      H5P_DEFAULT);
   if (H5Iget_ref(groupid) < 0)
     throw affineExcept("calcLikeSingle", "writeToNewHDF5Group",
-		       "Can't open new group with name " + groupname);
+                       "Can't open new group with name " + groupname);
   writeToHDF5Handle(groupid);
   H5Gclose(groupid);
 }
@@ -531,36 +531,36 @@ void calcLikeSingle::writeToNewHDF5Group(hid_t objid,
 void calcLikeSingle::sendSelf(MPI_Comm comm, int dest) const {
   //Data
   MPI_Send(const_cast<unsigned int*>(&ndatasets), 1, MPI_UNSIGNED, dest,
-	   pofd_mcmc::CLSENDNDATA, comm);
+           pofd_mcmc::CLSENDNDATA, comm);
   
   MPI_Send(const_cast<bool*>(&data_read), 1, MPI::BOOL, dest,
-	   pofd_mcmc::CLSENDDATAREAD, comm);
+           pofd_mcmc::CLSENDDATAREAD, comm);
   if (data_read) {
     for (unsigned int i = 0; i < ndatasets; ++i)
       data[i].sendSelf(comm, dest);
     MPI_Send(sigma_base, ndatasets, MPI_DOUBLE, dest,
-	     pofd_mcmc::CLSENDSIGMABASE, comm);
+             pofd_mcmc::CLSENDSIGMABASE, comm);
     MPI_Send(const_cast<double*>(&maxsigma_base), 1, MPI_DOUBLE, dest,
-	     pofd_mcmc::CLSENDMAXSIGMABASE, comm);
+             pofd_mcmc::CLSENDMAXSIGMABASE, comm);
     MPI_Send(const_cast<double*>(&exp_conf), 1, MPI_DOUBLE, dest,
-	     pofd_mcmc::CLSENDEXPCONF, comm);
+             pofd_mcmc::CLSENDEXPCONF, comm);
     MPI_Send(like_offset, ndatasets, MPI_DOUBLE, dest,
-	     pofd_mcmc::CLSENDLIKEOFFSET, comm);
+             pofd_mcmc::CLSENDLIKEOFFSET, comm);
     MPI_Send(like_norm, ndatasets, MPI_DOUBLE, dest,
-	     pofd_mcmc::CLSENDLIKENORM, comm);
+             pofd_mcmc::CLSENDLIKENORM, comm);
     MPI_Send(const_cast<double*>(&minDataFlux), 1, MPI_DOUBLE, dest,
-	     pofd_mcmc::CLSENDMINDATAFLUX, comm);
+             pofd_mcmc::CLSENDMINDATAFLUX, comm);
     MPI_Send(const_cast<double*>(&maxDataFlux), 1, MPI_DOUBLE, dest,
-	     pofd_mcmc::CLSENDMAXDATAFLUX, comm);
+             pofd_mcmc::CLSENDMAXDATAFLUX, comm);
     MPI_Send(const_cast<double*>(&minRFlux), 1, MPI_DOUBLE, dest,
-	     pofd_mcmc::CLSENDMINRFLUX, comm);
+             pofd_mcmc::CLSENDMINRFLUX, comm);
     MPI_Send(const_cast<double*>(&maxRFlux), 1, MPI_DOUBLE, dest,
-	     pofd_mcmc::CLSENDMAXRFLUX, comm);
+             pofd_mcmc::CLSENDMAXRFLUX, comm);
   }
 
   //Beam
   MPI_Send(const_cast<bool*>(&has_beam), 1, MPI::BOOL, dest,
-	   pofd_mcmc::CLSENDHASBEAM, comm);
+           pofd_mcmc::CLSENDHASBEAM, comm);
   if (has_beam) bm.sendSelf(comm, dest);
 
   //PDFactory
@@ -583,28 +583,28 @@ void calcLikeSingle::receiveCopy(MPI_Comm comm, int src) {
 
   bool newread = false;
   MPI_Recv(&newread, 1, MPI::BOOL, src, pofd_mcmc::CLSENDDATAREAD,
-	   comm, &Info);
+           comm, &Info);
   if (newread) {
     for (unsigned int i = 0; i < newn; ++i)
       data[i].receiveCopy(comm,src);
     MPI_Recv(sigma_base, newn, MPI_DOUBLE, src, pofd_mcmc::CLSENDSIGMABASE,
-	     comm, &Info);
+             comm, &Info);
     MPI_Recv(&maxsigma_base, 1, MPI_DOUBLE, src, pofd_mcmc::CLSENDMAXSIGMABASE,
-	     comm, &Info);
+             comm, &Info);
     MPI_Recv(&exp_conf, 1, MPI_DOUBLE, src, pofd_mcmc::CLSENDEXPCONF,
-	     comm, &Info);
+             comm, &Info);
     MPI_Recv(like_offset, newn, MPI_DOUBLE, src,
-	     pofd_mcmc::CLSENDLIKEOFFSET, comm, &Info);
+             pofd_mcmc::CLSENDLIKEOFFSET, comm, &Info);
     MPI_Recv(like_norm, newn, MPI_DOUBLE, src, pofd_mcmc::CLSENDLIKENORM,
-	     comm, &Info);
+             comm, &Info);
     MPI_Recv(&minDataFlux, 1, MPI_DOUBLE, src, pofd_mcmc::CLSENDMINDATAFLUX,
-	     comm, &Info);
+             comm, &Info);
     MPI_Recv(&maxDataFlux, 1, MPI_DOUBLE, src, pofd_mcmc::CLSENDMAXDATAFLUX,
-	     comm, &Info);
+             comm, &Info);
     MPI_Recv(&minRFlux, 1, MPI_DOUBLE, src, pofd_mcmc::CLSENDMINRFLUX,
-	     comm, &Info);
+             comm, &Info);
     MPI_Recv(&maxRFlux, 1, MPI_DOUBLE, src, pofd_mcmc::CLSENDMAXRFLUX,
-	     comm, &Info);
+             comm, &Info);
     data_read = true;
   } else {
     minDataFlux = maxDataFlux = minRFlux = maxRFlux = NaN;
@@ -614,7 +614,7 @@ void calcLikeSingle::receiveCopy(MPI_Comm comm, int src) {
   //Beam
   bool hsbm;
   MPI_Recv(&hsbm, 1, MPI::BOOL, src, pofd_mcmc::CLSENDHASBEAM,
-	   comm, &Info);
+           comm, &Info);
   if (hsbm) {
     bm.receiveCopy(comm, src);
     has_beam = true;
@@ -634,7 +634,7 @@ void calcLikeSingle::receiveCopy(MPI_Comm comm, int src) {
   \param[in] NBINS Number of data bins, if binning
 */
 calcLike::calcLike(unsigned int FFTSIZE, unsigned int NINTERP, 
-		   bool BINNED, unsigned int NBINS):
+                   bool BINNED, unsigned int NBINS):
   fftsize(FFTSIZE), ninterp(NINTERP), bin_data(BINNED),
   nbins(NBINS), has_cfirb_prior(false), cfirb_prior_mean(0.0),
   cfirb_prior_sigma(0.0), has_sigma_prior(false), sigma_prior_width(0.0),
@@ -686,27 +686,27 @@ void calcLike::addWisdom(const std::string& filename) {
   all of the relevant instrument noise and likelihood normalization values
 */
 void calcLike::readDataFromFiles(const std::vector<std::string>& datafiles, 
-				 const std::vector<std::string>& beamfiles,
-				 const std::vector<double>& sigmas,
-				 const std::vector<double>& like_norms,
-				 bool IGNOREMASK, bool MEANSUB,
-				 double MINBEAMVAL, bool HISTOGRAM, 
-				 unsigned int NBEAMHIST, double EXPCONF) {
+                                 const std::vector<std::string>& beamfiles,
+                                 const std::vector<double>& sigmas,
+                                 const std::vector<double>& like_norms,
+                                 bool IGNOREMASK, bool MEANSUB,
+                                 double MINBEAMVAL, bool HISTOGRAM, 
+                                 unsigned int NBEAMHIST, double EXPCONF) {
 
   // Make sure they are all the same length
   unsigned int ndat = datafiles.size();
   if (ndat == 0)
     throw affineExcept("calcLike", "readDataFromFiles",
-		       "No datafiles");
+                       "No datafiles");
   if (ndat != beamfiles.size())
     throw affineExcept("calcLike", "readDataFromFiles",
-		       "datafiles and beamfiles not same length");
+                       "datafiles and beamfiles not same length");
   if (ndat != sigmas.size())
     throw affineExcept("calcLike", "readDataFromFiles",
-		       "datafiles and sigma not same length");
+                       "datafiles and sigma not same length");
   if (ndat != like_norms.size())
     throw affineExcept("calcLike", "readDataFromFiles",
-		       "datafiles and like_norm not same length");
+                       "datafiles and like_norm not same length");
   
   // Use a map.  Could also use a multi-map, but meh
   std::map< std::string, beam_group > grpmap;
@@ -747,9 +747,9 @@ void calcLike::readDataFromFiles(const std::vector<std::string>& datafiles,
     for (unsigned int i=0; grpmap_it != grpmap.end(); ++grpmap_it, ++i) {
       beamsets[i].setNInterp(ninterp);
       beamsets[i].readDataFromFiles(grpmap_it->second.datafiles,
-				    IGNOREMASK, MEANSUB, bin_data, nbins);
+                                    IGNOREMASK, MEANSUB, bin_data, nbins);
       beamsets[i].readBeam(grpmap_it->second.beamfile, MINBEAMVAL,
-			   HISTOGRAM, NBEAMHIST);
+                           HISTOGRAM, NBEAMHIST);
       beamsets[i].setExpConf(EXPCONF);
       beamsets[i].setSigmaBase(grpmap_it->second.sigmas);
       beamsets[i].setLikeNorm(grpmap_it->second.like_norms);
@@ -840,10 +840,10 @@ void calcLike::setCFIRBPrior(double mn, double sg) {
   has_cfirb_prior = true;
   if (mn < 0.0)
     throw affineExcept("calcLike", "setCFIRBPrior",
-		       "Invalid (negative) CFIRB mean");
+                       "Invalid (negative) CFIRB mean");
   if (sg < 0.0)
     throw affineExcept("calcLike", "setCFIRBPrior",
-		       "Invalid (negative) CFIRB sigma");
+                       "Invalid (negative) CFIRB sigma");
   cfirb_prior_mean = mn;
   cfirb_prior_sigma = sg;
 }
@@ -858,10 +858,10 @@ void calcLike::setPoissonPrior(double mn, double sg) {
   has_poisson_prior = true;
   if (mn < 0.0)
     throw affineExcept("calcLike", "setPoissonPrior",
-		       "Invalid (negative) Poisson prior mean");
+                       "Invalid (negative) Poisson prior mean");
   if (sg < 0.0)
     throw affineExcept("calcLike", "setPoissonPrior",
-		       "Invalid (negative) Poisson prior sigma");
+                       "Invalid (negative) Poisson prior sigma");
   poisson_prior_mean = mn;
   poisson_prior_sigma = sg;
 }
@@ -872,14 +872,14 @@ void calcLike::setPoissonPrior(double mn, double sg) {
 void calcLike::setRegularizationAlpha(double alpha) {
   if (alpha < 0.0)
     throw affineExcept("calcLike", "setRegularizationAlpha",
-		       "Invalid (negative) regularization alpha");
+                       "Invalid (negative) regularization alpha");
   regularization_alpha = alpha;
 }
 
 /*!
   \param[in] p Parameters to evaluate
   \param[out] pars_invalid True if parameters were not valid,
-    otherwise False
+  otherwise False
 */
 double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
   const double half_log_2pi = 0.918938517570495605469;
@@ -887,14 +887,14 @@ double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
   if (nbeamsets == 0) return NaN;
   unsigned int npar = p.getNParams();
   if (npar < 2) throw affineExcept("calcLike", "getLogLike",
-				   "Not enough elements in params");
+                                   "Not enough elements in params");
   unsigned int nknots = model.getNKnots();
   if (nknots == 0)
     throw affineExcept("calcLike", "getLogLike",
-		       "Model knot positions not loaded");
+                       "Model knot positions not loaded");
   if (nknots > (npar-1))
     throw affineExcept("calcLike", "getLogLike",
-		       "Not enough elements in paramSet");
+                       "Not enough elements in paramSet");
 
   // Set the model
   model.setParams(p);
@@ -911,7 +911,7 @@ double calcLike::getLogLike(const paramSet& p, bool& pars_invalid) const {
   pars_invalid = false;
   for (unsigned int i = 0; i < nbeamsets; ++i) {
     LogLike += beamsets[i].getLogLike(model, pinvalid, sigmult, 
-				      fftsize);
+                                      fftsize);
     pars_invalid &= pinvalid;
   }
 
@@ -962,9 +962,9 @@ void calcLike::fillBonusParams(paramSet& par) const {
   if (dist > 1e-4) {
     // Have to recompute!
     unsigned int npar = par.getNParams();
-   if (npar < (nknots + 3))
+    if (npar < (nknots + 3))
       throw affineExcept("calcLike", "fillBonusParams",
-			 "Not enough room to fill");
+                         "Not enough room to fill");
     model.setParams(par);
     meanParams = par;
     if (!model.isValid()) {
@@ -979,9 +979,9 @@ void calcLike::fillBonusParams(paramSet& par) const {
   par[nknots + 2] = mean_fluxsq_per_area;
 }
 
-/*!						
+/*!                                             
   \param[in] objid HDF5 handle to write information to.  Must already be
-    open
+  open
 */
 void calcLike::writeToHDF5Handle(hid_t objid) const {
   // Writes some meta information
@@ -995,19 +995,19 @@ void calcLike::writeToHDF5Handle(hid_t objid) const {
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate2(objid, "FFTSize", H5T_NATIVE_UINT,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &fftsize);
   H5Aclose(att_id);
 
   // NINTERP
   att_id = H5Acreate2(objid, "NRInterp", H5T_NATIVE_UINT,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &ninterp);
   H5Aclose(att_id);
 
   // NBEAMSETS
   att_id = H5Acreate2(objid, "NBeamSets", H5T_NATIVE_UINT,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &nbeamsets);
   H5Aclose(att_id);
 
@@ -1015,7 +1015,7 @@ void calcLike::writeToHDF5Handle(hid_t objid) const {
   hdf5utils::writeAttBool(objid, "WasDataBinned", bin_data);
   if (bin_data) {
     att_id = H5Acreate2(objid, "NDataBins", H5T_NATIVE_UINT,
-			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                        mems_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(att_id, H5T_NATIVE_UINT, &nbins);
     H5Aclose(att_id);
   }
@@ -1024,11 +1024,11 @@ void calcLike::writeToHDF5Handle(hid_t objid) const {
   hdf5utils::writeAttBool(objid, "HasCfirbPrior", has_cfirb_prior);
   if (has_cfirb_prior) {
     att_id = H5Acreate2(objid, "CfirbPriorMean", H5T_NATIVE_DOUBLE,
-			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                        mems_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(att_id, H5T_NATIVE_DOUBLE, &cfirb_prior_mean);
     H5Aclose(att_id);
     att_id = H5Acreate2(objid, "CfirbPriorSigma", H5T_NATIVE_DOUBLE,
-			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                        mems_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(att_id, H5T_NATIVE_DOUBLE, &cfirb_prior_sigma);
     H5Aclose(att_id);
   }
@@ -1037,11 +1037,11 @@ void calcLike::writeToHDF5Handle(hid_t objid) const {
   hdf5utils::writeAttBool(objid, "HasPoissonPrior", has_poisson_prior);
   if (has_poisson_prior) {
     att_id = H5Acreate2(objid, "PoissonPriorMean", H5T_NATIVE_DOUBLE,
-			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                        mems_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(att_id, H5T_NATIVE_DOUBLE, &poisson_prior_mean);
     H5Aclose(att_id);
     att_id = H5Acreate2(objid, "PoissonPriorSigma", H5T_NATIVE_DOUBLE,
-			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                        mems_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(att_id, H5T_NATIVE_DOUBLE, &poisson_prior_sigma);
     H5Aclose(att_id);
   }
@@ -1050,17 +1050,17 @@ void calcLike::writeToHDF5Handle(hid_t objid) const {
   hdf5utils::writeAttBool(objid, "HasSigmaPrior", has_sigma_prior);
   if (has_sigma_prior) {
     att_id = H5Acreate2(objid, "SigmaPriorWidth", H5T_NATIVE_DOUBLE,
-			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                        mems_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(att_id, H5T_NATIVE_DOUBLE, &sigma_prior_width);
     H5Aclose(att_id);
   }
 
   // Regularization penalty
   hdf5utils::writeAttBool(objid, "DidRegularize", 
-			  regularization_alpha > 0.0);
+                          regularization_alpha > 0.0);
   if (regularization_alpha > 0.0) {
     att_id = H5Acreate2(objid, "RegularizationAlpha", H5T_NATIVE_DOUBLE,
-			mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                        mems_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Awrite(att_id, H5T_NATIVE_DOUBLE, &regularization_alpha);
     H5Aclose(att_id);
   }
@@ -1070,19 +1070,19 @@ void calcLike::writeToHDF5Handle(hid_t objid) const {
   // Model info
   hid_t groupid;
   groupid = H5Gcreate(objid, "Model", H5P_DEFAULT, H5P_DEFAULT, 
-		      H5P_DEFAULT);
+                      H5P_DEFAULT);
   if (H5Iget_ref(groupid) < 0)
     throw affineExcept("calcLike", "writeToHDF5Handle",
-		       "Failed to create HDF5 group Model");
+                       "Failed to create HDF5 group Model");
   model.writeToHDF5Handle(groupid);
   H5Gclose(groupid);
 
   // Write each beam set to a subgroup
   groupid = H5Gcreate(objid, "BeamSets", H5P_DEFAULT, H5P_DEFAULT, 
-		      H5P_DEFAULT);
+                      H5P_DEFAULT);
   if (H5Iget_ref(groupid) < 0)
     throw affineExcept("calcLike", "writeToHDF5Handle",
-		       "Failed to create HDF5 group Beamsets");
+                       "Failed to create HDF5 group Beamsets");
   for (unsigned int i = 0; i < nbeamsets; ++i) {
     // Generate group name
     std::stringstream name;
@@ -1100,58 +1100,58 @@ void calcLike::writeToHDF5Handle(hid_t objid) const {
 void calcLike::sendSelf(MPI_Comm comm, int dest) const { 
   //Transform
   MPI_Send(const_cast<unsigned int*>(&fftsize), 1, MPI_UNSIGNED,
-	   dest, pofd_mcmc::CLSENDFFTSIZE, comm);
+           dest, pofd_mcmc::CLSENDFFTSIZE, comm);
   MPI_Send(const_cast<unsigned int*>(&ninterp), 1, MPI_UNSIGNED, dest,
-	   pofd_mcmc::CLSENDNINTERP, comm);
+           pofd_mcmc::CLSENDNINTERP, comm);
 
   //Data
   MPI_Send(const_cast<unsigned int*>(&nbeamsets), 1, MPI_UNSIGNED, dest,
-	   pofd_mcmc::CLSENDNBEAM, comm);
+           pofd_mcmc::CLSENDNBEAM, comm);
   if (nbeamsets > 0) 
     for (unsigned int i = 0; i < nbeamsets; ++i) {
       MPI_Send(const_cast<unsigned int*>(&i), 1, MPI_UNSIGNED, dest,
-	       pofd_mcmc::CLSENDSETNUM, comm);
+               pofd_mcmc::CLSENDSETNUM, comm);
       beamsets[i].sendSelf(comm,dest);
     }
 
   MPI_Send(const_cast<bool*>(&bin_data), 1, MPI::BOOL, dest,
-	   pofd_mcmc::CLSENDBINDATA, comm);
+           pofd_mcmc::CLSENDBINDATA, comm);
   MPI_Send(const_cast<unsigned int*>(&nbins), 1, MPI_UNSIGNED, dest,
-	   pofd_mcmc::CLSENDNBINS, comm);
+           pofd_mcmc::CLSENDNBINS, comm);
 
   // Model
   model.sendSelf(comm,dest);
 
   // CFIRB prior
   MPI_Send(const_cast<bool*>(&has_cfirb_prior), 1, MPI::BOOL, dest,
-	   pofd_mcmc::CLSENDHASCFIRBPRIOR, comm);
+           pofd_mcmc::CLSENDHASCFIRBPRIOR, comm);
   if (has_cfirb_prior) {
     MPI_Send(const_cast<double*>(&cfirb_prior_mean), 1, MPI_DOUBLE, dest,
-	     pofd_mcmc::CLSENDCFIRBPRIORMEAN, comm);
+             pofd_mcmc::CLSENDCFIRBPRIORMEAN, comm);
     MPI_Send(const_cast<double*>(&cfirb_prior_sigma), 1, MPI_DOUBLE, dest,
-	     pofd_mcmc::CLSENDCFIRBPRIORSIGMA, comm);
+             pofd_mcmc::CLSENDCFIRBPRIORSIGMA, comm);
   }
 
   // Poisson prior
   MPI_Send(const_cast<bool*>(&has_poisson_prior), 1, MPI::BOOL, dest,
-	   pofd_mcmc::CLSENDHASPOISSONPRIOR, comm);
+           pofd_mcmc::CLSENDHASPOISSONPRIOR, comm);
   if (has_poisson_prior) {
     MPI_Send(const_cast<double*>(&poisson_prior_mean), 1, MPI_DOUBLE, dest,
-	     pofd_mcmc::CLSENDPOISSONPRIORMEAN, comm);
+             pofd_mcmc::CLSENDPOISSONPRIORMEAN, comm);
     MPI_Send(const_cast<double*>(&poisson_prior_sigma), 1, MPI_DOUBLE, dest,
-	     pofd_mcmc::CLSENDPOISSONPRIORSIGMA, comm);
+             pofd_mcmc::CLSENDPOISSONPRIORSIGMA, comm);
   }
 
   // Sigma prior
   MPI_Send(const_cast<bool*>(&has_sigma_prior), 1, MPI::BOOL, dest,
-	   pofd_mcmc::CLSENDHASSIGMAPRIOR, comm);
+           pofd_mcmc::CLSENDHASSIGMAPRIOR, comm);
   if (has_sigma_prior)
     MPI_Send(const_cast<double*>(&sigma_prior_width), 1, MPI_DOUBLE, dest,
-	     pofd_mcmc::CLSENDSIGMAPRIORWIDTH, comm);
+             pofd_mcmc::CLSENDSIGMAPRIORWIDTH, comm);
 
   // Regularization alpha
   MPI_Send(const_cast<double*>(&regularization_alpha), 1, MPI_DOUBLE, dest,
-	   pofd_mcmc::CLSENDREGULARIZATIONALPHA, comm);
+           pofd_mcmc::CLSENDREGULARIZATIONALPHA, comm);
 }
 
 /*!
@@ -1163,14 +1163,14 @@ void calcLike::receiveCopy(MPI_Comm comm, int src) {
 
   // Transform
   MPI_Recv(&fftsize, 1, MPI_UNSIGNED, src, pofd_mcmc::CLSENDFFTSIZE,
-	   comm, &Info);
+           comm, &Info);
   MPI_Recv(&ninterp, 1, MPI_UNSIGNED, src, pofd_mcmc::CLSENDNINTERP,
-	   comm, &Info);
+           comm, &Info);
 
   // Data
   unsigned int newnbeamsets;
   MPI_Recv(&newnbeamsets, 1, MPI_UNSIGNED, src, pofd_mcmc::CLSENDNBEAM,
-	   comm, &Info);
+           comm, &Info);
   if (newnbeamsets != nbeamsets) {
     if (beamsets != nullptr) delete[] beamsets;
     if (newnbeamsets > 0) beamsets = new calcLikeSingle[newnbeamsets];
@@ -1180,47 +1180,46 @@ void calcLike::receiveCopy(MPI_Comm comm, int src) {
   unsigned int idx;
   for (unsigned int i = 0; i < nbeamsets; ++i) {
     MPI_Recv(&idx, 1, MPI_UNSIGNED, src, pofd_mcmc::CLSENDSETNUM,
-	     comm, &Info);
+             comm, &Info);
     beamsets[idx].receiveCopy(comm, src);
   }
 
   MPI_Recv(&bin_data, 1, MPI::BOOL, src, pofd_mcmc::CLSENDBINDATA,
-	   comm, &Info);
+           comm, &Info);
   MPI_Recv(&nbins, 1, MPI_UNSIGNED, src, pofd_mcmc::CLSENDNBINS,
-	   comm, &Info);
+           comm, &Info);
 
   // Model
   model.receiveCopy(comm, src);
 
   // CFIRB prior
   MPI_Recv(&has_cfirb_prior, 1, MPI::BOOL, src, pofd_mcmc::CLSENDHASCFIRBPRIOR,
-	   comm, &Info);
+           comm, &Info);
   if (has_cfirb_prior) {
     MPI_Recv(&cfirb_prior_mean, 1, MPI_DOUBLE, src,
-	     pofd_mcmc::CLSENDCFIRBPRIORMEAN, comm, &Info);
+             pofd_mcmc::CLSENDCFIRBPRIORMEAN, comm, &Info);
     MPI_Recv(&cfirb_prior_sigma, 1, MPI_DOUBLE, src,
-	     pofd_mcmc::CLSENDCFIRBPRIORSIGMA, comm, &Info);
+             pofd_mcmc::CLSENDCFIRBPRIORSIGMA, comm, &Info);
   }
 
   // Poisson prior
   MPI_Recv(&has_poisson_prior, 1, MPI::BOOL, src, 
-	   pofd_mcmc::CLSENDHASPOISSONPRIOR, comm, &Info);
+           pofd_mcmc::CLSENDHASPOISSONPRIOR, comm, &Info);
   if (has_poisson_prior) {
     MPI_Recv(&poisson_prior_mean, 1, MPI_DOUBLE, src,
-	     pofd_mcmc::CLSENDPOISSONPRIORMEAN, comm, &Info);
+             pofd_mcmc::CLSENDPOISSONPRIORMEAN, comm, &Info);
     MPI_Recv(&poisson_prior_sigma, 1, MPI_DOUBLE, src,
-	     pofd_mcmc::CLSENDPOISSONPRIORSIGMA, comm, &Info);
+             pofd_mcmc::CLSENDPOISSONPRIORSIGMA, comm, &Info);
   }
 
   // Sigma prior
   MPI_Recv(&has_sigma_prior, 1, MPI::BOOL, src, 
-	   pofd_mcmc::CLSENDHASSIGMAPRIOR, comm, &Info);
+           pofd_mcmc::CLSENDHASSIGMAPRIOR, comm, &Info);
   if (has_sigma_prior) 
     MPI_Recv(&sigma_prior_width, 1, MPI_DOUBLE, src,
-	     pofd_mcmc::CLSENDSIGMAPRIORWIDTH, comm, &Info);
+             pofd_mcmc::CLSENDSIGMAPRIORWIDTH, comm, &Info);
 
   // Regularization alpha
   MPI_Recv(&regularization_alpha, 1, MPI_DOUBLE, src,
-	   pofd_mcmc::CLSENDREGULARIZATIONALPHA, comm, &Info);
+           pofd_mcmc::CLSENDREGULARIZATIONALPHA, comm, &Info);
 }
-

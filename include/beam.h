@@ -127,7 +127,7 @@ class beam {
   void powerNeg(double, double*) const;
 
   /*! \brief Returns first index greater than specified value in pos pixel map,
-   or npos if there isn't one*/
+    or npos if there isn't one*/
   unsigned int idxFirstGtValPos(double val) const {
     if (!haspos) return std::numeric_limits<double>::quiet_NaN();
     return utility::binary_search_gt(val, pospixarr, npos);
@@ -140,7 +140,7 @@ class beam {
   }
 
   /*! \brief Returns last index less than specified value in pos pixel map,
-   or npos if there isn't one*/
+    or npos if there isn't one*/
   unsigned int idxLastLtValPos(double val) const {
     if (!haspos) return std::numeric_limits<double>::quiet_NaN();
     return utility::binary_search_lt(val, pospixarr, npos);

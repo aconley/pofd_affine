@@ -12,6 +12,8 @@
 #include "../include/doublebeam.h"
 #include "../include/numberCountsKnotsSpline.h"
 #include "../include/numberCountsDoubleLogNormal.h"
+#include "../include/initFileKnots.h"
+#include "../include/initFileDoubleLogNormal.h"
 #include "../include/paramSet.h"
 #include "../include/hdf5utils.h"
 #include "../include/affineExcept.h"
@@ -49,7 +51,7 @@ int getRSingle( int argc, char** argv ) {
   int option_index = 0;
   optind = 1; //!< Reset parse
   while ((c = getopt_long(argc, argv, optstring, long_options,
-			  &option_index)) != -1) 
+                          &option_index)) != -1) 
     switch(c) {
     case 'H':
       histogram = true;
@@ -96,10 +98,10 @@ int getRSingle( int argc, char** argv ) {
       printf("   Beam area:          %0.3e [deg^2]\n", bm.getEffectiveArea());
       printf("   Pixel size:         %0.2f [arcsec]\n", bm.getPixSize());
       printf("   Flux per area:      %0.2f [Jy deg^-2]\n", 
-	     model.getFluxPerArea());
+             model.getFluxPerArea());
       printf("   Source density:     %0.4e [deg^-2]\n", model.getNS());
       if (histogram)
-	printf("   Nbeamhist:          %u\n", nhist);
+        printf("   Nbeamhist:          %u\n", nhist);
     }
     fluxes = new double[nflux];
     for (unsigned int i = 0; i < nflux; ++i)
@@ -113,14 +115,14 @@ int getRSingle( int argc, char** argv ) {
     hdf5utils::outfiletype oft = hdf5utils::getOutputFileType(outfile);
     if (oft == hdf5utils::HDF5 || oft == hdf5utils::UNKNOWN) {
       if (verbose) std::cout << "Writing to: " << outfile 
-			     << " as HDF5" << std::endl;
+                             << " as HDF5" << std::endl;
       hid_t file_id;
       file_id = H5Fcreate(outfile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
-			  H5P_DEFAULT);
+                          H5P_DEFAULT);
       if (H5Iget_ref(file_id) < 0) {
-	H5Fclose(file_id);
-	throw affineExcept("pofd_affine_getR", "pofd_affine_getR",
-			   "Failed to open HDF5 file to write");
+        H5Fclose(file_id);
+        throw affineExcept("pofd_affine_getR", "pofd_affine_getR",
+                           "Failed to open HDF5 file to write");
       }
       hsize_t adims;
       hid_t mems_id, att_id, group_id;
@@ -129,14 +131,14 @@ int getRSingle( int argc, char** argv ) {
       adims = 1;
       mems_id = H5Screate_simple(1, &adims, nullptr);
       att_id = H5Acreate2(file_id, "dflux", H5T_NATIVE_DOUBLE,
-			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                          mems_id, H5P_DEFAULT, H5P_DEFAULT);
       H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux);
       H5Aclose(att_id);
       H5Sclose(mems_id);
 
       // Model
       group_id = H5Gcreate(file_id, "Model", H5P_DEFAULT, H5P_DEFAULT, 
-			  H5P_DEFAULT);
+                          H5P_DEFAULT);
       model.writeToHDF5Handle(group_id, true);
       H5Gclose(group_id);
 
@@ -150,16 +152,16 @@ int getRSingle( int argc, char** argv ) {
     } else if (oft == hdf5utils::TXT) {
       // Text file
       if (verbose) std::cout << "Writing to: " << outfile 
-			     << " as text" << std::endl;
+                             << " as text" << std::endl;
       FILE *fp;
       fp = fopen(outfile.c_str(), "w");
       if (!fp) {
-	std::cerr << "Failed to open output file" << std::endl;
-	return 128;
+        std::cerr << "Failed to open output file" << std::endl;
+        return 128;
       }
       fprintf(fp, "#%-11s   %-12s\n", "Flux", "R");
       for (unsigned int i = 0; i < nflux; ++i) 
-	fprintf(fp, "%12.6e   %15.9e\n", fluxes[i], R[i]);
+        fprintf(fp, "%12.6e   %15.9e\n", fluxes[i], R[i]);
       fclose(fp);
     } else if (oft == hdf5utils::FITS) {
       std::cerr << "Output to FITS is not supported." << std::endl;
@@ -198,7 +200,7 @@ int getRDouble(int argc, char** argv) {
   int option_index = 0;
   optind = 1; //Reset parse
   while ((c = getopt_long(argc, argv, optstring, long_options,
-			  &option_index)) != -1) 
+                          &option_index)) != -1) 
     switch(c) {
     case 'H':
       histogram = true;
@@ -265,12 +267,12 @@ int getRDouble(int argc, char** argv) {
       printf("   Beam area2:         %0.3e [deg^2]\n", bm.getEffectiveArea2());
       printf("   Pixel size:         %0.2f [arcsec]\n", bm.getPixSize());
       printf("   Flux per area 1:    %0.2f [Jy deg^-2]\n", 
-	     model.getFluxPerArea(0));
+             model.getFluxPerArea(0));
       printf("   Flux per area 2:    %0.2f [Jy deg^-2]\n", 
-	     model.getFluxPerArea(1));
+             model.getFluxPerArea(1));
       printf("   Source density:     %0.4e [deg^-2]\n", model.getNS());
       if (histogram)
-	printf("   Nbeamhist:          %u\n", nhist);
+        printf("   Nbeamhist:          %u\n", nhist);
     }
 
     fluxes1 = new double[nflux1];
@@ -295,14 +297,14 @@ int getRDouble(int argc, char** argv) {
     hdf5utils::outfiletype oft = hdf5utils::getOutputFileType(outfile);
     if (oft == hdf5utils::HDF5 || oft == hdf5utils::UNKNOWN) {
       if (verbose) std::cout << "Writing to: " << outfile 
-			     << " as HDF5" << std::endl;
+                             << " as HDF5" << std::endl;
       hid_t file_id, group_id;
       file_id = H5Fcreate(outfile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
-			  H5P_DEFAULT);
+                          H5P_DEFAULT);
       if (H5Iget_ref(file_id) < 0) {
-	H5Fclose(file_id);
-	throw affineExcept("pofd_affine_getR", "pofd_affine_getR",
-			   "Failed to open HDF5 file to write");
+        H5Fclose(file_id);
+        throw affineExcept("pofd_affine_getR", "pofd_affine_getR",
+                           "Failed to open HDF5 file to write");
       }
       hsize_t adims;
       hid_t mems_id, att_id;
@@ -311,18 +313,18 @@ int getRDouble(int argc, char** argv) {
       adims = 1;
       mems_id = H5Screate_simple(1, &adims, nullptr);
       att_id = H5Acreate2(file_id, "dflux1", H5T_NATIVE_DOUBLE,
-			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                          mems_id, H5P_DEFAULT, H5P_DEFAULT);
       H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux1);
       H5Aclose(att_id);
       att_id = H5Acreate2(file_id, "dflux2", H5T_NATIVE_DOUBLE,
-			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                          mems_id, H5P_DEFAULT, H5P_DEFAULT);
       H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux2);
       H5Aclose(att_id);
       H5Sclose(mems_id);
 
       // Model
       group_id = H5Gcreate(file_id, "Model", H5P_DEFAULT, H5P_DEFAULT, 
-			   H5P_DEFAULT);
+                           H5P_DEFAULT);
       model.writeToHDF5Handle(group_id, true);
       H5Gclose(group_id);
 
@@ -337,21 +339,21 @@ int getRDouble(int argc, char** argv) {
     } else if (oft == hdf5utils::TXT) {
       // Text file
       if (verbose) std::cout << "Writing to: " << outfile 
-			     << " as text" << std::endl;
+                             << " as text" << std::endl;
 
       FILE *fp;
       fp = fopen( outfile.c_str(),"w");
       if (!fp) {
-	std::cerr << "Failed to open output file" << std::endl;
-	return 128;
+        std::cerr << "Failed to open output file" << std::endl;
+        return 128;
       }
       fprintf(fp, "#%4u %4u\n", nflux1, nflux2);
       fprintf(fp, "#minflux1: %12.6e dflux1: %12.6e\n", minflux1, dflux1);
       fprintf(fp, "#minflux2: %12.6e dflux2: %12.6e\n", minflux2, dflux2);
       for (unsigned int i = 0; i < nflux1; ++i) {
-	for (unsigned int j = 0; j < nflux2-1; ++j)
-	  fprintf(fp, "%13.7e ", R[nflux2*i+j]);
-	fprintf(fp, "%13.7e\n", R[nflux2*i+nflux2-1]);
+        for (unsigned int j = 0; j < nflux2-1; ++j)
+          fprintf(fp, "%13.7e ", R[nflux2*i+j]);
+        fprintf(fp, "%13.7e\n", R[nflux2*i+nflux2-1]);
       }
       fclose(fp);
     } else if (oft == hdf5utils::FITS) {
@@ -393,90 +395,90 @@ int main( int argc, char** argv ) {
   int c;
   int option_index = 0;
   while ((c = getopt_long(argc,argv,optstring,long_options,
-			  &option_index)) != -1) 
+                          &option_index)) != -1) 
     switch(c) {
     case 'h' :
       std::cerr << "NAME" << std::endl;
       std::cerr << "\tpofd_affine_getR -- get R for a number counts model."
-		<< "  Both" << std::endl;
+                << "  Both" << std::endl;
       std::cerr << "\tone-dimensional and two-dimensional models are supported."
-		<< std::endl;
+                << std::endl;
       std::cerr << std::endl;
       std::cerr << "SYNOPSIS" << std::endl;
       std::cerr << "\tEither" << std::endl;
       std::cerr << std::endl;
 
       std::cerr << "\t pofd_affine_getR [options] minflux maxflux nflux initfile"
-		<< std::endl;
+                << std::endl;
       std::cerr<< "\t  beamfile outfile" << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tfor the 1D case or" << std::endl;
       std::cerr << std::endl;
       std::cerr << "\t pofd_affine_getR -d [options] minflux1 maxflux1 nflux1"
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t  minflux2 manflux2 nflux2 initfile beamfile1 beamfile2"
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t  outfile" << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tfor the 2D case." << std::endl;
       std::cerr << std::endl;
       std::cerr << "DESCRIPTION" << std::endl;
       std::cerr << "\tEvaluates R for the model in initfile using the P(D)"
-		<< " formalism and" << std::endl;
+                << " formalism and" << std::endl;
       std::cerr << "\twrites it to outfile.  The 1D model is a log-space "
-		<< "spline" << std::endl;
+                << "spline" << std::endl;
       std::cerr << "\tmodel for the number counts, and the 2D model is the 1D" 
-		<< " spline" << std::endl;
+                << " spline" << std::endl;
       std::cerr << "\tmodel times a log-normal color function for the second"
-		<< " band," << std::endl;
+                << " band," << std::endl;
       std::cerr << "\twith the log-space variance and mean color stored as"
-		<< " splines" << std::endl;
+                << " splines" << std::endl;
       std::cerr << "\tin the flux of the first band." << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tinitfile is a text file specifying the model; the exact"
-		<< " details" << std::endl;
+                << " details" << std::endl;
       std::cerr << "\t(given below) depend on whether the 1D or 2D case is"
-		<< " being used." << std::endl;
+                << " being used." << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tFor the 1D case, initfile is a text file giving the "
-		<< "positions" << std::endl;
+                << "positions" << std::endl;
       std::cerr << "\tof the spline knots and their values in the format"
-		<< " knotflux value." << std::endl;
+                << " knotflux value." << std::endl;
       std::cerr << "\tAdditional elements on each line are ignored."
-		<< std::endl;
+                << std::endl;
       std::cerr << "\tFor the 2D case, initfile is a text file giving the "
-		<< "positions" << std::endl;
+                << "positions" << std::endl;
       std::cerr << "\tof the knot points and their values, followed by the "
-		<< "sigma" << std::endl;
+                << "sigma" << std::endl;
       std::cerr << "\tknot positions and their values, then likewise for the "
-		<< "colour" << std::endl;
+                << "colour" << std::endl;
       std::cerr << "\toffset.  The format is three numbers on the first line, "
-		<< "giving" << std::endl;
+                << "giving" << std::endl;
       std::cerr << "\tthe number of number count knots, sigma knots, and "
-		<< "offset knots," << std::endl;
+                << "offset knots," << std::endl;
       std::cerr << "\tfollowed by a number of lines again with the format"
-		<< std::endl;
+                << std::endl;
       std::cerr << "\tknotpos value.  The sigmas and offsets are in log space."
-		<< std::endl;
+                << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tminflux, maxflux, and nflux give the minimum, maximum,"
-		<< " and" << std::endl;
+                << " and" << std::endl;
       std::cerr << "\tnumber of fluxes to evaluate R for in the 1D case.  For"
-		<< " the 2D" << std::endl;
+                << " the 2D" << std::endl;
       std::cerr << "\tcase this is extended to the minimum, maximum, and number"
-		<< " of" << std::endl;
+                << " of" << std::endl;
       std::cerr << "\tfluxes in each of the two bands.  Similarly, beamfile"
-		<< " gives the" << std::endl;
+                << " gives the" << std::endl;
       std::cerr << "\tname of a FITS file containing the beam in the 1D case,"
-		<< " and" << std::endl;
+                << " and" << std::endl;
       std::cerr << "\tbeamfile1, beamfile2 give the beam in each of the two "
-		<< "bands" << std::endl;
+                << "bands" << std::endl;
       std::cerr << "\tin the 2D case." << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tIn both cases the output R is written to outfile.  The"
-		<< " file" << std::endl;
+                << " file" << std::endl;
       std::cerr << "\tformat is based on the extension of outfile, with HDF5"
-		<< std::endl;
+                << std::endl;
       std::cerr << "\tas the default." << std::endl;
       std::cerr << std::endl;
       std::cerr << "OPTIONS" << std::endl;
@@ -486,7 +488,7 @@ int main( int argc, char** argv ) {
       std::cerr << "\t\tUse beam histogramming." << std::endl;
       std::cerr << "\t-n, --nhist VALUE" << std::endl;
       std::cerr << "\t\tNumber of beam histogram bins (def: 120 or 150)." 
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t-V, --version" << std::endl;
       std::cerr << "\t\tOutput the version number and exit." << std::endl;
       std::cerr << std::endl;
@@ -497,7 +499,7 @@ int main( int argc, char** argv ) {
       break;
     case 'V' :
       std::cerr << "pofd_mcmc version number: " << pofd_mcmc::version 
-		<< std::endl;
+                << std::endl;
       return 0;
       break;
     }

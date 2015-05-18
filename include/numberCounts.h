@@ -61,7 +61,7 @@ class numberCounts {
 
   /*! \brief Get number of source responses, array version*/
   virtual void getR(unsigned int n, const double* const,
-		    const beam&, double*) const = 0;
+                    const beam&, double*) const = 0;
 
   virtual bool writeToStream(std::ostream& os) const=0; //!< Output to stream
 };

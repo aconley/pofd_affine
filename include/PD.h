@@ -21,9 +21,9 @@
   The memory usage is something like std::vector -- each object
   has a capacity and a current size, with size < capacity.  This
   tries to avoid resizing if the memory is already allocated.
- */
+*/
 class PD {
- private:
+private:
   static constexpr double lowsigval = 2.5; //!< Constant used in edgeFix
 
   unsigned int n; //!< Current size
@@ -32,7 +32,7 @@ class PD {
   double getLogLikeBinned(const fitsData&) const;
   double getLogLikeUnbinned(const fitsData&) const;
 
- public:
+public:
   /* \brief Constructor */
   explicit PD(unsigned int N=0, double MINFLUX=0.0, double DFLUX=0.0);
   ~PD(); //!< Destructor
@@ -66,7 +66,7 @@ class PD {
 
   /*! \brief Fill contents from array*/
   void fill(unsigned int N, double MIN, double DF,
-	    const double* const DATA, bool LOG=true); 
+            const double* const DATA, bool LOG=true); 
 
   /*! \brief Get flux value for specified index */
   double getFluxVal(unsigned int i) const { return minflux+static_cast<double>(i)*dflux; }

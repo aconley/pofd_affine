@@ -69,8 +69,8 @@ class numberCountsDouble {
   
   /*! \brief Get number of source responses, array version*/
   virtual void getR(unsigned int,const double* const,
-		    unsigned int,const double* const,
-		    const doublebeam&, double*) const = 0;
+                    unsigned int,const double* const,
+                    const doublebeam&, double*) const = 0;
 
   virtual double differenceRegularize(double) const { return 0.0; } //!< Tikhonov regularization log Likelihood penalty
 

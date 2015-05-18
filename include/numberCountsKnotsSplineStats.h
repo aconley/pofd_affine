@@ -9,15 +9,15 @@
   the numberCountsKnotsSpline model.
 
   Builds statistics about a fit from a fit output file, including
-    - Mean fit
-    - Best fit
-    - Uncertainties at knot values
-    - Error snakes
+  - Mean fit
+  - Best fit
+  - Uncertainties at knot values
+  - Error snakes
 
   \ingroup models
 */
 class numberCountsKnotsSplineStats final : public statsAccumulator {
-private:
+ private:
   static const unsigned int nprob = 3;
   const float plevels[nprob] = {0.683, 0.954, 0.997};
 
@@ -45,7 +45,7 @@ private:
   void setNParams(unsigned int); //!< Set number of params
 
   mutable numberCountsKnotsSpline model; //!< For doing interpolation
-public:
+ public:
   numberCountsKnotsSplineStats(unsigned int);
   ~numberCountsKnotsSplineStats();
 

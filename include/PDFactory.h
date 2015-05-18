@@ -98,7 +98,7 @@ class PDFactory {
 
   /*! \brief Fills in rvals */
   void initR(unsigned int n, double minflux, double maxflux,
-	     const numberCounts&, const beam&, bool muldr=false); 
+             const numberCounts&, const beam&, bool muldr=false); 
 
   void getMeanVarFromR(); //!< Compute mean and variance from R
 
@@ -134,7 +134,7 @@ class PDFactory {
 
   /*! \brief Initializes P(D) by computing R and forward transforming it*/
   bool initPD(unsigned int n, double minflux, double maxflux,
-	      const numberCounts&, const beam&);
+              const numberCounts&, const beam&);
 
   /*! \brief Gets P(D) of with specified noise level */
   void getPD(double, PD&, bool setLog=true);

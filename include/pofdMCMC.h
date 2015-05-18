@@ -4,6 +4,7 @@
 #include "../include/affineEnsemble.h"
 #include "../include/calcLike.h"
 #include "../include/specFile.h"
+#include "../include/initFileKnots.h"
 
 /*!
   \brief Class for doing 1D P(D) fits
@@ -29,8 +30,13 @@ public:
 	   unsigned int INIT_STEPS=50, double INIT_TEMP=2.0,
 	   unsigned int MIN_BURN=50, bool FIXED_BURN=false, 
 	   float BURN_MULTIPLE=5.0, float SCALEFAC=2.0); //!< Constructor
+  pofdMCMC(const pofdMCMC&)=delete;
+  pofdMCMC(pofdMCMC&&)=delete;
   virtual ~pofdMCMC() {}; //!< Destructor
 
+  pofdMCMC& operator=(const pofdMCMC&)=delete;
+  pofdMCMC& operator=(pofdMCMC&&)=delete;
+  
   void setVerbosity(unsigned int) override;
 
   void initChains() override; //!< Initializes data between MPI jobs

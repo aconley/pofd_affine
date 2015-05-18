@@ -62,7 +62,7 @@ class numberCountsKnotsSpline : public numberCountsKnots {
   double getR(double, const beam&) const override;
   /*! \brief Get R, array version */
   void getR(unsigned int n, const double* const,
-	    const beam&, double*) const override;
+            const beam&, double*) const override;
 
   double differenceRegularize(double) const override; //!< Tikhonov regularization log Likelihood penalty
 

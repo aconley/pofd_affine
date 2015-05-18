@@ -19,7 +19,7 @@ numberCountsKnotsSplineStats(unsigned int NPOINTS):
   mean = new float[npoints];
   median = new float[npoints];
   snake = new float[2 * nprob * npoints];
-}
+  }
 
 numberCountsKnotsSplineStats::~numberCountsKnotsSplineStats() {
   if (knotPositions != nullptr) delete[] knotPositions;
@@ -39,7 +39,7 @@ numberCountsKnotsSplineStats::~numberCountsKnotsSplineStats() {
 */
 void numberCountsKnotsSplineStats::setNParams(unsigned int n) {
   if (n == nparams) return;
-   if (initParams != nullptr) delete[] initParams;
+  if (initParams != nullptr) delete[] initParams;
   if (n > 0) initParams = new float[n]; else initParams = nullptr;
   if (bestParams != nullptr) delete[] bestParams;
   if (n > 0) bestParams = new float[n]; else bestParams = nullptr;
@@ -51,7 +51,7 @@ void numberCountsKnotsSplineStats::setNParams(unsigned int n) {
   if (n > 0) uncertaintyParams = new float[2 * nprob * n];
   else uncertaintyParams = nullptr;
   nparams = n;
- }
+}
 
 /*!
   \param[in] infile Input file to read; must be output of pofd_affine_mcmc
@@ -85,7 +85,7 @@ void numberCountsKnotsSplineStats::build(const std::string& infile,
     H5Dclose(stepsid);
     H5Fclose(fileid);
     throw affineExcept("numberCountsKnotsSplineStats", "build",
-		                   "Chains of unexpected dimensionality");
+                       "Chains of unexpected dimensionality");
   }
   hsize_t datasize[3];
   hsize_t maxdatasize[3];
@@ -107,7 +107,7 @@ void numberCountsKnotsSplineStats::build(const std::string& infile,
   //  flattened arrays
   float *steps = new float[nwalkers * nsteps * nparams];
   H5Dread(stepsid, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
-	        H5P_DEFAULT, steps);
+          H5P_DEFAULT, steps);
   H5Sclose(spaceid);
   H5Dclose(stepsid);
 
@@ -188,12 +188,12 @@ writeAsHDF5(const std::string& filename) const {
 
   hid_t file_id, group_id;
   file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
-		      H5P_DEFAULT);
+                      H5P_DEFAULT);
 
   if (H5Iget_ref(file_id) < 0) {
     H5Fclose(file_id);
     throw affineExcept("numberCountsKnotsSplineStats", "writeToHDF5",
-		                   "Failed to open HDF5 file to write");
+                       "Failed to open HDF5 file to write");
   }
 
   hdf5utils::writeDataUnsignedInt(file_id, "NDims", 1);
@@ -231,7 +231,7 @@ writeAsHDF5(const std::string& filename) const {
     std::stringstream pname;
     pname << "Log10Countsp=" << std::setprecision(3) << plevels[i];
     hdf5utils::writeData2DFloats(group_id, pname.str(),
-				                         npoints, 2, &snake[i * npoints * 2]);
+                                 npoints, 2, &snake[i * npoints * 2]);
   }
   H5Gclose(group_id);
 

@@ -10,6 +10,7 @@
 #include "../include/PDDouble.h"
 #include "../include/fitsDataDouble.h"
 #include "../include/numberCountsDoubleLogNormal.h"
+#include "../include/initFileDoubleLogNormal.h"
 #include "../include/doublebeam.h"
 #include "../include/paramSet.h"
 #include "../include/utility.h"
@@ -100,20 +101,20 @@ class calcLikeDoubleSingle { //Odd name...
 
   /*! \brief Reads data to compute likelihood for a single file*/
   void readDataFromFile(const std::string&, const std::string&,
-			bool IGNOREMASK=false,
-			bool MEANSUB=false,bool BINDATA=false,
-			unsigned int NBINS=100);
+                        bool IGNOREMASK=false,
+                        bool MEANSUB=false,bool BINDATA=false,
+                        unsigned int NBINS=100);
 
   /*! \brief Reads data to compute likelihood for multiple data files*/
   void readDataFromFiles(const std::vector<std::string>&, 
-			 const std::vector<std::string>&, 
-			 bool IGNOREMASK=false, bool MEANSUB=false,
-			 bool BINDATA=false, unsigned int NBINS=100);
+                         const std::vector<std::string>&, 
+                         bool IGNOREMASK=false, bool MEANSUB=false,
+                         bool BINDATA=false, unsigned int NBINS=100);
 
   /*! \brief Read in beam files */
   void readBeam(const std::string&, const std::string&, 
-		double MINVAL=1e-6, bool histogram=false, 
-		unsigned int NBINS=150);
+                double MINVAL=1e-6, bool histogram=false, 
+                unsigned int NBINS=150);
 
   /*! \brief Access to beam info */
   const doublebeam& getBeam() const { return bm; }
@@ -145,8 +146,8 @@ class calcLikeDoubleSingle { //Odd name...
 
   /*! \brief Returns \f$\log L\f$ over all data sets.  Model must be set */
   double getLogLike(const numberCountsDouble&, bool&, double sigmult1=1.0, 
-		    double sigmult2=1.0, unsigned int fftsize=4096, 
-		    bool edgeinteg=true) const;
+                    double sigmult2=1.0, unsigned int fftsize=4096, 
+                    bool edgeinteg=true) const;
 
   void writeToHDF5Handle(hid_t) const; //!< Write dataset info to HDF5 handle
   /*! \brief Make a new group and write to it */
@@ -233,8 +234,8 @@ class calcLikeDouble {
  public:
   /*! \brief Constructor */
   explicit calcLikeDouble(unsigned int FFTSIZE=4096, unsigned int NEDGE=256, 
-			  bool EDGEINTEG=true, bool BINNED=false, 
-			  unsigned int NBINS=1000);
+                          bool EDGEINTEG=true, bool BINNED=false, 
+                          unsigned int NBINS=1000);
   ~calcLikeDouble(); //!< Destructor 
 
   void freeData(); //!< Remove internal data
@@ -243,16 +244,16 @@ class calcLikeDouble {
 
   /*! \brief Reads data to compute likelihood for multiple data and beam files*/
   void readDataFromFiles(const std::vector<std::string>&, 
-			 const std::vector<std::string>&,
-			 const std::vector<std::string>&, 
-			 const std::vector<std::string>&,
-			 const std::vector<double>&,
-			 const std::vector<double>&,
-			 const std::vector<double>&,
-			 bool IGNOREMASK=false, bool MEANSUB=false,
-			 double MINBEAMVAL=1e-6, bool HISTOGRAM=false,
-			 unsigned int NBEAMHIST=160,
-			 double EXPCONF1=0.0, double EXPCONF2=0.0);
+                         const std::vector<std::string>&,
+                         const std::vector<std::string>&, 
+                         const std::vector<std::string>&,
+                         const std::vector<double>&,
+                         const std::vector<double>&,
+                         const std::vector<double>&,
+                         bool IGNOREMASK=false, bool MEANSUB=false,
+                         double MINBEAMVAL=1e-6, bool HISTOGRAM=false,
+                         unsigned int NBEAMHIST=160,
+                         double EXPCONF1=0.0, double EXPCONF2=0.0);
   
   void setVerbose() { verbose=true; } //!< Turn on verbose mode
   void unSetVerbose() { verbose = false; } //!< Turn off verbose mode
@@ -288,7 +289,7 @@ class calcLikeDouble {
   { model.setOffsetPositions(knts); }
   /*! \brief Set positions of all knots */
   void setPositions(std::vector<double>& K, std::vector<double>& S,
-		    std::vector<double>& O) {
+                    std::vector<double>& O) {
     model.setPositions(K, S, O);
   }
   /*! \brief Set positions of all knots */

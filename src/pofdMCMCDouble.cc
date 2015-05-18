@@ -22,16 +22,16 @@
                          finished
   \param[in] BURN_MULTIPLE This fraction of autocorrelation steps to add
                             before checking burn-in again
-  \param[in] SCALEFAC Scale factor of Z distribution			    
+  \param[in] SCALEFAC Scale factor of Z distribution                        
  */
 pofdMCMCDouble::pofdMCMCDouble(const std::string& INITFILE, 
-			       const std::string& SPECFILE,
-			       unsigned int NWALKERS, unsigned int NSAMPLES, 
-			       unsigned int INIT_STEPS, double INIT_TEMP,
-			       unsigned int MIN_BURN, bool FIXED_BURN, 
-			       float BURN_MULTIPLE, float SCALEFAC) :
+                               const std::string& SPECFILE,
+                               unsigned int NWALKERS, unsigned int NSAMPLES, 
+                               unsigned int INIT_STEPS, double INIT_TEMP,
+                               unsigned int MIN_BURN, bool FIXED_BURN, 
+                               float BURN_MULTIPLE, float SCALEFAC) :
   affineEnsemble(NWALKERS, 1, NSAMPLES, INIT_STEPS, INIT_TEMP, MIN_BURN,
-		 FIXED_BURN, BURN_MULTIPLE, SCALEFAC),
+                 FIXED_BURN, BURN_MULTIPLE, SCALEFAC),
   initfile(INITFILE), specfile(SPECFILE) {
   //Note that we set NPARAMS to a bogus value (1) above, then 
   // have to change it later once we know how many model params we have
@@ -51,13 +51,13 @@ void pofdMCMCDouble::initChains() {
 bool pofdMCMCDouble::initChainsMaster() {
   if (rank != 0)
     throw affineExcept("pofdMCMCDouble", "initChainsMaster",
-		       "Should not be called except on master node");
+                       "Should not be called except on master node");
 
   //Data/fit initialization file
   spec_info.readFile(specfile);
   if (spec_info.datafiles1.size() == 0)
       throw affineExcept("pofdMCMCDouble", "initChainsMaster",
-			 "No data files read");
+                         "No data files read");
 
   //Model initialization file
   if (spec_info.verbosity >= 3)
@@ -66,7 +66,7 @@ bool pofdMCMCDouble::initChainsMaster() {
   ntot = ifile.getNTot();
   if (ntot == 0)
     throw affineExcept("pofdMCMCDouble", "initChainsMaster",
-		       "No model parameters read in");
+                       "No model parameters read in");
   
   //Number of parameters is number of knots (ntot) 
   // + 2 for the sigmas in each band -- although some may be fixed
@@ -128,16 +128,16 @@ bool pofdMCMCDouble::initChainsMaster() {
   //Set priors 
   if (spec_info.has_cfirbprior1)
     likeSet.setCFIRBPrior1(spec_info.cfirbprior_mean1,
-			   spec_info.cfirbprior_stdev1);
+                           spec_info.cfirbprior_stdev1);
   if (spec_info.has_cfirbprior2)
     likeSet.setCFIRBPrior2(spec_info.cfirbprior_mean2,
-			   spec_info.cfirbprior_stdev2);
+                           spec_info.cfirbprior_stdev2);
   if (spec_info.has_poissonprior1)
     likeSet.setPoissonPrior1(spec_info.poissonprior_mean1,
-			     spec_info.poissonprior_stdev1);
+                             spec_info.poissonprior_stdev1);
   if (spec_info.has_poissonprior2)
     likeSet.setPoissonPrior2(spec_info.poissonprior_mean2,
-			     spec_info.poissonprior_stdev2);
+                             spec_info.poissonprior_stdev2);
   if (spec_info.fit_sigma1 && spec_info.has_sigprior1)
     likeSet.setSigmaPrior1(spec_info.sigprior_stdev1);
   if (spec_info.fit_sigma2 && spec_info.has_sigprior2)
@@ -151,12 +151,12 @@ bool pofdMCMCDouble::initChainsMaster() {
   if (spec_info.verbosity >= 2)
       std::cout << " Reading in data files" << std::endl;
   likeSet.readDataFromFiles(spec_info.datafiles1, spec_info.datafiles2,
-			    spec_info.psffiles1, spec_info.psffiles2, 
-			    spec_info.sigmas1, spec_info.sigmas2,
-			    spec_info.like_norm, spec_info.ignore_mask, 
-			    spec_info.mean_sub, spec_info.minbeamval, 
-			    spec_info.beam_histogram, spec_info.nbeamhist, 
-			    spec_info.exp_conf1, spec_info.exp_conf2);
+                            spec_info.psffiles1, spec_info.psffiles2, 
+                            spec_info.sigmas1, spec_info.sigmas2,
+                            spec_info.like_norm, spec_info.ignore_mask, 
+                            spec_info.mean_sub, spec_info.minbeamval, 
+                            spec_info.beam_histogram, spec_info.nbeamhist, 
+                            spec_info.exp_conf1, spec_info.exp_conf2);
 
   // Set up R init ranges using initial model 
   paramSet p(npar); //Generated parameter
@@ -180,13 +180,13 @@ bool pofdMCMCDouble::initChainsMaster() {
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
   if (verbosity >= 2)
     std::cout << "Initializing " << nproc - 1 << " slave nodes from master"
-	      << std::endl;
+              << std::endl;
 
   int nnotinitialized;
   std::vector<bool> initialized(nproc, false);
   initialized[0] = true; //Master is initialized
   nnotinitialized = std::count(initialized.begin(), initialized.end(),
-			       false);
+                               false);
 
   MPI_Status Info;
   int jnk, ismsg;
@@ -199,7 +199,7 @@ bool pofdMCMCDouble::initChainsMaster() {
     }
 
     MPI_Recv(&jnk, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, 
-	     MPI_COMM_WORLD, &Info);
+             MPI_COMM_WORLD, &Info);
     int this_tag = Info.MPI_TAG;
     int this_rank = Info.MPI_SOURCE;
     if (this_tag == mcmc_affine::ERROR) {
@@ -208,25 +208,25 @@ bool pofdMCMCDouble::initChainsMaster() {
       return false; 
     } else if (this_tag == pofd_mcmc::PMCMCSENDINIT) {
       if (verbosity >= 3)
-	std::cout << " Sending initialization info to " << this_rank
-		  << std::endl;
+        std::cout << " Sending initialization info to " << this_rank
+                  << std::endl;
 
       MPI_Send(&jnk, 1, MPI_INT, this_rank, pofd_mcmc::PMCMCSENDINGINIT,
-	       MPI_COMM_WORLD);
+               MPI_COMM_WORLD);
       MPI_Send(&npar, 1, MPI_UNSIGNED, this_rank, pofd_mcmc::PMCMCSENDNPAR,
-	       MPI_COMM_WORLD);
+               MPI_COMM_WORLD);
       ifile.sendSelf(MPI_COMM_WORLD, this_rank);
       likeSet.sendSelf(MPI_COMM_WORLD, this_rank);
       
     } else if (this_tag == pofd_mcmc::PMCMCISREADY) {
       if (verbosity >= 3)
-	std::cout << " Slave node " << this_rank << " initialized"
-		  << std::endl;
+        std::cout << " Slave node " << this_rank << " initialized"
+                  << std::endl;
 
       initialized[this_rank] = true;
     }
     nnotinitialized = std::count(initialized.begin(), initialized.end(),
-				 false);
+                                 false);
   }
   if (verbosity >= 2)
     std::cout << "All slave nodes initialized" << std::endl;
@@ -254,7 +254,7 @@ bool pofdMCMCDouble::initChainsMaster() {
 bool pofdMCMCDouble::areParamsValid(const paramSet& p) const {
   if (!is_init)
     throw affineExcept("pofdMCMCDouble", "areParamsValid",
-		       "Can't check params without initialization");
+                       "Can't check params without initialization");
   if (!ifile.isValid(p)) return false; //Doesn't check sigma multipliers
   if (p[ntot] <= 0.0) return false; // Sigma mult 1
   if (p[ntot + 1] <= 0.0) return false; // Sigma mult 2
@@ -269,12 +269,12 @@ void pofdMCMCDouble::generateInitialPosition(const paramSet& p) {
 
   if (ntot == 0)
     throw affineExcept("pofdMCMCDouble", "generateInitialPosition",
-		       "No model info read in");
+                       "No model info read in");
 
   unsigned int npar = getNParams();
   if (p.getNParams() < npar)
     throw affineExcept("pofdMCMCDouble", "generateInitialPosition",
-		       "Wrong number of params in input");
+                       "Wrong number of params in input");
 
   chains.clear();
   chains.addChunk(1);
@@ -312,24 +312,24 @@ void pofdMCMCDouble::generateInitialPosition(const paramSet& p) {
     if (spec_info.fit_sigma1) {
       unsigned int j;
       for (j = 0; j < maxtrials; ++j) {
-	trialval = 1.0 + sm_stdev1 * rangen.gauss(); 
-	if (trialval > 0) break;
+        trialval = 1.0 + sm_stdev1 * rangen.gauss(); 
+        if (trialval > 0) break;
       }
       if (j == maxtrials)
-	throw affineExcept("pofdMCMCDouble", "initChainsMaster",
-			   "Couldn't generate sigma multiplier1 value");
+        throw affineExcept("pofdMCMCDouble", "initChainsMaster",
+                           "Couldn't generate sigma multiplier1 value");
       pnew[ntot] = trialval;
     } else pnew[ntot] = 1.0;
 
     if (spec_info.fit_sigma2) {
       unsigned int j;
       for (j = 0; j < maxtrials; ++j) {
-	trialval = 1.0 + sm_stdev2 * rangen.gauss(); 
-	if (trialval > 0) break;
+        trialval = 1.0 + sm_stdev2 * rangen.gauss(); 
+        if (trialval > 0) break;
       }
       if (j == maxtrials)
-	throw affineExcept("pofdMCMCDouble", "initChainsMaster",
-			   "Couldn't generate sigma multiplier2 value");
+        throw affineExcept("pofdMCMCDouble", "initChainsMaster",
+                           "Couldn't generate sigma multiplier2 value");
       pnew[ntot + 1] = trialval;
     } else pnew[ntot + 1] = 1.0;
     
@@ -350,7 +350,7 @@ void pofdMCMCDouble::generateInitialPosition(const paramSet& p) {
 bool pofdMCMCDouble::initChainsSlave() {
   if (rank == 0)
     throw affineExcept("pofdMCMCDouble", "initChainsSlave",
-		       "Should not be called on master node");
+                       "Should not be called on master node");
   //Send message to master saying we are ready
   int jnk;
   MPI_Send(&jnk, 1, MPI_INT, 0, pofd_mcmc::PMCMCSENDINIT, MPI_COMM_WORLD);
@@ -366,7 +366,7 @@ bool pofdMCMCDouble::initChainsSlave() {
 
   //Got a message, process it
   MPI_Recv(&jnk, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, 
-	   &Info);
+           &Info);
   int this_tag = Info.MPI_TAG;
   int this_rank = Info.MPI_SOURCE;
 
@@ -380,13 +380,13 @@ bool pofdMCMCDouble::initChainsSlave() {
     else if (this_tag == pofd_mcmc::PMCMCSENDINGINIT) {
       unsigned int npar;
       MPI_Recv(&npar, 1, MPI_UNSIGNED, 0, pofd_mcmc::PMCMCSENDNPAR,
-	       MPI_COMM_WORLD, &Info);
+               MPI_COMM_WORLD, &Info);
       this->setNParams(npar);
       ifile.receiveCopy(MPI_COMM_WORLD, 0);
       likeSet.receiveCopy(MPI_COMM_WORLD, 0);
 
       MPI_Send(&jnk, 1, MPI_INT, 0, pofd_mcmc::PMCMCISREADY,
-	       MPI_COMM_WORLD);
+               MPI_COMM_WORLD);
     }
   }
   
@@ -401,7 +401,7 @@ bool pofdMCMCDouble::initChainsSlave() {
 double pofdMCMCDouble::getLogLike(const paramSet& p, bool& pars_invalid) {
   if (!is_init)
     throw affineExcept("pofdMCMC", "getLogLike",
-		       "Called on unitialized object");
+                       "Called on unitialized object");
   return likeSet.getLogLike(p, pars_invalid);
 }
 
@@ -422,7 +422,7 @@ void pofdMCMCDouble::writeToHDF5Handle(hid_t objid) const {
 
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("pofdMCMC", "writeToHDF5Handle",
-		       "Input handle is not valid");
+                       "Input handle is not valid");
 
   // Write to top level
   affineEnsemble::writeToHDF5Handle(objid);
@@ -433,17 +433,17 @@ void pofdMCMCDouble::writeToHDF5Handle(hid_t objid) const {
   groupid = H5Gopen(objid, "ParamInfo", H5P_DEFAULT);
   if (H5Iget_ref(groupid) < 0)
     throw affineExcept("pofdMCMCDouble", "writeToHDF5Handle",
-		       "Can't open ParamInfo group");
+                       "Can't open ParamInfo group");
   ifile.writeToHDF5Handle(groupid);
   H5Gclose(groupid);
 
   // Write to LikelihoodParams subgroup
   groupid = H5Gcreate(objid, "LikelihoodParams", H5P_DEFAULT, H5P_DEFAULT, 
-		      H5P_DEFAULT);
+                      H5P_DEFAULT);
 
   if (H5Iget_ref(groupid) < 0)
     throw affineExcept("pofdMCMCDouble", "writeToHDF5",
-		       "Failed to create HDF5 group LikelihoodParams");
+                       "Failed to create HDF5 group LikelihoodParams");
   likeSet.writeToHDF5Handle(groupid);
   spec_info.writeToHDF5Handle(groupid);
   H5Gclose(groupid);

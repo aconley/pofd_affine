@@ -97,20 +97,20 @@ class PDFactoryDouble {
 
   /*! \brief Sets RFlux1, Rflux2, with wrapping */
   void initRFlux(unsigned int n, double minflux1, double maxflux1,
-		 double minflux2, double maxflux2);
+                 double minflux2, double maxflux2);
 
   /*! \brief Fills in rvals */
   void initR(unsigned int n, double minflux1, double maxflux1,
-	     double minflux2, double maxflux2, 
-	     const numberCountsDouble&, const doublebeam&, 
-	     bool setEdge=true, bool muldr=false); 
+             double minflux2, double maxflux2, 
+             const numberCountsDouble&, const doublebeam&, 
+             bool setEdge=true, bool muldr=false); 
 
   /*! \brief Get P(D) statistics from R computation (so without inst. noise) */
   void getRStats();
 
   /*! \brief Helper function for unwrapAndNormalizePD */
   unsigned int findSplitPoint(const double* const, double,
-			      double, double) const;
+                              double, double) const;
 
   void unwrapAndNormalizePD(PDDouble& pd) const; //!< Moves computed P(D) to output var
 
@@ -140,9 +140,9 @@ class PDFactoryDouble {
 
   /*! \brief Initializes P(D) by computing R and forward transforming it*/
   bool initPD(unsigned int n, double minflux1, double maxflux1, 
-	      double minflux2, double maxflux2, 
-	      const numberCountsDouble&, const doublebeam& bm,
-	      bool setEdge=true);
+              double minflux2, double maxflux2, 
+              const numberCountsDouble&, const doublebeam& bm,
+              bool setEdge=true);
 
   /*! \brief Gets P(D) with specified noise levels */
   void getPD(double, double, PDDouble&, bool setLog=true);

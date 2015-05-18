@@ -103,25 +103,25 @@ void PDFactory::summarizeTime(unsigned int nindent) const {
   std::string prestring(nindent, ' ');
     
   std::cout << "R time: " << prestring 
-	    << 1.0*RTime/CLOCKS_PER_SEC << "s" << std::endl;
+            << 1.0*RTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "p0 time: " << prestring 
-	    << 1.0*p0Time/CLOCKS_PER_SEC << "s" << std::endl;
+            << 1.0*p0Time/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "fft time: " << prestring 
-	    << 1.0*fftTime/CLOCKS_PER_SEC << "s" << std::endl;
+            << 1.0*fftTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "pos time: " << prestring 
-	    << 1.0*posTime/CLOCKS_PER_SEC << "s" << std::endl;
+            << 1.0*posTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "split time: " << prestring 
-	    << 1.0*splitTime/CLOCKS_PER_SEC << "s" << std::endl;
+            << 1.0*splitTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "copy time: " << prestring 
-	    << 1.0*copyTime/CLOCKS_PER_SEC << "s" << std::endl;
+            << 1.0*copyTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "norm time: " << prestring 
-	    << 1.0*normTime/CLOCKS_PER_SEC << "s" << std::endl;
+            << 1.0*normTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "edge time: " << prestring 
-	    << 1.0*edgeTime/CLOCKS_PER_SEC << "s" << std::endl;
+            << 1.0*edgeTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "mean time: " << prestring 
-	    << 1.0*meanTime/CLOCKS_PER_SEC << "s" << std::endl;
+            << 1.0*meanTime/CLOCKS_PER_SEC << "s" << std::endl;
   std::cout << "log time: " << prestring 
-	    << 1.0*logTime/CLOCKS_PER_SEC << "s" << std::endl;
+            << 1.0*logTime/CLOCKS_PER_SEC << "s" << std::endl;
 }
 #endif
 
@@ -189,11 +189,11 @@ void PDFactory::allocateInterpPos() {
   if (interpvars_allocated_pos) return;
   if (ninterp == 0)
     throw affineExcept("PDFactory", "allocateInterpPos",
-		       "Invalid (0) ninterp");
+                       "Invalid (0) ninterp");
   
   //Note that acc_pos is always allocated
   spline_pos = gsl_spline_alloc( gsl_interp_cspline, 
-				 static_cast<size_t>(ninterp));
+                                 static_cast<size_t>(ninterp));
   RinterpFlux_pos = new double[ninterp];
   RinterpVals_pos = new double[ninterp];
   interpvars_allocated_pos = true;
@@ -219,11 +219,11 @@ void PDFactory::allocateInterpNeg() {
   if (interpvars_allocated_neg) return;
   if (ninterp == 0)
     throw affineExcept("PDFactory", "allocateInterpNeg",
-		       "Invalid (0) ninterp");
+                       "Invalid (0) ninterp");
   
   //Note that acc_neg is always allocated
   spline_neg = gsl_spline_alloc(gsl_interp_cspline, 
-				static_cast<size_t>(ninterp));
+                                static_cast<size_t>(ninterp));
   RinterpFlux_neg = new double[ninterp];
   RinterpVals_neg = new double[ninterp];
   interpvars_allocated_neg = true;
@@ -301,7 +301,7 @@ void PDFactory::setupTransforms(unsigned int n) {
 
   if (n == 0)
     throw affineExcept("PDFactoryDouble", "setupTransforms",
-		       "Invalid (0) transform size");
+                       "Invalid (0) transform size");
 
   // Make sure we have enough room
   resize(n);
@@ -313,26 +313,26 @@ void PDFactory::setupTransforms(unsigned int n) {
   if (plan == nullptr) {
     if (plan != nullptr) fftw_destroy_plan(plan);
     plan = fftw_plan_dft_r2c_1d(intn, rvals, prtrans,
-				fftw_plan_style);
+                                fftw_plan_style);
   }
   if (plan == nullptr) {
     std::stringstream str;
     str << "Plan creation failed for forward transform of size: " << n;
     if (has_wisdom) str << std::endl << "Your wisdom file may not have"
-			<< " that size";
+                        << " that size";
     throw affineExcept("PDFactory", "setupTransforms", str.str());
   }
 
   if (plan_inv == nullptr) {
     if (plan_inv != nullptr) fftw_destroy_plan(plan_inv);
     plan_inv = fftw_plan_dft_c2r_1d(intn, pval, pofd,
-				    fftw_plan_style);
+                                    fftw_plan_style);
   }
   if (plan_inv == nullptr) {
     std::stringstream str;
     str << "Plan creation failed for inverse transform of size: " << n;
     if (has_wisdom) str << std::endl << "Your wisdom file may not have"
-			<< " that size";
+                        << " that size";
     throw affineExcept("PDFactory", "setupTransforms", str.str());
   }
 }
@@ -343,20 +343,20 @@ void PDFactory::setupTransforms(unsigned int n) {
   \param[in] maxflux Maximum flux to use in R
 
   Sets up flux information for R.  minflux may not actually be
-   achieved if it is negative, because we try to include flux=0 in that case.
-   If maxflux is negative, it is treated as zero.  And if minflux is
-   greater than zero -- it is treated as zero.
+  achieved if it is negative, because we try to include flux=0 in that case.
+  If maxflux is negative, it is treated as zero.  And if minflux is
+  greater than zero -- it is treated as zero.
 
   We don't actually store an array of fluxes.  We just store the
-   information to recreate it.  For purely positive fluxes, this is
-   trivial -- the r flux array is i * dflux + minflux_R after this routine.
+  information to recreate it.  For purely positive fluxes, this is
+  trivial -- the r flux array is i * dflux + minflux_R after this routine.
   
   If there are negative fluxes, this is more complicated.
   The positive fluxes go up to index wrapRidx.  So we have
-   0 <= i <= wrapRidx  flux = i * dflux
-   wrapRidx < i < n = (i - wrapRidx - 1) * dflux + minflux_R
+  0 <= i <= wrapRidx  flux = i * dflux
+  wrapRidx < i < n = (i - wrapRidx - 1) * dflux + minflux_R
   The latter doesn't quite get up to 0, since that was already included in
-   the first part. 
+  the first part. 
 */
 void PDFactory::initRFlux(unsigned int n, double minflux, double maxflux) {
   // Make sure there is room
@@ -369,7 +369,7 @@ void PDFactory::initRFlux(unsigned int n, double minflux, double maxflux) {
   if (n == 1) {
     if (minflux < 0.0)
       throw affineExcept("PDFactory", "initRFlux", 
-			 "n must be > 1 with negative fluxes");
+                         "n must be > 1 with negative fluxes");
     dflux = maxflux - minflux;
     minflux_R = minflux;
     wrapRidx = 0;
@@ -404,7 +404,7 @@ void PDFactory::initRFlux(unsigned int n, double minflux, double maxflux) {
     // as zero, since we want to include it.
     if (minflux >= 0) // But then we need minflux to be negative
       throw affineExcept("PDFactory", "initRFlux", 
-			 "No effective range in R fluxes");
+                         "No effective range in R fluxes");
     dflux = - minflux * inm1;
     wrapRidx = 0; // Includes 0, rest of the array is negative
     minflux_R = minflux;
@@ -427,14 +427,14 @@ void PDFactory::initRInterp(const numberCounts& model, const beam& bm) {
   
   if (!rvars_allocated)
     throw affineExcept("PDFactory", "computeR",
-		       "R variables must have been previously allocated");
+                       "R variables must have been previously allocated");
 
   // Figure out which ones we need to fill
   bool has_pos = bm.hasPos();
   bool has_neg = bm.hasNeg();
   if (!(has_pos || has_neg))
     throw affineExcept("PDFactory", "computeR",
-		       "Beam has neither positive nor negative bits");
+                       "Beam has neither positive nor negative bits");
 
   double modelmin, modelmax;
   modelmin = model.getMinFlux();
@@ -460,7 +460,7 @@ void PDFactory::initRInterp(const numberCounts& model, const beam& bm) {
     double dinterpflux = (log2(maxinterpflux / mininterpflux)) * ininterpm1;
     for (unsigned int i = 0; i < ninterp; ++i)
       RinterpFlux_pos[i] = mininterpflux * 
-	exp2(static_cast<double>(i) * dinterpflux);
+        exp2(static_cast<double>(i) * dinterpflux);
     
     // Now actually get R
 #ifdef TIMING
@@ -480,7 +480,7 @@ void PDFactory::initRInterp(const numberCounts& model, const beam& bm) {
       else RinterpVals_pos[i] = pofd_mcmc::smalllogval;
     }
     gsl_spline_init(spline_pos, RinterpFlux_pos, RinterpVals_pos, 
-		    static_cast<size_t>(ninterp));
+                    static_cast<size_t>(ninterp));
 
   }
   // Same, but for negative beam
@@ -503,7 +503,7 @@ void PDFactory::initRInterp(const numberCounts& model, const beam& bm) {
     double dinterpflux = (log2(mininterpflux / maxinterpflux)) * ininterpm1;
     for (unsigned int i = 0; i < ninterp; ++i)
       RinterpFlux_neg[i] = maxinterpflux * 
-	exp2(static_cast<double>(ninterp - i - 1) * dinterpflux);
+        exp2(static_cast<double>(ninterp - i - 1) * dinterpflux);
     
 #ifdef TIMING
     std::clock_t starttime = std::clock();
@@ -520,7 +520,7 @@ void PDFactory::initRInterp(const numberCounts& model, const beam& bm) {
       else RinterpVals_neg[i] = pofd_mcmc::smalllogval;
     }
     gsl_spline_init(spline_neg, RinterpFlux_neg, RinterpVals_neg, 
-		    static_cast<size_t>(ninterp));
+                    static_cast<size_t>(ninterp));
   }
   rinitialized = false; // Any r likely no longer matches this
   initialized = false; //!< any transform no longer matches Rinterp
@@ -539,8 +539,8 @@ void PDFactory::initRInterp(const numberCounts& model, const beam& bm) {
   validity, so the caller (initPD) must do so.
 */
 void PDFactory::initR(unsigned int n, double minflux, double maxflux,
-		      const numberCounts& model, const beam& bm,
-		      bool muldr) {
+                      const numberCounts& model, const beam& bm,
+                      bool muldr) {
 
   // Set up interp vars, flux ranges
   initRInterp(model, bm);
@@ -562,7 +562,7 @@ void PDFactory::initR(unsigned int n, double minflux, double maxflux,
     // This is the minimum R index which will be non-zero for the
     // positive bit
     unsigned int minitidx = static_cast<unsigned int>(minI / dflux + 
-						      0.9999999999999999);
+                                                      0.9999999999999999);
     // And this the maximum
     unsigned int maxitidx = static_cast<unsigned int>(maxI / dflux);
     if (maxitidx > wrapRidx) maxitidx = wrapRidx;
@@ -589,11 +589,11 @@ void PDFactory::initR(unsigned int n, double minflux, double maxflux,
     // negative bit.  The computation is more complicated here
     unsigned int minitidx = 
       static_cast<unsigned int>((minI - minflux_R) / dflux + 
-				wrapRidx + 1 + 0.9999999999999999);
+                                wrapRidx + 1 + 0.9999999999999999);
     if (minitidx <= wrapRidx) minitidx = wrapRidx + 1; // Necessary?
     unsigned int maxitidx = 
       static_cast<unsigned int>((maxI - minflux_R) / dflux +
-				wrapRidx + 1);
+                                wrapRidx + 1);
     if (maxitidx > n - 1) maxitidx = n - 1;
 
 #ifdef TIMING
@@ -626,7 +626,7 @@ void PDFactory::getMeanVarFromR() {
 
   if (!rinitialized)
     throw affineExcept("PDFactory", "getMeanVarFromR",
-		       "R variables not computed");
+                       "R variables not computed");
 
   // We take advantage of the relations:
   //  mn = \int x R dx
@@ -752,10 +752,10 @@ unsigned int PDFactory::findSplitPoint() const {
 
   if (sgpos <= 0)
     throw affineExcept("PDFactory", "findSplitPoint", 
-		       "Invalid (non-positive) sigma positive");
+                       "Invalid (non-positive) sigma positive");
   if (sgneg <= 0)
     throw affineExcept("PDFactory", "findSplitPoint", 
-		       "Invalid (non-positive) sigma negative");
+                       "Invalid (non-positive) sigma negative");
 
   double fluxrange = currsize * dflux;
   double n1sigpos = n1 * sgpos;
@@ -765,11 +765,11 @@ unsigned int PDFactory::findSplitPoint() const {
   if (fluxrange < (n1sigpos + n1signeg)) {
     std::stringstream errstr;
     errstr << "Not enough flux range; range is: "
-	   << fluxrange << " sigmas are: " << sgpos << " " << sgneg
-	   << " so required flux range is: "
-	   << (sgpos + sgneg);
+           << fluxrange << " sigmas are: " << sgpos << " " << sgneg
+           << " so required flux range is: "
+           << (sgpos + sgneg);
     throw affineExcept("PDFactory", "findSplitPoint", 
-		       errstr.str());
+                       errstr.str());
   }
 
   // Step 2
@@ -781,7 +781,7 @@ unsigned int PDFactory::findSplitPoint() const {
   }
   if (peak <= 0.0)
     throw affineExcept("PDFactory", "findSplitPoint",
-		       "Peak P(D) value was zero");
+                       "Peak P(D) value was zero");
 
   // Step 3
   // Range we are searching
@@ -792,13 +792,13 @@ unsigned int PDFactory::findSplitPoint() const {
   else
     topidx =
       static_cast<int>(-(n1signeg + minflux_R) / dflux +
-				wrapRidx + 1);
+                       wrapRidx + 1);
   if (botidx >= currsize) 
     throw affineExcept("PDFactory", "findSplitPoint",
-		       "Logic error; invalid botidx (wrapped) in split search");
+                       "Logic error; invalid botidx (wrapped) in split search");
   if (topidx >= currsize) 
     throw affineExcept("PDFactory", "findSplitPoint",
-		       "Logic error; invalid (large) topidx in split search");
+                       "Logic error; invalid (large) topidx in split search");
   unsigned int minidx;
   double minval;
   minidx = botidx;
@@ -816,13 +816,13 @@ unsigned int PDFactory::findSplitPoint() const {
   if (minval > targval) {
     std::stringstream errstr;
     errstr << "Minimum in pd is too large relative to peak;"
-	   << " can't find split point with minimum: "
-	   << minval << " peak value: " << peak
-	   << " Required split value < " << targval
-	   << " in index range " << botidx << " to " << topidx
-	   << " in P(D) of size: " << currsize;
+           << " can't find split point with minimum: "
+           << minval << " peak value: " << peak
+           << " Required split value < " << targval
+           << " in index range " << botidx << " to " << topidx
+           << " in P(D) of size: " << currsize;
     throw affineExcept("PDFactory", "findSplitPoint", 
-		       errstr.str());
+                       errstr.str());
   }
 
   // Step 5 and 6
@@ -841,7 +841,7 @@ unsigned int PDFactory::findSplitPoint() const {
     for (unsigned int i = initidx + 1; i < minidx; ++i) {
       currval = pofd[i];
       if (currval >= prevval)
-	monotonic_decrease = false;
+        monotonic_decrease = false;
       jitter += currval;
       prevval = currval;
     }
@@ -883,10 +883,10 @@ unsigned int PDFactory::findSplitPoint() const {
   if ((botidx >= topidx) || (abs(topidx - botidx) < 1)) {
     std::stringstream errstr;
     errstr << "Topidx (" << topidx << ") vs. botidx ("
-	   << botidx << ") search issue -- can't find range"
-	   << " to search";
+           << botidx << ") search issue -- can't find range"
+           << " to search";
     throw affineExcept("PDFactory", "findSplitPoint", 
-		       errstr.str());
+                       errstr.str());
   }
   // Recall we search down.  We want to find the first
   //  point below the jitter estimate and return the point above
@@ -895,11 +895,11 @@ unsigned int PDFactory::findSplitPoint() const {
   if (pofd[topidx] < jitter) {
     std::stringstream errstr;
     errstr << "Topidx (" << topidx << ") is already below jitter"
-	   << " estimate (" << jitter << ") with value "
-	   << pofd[topidx] << " minimum: " << minval
-	   << " peak: " << peak << "; can't find split";
+           << " estimate (" << jitter << ") with value "
+           << pofd[topidx] << " minimum: " << minval
+           << " peak: " << peak << "; can't find split";
     throw affineExcept("PDFactory", "findSplitPoint", 
-		       errstr.str());
+                       errstr.str());
   }
   // Now search
   for (unsigned int i = topidx - 1; i >= botidx; --i)
@@ -913,16 +913,16 @@ unsigned int PDFactory::findSplitPoint() const {
     if (pofd[i] < minval) minval = pofd[i];
   std::stringstream errstr;
   errstr << "Unable to find split point in range "
-	 << topidx << " down to " << botidx
-	 << " with value less than " << jitter
-	 << "; minimum value encountered: " << minval;
+         << topidx << " down to " << botidx
+         << " with value less than " << jitter
+         << "; minimum value encountered: " << minval;
   throw affineExcept("PDFactory", "findSplitPoint", 
-		     errstr.str());
+                     errstr.str());
 }
 
 /*!
   \param[out] pd Holds P(D) on output, normalized, mean subtracted,
-                 and with positivity enforced.
+  and with positivity enforced.
   
   This does the unwrapping of the internal P(D) into pd,
   as well as removing negative values, normalizing, fixing
@@ -999,7 +999,7 @@ void PDFactory::unwrapAndNormalizePD(PD& pd) const {
     std::stringstream str;
     str << "Un-shift amounts not finite: " << tmn << " " << std::endl;
     str << "At length: " << currsize << " with noise estimates: " << sgpos
-	<< " " << sgneg;
+        << " " << sgneg;
     throw affineExcept("PDFactory", "unwrapandNormalizePD", str.str());
   }
   pd.minflux = -tmn;
@@ -1015,9 +1015,9 @@ void PDFactory::unwrapAndNormalizePD(PD& pd) const {
   \param[in] model   number counts model to use for fill.  Params must be set
   \param[in] bm      Beam 
   \returns True if the P(D) could be initialized, false if something
-           about the parameters prevented initialization.  Note that
-	   a genuine error results in throwing an exception, not setting this
-	   to false.
+  about the parameters prevented initialization.  Note that
+  a genuine error results in throwing an exception, not setting this
+  to false.
 
   Gets ready for P(D) computation by preparing R, including forward
   transforming it, and exponentiating the bits that can be computed
@@ -1026,10 +1026,10 @@ void PDFactory::unwrapAndNormalizePD(PD& pd) const {
   maps with the same beam but different noise values.
 
   As a result, after this, the internal variable prtrans holds
-   exp(R[i] - R[0] - i*shift*omega).
+  exp(R[i] - R[0] - i*shift*omega).
 */
 bool PDFactory::initPD(unsigned int n, double minflux, double maxflux, 
-		       const numberCounts& model, const beam& bm) {
+                       const numberCounts& model, const beam& bm) {
   if (n == 0)
     throw affineExcept("PDFactory", "initPD", "Invalid (zero) n");  
   if (n == 1)
@@ -1042,7 +1042,7 @@ bool PDFactory::initPD(unsigned int n, double minflux, double maxflux,
   if (minflux == maxflux) {
     std::stringstream errstr;
     errstr << "Invalid (0) range between min/max flux with value "
-	   << minflux;
+           << minflux;
     throw affineExcept("PDFactory", "initPD", errstr.str());
   }
   if (!model.isValid())
@@ -1079,7 +1079,7 @@ bool PDFactory::initPD(unsigned int n, double minflux, double maxflux,
   if (verbose) {
     std::cout << " Initial mean estimate: " << mn << std::endl;
     std::cout << " Initial stdev estimate (no inst noise): " << sgpos 
-	      << std::endl;
+              << std::endl;
     if (doshift)
       std::cout << " Additional shift applied: " << shift << std::endl;
     else 
@@ -1147,7 +1147,7 @@ bool PDFactory::initPD(unsigned int n, double minflux, double maxflux,
   \param[in] sigma Instrument noise sigma
   \param[out] pd Holds P(D) on output
   \param[in] setLog If true, pd is log(P(D) on output; convenient
-              for likelihood evaluation.
+  for likelihood evaluation.
 
   You must call initPD first.
 */
@@ -1190,7 +1190,7 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog) {
     p0Time += std::clock() - starttime;
 #endif
 
-  // Transform pvals into pofd
+    // Transform pvals into pofd
     if (verbose) std::cout << " Reverse transform" << std::endl;
 #ifdef TIMING
     starttime = std::clock();
@@ -1250,16 +1250,16 @@ void PDFactory::getPD(double sigma, PD& pd, bool setLog) {
 void PDFactory::writeRToHDF5(const std::string& filename) const {
   if (!rinitialized )
     throw affineExcept("PDFactory", "writeRToHDF5",
-		       "Must call initR or initPD first");
+                       "Must call initR or initPD first");
 
   hid_t file_id;
   file_id = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
-		      H5P_DEFAULT);
+                      H5P_DEFAULT);
 
   if (H5Iget_ref(file_id) < 0) {
     H5Fclose(file_id);
     throw affineExcept("PDFactory", "writeToHDF5",
-		     "Failed to open HDF5 file to write");
+                       "Failed to open HDF5 file to write");
   }
 
   // Write it as one dataset -- Rflux, R. 
@@ -1270,7 +1270,7 @@ void PDFactory::writeRToHDF5(const std::string& filename) const {
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate2(file_id, "dFlux", H5T_NATIVE_DOUBLE,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux);
   H5Aclose(att_id);
   H5Sclose(mems_id);
@@ -1302,9 +1302,9 @@ void PDFactory::writeRToHDF5(const std::string& filename) const {
 
 void PDFactory::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<unsigned int*>(&fftw_plan_style), 1, MPI_UNSIGNED,
-	   dest, pofd_mcmc::PDFSENDPLANSTYLE, comm);
+           dest, pofd_mcmc::PDFSENDPLANSTYLE, comm);
   MPI_Send(const_cast<bool*>(&has_wisdom), 1, MPI::BOOL, dest, 
-	   pofd_mcmc::PDFHASWISDOM, comm);
+           pofd_mcmc::PDFHASWISDOM, comm);
   if (has_wisdom) {
     //Send wisdom file name
     unsigned int nstr = wisdom_file.size()+1;
@@ -1315,18 +1315,18 @@ void PDFactory::sendSelf(MPI_Comm comm, int dest) const {
     delete[] cstr;
   }
   MPI_Send(const_cast<bool*>(&verbose), 1, MPI::BOOL, dest,
-	   pofd_mcmc::PDFVERBOSE, comm);
+           pofd_mcmc::PDFVERBOSE, comm);
   MPI_Send(const_cast<unsigned int*>(&ninterp), 1, MPI_UNSIGNED, dest,
-	   pofd_mcmc::PDFNINTERP, comm);
+           pofd_mcmc::PDFNINTERP, comm);
 }
 
 //Note this doesn't copy over interal variables
 void PDFactory::receiveCopy(MPI_Comm comm, int src) {
   MPI_Status Info;
   MPI_Recv(&fftw_plan_style, 1, MPI_UNSIGNED, src, 
-	   pofd_mcmc::PDFSENDPLANSTYLE, comm, &Info);
+           pofd_mcmc::PDFSENDPLANSTYLE, comm, &Info);
   MPI_Recv(&has_wisdom, 1, MPI::BOOL, src, pofd_mcmc::PDFHASWISDOM,
-	   comm, &Info);
+           comm, &Info);
   if (has_wisdom) {
     //Receive wisdom file name
     unsigned int nstr;
@@ -1340,7 +1340,7 @@ void PDFactory::receiveCopy(MPI_Comm comm, int src) {
   MPI_Recv(&verbose, 1, MPI::BOOL, src, pofd_mcmc::PDFVERBOSE, comm, &Info);
   unsigned int nnewinterp;
   MPI_Recv(&nnewinterp, 1, MPI_UNSIGNED, src, pofd_mcmc::PDFNINTERP,
-	   comm, &Info);
+           comm, &Info);
   if (nnewinterp != ninterp) {
     freeInterpPos();
     freeInterpNeg();

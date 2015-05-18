@@ -43,17 +43,17 @@ class fitsDataDouble {
   
   /*! \brief Reads data from single file*/
   bool readFile(const std::string&, long&, double*&, unsigned int&,
-		unsigned int*&, unsigned int&, bool=false);
+                unsigned int*&, unsigned int&, bool=false);
 
  public:
   fitsDataDouble(); //!< Default constructor
   fitsDataDouble(const std::string&, const std::string&, 
-		 bool ignore_mask=false, 
-		 bool meansub=false); //!< Constructor from file
+                 bool ignore_mask=false, 
+                 bool meansub=false); //!< Constructor from file
   ~fitsDataDouble();
 
   void readData(const std::string&, const std::string&, bool=false, 
-		bool=false); //!< Read data from file
+                bool=false); //!< Read data from file
 
   bool isBinned() const { return is_binned; } //!< Is data binned
   void applyBinning(unsigned int, unsigned int); //!< Takes an unbinned image and bins it
@@ -85,13 +85,13 @@ class fitsDataDouble {
     { return std::make_pair(file1, file2); }
   /*! \brief Get the data extensions */
   std::pair<unsigned int, unsigned int> getDataExt() const 
-    { return std::make_pair(dataext1, dataext2); }
+  { return std::make_pair(dataext1, dataext2); }
   /*! \brief Get whether masks were present */
   std::pair<bool, bool> hasMask() const 
     { return std::make_pair(has_mask1, has_mask2); }
   /*! \brief Get mask extensions */
   std::pair<unsigned int, unsigned int> getMaskExt() const 
-    { return std::make_pair(maskext1, maskext2); }
+  { return std::make_pair(maskext1, maskext2); }
   
   void sendSelf(MPI_Comm, int dest) const; //!< Send self
   void receiveCopy(MPI_Comm, int src); //!< Receive

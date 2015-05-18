@@ -10,6 +10,8 @@
 #include "../include/PDFactoryDouble.h"
 #include "../include/numberCountsKnotsSpline.h"
 #include "../include/numberCountsDoubleLogNormal.h"
+#include "../include/initFileKnots.h"
+#include "../include/initFileDoubleLogNormal.h"
 #include "../include/paramSet.h"
 #include "../include/affineExcept.h"
 
@@ -63,7 +65,7 @@ int getPDSingle(int argc, char **argv) {
   int option_index = 0;
   optind = 1; //Reset parse
   while ((c = getopt_long(argc,argv,optstring,long_options,
-			  &option_index)) != -1) 
+                          &option_index)) != -1) 
     switch(c) {
     case 'H' :
       histogram = true;
@@ -99,7 +101,7 @@ int getPDSingle(int argc, char **argv) {
   if (optind >= argc - 4) {
     std::cerr << "Some required arguments missing" << std::endl;
     std::cerr << " Use --help for description of inputs and options"
-	      << std::endl;
+              << std::endl;
     return 1;
   }
   modelfile  = std::string(argv[optind]);
@@ -111,7 +113,7 @@ int getPDSingle(int argc, char **argv) {
   //Input tests
   if (nflux == 0) {
     std::cerr << "Error -- number of fluxes requested is zero."
-	      << std::endl;
+              << std::endl;
     return 1;
   }
   if (ninterp == 0) {
@@ -120,7 +122,7 @@ int getPDSingle(int argc, char **argv) {
   }
   if (ninterp > nflux) {
     std::cerr << "nflux must be larger than ninterp"
-	      << std::endl;
+              << std::endl;
     return 1;
   }
   if (sigma_noise < 0.0) {
@@ -152,8 +154,8 @@ int getPDSingle(int argc, char **argv) {
 
     if (has_wisdom) {
       if (verbose)
-	std::cout << "Reading in wisdom file: " << wisdom_file 
-		  << std::endl;
+        std::cout << "Reading in wisdom file: " << wisdom_file 
+                  << std::endl;
       pfactory.addWisdom(wisdom_file);
     }
     if (verbose) pfactory.setVerbose();
@@ -162,30 +164,30 @@ int getPDSingle(int argc, char **argv) {
       printf("  Beam area:            %0.3e [deg^2]\n",bm.getEffectiveArea());
       printf("  Pixel size:           %0.1f [arcsec]\n", bm.getPixSize());
       printf("  Flux per area:        %0.3f [Jy deg^-2]\n",
-	     model.getFluxPerArea());
+             model.getFluxPerArea());
       printf("  Nknots:               %u\n",model_info.getNKnots());
       printf("  Inst Sigma:           %0.5f [Jy]\n",sigma_noise);
       printf("  Requesting R range:   %0.3f-%0.3f [Jy]\n",
-	     minflux, maxflux);
+             minflux, maxflux);
       double modelMax = model.getMaxFlux();
       printf("  Model range est:      %0.3f-%0.3f [Jy]\n", 0., modelMax);
       if (histogram) {
-	printf("  Using beam histogramming to reduce beam size\n");
-	printf("    from: %u %u to: %u %u\n", bm.getNPos(), bm.getNNeg(), 
-	       bm.getNHistPos(), bm.getNHistNeg());
+        printf("  Using beam histogramming to reduce beam size\n");
+        printf("    from: %u %u to: %u %u\n", bm.getNPos(), bm.getNNeg(), 
+               bm.getNHistPos(), bm.getNHistNeg());
       } else
-	printf("  Beam size: %u %u\n", bm.getNPos(), bm.getNNeg());
-	
+        printf("  Beam size: %u %u\n", bm.getNPos(), bm.getNNeg());
+        
       printf("  Interpolation length:  %u\n", ninterp);
       printf("  FFT size:              %u\n", nflux);
       printf("  Positions and initial values:\n");
       std::pair<double,double> pr;
       for (unsigned int i = 0; i < model_info.getNKnots(); ++i) {
-	pr = model_info.getKnot(i);
-	printf("   %11.5e  %11.5e\n",pr.first,pr.second);
+        pr = model_info.getKnot(i);
+        printf("   %11.5e  %11.5e\n",pr.first,pr.second);
       }
       if (getLog)
-	printf("  Getting Log_2 P(D)\n");
+        printf("  Getting Log_2 P(D)\n");
     }
 
     // Get P(D)
@@ -194,7 +196,7 @@ int getPDSingle(int argc, char **argv) {
     succ = pfactory.initPD(nflux, minflux, maxflux, model, bm);
     if (!succ) {
       std::cerr << "Error initializing P(D) -- parameters not valid" 
-		<< std::endl;
+                << std::endl;
       return 1;
     }    
     pfactory.getPD(sigma_noise, pd, getLog);
@@ -203,44 +205,44 @@ int getPDSingle(int argc, char **argv) {
     hdf5utils::outfiletype oft = hdf5utils::getOutputFileType(outputfile);
     if (oft == hdf5utils::HDF5 || oft == hdf5utils::UNKNOWN) {
       if (verbose) std::cout << "Writing P(D) to file " << outputfile 
-			     << " as HDF5" << std::endl;
+                             << " as HDF5" << std::endl;
       hid_t file_id, group_id;
       file_id = H5Fcreate(outputfile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
-			  H5P_DEFAULT);
+                          H5P_DEFAULT);
 
       pd.writeToHDF5Handle(file_id);
 
       group_id = H5Gcreate(file_id, "Model", H5P_DEFAULT, H5P_DEFAULT, 
-			  H5P_DEFAULT);
+                          H5P_DEFAULT);
       model.writeToHDF5Handle(group_id, true);
       H5Gclose(group_id);
 
       H5Fclose(file_id);
     } else if (oft == hdf5utils::FITS) {
       if (verbose) std::cout << "Writing P(D) to file " << outputfile 
-			     << " as FITS" << std::endl;
+                             << " as FITS" << std::endl;
       pd.writeToFits(outputfile);
     } else if (oft == hdf5utils::TXT) {
       if (verbose) std::cout << "Writing P(D) to file " << outputfile 
-			     << " as text" << std::endl;
+                             << " as text" << std::endl;
       std::ofstream ofs(outputfile.c_str());
       if (!ofs) {
-	std::cerr << "Error opening output file: " << outputfile
-		  << std::endl;
-	return 64;
+        std::cerr << "Error opening output file: " << outputfile
+                  << std::endl;
+        return 64;
       }
       ofs << pd;
       ofs.close();
     } else {
       std::cerr << "Unsupported output file type for " << outputfile
-		<< std::endl;
+                << std::endl;
       return 128;
     }
     
     // Write R as HDF5
     if (writeR) {
       if (verbose) std::cout << "Writing R to: " << rfile 
-			     << " as HDF5" << std::endl;
+                             << " as HDF5" << std::endl;
       pfactory.writeRToHDF5(rfile);
     }
 
@@ -292,7 +294,7 @@ int getPDDouble(int argc, char** argv) {
   int option_index = 0;
   optind = 1;
   while ((c = getopt_long(argc,argv,optstring,long_options,
-			  &option_index)) != -1) 
+                          &option_index)) != -1) 
     switch(c) {
     case 'H':
       histogram = true;
@@ -331,7 +333,7 @@ int getPDDouble(int argc, char** argv) {
   if (optind >= argc - 7) {
     std::cerr << "Some required arguments missing" << std::endl;
     std::cerr << " Use --help for description of inputs and options"
-	      << std::endl;
+              << std::endl;
     return 1;
   }
   modelfile  = std::string(argv[optind]);
@@ -346,7 +348,7 @@ int getPDDouble(int argc, char** argv) {
   //Input tests
   if (nflux == 0) {
     std::cerr << "Error -- number of fluxes requested is zero."
-	      << std::endl;
+              << std::endl;
     return 1;
   }
   if (sigma1 < 0.0) {
@@ -382,58 +384,58 @@ int getPDDouble(int argc, char** argv) {
 
     if (has_wisdom) {
       if (verbose)
-	std::cout << "Reading in wisdom file: " << wisdom_file 
-		  << std::endl;
+        std::cout << "Reading in wisdom file: " << wisdom_file 
+                  << std::endl;
       pfactory.addWisdom(wisdom_file);
     }
     if (verbose) pfactory.setVerbose();
 
     if (verbose) {
       printf("  Beam area, band 1:       %0.3e [deg^2]\n",
-	     bm.getEffectiveArea1());
+             bm.getEffectiveArea1());
       printf("  Beam area, band 2:       %0.3e [deg^2]\n",
-	     bm.getEffectiveArea2());
+             bm.getEffectiveArea2());
       printf("  Pixel size:              %0.1f [arcsec]\n", bm.getPixSize());
       printf("  Flux per area, band 1:   %0.3f [Jy deg^-2]\n",
-	     model.getFluxPerArea(0));
+             model.getFluxPerArea(0));
 
       printf("  Flux per area, band 2:   %0.3f [Jy deg^-2]\n",
-	     model.getFluxPerArea(1));
+             model.getFluxPerArea(1));
       printf("  Nknots:                  %u\n", model_info.getNKnots());
       printf("  Nsigma:                  %u\n", model_info.getNSigmas());
       printf("  Noffset:                 %u\n", model_info.getNOffsets());
       printf("  Inst Sigma, band 1:      %0.5f [Jy]\n", sigma1);
       printf("  Inst Sigma, band 2:      %0.5f [Jy]\n", sigma2);
       printf("  Requesting R ranges:     %0.3f-%0.3f %0.3f-%0.3f [Jy]\n",
-	     minflux1, maxflux1, minflux2, maxflux2);
+             minflux1, maxflux1, minflux2, maxflux2);
       dblpair modelMax = model.getMaxFlux();
       printf("  Model range est:         %0.3f-%0.3f %0.3f-%0.3f [Jy]\n",
-	     0., modelMax.first, 0., modelMax.second);
+             0., modelMax.first, 0., modelMax.second);
       if (histogram)
-	printf("  Using beam histogramming to reduce beam size to %u %u %u %u\n",
-	       bm.getNHist(0), bm.getNHist(1), bm.getNHist(2), bm.getNHist(3));
+        printf("  Using beam histogramming to reduce beam size to %u %u %u %u\n",
+               bm.getNHist(0), bm.getNHist(1), bm.getNHist(2), bm.getNHist(3));
       else
-	printf("  Beam size is %u %u %u %u\n",
-	       bm.getNPix(0), bm.getNPix(1), bm.getNPix(2), bm.getNPix(3));
+        printf("  Beam size is %u %u %u %u\n",
+               bm.getNPix(0), bm.getNPix(1), bm.getNPix(2), bm.getNPix(3));
       printf("  FFT size:                %u\n", nflux);
       printf("  Knot Positions and initial values:\n");
       std::pair<double,double> pr;
       for (unsigned int i = 0; i < model_info.getNKnots(); ++i) {
-	pr = model_info.getKnot(i);
-	printf("    %11.5e  %11.5e\n",pr.first,pr.second);
+        pr = model_info.getKnot(i);
+        printf("    %11.5e  %11.5e\n",pr.first,pr.second);
       }
       printf("  Sigma Positions and initial values:\n");
       for (unsigned int i = 0; i < model_info.getNSigmas(); ++i) {
-	pr = model_info.getSigma(i);
-	printf("    %11.5e  %11.5e\n",pr.first,pr.second);
+        pr = model_info.getSigma(i);
+        printf("    %11.5e  %11.5e\n",pr.first,pr.second);
       }
       printf("  Offset Positions and initial values:\n");
       for (unsigned int i = 0; i < model_info.getNOffsets(); ++i) {
-	pr = model_info.getOffset(i);
-	printf("    %11.5e  %11.5e\n",pr.first,pr.second);
+        pr = model_info.getOffset(i);
+        printf("    %11.5e  %11.5e\n",pr.first,pr.second);
       }
       if (getLog)
-	printf("  Getting Log_2 P(D)\n");
+        printf("  Getting Log_2 P(D)\n");
     }
 
     //Get P(D)
@@ -441,10 +443,10 @@ int getPDDouble(int argc, char** argv) {
 
     bool succ;
     succ = pfactory.initPD(nflux, minflux1, maxflux1, minflux2, maxflux2,
-			   model, bm, doedge);
+                           model, bm, doedge);
     if (!succ) {
       std::cerr << "Error initializing P(D) -- parameters not valid" 
-		<< std::endl;
+                << std::endl;
       return 1;
     }    
     pfactory.getPD(sigma1, sigma2, pd, getLog);
@@ -453,44 +455,44 @@ int getPDDouble(int argc, char** argv) {
     hdf5utils::outfiletype oft = hdf5utils::getOutputFileType(outputfile);
     if (oft == hdf5utils::HDF5 || oft == hdf5utils::UNKNOWN) {
       if (verbose) std::cout << "Writing P(D) to file " << outputfile 
-			     << " as HDF5" << std::endl;
+                             << " as HDF5" << std::endl;
       hid_t file_id, group_id;
       file_id = H5Fcreate(outputfile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
-			  H5P_DEFAULT);
+                          H5P_DEFAULT);
 
       pd.writeToHDF5Handle(file_id);
 
       group_id = H5Gcreate(file_id, "Model", H5P_DEFAULT, H5P_DEFAULT, 
-			  H5P_DEFAULT);
+                          H5P_DEFAULT);
       model.writeToHDF5Handle(group_id, true);
       H5Gclose(group_id);
 
       H5Fclose(file_id);
     } else if (oft == hdf5utils::FITS) {
       if (verbose) std::cout << "Writing P(D) to file " << outputfile 
-			     << " as FITS" << std::endl;
+                             << " as FITS" << std::endl;
       pd.writeToFits(outputfile);
     } else if (oft == hdf5utils::TXT) {
       if (verbose) std::cout << "Writing P(D) to file " << outputfile 
-			     << " as text" << std::endl;
+                             << " as text" << std::endl;
       std::ofstream ofs(outputfile.c_str());
       if (!ofs) {
-	std::cerr << "Error opening output file: " << outputfile
-		  << std::endl;
-	return 64;
+        std::cerr << "Error opening output file: " << outputfile
+                  << std::endl;
+        return 64;
       }
       ofs << pd;
       ofs.close();
     } else {
       std::cerr << "Unsupported output file type for " << outputfile
-		<< std::endl;
+                << std::endl;
       return 128;
     }
 
     // Write R as HDF5
     if (writeR) {
       if (verbose) std::cout << "Writing R to: " << rfile 
-			     << " as HDF5" << std::endl;
+                             << " as HDF5" << std::endl;
       pfactory.writeRToHDF5(rfile);
     }
 
@@ -522,90 +524,90 @@ int main( int argc, char** argv ) {
   int c;
   int option_index = 0;
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
-			    &option_index ) ) != -1 ) 
+                            &option_index ) ) != -1 ) 
     switch(c) {
     case 'h' :
       std::cerr << "NAME" << std::endl;
       std::cerr << "\tpofd_affine_getPD -- get the PD for a number counts "
-		<< "model. Both" << std::endl;
+                << "model. Both" << std::endl;
       std::cerr << "\t one-dimensional and two-dimensional models are "
-		<< "supported." << std::endl;
+                << "supported." << std::endl;
       std::cerr << std::endl;
       std::cerr << "SYNOPSIS" << std::endl;
       std::cerr << "\tEither" << std::endl;
       std::cerr << std::endl;
 
       std::cerr << "\t pofd_affine_getPD [options] modelfile beamfile minflux"
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t\t maxflux outputfile"
-		<< std::endl;
+                << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tfor the 1D case or" << std::endl;
       std::cerr << std::endl;
       std::cerr << "\t pofd_affine_getPD -d [options] modelfile beamfile1"
-		<< " beamfile2" << std::endl;
+                << " beamfile2" << std::endl;
       std::cerr << "\t  minflux1 maxflux1 minflux2 maxflux2 outputfile" 
-		<< std::endl;
+                << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tfor the 2D case." << std::endl;
       std::cerr << std::endl;
       std::cerr << "DESCRIPTION" << std::endl;
       std::cerr << "\tEvaluates P(D) for the model in modelfile and write it"
-		<< " to" << std::endl;
+                << " to" << std::endl;
       std::cerr << "\toutputfile.  The 1D model is a log-space spline model for"
-		<< " the" << std::endl;
+                << " the" << std::endl;
       std::cerr << "\tnumber counts, and the 2D model is the 1D spline model" 
-		<< " times" << std::endl;
+                << " times" << std::endl;
       std::cerr << "\ta log-normal color function for the second band, with the"
-		<< std::endl;
+                << std::endl;
       std::cerr << "\tlog-space variance and mean color stored as splines in"
-		<< " the flux" << std::endl;
+                << " the flux" << std::endl;
       std::cerr << "\tof the first band." << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tmodelfile is a text file specifying the model; the exact"
-		<< " details" << std::endl;
+                << " details" << std::endl;
       std::cerr << "\t(given below) depend on whether the 1D or 2D case is"
-		<< " being used." << std::endl;
+                << " being used." << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tFor the 1D case, modelfile is a text file giving the "
-		<< "positions" << std::endl;
+                << "positions" << std::endl;
       std::cerr << "\tof the spline knots and their values in the format"
-		<< " knotflux value." << std::endl;
+                << " knotflux value." << std::endl;
       std::cerr << "\tAdditional elements on each line are ignored."
-		<< std::endl;
+                << std::endl;
       std::cerr << "\tFor the 2D case, modelfile is a text file giving the "
-		<< "positions" << std::endl;
+                << "positions" << std::endl;
       std::cerr << "\tof the knot points and their values, followed by the "
-		<< "sigma" << std::endl;
+                << "sigma" << std::endl;
       std::cerr << "\tknot positions and their values, then likewise for the "
-		<< "colour" << std::endl;
+                << "colour" << std::endl;
       std::cerr << "\toffset.  The format is three numbers on the first line, "
-		<< "giving" << std::endl;
+                << "giving" << std::endl;
       std::cerr << "\tthe number of number count knots, sigma knots, and "
-		<< "offset knots," << std::endl;
+                << "offset knots," << std::endl;
       std::cerr << "\tfollowed by a number of lines again with the format"
-		<< std::endl;
+                << std::endl;
       std::cerr << "\tknotpos value.  The sigmas and offsets are in log space."
-		<< std::endl;
+                << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tThe format of outputfile is controlled by the file"
-		<< " extension," << std::endl;
+                << " extension," << std::endl;
       std::cerr << "\twith HDF5, FITS and text supported.  The default is "
-		<< "HDF5." << std::endl;
+                << "HDF5." << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tbeamfile gives the name of a FITS file containing the "
-		<< "beam" << std::endl;
+                << "beam" << std::endl;
       std::cerr << "\tin the 1D case, and beamfile1, beamfile2 give the beam "
-		<< "in each" << std::endl;
+                << "in each" << std::endl;
       std::cerr << "\tof the two bands in the 2D case." << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tIn both cases the output PD is written to outputfile "
-		<< "either as" << std::endl;
+                << "either as" << std::endl;
       std::cerr << "\ttext, FITS, or HDF5 depending on the options." 
-		<< std::endl;
+                << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tThe minimum and maximum ranges of R (not the output P(D))"
-		<< " are" << std::endl;
+                << " are" << std::endl;
       std::cerr << "\tspecified by minflux/maxflux." << std::endl;
       std::cerr << std::endl;
       std::cerr << "OPTIONS" << std::endl;
@@ -617,47 +619,47 @@ int main( int argc, char** argv ) {
       std::cerr << "\t\tReturn log2 P(D) rather than P(D)." << std::endl;
       std::cerr << "\t--nbins VALUE" << std::endl;
       std::cerr << "\t\tNumber of bins to use in beam histogram (if "
-		<< "histogramming" << std::endl;
+                << "histogramming" << std::endl;
       std::cerr << "\t\tis being used.  (def: 120 for 1D, 150 for 2D)."
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t-n, --nflux VALUE" << std::endl;
       std::cerr << "\t\tThe number of requested fluxes, also the FFT length." 
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t\tBest if a power of 2. For the 2D model, this is the"
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t\tsize along each dimension. (def: 262144 for 1D, 2048"
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t\tfor 2D)." << std::endl;
       std::cerr << "\t-r, --rfile FILENAME" << std::endl;
       std::cerr << "\t\tWrite R as an HDF5 file to this filename."
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t-v, --verbose" << std::endl;
       std::cerr << "\t\tPrint informational messages while running."
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t-V, --version" << std::endl;
       std::cerr << "\t\tOutput the version number and exit." << std::endl;
       std::cerr << "\t-w, --wisdom wisdomfile" << std::endl;
       std::cerr << "\t\tName of FFTW wisdom file (prepared with fftw-wisdom)." 
-		<< std::endl;
+                << std::endl;
       std::cerr << std::endl;
       std::cerr << "ONE-D ONLY OPTIONS" << std::endl;
       std::cerr << "\t-N, --ninterp value" << std::endl;
       std::cerr << "\t\tLength of interpolation vector used in computing R"
-		<< " (def: 2048)." << std::endl;
+                << " (def: 2048)." << std::endl;
       std::cerr << "\t-s, --sigma noise" << std::endl;
       std::cerr << "\t\tThe assumed per-pixel noise (assumed Gaussian, "
-		<< "def: 0)." << std::endl;
+                << "def: 0)." << std::endl;
       std::cerr << "TWO-D ONLY OPTIONS" << std::endl;
       std::cerr << "\t--nedge value" << std::endl;
       std::cerr << "\t\tNumber of bins in edge integrals for R."
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t--sigma1 noise" << std::endl;
       std::cerr << "\t\tThe assumed per-pixel noise, band 1 (assumed Gaussian,"
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t\tdef: 0)." << std::endl;
       std::cerr << "\t--sigma2 noise" << std::endl;
       std::cerr << "\t\tThe assumed per-pixel noise, band 2 (assumed Gaussian,"
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t\tdef: 0)." << std::endl;
       return 0;
       break;
@@ -666,7 +668,7 @@ int main( int argc, char** argv ) {
       break;
     case 'V' :
       std::cerr << "pofd_mcmc version number: " << pofd_mcmc::version 
-		<< std::endl;
+                << std::endl;
       return 0;
       break;
     }

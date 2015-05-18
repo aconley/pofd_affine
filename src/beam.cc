@@ -36,10 +36,10 @@ beam::beam() {
   \param[in] histogram  Do beam histogramming
   \param[in] NBINS Number of histogram bins, if histogramming is applied
   \param[in] MINVAL Only beam components with an absoute value larger than
-                    this are kept.
+  this are kept.
 */
 beam::beam(const std::string& filename, bool histogram, 
-	   unsigned int NBINS, double MINVAL) {
+           unsigned int NBINS, double MINVAL) {
   nneg = npos = 0; 
   totneg = totpos = 0; 
   totnegsq = totpossq = 0.0;
@@ -91,10 +91,10 @@ beam::beam(const beam& inp) {
     if (is_pos_histogrammed) {
       posweights = new double[posnbins];
       for (unsigned int i = 0; i < posnbins; ++i)
-	posweights[i] = inp.posweights[i];
+        posweights[i] = inp.posweights[i];
       poshistval = new double[posnbins];
       for (unsigned int i = 0; i < posnbins; ++i)
-	poshistval[i] = inp.poshistval[i];
+        poshistval[i] = inp.poshistval[i];
     }
   }
   if (hasneg) {
@@ -106,10 +106,10 @@ beam::beam(const beam& inp) {
     if (is_neg_histogrammed) {
       negweights = new double[negnbins];
       for (unsigned int i = 0; i < negnbins; ++i)
-	negweights[i] = inp.negweights[i];
+        negweights[i] = inp.negweights[i];
       neghistval = new double[negnbins];
       for (unsigned int i = 0; i < negnbins; ++i)
-	neghistval[i] = inp.neghistval[i];
+        neghistval[i] = inp.neghistval[i];
     }
   }
 }
@@ -144,10 +144,10 @@ beam& beam::operator=(const beam& other) {
     if (is_pos_histogrammed) {
       posweights = new double[posnbins];
       for (unsigned int i = 0; i < posnbins; ++i) 
-	posweights[i]=other.posweights[i];
+        posweights[i]=other.posweights[i];
       poshistval = new double[posnbins];
       for (unsigned int i = 0; i < posnbins; ++i) 
-	poshistval[i]=other.poshistval[i];
+        poshistval[i]=other.poshistval[i];
     }
   }
   if (hasneg) {
@@ -159,10 +159,10 @@ beam& beam::operator=(const beam& other) {
     if (is_neg_histogrammed) {
       negweights = new double[negnbins];
       for (unsigned int i = 0; i < negnbins; ++i) 
-	negweights[i]=other.negweights[i];
+        negweights[i]=other.negweights[i];
       neghistval = new double[negnbins];
       for (unsigned int i = 0; i < negnbins; ++i) 
-	neghistval[i]=other.neghistval[i];
+        neghistval[i]=other.neghistval[i];
     }
   }
 
@@ -246,19 +246,19 @@ void beam::readFile(const std::string& filename, double MINVAL) {
 
   //Get the pixel scale
   fits_read_key(fptr, TDOUBLE, const_cast<char*>("PIXSIZE"),
-		&pixsize,card, &status);
+                &pixsize,card, &status);
   if (status) {
     //Try pixscale
     status=0;
     fits_read_key(fptr, TDOUBLE, const_cast<char*>("PIXSCALE"),
-		  &pixsize, card, &status);
+                  &pixsize, card, &status);
     if (status) {
       //Ok, give up
       fits_report_error(stderr, status);
       fits_close_file(fptr, &status);
       std::stringstream errstr;
       errstr << "Unable to find pixel scale information in "
-	     << filename;
+             << filename;
       throw affineExcept("beam", "readFile", errstr.str());
     }
   }
@@ -280,7 +280,7 @@ void beam::readFile(const std::string& filename, double MINVAL) {
   for (unsigned int i = 1; i <= static_cast<unsigned int>(naxes[1]); ++i) {
     fpixel[1] = i;
     if (fits_read_pix(fptr, TDOUBLE, fpixel, naxes[0], 0, 
-		      pixarr + naxes[0]*(i-1), 0, &status)) 
+                      pixarr + naxes[0]*(i-1), 0, &status)) 
       break;   /* jump out of loop on error */
   }
 
@@ -376,7 +376,7 @@ void beam::readFile(const std::string& filename, double MINVAL) {
 void beam::makeHistogram(unsigned int NBINS) {
   if (NBINS == 0)
     throw affineExcept("beam", "makeHistogram",
-		       "Invalid (non-positive) nbins");
+                       "Invalid (non-positive) nbins");
   nbins = NBINS;
 
   // Clean up hist values
@@ -422,9 +422,9 @@ void beam::makeHistogram(unsigned int NBINS) {
     poshistval = new double[posnbins];
     for (unsigned int i = 0; i < nbins; ++i)
       if (tmp_wt[i] > 0) {
-	posweights[idx] = static_cast<double>(tmp_wt[i]);
-	poshistval[idx] = tmp_val[i] / posweights[idx];
-	++idx;
+        posweights[idx] = static_cast<double>(tmp_wt[i]);
+        poshistval[idx] = tmp_val[i] / posweights[idx];
+        ++idx;
       }
     for (unsigned int i = 0; i < posnbins; ++i)
       poshistval[i] = 1.0 / poshistval[i];
@@ -451,9 +451,9 @@ void beam::makeHistogram(unsigned int NBINS) {
     neghistval = new double[negnbins];
     for (unsigned int i = 0; i < nbins; ++i)
       if (tmp_wt[i] > 0) {
-	negweights[idx] = static_cast<double>(tmp_wt[i]);
-	neghistval[idx] = tmp_val[i] / negweights[idx];
-	++idx;
+        negweights[idx] = static_cast<double>(tmp_wt[i]);
+        neghistval[idx] = tmp_val[i] / negweights[idx];
+        ++idx;
       }
     for (unsigned int i = 0; i < negnbins; ++i)
       neghistval[i] = 1.0 / neghistval[i];
@@ -470,7 +470,7 @@ void beam::makeHistogram(unsigned int NBINS) {
 dblpair beam::getMinMaxPos() const {
   if (!haspos) 
     return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
-			  std::numeric_limits<double>::quiet_NaN());
+                          std::numeric_limits<double>::quiet_NaN());
   return std::make_pair(pospixarr[0], pospixarr[npos-1]);
 }
 
@@ -480,7 +480,7 @@ dblpair beam::getMinMaxPos() const {
 dblpair beam::getMinMaxNeg() const {
   if (!hasneg) 
     return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
-			  std::numeric_limits<double>::quiet_NaN());
+                          std::numeric_limits<double>::quiet_NaN());
   return std::make_pair(negpixarr[0], negpixarr[nneg-1]);
 }
 
@@ -579,57 +579,57 @@ double beam::getEffectiveAreaSq() const {
 */
 void beam::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<double*>(&pixsize), 1, MPI_DOUBLE, dest,
-	   pofd_mcmc::BEAMSENDPIXSIZE, comm);
+           pofd_mcmc::BEAMSENDPIXSIZE, comm);
   MPI_Send(const_cast<double*>(&minval), 1, MPI_DOUBLE, dest,
-	   pofd_mcmc::BEAMSENDMINVAL, comm);
+           pofd_mcmc::BEAMSENDMINVAL, comm);
   MPI_Send(const_cast<unsigned int*>(&nbins), 1, MPI_UNSIGNED, dest,
-	   pofd_mcmc::BEAMSENDNBINS, comm);
+           pofd_mcmc::BEAMSENDNBINS, comm);
 
   // Pos beam
   MPI_Send(const_cast<unsigned int*>(&npos), 1, MPI_UNSIGNED, dest,
-	   pofd_mcmc::BEAMSENDNPOS, comm);
+           pofd_mcmc::BEAMSENDNPOS, comm);
   if (npos > 0) {
     MPI_Send(pospixarr, npos, MPI_DOUBLE, dest, 
-	     pofd_mcmc::BEAMSENDPOSPIXARR, comm);
+             pofd_mcmc::BEAMSENDPOSPIXARR, comm);
     MPI_Send(posinvpixarr, npos, MPI_DOUBLE, dest,
-	     pofd_mcmc::BEAMSENDINVPOSPIXARR, comm);
+             pofd_mcmc::BEAMSENDINVPOSPIXARR, comm);
     MPI_Send(const_cast<double*>(&totpos), 1, MPI_DOUBLE, dest,
-	     pofd_mcmc::BEAMSENDTOTPOS, comm);
+             pofd_mcmc::BEAMSENDTOTPOS, comm);
     MPI_Send(const_cast<double*>(&totpossq), 1, MPI_DOUBLE, dest,
-	     pofd_mcmc::BEAMSENDTOTSQPOS, comm);
+             pofd_mcmc::BEAMSENDTOTSQPOS, comm);
     MPI_Send(const_cast<bool*>(&is_pos_histogrammed), 1, MPI::BOOL, dest,
-	     pofd_mcmc::BEAMSENDISPOSHIST, comm);
+             pofd_mcmc::BEAMSENDISPOSHIST, comm);
     if (is_pos_histogrammed) {
       MPI_Send(const_cast<unsigned int*>(&posnbins), 1, MPI_UNSIGNED, dest,
-	       pofd_mcmc::BEAMSENDPOSNBINS, comm);
+               pofd_mcmc::BEAMSENDPOSNBINS, comm);
       MPI_Send(posweights, posnbins, MPI_DOUBLE, dest,
-	       pofd_mcmc::BEAMSENDPOSWEIGHTS, comm);
+               pofd_mcmc::BEAMSENDPOSWEIGHTS, comm);
       MPI_Send(poshistval, posnbins, MPI_DOUBLE, dest,
-	       pofd_mcmc::BEAMSENDPOSHISTVAL, comm);
+               pofd_mcmc::BEAMSENDPOSHISTVAL, comm);
     }
   }
 
   // Neg beam
   MPI_Send(const_cast<unsigned int*>(&nneg), 1, MPI_UNSIGNED, dest,
-	   pofd_mcmc::BEAMSENDNNEG, comm);
+           pofd_mcmc::BEAMSENDNNEG, comm);
   if (nneg > 0) {
     MPI_Send(negpixarr, nneg, MPI_DOUBLE, dest, 
-	     pofd_mcmc::BEAMSENDNEGPIXARR, comm);
+             pofd_mcmc::BEAMSENDNEGPIXARR, comm);
     MPI_Send(neginvpixarr, nneg, MPI_DOUBLE, dest,
-	     pofd_mcmc::BEAMSENDINVNEGPIXARR, comm);
+             pofd_mcmc::BEAMSENDINVNEGPIXARR, comm);
     MPI_Send(const_cast<double*>(&totneg), 1, MPI_DOUBLE, dest,
-	     pofd_mcmc::BEAMSENDTOTNEG, comm);
+             pofd_mcmc::BEAMSENDTOTNEG, comm);
     MPI_Send(const_cast<double*>(&totnegsq), 1, MPI_DOUBLE, dest,
-	     pofd_mcmc::BEAMSENDTOTSQNEG, comm);
+             pofd_mcmc::BEAMSENDTOTSQNEG, comm);
     MPI_Send(const_cast<bool*>(&is_neg_histogrammed), 1, MPI::BOOL, dest,
-	     pofd_mcmc::BEAMSENDISNEGHIST, comm);
+             pofd_mcmc::BEAMSENDISNEGHIST, comm);
     if (is_neg_histogrammed) {
       MPI_Send(const_cast<unsigned int*>(&negnbins), 1, MPI_UNSIGNED, dest,
-	       pofd_mcmc::BEAMSENDNEGNBINS, comm);
+               pofd_mcmc::BEAMSENDNEGNBINS, comm);
       MPI_Send(negweights, negnbins, MPI_DOUBLE, dest,
-	       pofd_mcmc::BEAMSENDNEGWEIGHTS, comm);
+               pofd_mcmc::BEAMSENDNEGWEIGHTS, comm);
       MPI_Send(neghistval, negnbins, MPI_DOUBLE, dest,
-	       pofd_mcmc::BEAMSENDNEGHISTVAL, comm);
+               pofd_mcmc::BEAMSENDNEGHISTVAL, comm);
     }
   }
 }
@@ -643,36 +643,36 @@ void beam::receiveCopy(MPI_Comm comm, int src) {
   cleanup(); // Just easier to clear it all
 
   MPI_Recv(&pixsize, 1, MPI_DOUBLE, src, pofd_mcmc::BEAMSENDPIXSIZE,
-	   comm, &Info);
+           comm, &Info);
   MPI_Recv(&minval, 1, MPI_DOUBLE, src, pofd_mcmc::BEAMSENDMINVAL, comm, &Info);
   MPI_Recv(&nbins, 1, MPI_UNSIGNED, src, pofd_mcmc::BEAMSENDNBINS, comm, &Info);
 
   //Pos side
   MPI_Recv(&npos, 1, MPI_UNSIGNED, src, pofd_mcmc::BEAMSENDNPOS,
-	   comm, &Info);
+           comm, &Info);
   if (npos > 0) {
     pospixarr = new double[npos];
     posinvpixarr = new double[npos];
     MPI_Recv(pospixarr, npos, MPI_DOUBLE, src, pofd_mcmc::BEAMSENDPOSPIXARR,
-	     comm, &Info);
+             comm, &Info);
     MPI_Recv(posinvpixarr, npos, MPI_DOUBLE, src,
-	     pofd_mcmc::BEAMSENDINVPOSPIXARR, comm, &Info);
+             pofd_mcmc::BEAMSENDINVPOSPIXARR, comm, &Info);
     MPI_Recv(&totpos, 1, MPI_DOUBLE, src, pofd_mcmc::BEAMSENDTOTPOS,
-	     comm, &Info);
+             comm, &Info);
     MPI_Recv(&totpossq, 1, MPI_DOUBLE, src, pofd_mcmc::BEAMSENDTOTSQPOS,
-	     comm, &Info);
+             comm, &Info);
     MPI_Recv(&is_pos_histogrammed, 1, MPI::BOOL, src,
-	     pofd_mcmc::BEAMSENDISPOSHIST, comm, &Info);
+             pofd_mcmc::BEAMSENDISPOSHIST, comm, &Info);
     if (is_pos_histogrammed) {
       MPI_Recv(&posnbins, 1, MPI_UNSIGNED, src,
-	       pofd_mcmc::BEAMSENDPOSNBINS, comm, &Info);
+               pofd_mcmc::BEAMSENDPOSNBINS, comm, &Info);
       if (posnbins > 0) {
-	posweights = new double[posnbins];
-	MPI_Recv(posweights, posnbins, MPI_DOUBLE, src,
-		 pofd_mcmc::BEAMSENDPOSWEIGHTS, comm, &Info);
-	poshistval = new double[posnbins];
-	MPI_Recv(poshistval, posnbins, MPI_DOUBLE, src,
-		 pofd_mcmc::BEAMSENDPOSHISTVAL, comm, &Info);
+        posweights = new double[posnbins];
+        MPI_Recv(posweights, posnbins, MPI_DOUBLE, src,
+                 pofd_mcmc::BEAMSENDPOSWEIGHTS, comm, &Info);
+        poshistval = new double[posnbins];
+        MPI_Recv(poshistval, posnbins, MPI_DOUBLE, src,
+                 pofd_mcmc::BEAMSENDPOSHISTVAL, comm, &Info);
       }
     }
     haspos = true;
@@ -680,33 +680,32 @@ void beam::receiveCopy(MPI_Comm comm, int src) {
 
   //Neg side
   MPI_Recv(&nneg, 1, MPI_UNSIGNED, src, pofd_mcmc::BEAMSENDNNEG,
-	   comm, &Info);
+           comm, &Info);
   if (nneg > 0) {
     negpixarr = new double[nneg];
     neginvpixarr = new double[nneg];
     MPI_Recv(negpixarr, nneg, MPI_DOUBLE, src, pofd_mcmc::BEAMSENDNEGPIXARR,
-	     comm, &Info);
+             comm, &Info);
     MPI_Recv(neginvpixarr, nneg, MPI_DOUBLE, src,
-	     pofd_mcmc::BEAMSENDINVNEGPIXARR, comm, &Info);
+             pofd_mcmc::BEAMSENDINVNEGPIXARR, comm, &Info);
     MPI_Recv(&totneg, 1, MPI_DOUBLE, src, pofd_mcmc::BEAMSENDTOTNEG,
-	     comm, &Info);
+             comm, &Info);
     MPI_Recv(&totnegsq, 1, MPI_DOUBLE, src, pofd_mcmc::BEAMSENDTOTSQNEG,
-	     comm, &Info);
+             comm, &Info);
     MPI_Recv(&is_neg_histogrammed, 1, MPI::BOOL, src,
-	     pofd_mcmc::BEAMSENDISNEGHIST, comm, &Info);
+             pofd_mcmc::BEAMSENDISNEGHIST, comm, &Info);
     if (is_neg_histogrammed) {
       MPI_Recv(&negnbins, 1, MPI_UNSIGNED, src,
-	       pofd_mcmc::BEAMSENDNEGNBINS, comm, &Info);
+               pofd_mcmc::BEAMSENDNEGNBINS, comm, &Info);
       if (negnbins > 0) {
-	negweights = new double[negnbins];
-	MPI_Recv(negweights, negnbins, MPI_DOUBLE, src,
-		 pofd_mcmc::BEAMSENDNEGWEIGHTS, comm, &Info);
-	neghistval = new double[negnbins];
-	MPI_Recv(neghistval, negnbins, MPI_DOUBLE, src,
-		 pofd_mcmc::BEAMSENDNEGHISTVAL, comm, &Info);
+        negweights = new double[negnbins];
+        MPI_Recv(negweights, negnbins, MPI_DOUBLE, src,
+                 pofd_mcmc::BEAMSENDNEGWEIGHTS, comm, &Info);
+        neghistval = new double[negnbins];
+        MPI_Recv(neghistval, negnbins, MPI_DOUBLE, src,
+                 pofd_mcmc::BEAMSENDNEGHISTVAL, comm, &Info);
       }
     }
     hasneg = true;
   } else hasneg = false;
 }
-

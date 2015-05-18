@@ -15,79 +15,79 @@
   The format is: identifier= values\n
   The appropriate entries for values depends upon identifier=\n
   Where values is bool the option is turned on if value is either
-    true or yes, and is not activated for any other value.\n
+  true or yes, and is not activated for any other value.\n
 
 
   The valid values for identifier= and their associated values are:\n\n
 
   -dataset=     datafile inst_sigma psffile [like_norm]\n
-                  datafile is the name of a fits data file
-		  inst_sigma is the instrumental noise (Gaussian) in the same
-		   units as the data in datafile (e.g., Jy)
-		  psffile is a FITS file giving the beam
-		  like_norm is an optional input controlling how the
-		   likelihood is normalized for the beam area.  The likelihood
-		   is divided by this number (def: 1.0).\n
+  datafile is the name of a fits data file
+  inst_sigma is the instrumental noise (Gaussian) in the same
+  units as the data in datafile (e.g., Jy)
+  psffile is a FITS file giving the beam
+  like_norm is an optional input controlling how the
+  likelihood is normalized for the beam area.  The likelihood
+  is divided by this number (def: 1.0).\n
   -bin_data=    nbins (int)\n
-                  Turns on binning of data files with specified number 
-                  of bins\n
+  Turns on binning of data files with specified number 
+  of bins\n
   -mean_sub=    bool\n
-                  Do mean subtraction on input data if value is true\n
+  Do mean subtraction on input data if value is true\n
   -ignore_mask= bool\n
-                  Ignore mask information in input files\n
+  Ignore mask information in input files\n
   -fftsize=     nfft (int)\n
-                  Sets fft transform length (def: 131072)\n
+  Sets fft transform length (def: 131072)\n
   -ninterp=     value (int)\n
-                  Number of R interpolation points (def: 2048)\n
+  Number of R interpolation points (def: 2048)\n
   -minbeamval=  value (float)\n
-                  Minimum beam value used.  Everything with an absolute
-		  value <= than this is ignored.  This can be zero if you
-		  are not histogramming, but with histogramming a non-zero
-		  value is advisable.  You should look at your
-		  beam to decide a reasonable cutoff (def: 1e-5)\n
+  Minimum beam value used.  Everything with an absolute
+  value <= than this is ignored.  This can be zero if you
+  are not histogramming, but with histogramming a non-zero
+  value is advisable.  You should look at your
+  beam to decide a reasonable cutoff (def: 1e-5)\n
   -beam_histogram= bool\n
-                  Activates beam histogramming.  On by default.\n
+  Activates beam histogramming.  On by default.\n
   -nbeamhist= value (int)\n
-                  If beam histogramming, number of bins in histogram 
-                   (def: 120)\n
+  If beam histogramming, number of bins in histogram 
+  (def: 120)\n
   -fit_sigma=   bool\n
-                  If value is true, this turns on fitting for sigma
+  If value is true, this turns on fitting for sigma
   -sigmaprior=  stdev (float)\n
-                  This activates the Gaussian prior on the instrumental noise
-		  multiplier.  It has mean one and standard deviation stdev.
-                  Setting this will automatically turn on sigma fitting.\n
+  This activates the Gaussian prior on the instrumental noise
+  multiplier.  It has mean one and standard deviation stdev.
+  Setting this will automatically turn on sigma fitting.\n
   -exp_conf=    value (float)\n
-                  Sets the expected confusion noise value in Jy; used to
-		  set the expected likelihood values.\n
+  Sets the expected confusion noise value in Jy; used to
+  set the expected likelihood values.\n
   -cfirbprior=  mean stdev (floats)\n
-                  This activates a Gaussian prior on the integrated CFIRB 
-		  luminoisty. It has a mean of mean and a standard deviation 
-		  stdev expressed in the same flux and area units as the model.
-		  So if your model dN/dS is in Jy^-1 deg^-2,
-		  then your CFIRB prior should be in Jy deg^-2\n
+  This activates a Gaussian prior on the integrated CFIRB 
+  luminoisty. It has a mean of mean and a standard deviation 
+  stdev expressed in the same flux and area units as the model.
+  So if your model dN/dS is in Jy^-1 deg^-2,
+  then your CFIRB prior should be in Jy deg^-2\n
   -poissonprior=  mean stdev (floats)\n
-                  This activates a Gaussian prior on the Poisson noise.
-		  It has a mean of mean and a standard deviation 
-		  stdev expressed in the same flux and area units as the model.
-		  So if your model dN/dS is in Jy^-1 deg^-2,
-		  then your Poisson prior should be in Jy^2 deg^-2\n
+  This activates a Gaussian prior on the Poisson noise.
+  It has a mean of mean and a standard deviation 
+  stdev expressed in the same flux and area units as the model.
+  So if your model dN/dS is in Jy^-1 deg^-2,
+  then your Poisson prior should be in Jy^2 deg^-2\n
   -regularize_alpha= alpha (float)\n
-                  Sets regularization multiplier for difference operator
-		  penalty in log likelihood (def: 0).\n
+  Sets regularization multiplier for difference operator
+  penalty in log likelihood (def: 0).\n
   -wisdom_file= filename (string)\n
-                  Uses filename as a FFTW wisdom file\n
+  Uses filename as a FFTW wisdom file\n
   -verbose=     bool\n
-                  Turns on verbose mode (verbosity = 1)\n
+  Turns on verbose mode (verbosity = 1)\n
   -ultraverbose= bool\n
-                  Turns on ultraverbose mode (verbosity = 2)\n
+  Turns on ultraverbose mode (verbosity = 2)\n
   -verbosity=   value (int)\n
-                  Sets verbosity to this level.\n
+  Sets verbosity to this level.\n
   -seed=        value (int)\n
-                  Sets random number generator seed\n
+  Sets random number generator seed\n
 
   Having multiple lines with dataset= is additive.
   Having multiple lines with any of the others results in only
-   the value(s) from the final such line being used.
+  the value(s) from the final such line being used.
 
 */
 struct specFile {

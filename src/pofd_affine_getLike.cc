@@ -26,7 +26,7 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
     unsigned int nknots = model_info.getNKnots();
     if (nknots == 0)
       throw affineExcept("pofd_affine_getLike", "getLikeSingle",
-			 "No info read in");
+                         "No info read in");
 
     paramSet pars(nknots + 1);
     model_info.getParams(pars);
@@ -35,18 +35,18 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
     //Make sure we got some data
     if (spec_info.datafiles.size() == 0) 
       throw affineExcept("pofd_affine_getLike", "getLikeSingle",
-			 "No datafiles loaded");
+                         "No datafiles loaded");
 
     calcLike likeSet(spec_info.fftsize, spec_info.ninterp, 
-		     spec_info.bin_data, spec_info.nbins);
+                     spec_info.bin_data, spec_info.nbins);
 
     // Set priors
     if (spec_info.has_cfirbprior)
       likeSet.setCFIRBPrior(spec_info.cfirbprior_mean,
-			    spec_info.cfirbprior_stdev);
+                            spec_info.cfirbprior_stdev);
     if (spec_info.has_poissonprior)
       likeSet.setPoissonPrior(spec_info.poissonprior_mean,
-			      spec_info.poissonprior_stdev);
+                              spec_info.poissonprior_stdev);
     if (spec_info.fit_sigma && spec_info.has_sigprior)
       likeSet.setSigmaPrior(spec_info.sigprior_stdev);
     
@@ -58,10 +58,10 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
     if (spec_info.verbosity >= 2)
       std::cout << "Reading in data files" << std::endl;
     likeSet.readDataFromFiles(spec_info.datafiles, spec_info.psffiles, 
-			      spec_info.sigmas, spec_info.like_norm,
-			      spec_info.ignore_mask, spec_info.mean_sub, 
-			      spec_info.minbeamval, spec_info.beam_histogram, 
-			      spec_info.nbeamhist, spec_info.exp_conf);
+                              spec_info.sigmas, spec_info.like_norm,
+                              spec_info.ignore_mask, spec_info.mean_sub, 
+                              spec_info.minbeamval, spec_info.beam_histogram, 
+                              spec_info.nbeamhist, spec_info.exp_conf);
     
     if (spec_info.has_wisdom_file) likeSet.addWisdom(spec_info.wisdom_file);
     if (spec_info.verbosity >= 2) likeSet.setVerbose();
@@ -70,15 +70,15 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
       printf("  FFTsize:       %u\n", spec_info.fftsize);
       printf("  Nknots:        %u\n", model_info.getNKnots());
       if (spec_info.beam_histogram)
-	printf("  Using histogramming to reduce beam size\n");  
+        printf("  Using histogramming to reduce beam size\n");  
       if (spec_info.bin_data)
-	printf("  Using histogramming to reduce data size to: %u\n",
-	       spec_info.nbins);  
+        printf("  Using histogramming to reduce data size to: %u\n",
+               spec_info.nbins);  
       printf("  Positions and initial values:\n");
       std::pair<double,double> pr;
       for (unsigned int i = 0; i < nknots; ++i) {
-	pr = model_info.getKnot(i);
-	printf("   %11.5e  %11.5e\n",pr.first,pr.second);
+        pr = model_info.getKnot(i);
+        printf("   %11.5e  %11.5e\n",pr.first,pr.second);
       }
     }
   
@@ -93,7 +93,7 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
     }
 
     std::cout << "log Likelihoood is: "
-	      << std::setprecision(7) << LogLike << std::endl;
+              << std::setprecision(7) << LogLike << std::endl;
   } catch (const affineExcept& ex) {
     std::cerr << ex << std::endl;
     return 4;
@@ -120,7 +120,7 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
     unsigned int ntot = model_info.getNTot();
     if (ntot == 0)
       throw affineExcept("pofd_affine_getLike", "getLikeDouble",
-			 "No info read in");
+                         "No info read in");
 
     // Number of params is number of knots (ntot)
     // + 2 for the sigmas in each band -- although some may be fixed
@@ -134,25 +134,25 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
     //Make sure we got some data
     if (spec_info.datafiles1.size() == 0) 
       throw affineExcept("pofd_affine_getLike", "getLikeDouble",
-			 "No datafiles loaded");
+                         "No datafiles loaded");
     
     calcLikeDouble likeSet(spec_info.fftsize, spec_info.nedge, 
-			   spec_info.edge_set, spec_info.bin_data, 
-			   spec_info.nbins);
+                           spec_info.edge_set, spec_info.bin_data, 
+                           spec_info.nbins);
 
     //Set priors 
     if (spec_info.has_cfirbprior1)
       likeSet.setCFIRBPrior1(spec_info.cfirbprior_mean1,
-			     spec_info.cfirbprior_stdev1);
+                             spec_info.cfirbprior_stdev1);
     if (spec_info.has_cfirbprior2)
       likeSet.setCFIRBPrior2(spec_info.cfirbprior_mean2,
-			     spec_info.cfirbprior_stdev2);
+                             spec_info.cfirbprior_stdev2);
     if (spec_info.has_poissonprior1)
       likeSet.setPoissonPrior1(spec_info.poissonprior_mean1,
-			       spec_info.poissonprior_stdev1);
+                               spec_info.poissonprior_stdev1);
     if (spec_info.has_poissonprior2)
       likeSet.setPoissonPrior2(spec_info.poissonprior_mean2,
-			       spec_info.poissonprior_stdev2);
+                               spec_info.poissonprior_stdev2);
     if (spec_info.fit_sigma1 && spec_info.has_sigprior1)
       likeSet.setSigmaPrior1(spec_info.sigprior_stdev1);
     if (spec_info.fit_sigma2 && spec_info.has_sigprior2)
@@ -163,12 +163,12 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
 
     //Read data
     likeSet.readDataFromFiles(spec_info.datafiles1, spec_info.datafiles2, 
-			      spec_info.psffiles1, spec_info.psffiles2,
-			      spec_info.sigmas1, spec_info.sigmas2, 
-			      spec_info.like_norm, spec_info.ignore_mask, 
-			      spec_info.mean_sub, spec_info.minbeamval,
-			      spec_info.beam_histogram, spec_info.nbeamhist,
-			      spec_info.exp_conf1, spec_info.exp_conf2);
+                              spec_info.psffiles1, spec_info.psffiles2,
+                              spec_info.sigmas1, spec_info.sigmas2, 
+                              spec_info.like_norm, spec_info.ignore_mask, 
+                              spec_info.mean_sub, spec_info.minbeamval,
+                              spec_info.beam_histogram, spec_info.nbeamhist,
+                              spec_info.exp_conf1, spec_info.exp_conf2);
 
     if (spec_info.has_wisdom_file) likeSet.addWisdom(spec_info.wisdom_file);
     if (spec_info.verbosity >= 2) likeSet.setVerbose();
@@ -176,25 +176,25 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
     if (spec_info.verbosity >= 1) {
       printf("  FFTsize:       %u\n", spec_info.fftsize);
       if (spec_info.beam_histogram)
-	printf("  Using histogramming to reduce beam size\n");  
+        printf("  Using histogramming to reduce beam size\n");  
       if (spec_info.bin_data)
-	printf("  Using histogramming to reduce data size to: %u by %u\n",
-	       spec_info.nbins, spec_info.nbins);  
+        printf("  Using histogramming to reduce data size to: %u by %u\n",
+               spec_info.nbins, spec_info.nbins);  
       printf("  Knot Positions and initial values:\n");
       std::pair<double,double> pr;
       for (unsigned int i = 0; i < model_info.getNKnots(); ++i) {
-	pr = model_info.getKnot(i);
-	printf("   %11.5e  %11.5e\n", pr.first, pr.second);
+        pr = model_info.getKnot(i);
+        printf("   %11.5e  %11.5e\n", pr.first, pr.second);
       }
       printf("  Sigma Positions and initial values:\n");
       for (unsigned int i = 0; i < model_info.getNSigmas(); ++i) {
-	pr = model_info.getSigma(i);
-	printf("   %11.5e  %11.5e\n", pr.first, pr.second);
+        pr = model_info.getSigma(i);
+        printf("   %11.5e  %11.5e\n", pr.first, pr.second);
       }
       printf("  Offset Positions and initial values:\n");
       for (unsigned int i = 0; i < model_info.getNOffsets(); ++i) {
-	pr = model_info.getOffset(i);
-	printf("   %11.5e  %11.5e\n", pr.first, pr.second);
+        pr = model_info.getOffset(i);
+        printf("   %11.5e  %11.5e\n", pr.first, pr.second);
       }
     }
 
@@ -210,7 +210,7 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
     }
 
     std::cout << "log Likelihoood is: "
-	      << std::setprecision(7) << LogLike << std::endl;
+              << std::setprecision(7) << LogLike << std::endl;
   } catch (const affineExcept& ex) {
     std::cerr << ex << std::endl;
     return 4;
@@ -240,66 +240,66 @@ int main(int argc, char** argv) {
   int option_index = 0;
 
   while ( ( c = getopt_long(argc,argv,optstring,long_options,
-			    &option_index ) ) != -1 ) 
+                            &option_index ) ) != -1 ) 
     switch(c) {
     case 'h' :
       std::cerr << "NAME" << std::endl;
       std::cerr << "\tpofd_affine_getLike -- evaluate the likelihood of some "
-		<< "data" << std::endl;
+                << "data" << std::endl;
       std::cerr << "\tagainst a number counts model using the P(D) approach."
-		<< " Both" << std::endl;
+                << " Both" << std::endl;
       std::cerr << "\tone-dimensional and two-dimensional models are supported."
-		<< std::endl;
+                << std::endl;
       std::cerr << std::endl;
       std::cerr << "SYNOPSIS" << std::endl;
       std::cerr << "\t pofd_mcmc_getLike [options] initfile specfile"
-		<< std::endl;
+                << std::endl;
       std::cerr << std::endl;
       std::cerr << "DESCRIPTION" << std::endl;
       std::cerr << "\tEvaluates the likelihood of the data specified in "
-		<< "specfile against" << std::endl;
+                << "specfile against" << std::endl;
       std::cerr << "\tthe model in initfile. The 1D model is a log-space spline"
-		<< " model for" << std::endl;
+                << " model for" << std::endl;
       std::cerr << "\tthe number counts, and the 2D model is the 1D spline "
-		<< "model times" << std::endl;
+                << "model times" << std::endl;
       std::cerr << "\ta log-normal color function for the second band, with the"
-		<< std::endl;
+                << std::endl;
       std::cerr << "\tlog-space variance and mean color stored as splines in"
-		<< " the flux" << std::endl;
+                << " the flux" << std::endl;
       std::cerr << "\tof the first band." << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tinitfile is a text file specifying the model; the exact"
-		<< " details" << std::endl;
+                << " details" << std::endl;
       std::cerr << "\t(given below) depend on whether the 1D or 2D case is"
-		<< " being used." << std::endl;
+                << " being used." << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tFor the 1D case, initfile is a text file giving the "
-		<< "positions" << std::endl;
+                << "positions" << std::endl;
       std::cerr << "\tof the spline knots and their values in the format"
-		<< " knotflux value." << std::endl;
+                << " knotflux value." << std::endl;
       std::cerr << "\tAdditional elements on each line are ignored."
-		<< std::endl;
+                << std::endl;
       std::cerr << "\tFor the 2D case, initfile is a text file giving the "
-		<< "positions" << std::endl;
+                << "positions" << std::endl;
       std::cerr << "\tof the knot points and their values, followed by the "
-		<< "sigma" << std::endl;
+                << "sigma" << std::endl;
       std::cerr << "\tknot positions and their values, then likewise for the "
-		<< "colour" << std::endl;
+                << "colour" << std::endl;
       std::cerr << "\toffset.  The format is three numbers on the first line, "
-		<< "giving" << std::endl;
+                << "giving" << std::endl;
       std::cerr << "\tthe number of number count knots, sigma knots, and "
-		<< "offset knots," << std::endl;
+                << "offset knots," << std::endl;
       std::cerr << "\tfollowed by a number of lines again with the format"
-		<< std::endl;
+                << std::endl;
       std::cerr << "\tknotpos value.  The sigmas and offsets are in log space."
-		<< std::endl;
+                << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tspecfile is a text file containing the beam(s), "
-		<< "datafile(s), sigma(s)," << std::endl;
+                << "datafile(s), sigma(s)," << std::endl;
       std::cerr << "\tetc. using the same format as pofd_affine_mcmc.  It also"
-		<< " controls" << std::endl;
+                << " controls" << std::endl;
       std::cerr << "\thow the likelihood is evaluated "
-		<< "(beam histogramming, etc.)." << std::endl;
+                << "(beam histogramming, etc.)." << std::endl;
       std::cerr << std::endl;
       std::cerr << "OPTIONS" << std::endl;
       std::cerr << "\t-d, --double" << std::endl;
@@ -315,7 +315,7 @@ int main(int argc, char** argv) {
       break;
     case 'V' :
       std::cerr << "pofd_mcmc version number: " << pofd_mcmc::version 
-		<< std::endl;
+                << std::endl;
       return 0;
       break;
     }
@@ -323,7 +323,7 @@ int main(int argc, char** argv) {
   if (optind >= argc-1 ) {
     std::cerr << "Some required arguments missing" << std::endl;
     std::cerr << " Use --help for description of inputs and options"
-	      << std::endl;
+              << std::endl;
     return 1;
   }
   initfile = std::string(argv[optind]);
@@ -334,5 +334,3 @@ int main(int argc, char** argv) {
   else
     return getLikeDouble(initfile, specfile);
 }
-
-

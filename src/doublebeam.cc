@@ -50,9 +50,9 @@ doublebeam::doublebeam() {
   \param[in] MINVAL Minimum bean value to consider
 */
 doublebeam::doublebeam(const std::string& filename1,
-		       const std::string& filename2,
-		       bool histogram, unsigned int NBINS,
-		       double MINVAL) {
+                       const std::string& filename2,
+                       bool histogram, unsigned int NBINS,
+                       double MINVAL) {
   double nan = std::numeric_limits<double>::quiet_NaN();
   for (unsigned int i = 0; i < 4; ++i) hassign[i] = false;
   for (unsigned int i = 0; i < 4; ++i) npix[i] = 0;
@@ -130,11 +130,11 @@ void doublebeam::cleanup() {
   \param[in] filename1   File to read from, beam 1
   \param[in] filename2   File to read from, beam 2
   \param[in] MINVAL      Minimum absolute value.  Specifically, only
-          beam elements with fabs(val) > minval in both beams are kept.
+  beam elements with fabs(val) > minval in both beams are kept.
 */
 void doublebeam::readFiles(const std::string& filename1,
-			   const std::string& filename2,
-			   double MINVAL) {
+                           const std::string& filename2,
+                           double MINVAL) {
 
   // Two stages:
   //  1) read in the FITS files
@@ -175,16 +175,16 @@ void doublebeam::readFiles(const std::string& filename1,
   // has the same size.
   double pixsize1;
   fits_read_key(fptr, TDOUBLE, const_cast<char*>("PIXSIZE"),
-		&pixsize1, card, &status);
+                &pixsize1, card, &status);
   if (status) { // Nope, didn't find it.  Try pixscale instead
     status=0;
     fits_read_key(fptr, TDOUBLE, const_cast<char*>("PIXSCALE"),
-		  &pixsize1, card, &status);
+                  &pixsize1, card, &status);
     if (status) {
       //Didn't find that either
       std::stringstream errstr("");
       errstr << "Unable to find pixel scale information in "
-	     << filename1;
+             << filename1;
       fits_report_error(stderr, status);
       fits_close_file(fptr, &status);
       throw affineExcept("doublebeam", "readFiles", errstr.str());
@@ -210,7 +210,7 @@ void doublebeam::readFiles(const std::string& filename1,
   for (unsigned int i = 1; i <= static_cast<unsigned int>(naxes[1]); ++i) {
     fpixel[1] = i;
     if (fits_read_pix(fptr, TDOUBLE, fpixel, naxes[0], 0, 
-		      rpixarr1 + naxes[0]*(i-1), 0, &status)) 
+                      rpixarr1 + naxes[0]*(i-1), 0, &status)) 
       break;   /* jump out of loop on error */
   }
 
@@ -244,18 +244,18 @@ void doublebeam::readFiles(const std::string& filename1,
   }
   double pixsize2; // Make sure it's the same as band 1
   fits_read_key(fptr, TDOUBLE, const_cast<char*>("PIXSIZE"),
-		&pixsize2, card, &status);
+                &pixsize2, card, &status);
   if (status) {
     status=0;
     fits_read_key(fptr, TDOUBLE, const_cast<char*>("PIXSCALE"),
-		  &pixsize2, card, &status);
+                  &pixsize2, card, &status);
     if (status) {
       fits_report_error(stderr, status);
       fits_close_file(fptr, &status);
       delete[] rpixarr1;
       std::stringstream errstr("");
       errstr << "Unable to find pixel scale information in "
-	     << filename2;
+             << filename2;
       throw affineExcept("doublebeam", "readFiles", errstr.str());
     }
   }
@@ -265,7 +265,7 @@ void doublebeam::readFiles(const std::string& filename1,
     fits_close_file(fptr, &status);
     std::stringstream errstr("");
     errstr << "Pixel scale in " << filename2 << " doesn't match that of "
-	   << filename1 << ": " << pixsize1 << " vs " << pixsize2;
+           << filename1 << ": " << pixsize1 << " vs " << pixsize2;
     throw affineExcept("doublebeam", "readFiles", errstr.str());
   }
 
@@ -286,7 +286,7 @@ void doublebeam::readFiles(const std::string& filename1,
     delete[] rpixarr1;
     std::stringstream errstr("");
     errstr << "Dimension 1 extent for " << filename2 << " doesn't match "
-	      << "that of " << filename1;
+           << "that of " << filename1;
     throw affineExcept("doublebeam", "readFiles", errstr.str());
   }
   if (naxes2[1] != naxes[1]) {
@@ -294,14 +294,14 @@ void doublebeam::readFiles(const std::string& filename1,
     delete[] rpixarr1;
     std::stringstream errstr("");
     errstr << "Dimension 2 extent for " << filename2 << " doesn't match "
-	      << "that of " << filename1;
+           << "that of " << filename1;
     throw affineExcept("doublebeam", "readFiles", errstr.str());
   }
   double* rpixarr2 = new double[n]; // Another temp reading array
   for (unsigned int i = 1; i <= static_cast<unsigned int>(naxes[1]); ++i) {
     fpixel[1] = i;
     if (fits_read_pix(fptr, TDOUBLE, fpixel, naxes[0], 0, 
-		      rpixarr2 + naxes[0]*(i-1), 0, &status)) 
+                      rpixarr2 + naxes[0]*(i-1), 0, &status)) 
       break;   /* jump out of loop on error */
   }
   fits_close_file(fptr,&status);
@@ -326,11 +326,11 @@ void doublebeam::readFiles(const std::string& filename1,
   \param[in] beam2 Band 2 beam, size n
   \param[in] PIXSIZE pixel size in arcsec.
   \param[in] MINVAL      Minimum absolute value.  Specifically, only
-          beam elements with fabs(val) > minval in both beams are kept.
+  beam elements with fabs(val) > minval in both beams are kept.
 */
 void doublebeam::setBeams(unsigned int n, const double* const beam1, 
-			  const double* const beam2, double PIXSIZE,
-			  double MINVAL) {
+                          const double* const beam2, double PIXSIZE,
+                          double MINVAL) {
   // This does the sorting into beam components, as well as allocating
   // internal arrays.  So -- first -- clean up any old info
   cleanup();
@@ -357,9 +357,9 @@ void doublebeam::setBeams(unsigned int n, const double* const beam1,
     aval2 = fabs(val2);
     if ((aval1 > minval) && (aval2 > minval)) { // Note it's > not >= so 0 works
       if (val1 > 0) {
-	if (val2 > 0) sgn=0; else sgn=1;
+        if (val2 > 0) sgn=0; else sgn=1;
       } else {
-	if (val2 > 0) sgn=2; else sgn=3;
+        if (val2 > 0) sgn=2; else sgn=3;
       }
       component[i] = sgn;
       npix[sgn] += 1;
@@ -393,13 +393,13 @@ void doublebeam::setBeams(unsigned int n, const double* const beam1,
       // Loop and set values for this component
       idx = 0;
       for (unsigned int j = 0; j < n; ++j)
-	if (component[j] == i) {
-	  aval1 = fabs(beam1[j]);
-	  aval2 = fabs(beam2[j]);
-	  p1[idx] = aval1;
-	  p2[idx] = aval2;
-	  ++idx;
-	}
+        if (component[j] == i) {
+          aval1 = fabs(beam1[j]);
+          aval2 = fabs(beam2[j]);
+          p1[idx] = aval1;
+          p2[idx] = aval2;
+          ++idx;
+        }
       //assert(idx == curr_n);
 
       // Do totals
@@ -407,24 +407,24 @@ void doublebeam::setBeams(unsigned int n, const double* const beam1,
       tot1[i] = val;
       totsq1[i] = val * val;
       for (unsigned int j = 1; j < curr_n; ++j) {
-	val = p1[j];
-	tot1[i] += val;
-	totsq1[i] += val * val;
+        val = p1[j];
+        tot1[i] += val;
+        totsq1[i] += val * val;
       }
       val = p2[0];
       tot2[i] = val;
       totsq2[i] = val * val;
       for (unsigned int j = 1; j < curr_n; ++j) {
-	val = p2[j];
-	tot2[i] += val;
-	totsq2[i] += val * val;
+        val = p2[j];
+        tot2[i] += val;
+        totsq2[i] += val * val;
       }
       
       // Inverses
       for (unsigned int j = 0; j < curr_n; ++j)
-	invpixarr1[i][j] = 1.0 / p1[j];
+        invpixarr1[i][j] = 1.0 / p1[j];
       for (unsigned int j = 0; j < curr_n; ++j)
-	invpixarr2[i][j] = 1.0 / p2[j];
+        invpixarr2[i][j] = 1.0 / p2[j];
     }
   }
 
@@ -438,18 +438,18 @@ void doublebeam::setBeams(unsigned int n, const double* const beam1,
       p1 = pixarr1[i];
       curr_min = curr_max = p1[0];
       for (unsigned int j = 1; j < curr_n; ++j) {
-	val = p1[j];
-	if (val > curr_max) curr_max = val;
-	else if (val < curr_min) curr_min = val;
+        val = p1[j];
+        if (val > curr_max) curr_max = val;
+        else if (val < curr_min) curr_min = val;
       }
       minbm1[i] = curr_min;
       maxbm1[i] = curr_max;
       p2 = pixarr2[i];
       curr_min = curr_max = p2[0];
       for (unsigned int j = 1; j < curr_n; ++j) {
-	val = p2[j];
-	if (val > curr_max) curr_max = val;
-	else if (val < curr_min) curr_min = val;
+        val = p2[j];
+        if (val > curr_max) curr_max = val;
+        else if (val < curr_min) curr_min = val;
       }
       minbm2[i] = curr_min;
       maxbm2[i] = curr_max;
@@ -457,7 +457,7 @@ void doublebeam::setBeams(unsigned int n, const double* const beam1,
 
   if (PIXSIZE <= 0.0)
     throw affineExcept("doublebeam", "setBeams",
-		       "Invalid (non-positive) pixel size");
+                       "Invalid (non-positive) pixel size");
   pixsize = PIXSIZE;
 }
 
@@ -467,10 +467,10 @@ void doublebeam::setBeams(unsigned int n, const double* const beam1,
 void doublebeam::makeHistogram(unsigned int NBINS) {
   if (!hasData())
     throw affineExcept("doublebeam", "makeHistogram",
-		       "Trying to histogram empty beam");
+                       "Trying to histogram empty beam");
   if (NBINS == 0)
     throw affineExcept("doublebeam", "makeHistogram",
-		       "Invalid (zero) NBINS");
+                       "Invalid (zero) NBINS");
   nbins = NBINS;
 
   // Clean out any old values
@@ -534,25 +534,25 @@ void doublebeam::makeHistogram(unsigned int NBINS) {
       curr_n = npix[sgn];
       
       for (unsigned int i = 0; i < curr_n; ++i) {
-	val1 = p1[i]; // Recall -- already fabsed
-	val2 = p2[i]; // also fabsed
-	idx1 = static_cast<unsigned int>((log2(val1) - minbinval1) * 
-					 ihiststep1);
-	// assert(idx1 < nbins);
-	idx2 = static_cast<unsigned int>((log2(val2) - minbinval2) * 
-					 ihiststep2);
-	// assert(idx2 < nbins);
-	totidx = idx1 * nbins + idx2;
-	tmpwt[totidx] += 1;
-	tmphist1[totidx] += val1;
-	tmphist2[totidx] += val2;
+        val1 = p1[i]; // Recall -- already fabsed
+        val2 = p2[i]; // also fabsed
+        idx1 = static_cast<unsigned int>((log2(val1) - minbinval1) * 
+                                         ihiststep1);
+        // assert(idx1 < nbins);
+        idx2 = static_cast<unsigned int>((log2(val2) - minbinval2) * 
+                                         ihiststep2);
+        // assert(idx2 < nbins);
+        totidx = idx1 * nbins + idx2;
+        tmpwt[totidx] += 1;
+        tmphist1[totidx] += val1;
+        tmphist2[totidx] += val2;
       }
 
       // Count the number of non-zero bins
       unsigned int n_nonzero;
       n_nonzero = 0;
       for (unsigned int i = 0; i < nbins2; ++i)
-	if (tmpwt[i] > 0) ++n_nonzero; 
+        if (tmpwt[i] > 0) ++n_nonzero; 
       // assert(n_nonzero > 0);
       
       // Allocate the final arrays
@@ -565,14 +565,14 @@ void doublebeam::makeHistogram(unsigned int NBINS) {
       p2 = binvals1[sgn];
       p3 = binvals2[sgn];
       for (unsigned int i = 0; i < nbins2; ++i) {
-	utmp = tmpwt[i];
-	if (utmp > 0) {
-	  wtnorm = static_cast<double>(utmp);
-	  p1[totidx] = wtnorm;
-	  p2[totidx] = wtnorm / tmphist1[i]; // Invert and normalize
-	  p3[totidx] = wtnorm / tmphist2[i];
-	  ++totidx;
-	}
+        utmp = tmpwt[i];
+        if (utmp > 0) {
+          wtnorm = static_cast<double>(utmp);
+          p1[totidx] = wtnorm;
+          p2[totidx] = wtnorm / tmphist1[i]; // Invert and normalize
+          p3[totidx] = wtnorm / tmphist2[i];
+          ++totidx;
+        }
       }
       ishistogrammed[sgn] = true;
       nhist[sgn] = n_nonzero;
@@ -622,7 +622,7 @@ double doublebeam::getEffectiveArea2() const {
 */
 double doublebeam::getEffectiveAreaSign1(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getEffectiveAreaSign1",
-				   "Invalid index");
+                                   "Invalid index");
   
   if (!hassign[idx]) return 0.0;
   double convfac = pixsize / 3600.0;
@@ -636,7 +636,7 @@ double doublebeam::getEffectiveAreaSign1(unsigned int idx) const {
 */
 double doublebeam::getEffectiveAreaSign2(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getEffectiveAreaSign2",
-				   "Invalid index");
+                                   "Invalid index");
   
   if (!hassign[idx]) return 0.0;
   double convfac = pixsize / 3600.0;
@@ -650,7 +650,7 @@ double doublebeam::getEffectiveAreaSign2(unsigned int idx) const {
 */
 double doublebeam::getEffectiveAreaSqSign1(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getEffectiveAreaSqSign1",
-				   "Invalid index");
+                                   "Invalid index");
   
   if (!hassign[idx]) return 0.0;
   double convfac = pixsize / 3600.0;
@@ -664,7 +664,7 @@ double doublebeam::getEffectiveAreaSqSign1(unsigned int idx) const {
 */
 double doublebeam::getEffectiveAreaSqSign2(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getEffectiveAreaSqSign2",
-				   "Invalid index");
+                                   "Invalid index");
   
   if (!hassign[idx]) return 0.0;
   double convfac = pixsize / 3600.0;
@@ -692,10 +692,10 @@ unsigned int doublebeam::getTotalNPix() const {
 */
 dblpair doublebeam::getMinMax1(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getMinMax1",
-				   "Invalid index");
+                                   "Invalid index");
   if (!hassign[idx]) 
     return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
-			  std::numeric_limits<double>::quiet_NaN());
+                          std::numeric_limits<double>::quiet_NaN());
   return std::make_pair(minbm1[idx], maxbm1[idx]);
 }
 
@@ -705,15 +705,15 @@ dblpair doublebeam::getMinMax1(unsigned int idx) const {
 */
 dblpair doublebeam::getMinMax2(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getMinMax2",
-				   "Invalid index");
+                                   "Invalid index");
   if (!hassign[idx]) 
     return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
-			  std::numeric_limits<double>::quiet_NaN());
+                          std::numeric_limits<double>::quiet_NaN());
   return std::make_pair(minbm2[idx], maxbm2[idx]);
 }
 
 /*
-!
+  !
   \param[in] idx Sign component (pp, pn, np, nn)
   \returns Access to Log beam1 / beam2.
 
@@ -721,9 +721,9 @@ dblpair doublebeam::getMinMax2(unsigned int idx) const {
 */
 const double* const doublebeam::getLogRatio(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getLogRatio",
-				   "Invalid index");
+                                   "Invalid index");
   if (!hassign[idx]) throw affineExcept("doublebeam", "getLogRatio",
-					"No data in specified index");
+                                        "No data in specified index");
   if (!haslogratio[idx]) {
     // Compute
     unsigned int n = npix[idx];
@@ -741,7 +741,7 @@ const double* const doublebeam::getLogRatio(unsigned int idx) const {
 }
 
 /*
-!
+  !
   \param[in] idx Sign component (pp, pn, np, nn)
   \returns Access to Log beam1 / beam2 of histogrammed beam.
 
@@ -749,11 +749,11 @@ const double* const doublebeam::getLogRatio(unsigned int idx) const {
 */
 const double* const doublebeam::getBinLogRatio(unsigned int idx) const {
   if (idx >= 4) throw affineExcept("doublebeam", "getBinLogRatio",
-				   "Invalid index");
+                                   "Invalid index");
   if (!hassign[idx]) throw affineExcept("doublebeam", "getLogRatio",
-					"No data in specified index");
+                                        "No data in specified index");
   if (!ishistogrammed[idx]) throw affineExcept("doublebeam", "getLogRatio",
-					       "No histogram in that index");
+                                               "No histogram in that index");
   if (!hasbinlogratio[idx]) {
     // Compute
     unsigned int n = nhist[idx];
@@ -777,71 +777,71 @@ const double* const doublebeam::getBinLogRatio(unsigned int idx) const {
 */
 void doublebeam::sendSelf(MPI_Comm comm, int dest) const {
   MPI_Send(const_cast<double*>(&pixsize), 1, MPI_DOUBLE, dest, 
-	   pofd_mcmc::DOUBLEBEAMSENDPIXSIZE, comm);
+           pofd_mcmc::DOUBLEBEAMSENDPIXSIZE, comm);
   MPI_Send(const_cast<double*>(&minval), 1, MPI_DOUBLE, dest,
-	   pofd_mcmc::DOUBLEBEAMSENDMINVAL, comm);
+           pofd_mcmc::DOUBLEBEAMSENDMINVAL, comm);
 
   // Send raw beam
   MPI_Send(const_cast<bool*>(hassign), 4, MPI::BOOL, dest,
-	   pofd_mcmc::DOUBLEBEAMSENDHASSIGN, comm);
+           pofd_mcmc::DOUBLEBEAMSENDHASSIGN, comm);
   MPI_Send(const_cast<double*>(minbm1), 4, MPI_DOUBLE, dest,
-	   pofd_mcmc::DOUBLEBEAMSENDMIN1, comm);
+           pofd_mcmc::DOUBLEBEAMSENDMIN1, comm);
   MPI_Send(const_cast<double*>(maxbm1), 4, MPI_DOUBLE, dest,
-	   pofd_mcmc::DOUBLEBEAMSENDMAX1, comm);
+           pofd_mcmc::DOUBLEBEAMSENDMAX1, comm);
   MPI_Send(const_cast<double*>(minbm2), 4, MPI_DOUBLE, dest,
-	   pofd_mcmc::DOUBLEBEAMSENDMIN2, comm);
+           pofd_mcmc::DOUBLEBEAMSENDMIN2, comm);
   MPI_Send(const_cast<double*>(maxbm2), 4, MPI_DOUBLE, dest,
-	   pofd_mcmc::DOUBLEBEAMSENDMAX2, comm);
+           pofd_mcmc::DOUBLEBEAMSENDMAX2, comm);
   MPI_Send(const_cast<unsigned int*>(npix), 4, MPI_UNSIGNED, dest,
-	   pofd_mcmc::DOUBLEBEAMSENDNPIX, comm);
+           pofd_mcmc::DOUBLEBEAMSENDNPIX, comm);
   MPI_Send(const_cast<bool*>(haslogratio), 4, MPI::BOOL, dest,
-	   pofd_mcmc::DOUBLEBEAMSENDHASLOGRATIO, comm);
+           pofd_mcmc::DOUBLEBEAMSENDHASLOGRATIO, comm);
   for (unsigned int i = 0; i < 4; ++i)
     if (hassign[i]) {
       MPI_Send(pixarr1[i], npix[i], MPI_DOUBLE, dest,
-	       pofd_mcmc::DOUBLEBEAMSENDPIXARR1, comm);
+               pofd_mcmc::DOUBLEBEAMSENDPIXARR1, comm);
       MPI_Send(pixarr2[i], npix[i], MPI_DOUBLE, dest,
-	       pofd_mcmc::DOUBLEBEAMSENDPIXARR2, comm);
+               pofd_mcmc::DOUBLEBEAMSENDPIXARR2, comm);
       MPI_Send(invpixarr1[i], npix[i], MPI_DOUBLE, dest,
-	       pofd_mcmc::DOUBLEBEAMSENDIPIXARR1, comm);
+               pofd_mcmc::DOUBLEBEAMSENDIPIXARR1, comm);
       MPI_Send(invpixarr2[i], npix[i], MPI_DOUBLE, dest,
-	       pofd_mcmc::DOUBLEBEAMSENDIPIXARR2, comm);
+               pofd_mcmc::DOUBLEBEAMSENDIPIXARR2, comm);
       if (haslogratio[i])
-	MPI_Send(logratio[i], npix[i], MPI_DOUBLE, dest,
-		 pofd_mcmc::DOUBLEBEAMSENDLOGRATIO, comm);
+        MPI_Send(logratio[i], npix[i], MPI_DOUBLE, dest,
+                 pofd_mcmc::DOUBLEBEAMSENDLOGRATIO, comm);
     } 
   
   // Histogram
   MPI_Send(const_cast<unsigned int*>(&nbins), 1, MPI_UNSIGNED, dest,
-	   pofd_mcmc::DOUBLEBEAMSENDNBINS, comm);
+           pofd_mcmc::DOUBLEBEAMSENDNBINS, comm);
   MPI_Send(const_cast<bool*>(ishistogrammed), 4, MPI::BOOL, dest,
-	   pofd_mcmc::DOUBLEBEAMSENDISHISTOGRAMMED, comm);
+           pofd_mcmc::DOUBLEBEAMSENDISHISTOGRAMMED, comm);
   MPI_Send(const_cast<unsigned int*>(nhist), 4, MPI_UNSIGNED, dest,
-	   pofd_mcmc::DOUBLEBEAMSENDNHIST, comm);
+           pofd_mcmc::DOUBLEBEAMSENDNHIST, comm);
   MPI_Send(const_cast<bool*>(hasbinlogratio), 4, MPI::BOOL, dest,
-	   pofd_mcmc::DOUBLEBEAMSENDHASBINLOGRATIO, comm);
+           pofd_mcmc::DOUBLEBEAMSENDHASBINLOGRATIO, comm);
   for (unsigned int i = 0; i < 4; ++i)
     if (ishistogrammed[i] && (nhist[i] > 0)) {
       MPI_Send(binweights[i], nhist[i], MPI_DOUBLE, dest,
-	       pofd_mcmc::DOUBLEBEAMSENDBINWEIGHTS, comm);
+               pofd_mcmc::DOUBLEBEAMSENDBINWEIGHTS, comm);
       MPI_Send(binvals1[i], nhist[i], MPI_DOUBLE, dest,
-	       pofd_mcmc::DOUBLEBEAMSENDBINVALS1, comm);
+               pofd_mcmc::DOUBLEBEAMSENDBINVALS1, comm);
       MPI_Send(binvals2[i], nhist[i], MPI_DOUBLE, dest,
-	       pofd_mcmc::DOUBLEBEAMSENDBINVALS2, comm);
+               pofd_mcmc::DOUBLEBEAMSENDBINVALS2, comm);
       if (hasbinlogratio[i])
-	MPI_Send(binlogratio[i], nhist[i], MPI_DOUBLE, dest,
-		 pofd_mcmc::DOUBLEBEAMSENDBINLOGRATIO, comm);
+        MPI_Send(binlogratio[i], nhist[i], MPI_DOUBLE, dest,
+                 pofd_mcmc::DOUBLEBEAMSENDBINLOGRATIO, comm);
     }
 
   // Descriptive
   MPI_Send(const_cast<double*>(tot1), 4, MPI_DOUBLE, dest, 
-	   pofd_mcmc::DOUBLEBEAMSENDTOT1, comm);
+           pofd_mcmc::DOUBLEBEAMSENDTOT1, comm);
   MPI_Send(const_cast<double*>(tot2), 4, MPI_DOUBLE, dest, 
-	   pofd_mcmc::DOUBLEBEAMSENDTOT2, comm);
+           pofd_mcmc::DOUBLEBEAMSENDTOT2, comm);
   MPI_Send(const_cast<double*>(totsq1), 4, MPI_DOUBLE, dest, 
-	   pofd_mcmc::DOUBLEBEAMSENDTOTSQ1, comm);
+           pofd_mcmc::DOUBLEBEAMSENDTOTSQ1, comm);
   MPI_Send(const_cast<double*>(totsq2), 4, MPI_DOUBLE, dest, 
-	   pofd_mcmc::DOUBLEBEAMSENDTOTSQ2, comm);
+           pofd_mcmc::DOUBLEBEAMSENDTOTSQ2, comm);
 }
 
 /*!
@@ -854,25 +854,25 @@ void doublebeam::receiveCopy(MPI_Comm comm, int src) {
 
   MPI_Status Info;
   MPI_Recv(&pixsize, 1, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDPIXSIZE,
-	   comm, &Info);
+           comm, &Info);
   MPI_Recv(&minval, 1, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDMINVAL, 
-	   comm, &Info);
+           comm, &Info);
 
   // Raw beam
   MPI_Recv(hassign, 4, MPI::BOOL, src, pofd_mcmc::DOUBLEBEAMSENDHASSIGN, 
-	   comm, &Info);
+           comm, &Info);
   MPI_Recv(minbm1, 4, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDMIN1, 
-	   comm, &Info);
+           comm, &Info);
   MPI_Recv(maxbm1, 4, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDMAX1, 
-	   comm, &Info);
+           comm, &Info);
   MPI_Recv(minbm2, 4, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDMIN2, 
-	   comm, &Info);
+           comm, &Info);
   MPI_Recv(maxbm2, 4, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDMAX2, 
-	   comm, &Info);
+           comm, &Info);
   MPI_Recv(npix, 4, MPI_UNSIGNED, src, pofd_mcmc::DOUBLEBEAMSENDNPIX, 
-	   comm, &Info);
+           comm, &Info);
   MPI_Recv(haslogratio, 4, MPI::BOOL, src, 
-	   pofd_mcmc::DOUBLEBEAMSENDHASLOGRATIO, comm, &Info);
+           pofd_mcmc::DOUBLEBEAMSENDHASLOGRATIO, comm, &Info);
 
   // Raw beam
   for (unsigned int i = 0; i < 4; ++i)
@@ -882,57 +882,57 @@ void doublebeam::receiveCopy(MPI_Comm comm, int src) {
       invpixarr1[i] = new double[npix[i]];
       invpixarr2[i] = new double[npix[i]];
       if (haslogratio[i])
-	logratio[i] = new double[npix[i]];
+        logratio[i] = new double[npix[i]];
 
       MPI_Recv(pixarr1[i], npix[i], MPI_DOUBLE, src,
-	       pofd_mcmc::DOUBLEBEAMSENDPIXARR1, comm, &Info);
+               pofd_mcmc::DOUBLEBEAMSENDPIXARR1, comm, &Info);
       MPI_Recv(pixarr2[i], npix[i], MPI_DOUBLE, src,
-	       pofd_mcmc::DOUBLEBEAMSENDPIXARR2, comm, &Info);
+               pofd_mcmc::DOUBLEBEAMSENDPIXARR2, comm, &Info);
       MPI_Recv(invpixarr1[i], npix[i], MPI_DOUBLE, src,
-	       pofd_mcmc::DOUBLEBEAMSENDIPIXARR1, comm, &Info);
+               pofd_mcmc::DOUBLEBEAMSENDIPIXARR1, comm, &Info);
       MPI_Recv(invpixarr2[i], npix[i], MPI_DOUBLE, src,
-	       pofd_mcmc::DOUBLEBEAMSENDIPIXARR2, comm, &Info);
+               pofd_mcmc::DOUBLEBEAMSENDIPIXARR2, comm, &Info);
       if (haslogratio[i])
-	MPI_Recv(logratio[i], npix[i], MPI_DOUBLE, src,
-		 pofd_mcmc::DOUBLEBEAMSENDLOGRATIO, comm, &Info);
+        MPI_Recv(logratio[i], npix[i], MPI_DOUBLE, src,
+                 pofd_mcmc::DOUBLEBEAMSENDLOGRATIO, comm, &Info);
     }
   
   // Histogrammed beam
   MPI_Recv(&nbins, 1, MPI_UNSIGNED, src,
-	   pofd_mcmc::DOUBLEBEAMSENDNBINS, comm, &Info);
+           pofd_mcmc::DOUBLEBEAMSENDNBINS, comm, &Info);
   MPI_Recv(ishistogrammed, 4, MPI::BOOL, src,
-	   pofd_mcmc::DOUBLEBEAMSENDISHISTOGRAMMED, comm, &Info);
+           pofd_mcmc::DOUBLEBEAMSENDISHISTOGRAMMED, comm, &Info);
   MPI_Recv(nhist, 4, MPI_UNSIGNED, src,
-	   pofd_mcmc::DOUBLEBEAMSENDNHIST, comm, &Info);
+           pofd_mcmc::DOUBLEBEAMSENDNHIST, comm, &Info);
   MPI_Recv(hasbinlogratio, 4, MPI::BOOL, src, 
-	   pofd_mcmc::DOUBLEBEAMSENDHASBINLOGRATIO, comm, &Info);
+           pofd_mcmc::DOUBLEBEAMSENDHASBINLOGRATIO, comm, &Info);
   for (unsigned int i = 0; i < 4; ++i)
     if (ishistogrammed[i] && (nhist[i] > 0)) {
       binweights[i] = new double[nhist[i]];
       binvals1[i] = new double[nhist[i]];
       binvals2[i] = new double[nhist[i]];
       if (hasbinlogratio[i])
-	binlogratio[i] = new double[nhist[i]];
+        binlogratio[i] = new double[nhist[i]];
       MPI_Recv(binweights[i], nhist[i], MPI_DOUBLE, src,
-	       pofd_mcmc::DOUBLEBEAMSENDBINWEIGHTS, comm, &Info);
+               pofd_mcmc::DOUBLEBEAMSENDBINWEIGHTS, comm, &Info);
       MPI_Recv(binvals1[i], nhist[i], MPI_DOUBLE, src,
-	       pofd_mcmc::DOUBLEBEAMSENDBINVALS1, comm, &Info);
+               pofd_mcmc::DOUBLEBEAMSENDBINVALS1, comm, &Info);
       MPI_Recv(binvals2[i], nhist[i], MPI_DOUBLE, src,
-	       pofd_mcmc::DOUBLEBEAMSENDBINVALS2, comm, &Info);
+               pofd_mcmc::DOUBLEBEAMSENDBINVALS2, comm, &Info);
       if (hasbinlogratio[i])
-	MPI_Recv(binlogratio[i], nhist[i], MPI_DOUBLE, src,
-		 pofd_mcmc::DOUBLEBEAMSENDBINLOGRATIO, comm, &Info);
+        MPI_Recv(binlogratio[i], nhist[i], MPI_DOUBLE, src,
+                 pofd_mcmc::DOUBLEBEAMSENDBINLOGRATIO, comm, &Info);
     }
     
   //Totals
   MPI_Recv(tot1, 4, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDTOT1,
-	   comm, &Info);
+           comm, &Info);
   MPI_Recv(tot2, 4, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDTOT2,
-	   comm, &Info);
+           comm, &Info);
   MPI_Recv(totsq1, 4, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDTOTSQ1,
-	   comm, &Info);
+           comm, &Info);
   MPI_Recv(totsq2, 4, MPI_DOUBLE, src, pofd_mcmc::DOUBLEBEAMSENDTOTSQ2,
-	   comm, &Info);
+           comm, &Info);
 }
 
 /*!
@@ -948,12 +948,12 @@ bool doublebeam::writeToStream(std::ostream& os) const {
       os << " Component: " << cmpnames[i];
       os << " raw npix: " << npix[i];
       if (ishistogrammed[i]) 
-	os << " hist bins: " << nhist[i];
+        os << " hist bins: " << nhist[i];
       os << std::endl;
       os << "   Total1: " << tot1[i] << " Min1: " << minbm1[i]
-	 << " Max1: " << maxbm1[i] << std::endl;
+         << " Max1: " << maxbm1[i] << std::endl;
       os << "   Total2: " << tot2[i] << " Min2: " << minbm2[i]
-	 << " Max2: " << maxbm2[i] << std::endl;
+         << " Max2: " << maxbm2[i] << std::endl;
     }
   return true;
 }

@@ -128,7 +128,7 @@ double PD::getIntegral() const {
 void PD::normalize() {
   if (n == 0)
     throw affineExcept("PD", "normalize", 
-		       "No information present to normalize");
+                       "No information present to normalize");
   double tot = getIntegral();
   unsigned int sz = n;
   if (logflat) {
@@ -262,7 +262,7 @@ double PD::getMean(bool donorm) const {
 dblpair PD::getMeanAndVar(bool donorm) const {
   if (n == 0) 
     return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
-			  std::numeric_limits<double>::quiet_NaN());
+                          std::numeric_limits<double>::quiet_NaN());
   
   double normfac = 1.0;
   if (donorm) normfac = 1.0 / getIntegral();
@@ -346,7 +346,7 @@ PD& PD::operator=(const PD& other) {
   \param[in] LOG Is the input PD log2?
 */
 void PD::fill(unsigned int N, double MINFLUX, double DFLUX,
-	      const double* const PD, bool LOG) {
+              const double* const PD, bool LOG) {
   logflat = LOG;
   resize(N);
   minflux = MINFLUX;
@@ -357,7 +357,7 @@ void PD::fill(unsigned int N, double MINFLUX, double DFLUX,
 /*!
   \param[in] x Flux density to evaluate P(D) at
   \returns Interpolated P(D) value.  Will be log2 if P(D) is
-    stored as a log.
+  stored as a log.
 
   Uses linear interpolation.  Note that this will work differently
   if the P(D) has been converted to log values.
@@ -416,20 +416,20 @@ int PD::writeToFits(const std::string& outputfile) const {
   float crpix = 1;
   double tmpval;
   fits_write_key(fp, TSTRING, const_cast<char*>("CTYPE1"),
-		 const_cast<char*>("FLUX"),
-		 const_cast<char*>("Type of Data axis 1"),&status);
+                 const_cast<char*>("FLUX"),
+                 const_cast<char*>("Type of Data axis 1"),&status);
   fits_write_key(fp, TFLOAT, const_cast<char*>("CRPIX1"), &crpix, 
-		 const_cast<char*>("Ref pix of axis 1"), &status);
+                 const_cast<char*>("Ref pix of axis 1"), &status);
   tmpval = minflux;
   fits_write_key(fp, TDOUBLE, const_cast<char*>("CRVAL1"), &tmpval, 
-		 const_cast<char*>("val at ref pix"), &status);
+                 const_cast<char*>("val at ref pix"), &status);
   tmpval = dflux;
   fits_write_key(fp, TDOUBLE, const_cast<char*>("CDELT1"), &tmpval,
-		 const_cast<char*>("delta along axis 1"), &status);
+                 const_cast<char*>("delta along axis 1"), &status);
 
   int lg = static_cast<int>(logflat);
   fits_write_key(fp, TLOGICAL, const_cast<char*>("LOG"),&lg,
-		 const_cast<char*>("Is log P(D) stored?"), &status);
+                 const_cast<char*>("Is log P(D) stored?"), &status);
 
   //Do data writing.  
   long fpixel[1] = { 1 };
@@ -450,7 +450,7 @@ int PD::writeToFits(const std::string& outputfile) const {
 void PD::writeToHDF5(const std::string& outputfile) const {
   hid_t file_id;
   file_id = H5Fcreate(outputfile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
-		      H5P_DEFAULT);
+                      H5P_DEFAULT);
   writeToHDF5Handle(file_id);
   H5Fclose(file_id);
 }
@@ -461,7 +461,7 @@ void PD::writeToHDF5(const std::string& outputfile) const {
 void PD::writeToHDF5Handle(hid_t objid) const {
   if (H5Iget_ref(objid) < 0)
     throw affineExcept("PD", "writeToHDF5Handle", 
-		       "Output handle not open");
+                       "Output handle not open");
 
   hsize_t adims;
   hid_t mems_id, att_id;
@@ -472,11 +472,11 @@ void PD::writeToHDF5Handle(hid_t objid) const {
   adims = 1;
   mems_id = H5Screate_simple(1, &adims, nullptr);
   att_id = H5Acreate2(objid, "dFlux", H5T_NATIVE_DOUBLE,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux);
   H5Aclose(att_id);
   att_id = H5Acreate2(objid, "MinFlux", H5T_NATIVE_DOUBLE,
-		      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_DOUBLE, &minflux);
   H5Aclose(att_id);
   H5Sclose(mems_id);
@@ -499,10 +499,10 @@ void PD::writeToHDF5Handle(hid_t objid) const {
 double PD::getLogLike(const fitsData& data) const {
   if (pd_ == nullptr)
     throw affineExcept("PD", "getLogLike",
-		       "pd not filled before likelihood calc");
+                       "pd not filled before likelihood calc");
   unsigned int ndata = data.getN();
   if (ndata == 0) throw affineExcept("PD", "getLogLike",
-				     "No data present");
+                                     "No data present");
 
   if (data.isBinned()) return getLogLikeBinned(data);
   else return getLogLikeUnbinned(data);

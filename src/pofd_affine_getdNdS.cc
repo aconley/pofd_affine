@@ -6,6 +6,8 @@
 #include "../include/global_settings.h"
 #include "../include/numberCountsKnotsSpline.h"
 #include "../include/numberCountsDoubleLogNormal.h"
+#include "../include/initFileKnots.h"
+#include "../include/initFileDoubleLogNormal.h"
 #include "../include/paramSet.h"
 #include "../include/hdf5utils.h"
 #include "../include/affineExcept.h"
@@ -57,7 +59,7 @@ int getNSingle(int argc, char** argv) {
   int option_index = 0;
   optind = 1; //Resets parsing
   while ((c = getopt_long(argc, argv, optstring, long_options,
-			  &option_index)) != -1) 
+                          &option_index)) != -1) 
     switch(c) {
     case 'l' :
       logspace = true;
@@ -112,10 +114,10 @@ int getNSingle(int argc, char** argv) {
     //Check minflux if logspace is set
     if (logspace) {
       if (!has_user_minflux)
-	minflux = model.getKnotPos(0); //Sorted inside model
+        minflux = model.getKnotPos(0); //Sorted inside model
       if (minflux <= 0.0)
-	throw affineExcept("pofd_affine_getdNdS", "getNSingle",
-			   "Minflux must be positive if using logspace");
+        throw affineExcept("pofd_affine_getdNdS", "getNSingle",
+                           "Minflux must be positive if using logspace");
     }
 
     //Get maximum flux if not set, use to compute dflux
@@ -125,17 +127,17 @@ int getNSingle(int argc, char** argv) {
     double dflux;
     if (nflux > 1) 
       if (logspace) 
-	dflux = log2(maxflux / minflux) / static_cast<double>(nflux - 1);
+        dflux = log2(maxflux / minflux) / static_cast<double>(nflux - 1);
       else
-	dflux = (maxflux - minflux)/static_cast<double>(nflux - 1);
+        dflux = (maxflux - minflux)/static_cast<double>(nflux - 1);
     else
       dflux = 1.0; //Not used
 
     if (verbose) {
       std::cout << "Flux per sq degree: " << model.getFluxPerArea()
-		<< std::endl;
+                << std::endl;
       std::cout << "Number of sources per area: "
-		<< model.getNS() << std::endl;
+                << model.getNS() << std::endl;
     }
 
     //Calculation loop
@@ -143,29 +145,29 @@ int getNSingle(int argc, char** argv) {
     if (logspace) {
       double lmin = log2(minflux);
       for (unsigned int i = 0; i < nflux; ++i)
-	dNdS[i] = 
-	  model.getNumberCounts(exp2(lmin + static_cast<double>(i) * dflux));
+        dNdS[i] = 
+          model.getNumberCounts(exp2(lmin + static_cast<double>(i) * dflux));
     } else
       for (unsigned int i = 0; i < nflux; ++i)
-	dNdS[i] = model.getNumberCounts(minflux + static_cast<double>(i) * 
-					dflux);
+        dNdS[i] = model.getNumberCounts(minflux + static_cast<double>(i) * 
+                                        dflux);
 
     if (logcounts)
       for (unsigned int i = 0; i < nflux; ++i)
-	dNdS[i] = log10(dNdS[i]);
+        dNdS[i] = log10(dNdS[i]);
     
     //Write out; text or HDF5
     hdf5utils::outfiletype oft = hdf5utils::getOutputFileType(outfile);
     if (oft == hdf5utils::HDF5 || oft == hdf5utils::UNKNOWN) {
       if (verbose) std::cout << "Writing to: " << outfile 
-			     << " as HDF5" << std::endl;
+                             << " as HDF5" << std::endl;
       hid_t file_id;
       file_id = H5Fcreate(outfile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
-			  H5P_DEFAULT);
+                          H5P_DEFAULT);
       if (H5Iget_ref(file_id) < 0) {
-	H5Fclose(file_id);
-	throw affineExcept("pofd_affine_getdNdS", "getNSingle",
-			   "Failed to open HDF5 file to write");
+        H5Fclose(file_id);
+        throw affineExcept("pofd_affine_getdNdS", "getNSingle",
+                           "Failed to open HDF5 file to write");
       }
       hsize_t adims;
       hid_t mems_id, att_id, group_id;
@@ -176,18 +178,18 @@ int getNSingle(int argc, char** argv) {
       mems_id = H5Screate_simple(1, &adims, nullptr);
       btmp = static_cast<hbool_t>(logspace);
       att_id = H5Acreate2(file_id, "logspace", H5T_NATIVE_HBOOL,
-			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                          mems_id, H5P_DEFAULT, H5P_DEFAULT);
       H5Awrite(att_id, H5T_NATIVE_HBOOL, &btmp);
       H5Aclose(att_id);
       att_id = H5Acreate2(file_id, "dflux", H5T_NATIVE_DOUBLE,
-			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                          mems_id, H5P_DEFAULT, H5P_DEFAULT);
       H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux);
       H5Aclose(att_id);
       H5Sclose(mems_id);
 
       // Model
       group_id = H5Gcreate(file_id, "Model", H5P_DEFAULT, H5P_DEFAULT, 
-			  H5P_DEFAULT);
+                          H5P_DEFAULT);
       model.writeToHDF5Handle(group_id, true);
       H5Gclose(group_id);
 
@@ -195,46 +197,46 @@ int getNSingle(int argc, char** argv) {
       double* fluxes;
       fluxes = new double[nflux];
       if (logspace) {
-	double lmin = log2(minflux);
-	for (unsigned int i = 0; i < nflux; ++i) 
-	  fluxes[i] = exp2(lmin + static_cast<double>(i) * dflux);
+        double lmin = log2(minflux);
+        for (unsigned int i = 0; i < nflux; ++i) 
+          fluxes[i] = exp2(lmin + static_cast<double>(i) * dflux);
       } else
-	for (unsigned int i = 0; i < nflux; ++i) 
-	  fluxes[i] = minflux + static_cast<double>(i) * dflux;
+        for (unsigned int i = 0; i < nflux; ++i) 
+          fluxes[i] = minflux + static_cast<double>(i) * dflux;
       hdf5utils::writeDataDoubles(file_id, "Flux", nflux, fluxes);
       delete[] fluxes;
 
       // dNdS
       if (logcounts)
-	hdf5utils::writeDataDoubles(file_id, "Log10dNdS", nflux, dNdS);
+        hdf5utils::writeDataDoubles(file_id, "Log10dNdS", nflux, dNdS);
       else
-	hdf5utils::writeDataDoubles(file_id, "dNdS", nflux, dNdS);
+        hdf5utils::writeDataDoubles(file_id, "dNdS", nflux, dNdS);
 
       H5Fclose(file_id);
     } else if (oft == hdf5utils::TXT) {
       FILE *fp;
       fp = fopen( outfile.c_str(), "w");
       if (!fp) {
-	throw affineExcept("pofd_affine_getdNdS", "getNSingle",
-			   "Failed to open text file file to write");
+        throw affineExcept("pofd_affine_getdNdS", "getNSingle",
+                           "Failed to open text file file to write");
       }
       if (logcounts)
-	fprintf(fp, "%12s   %12s\n", "Flux", "Log10dNdS");
+        fprintf(fp, "%12s   %12s\n", "Flux", "Log10dNdS");
       else
-	fprintf(fp, "%12s   %12s\n", "Flux", "dNdS");
+        fprintf(fp, "%12s   %12s\n", "Flux", "dNdS");
       if (logspace) {
-	double lmin = log2(minflux);
-	for (unsigned int i = 0; i < nflux; ++i) 
-	  fprintf(fp, "%12.6e   %15.9e\n",
-		  exp2(lmin + static_cast<double>(i) * dflux), dNdS[i]);
+        double lmin = log2(minflux);
+        for (unsigned int i = 0; i < nflux; ++i) 
+          fprintf(fp, "%12.6e   %15.9e\n",
+                  exp2(lmin + static_cast<double>(i) * dflux), dNdS[i]);
       } else
-	for (unsigned int i = 0; i < nflux; ++i) 
-	  fprintf(fp, "%12.6e   %15.9e\n",
-		  minflux + static_cast<double>(i) * dflux, dNdS[i]);
+        for (unsigned int i = 0; i < nflux; ++i) 
+          fprintf(fp, "%12.6e   %15.9e\n",
+                  minflux + static_cast<double>(i) * dflux, dNdS[i]);
       fclose(fp);
     } else if (oft == hdf5utils::FITS)
       throw affineExcept("pofd_affine_getdNdS", "getNSingle",
-			 "FITS output not supported");
+                         "FITS output not supported");
     
     delete[] dNdS; 
   } catch (const affineExcept& ex) {
@@ -274,7 +276,7 @@ int getNProjected(int argc, char** argv) {
   int option_index = 0;
   optind = 1; //Resets parsing
   while ((c = getopt_long(argc, argv, optstring, long_options,
-			  &option_index)) != -1) 
+                          &option_index)) != -1) 
     switch(c) {
     case 'l' :
       logspace = true;
@@ -333,10 +335,10 @@ int getNProjected(int argc, char** argv) {
 
     if (logspace) {
       if (!has_user_minflux2)
-	minflux2 = model.getKnotPosition(0); //Sorted inside model
+        minflux2 = model.getKnotPosition(0); //Sorted inside model
       if (minflux2 <= 0.0)
-	throw affineExcept("pofd_affine_getdNdS", "getNProjected",
-			   "Minflux must be positive if using logspace");
+        throw affineExcept("pofd_affine_getdNdS", "getNProjected",
+                           "Minflux must be positive if using logspace");
     }
 
     //Get maximum flux if not set, use to compute dflux
@@ -345,19 +347,19 @@ int getNProjected(int argc, char** argv) {
     double dflux2;
     if (nflux2 > 1) {
       if (logspace)
-	dflux2 = log2(maxflux2 / minflux2) / static_cast<double>(nflux2 - 1);
+        dflux2 = log2(maxflux2 / minflux2) / static_cast<double>(nflux2 - 1);
       else
-	dflux2 = (maxflux2 - minflux2) / static_cast<double>(nflux2 - 1);
+        dflux2 = (maxflux2 - minflux2) / static_cast<double>(nflux2 - 1);
     } else
       dflux2 = 1.0; //Not used, avoids compiler warning
 
     if (verbose) {
       std::cout << "Flux per sq degree, band 1: "
-		<< model.getFluxPerArea(0) << std::endl;
+                << model.getFluxPerArea(0) << std::endl;
       std::cout << "Flux per sq degree, band 2: "
-		<< model.getFluxPerArea(1) << std::endl;
+                << model.getFluxPerArea(1) << std::endl;
       std::cout << "Number of sources per area: "
-		<< model.getNS() << std::endl;
+                << model.getNS() << std::endl;
     }
 
     //Calculation loop
@@ -366,32 +368,32 @@ int getNProjected(int argc, char** argv) {
     if (logspace) {
       double lmin = log2(minflux2);
       for (unsigned int i = 0; i < nflux2; ++i) {
-	flux2 = exp2(lmin + static_cast<double>(i) * dflux2);
-	dNdS[i] = model.getBand2NumberCounts(flux2);
+        flux2 = exp2(lmin + static_cast<double>(i) * dflux2);
+        dNdS[i] = model.getBand2NumberCounts(flux2);
       }
     } else {
       for (unsigned int i = 0; i < nflux2; ++i) {
-	flux2 = minflux2 + static_cast<double>(i) * dflux2;
-	dNdS[i] = model.getBand2NumberCounts(flux2);
+        flux2 = minflux2 + static_cast<double>(i) * dflux2;
+        dNdS[i] = model.getBand2NumberCounts(flux2);
       }
     }
 
     if (logcounts)
       for (unsigned int i = 0; i < nflux2; ++i)
-	dNdS[i] = log10(dNdS[i]);
+        dNdS[i] = log10(dNdS[i]);
     
     //Write out
     hdf5utils::outfiletype oft = hdf5utils::getOutputFileType(outfile);
     if (oft == hdf5utils::HDF5 || oft == hdf5utils::UNKNOWN) {
       if (verbose) std::cout << "Writing to: " << outfile 
-			     << " as HDF5" << std::endl;
+                             << " as HDF5" << std::endl;
       hid_t file_id;
       file_id = H5Fcreate(outfile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
-			  H5P_DEFAULT);
+                          H5P_DEFAULT);
       if (H5Iget_ref(file_id) < 0) {
-	H5Fclose(file_id);
-	throw affineExcept("pofd_affine_getdNdS", "getNProjected",
-			   "Failed to open HDF5 file to write");
+        H5Fclose(file_id);
+        throw affineExcept("pofd_affine_getdNdS", "getNProjected",
+                           "Failed to open HDF5 file to write");
       }
       hsize_t adims;
       hid_t mems_id, att_id, group_id;
@@ -402,18 +404,18 @@ int getNProjected(int argc, char** argv) {
       mems_id = H5Screate_simple(1, &adims, nullptr);
       btmp = static_cast<hbool_t>(logspace);
       att_id = H5Acreate2(file_id, "logspace", H5T_NATIVE_HBOOL,
-			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                          mems_id, H5P_DEFAULT, H5P_DEFAULT);
       H5Awrite(att_id, H5T_NATIVE_HBOOL, &btmp);
       H5Aclose(att_id);
       att_id = H5Acreate2(file_id, "dflux", H5T_NATIVE_DOUBLE,
-			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                          mems_id, H5P_DEFAULT, H5P_DEFAULT);
       H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux2);
       H5Aclose(att_id);
       H5Sclose(mems_id);
 
       // Model
       group_id = H5Gcreate(file_id, "Model", H5P_DEFAULT, H5P_DEFAULT, 
-			  H5P_DEFAULT);
+                          H5P_DEFAULT);
       model.writeToHDF5Handle(group_id, true);
       H5Gclose(group_id);
 
@@ -421,44 +423,44 @@ int getNProjected(int argc, char** argv) {
       double* fluxes;
       fluxes = new double[nflux2];
       if (logspace) {
-	double lmin = log2(minflux2);
-	for (unsigned int i = 0; i < nflux2; ++i) 
-	  fluxes[i] = exp2(lmin + static_cast<double>(i) * dflux2);
+        double lmin = log2(minflux2);
+        for (unsigned int i = 0; i < nflux2; ++i) 
+          fluxes[i] = exp2(lmin + static_cast<double>(i) * dflux2);
       } else
-	for (unsigned int i = 0; i < nflux2; ++i) 
-	  fluxes[i] = minflux2 + static_cast<double>(i) * dflux2;
+        for (unsigned int i = 0; i < nflux2; ++i) 
+          fluxes[i] = minflux2 + static_cast<double>(i) * dflux2;
       hdf5utils::writeDataDoubles(file_id, "Flux", nflux2, fluxes);
       delete[] fluxes;
 
       // dNdS
       if (logcounts)
-	hdf5utils::writeDataDoubles(file_id, "Log10dNdS", nflux2, dNdS);
+        hdf5utils::writeDataDoubles(file_id, "Log10dNdS", nflux2, dNdS);
       else
-	hdf5utils::writeDataDoubles(file_id, "dNdS", nflux2, dNdS);
+        hdf5utils::writeDataDoubles(file_id, "dNdS", nflux2, dNdS);
 
       H5Fclose(file_id);
     } else if (oft == hdf5utils::TXT) {
       FILE *fp;
       fp = fopen(outfile.c_str(), "w");
       if (!fp)
-	throw affineExcept("pofd_affine_getdNdS", "getNProjected",
-			   "Failed to open text output file");
+        throw affineExcept("pofd_affine_getdNdS", "getNProjected",
+                           "Failed to open text output file");
       if (logcounts)
-	fprintf(fp, "%12s   %12s\n", "Flux", "Log10dNdS");
+        fprintf(fp, "%12s   %12s\n", "Flux", "Log10dNdS");
       else
-	fprintf(fp, "%12s   %12s\n", "Flux", "dNdS");
+        fprintf(fp, "%12s   %12s\n", "Flux", "dNdS");
       if (logspace) {
-	double lmin = log2(minflux2);
-	for (unsigned int i = 0; i < nflux2; ++i)
-	  fprintf(fp, "%12.6e   %15.9e\n",
-		  exp2(lmin + static_cast<double>(i) * dflux2), dNdS[i]);
+        double lmin = log2(minflux2);
+        for (unsigned int i = 0; i < nflux2; ++i)
+          fprintf(fp, "%12.6e   %15.9e\n",
+                  exp2(lmin + static_cast<double>(i) * dflux2), dNdS[i]);
       } else for (unsigned int i = 0; i < nflux2; ++i) 
-	       fprintf(fp, "%12.6e   %15.9e\n",
-		       minflux2 + static_cast<double>(i) * dflux2, dNdS[i]);
+               fprintf(fp, "%12.6e   %15.9e\n",
+                       minflux2 + static_cast<double>(i) * dflux2, dNdS[i]);
       fclose(fp);
     } else if (oft == hdf5utils::FITS)
-	throw affineExcept("pofd_affine_getdNdS", "getNProjected",
-			   "FITS output not supported");
+        throw affineExcept("pofd_affine_getdNdS", "getNProjected",
+                           "FITS output not supported");
 
     delete[] dNdS; 
   } catch (const affineExcept& ex) {
@@ -505,7 +507,7 @@ int getNDouble(int argc, char** argv) {
   int option_index = 0;
   optind = 1; //Resets parsing
   while ((c = getopt_long(argc, argv, optstring, long_options,
-			  &option_index)) != -1) 
+                          &option_index)) != -1) 
     switch(c) {
     case 'l':
       logspace = true;
@@ -580,17 +582,17 @@ int getNDouble(int argc, char** argv) {
     //Check minflux values if logspace is set
     if (logspace) {
       if (!has_user_minflux1)
-	minflux1 = model.getMinFlux().first; //Sorted inside model
+        minflux1 = model.getMinFlux().first; //Sorted inside model
       else
-	if (minflux1 <= 0.0)
-	  throw affineExcept("pofd_affine_getdNdS", "getNDouble",
-			     "Minflux1 must be positive if using logspace");
+        if (minflux1 <= 0.0)
+          throw affineExcept("pofd_affine_getdNdS", "getNDouble",
+                             "Minflux1 must be positive if using logspace");
       if (!has_user_minflux2)
-	minflux2 = model.getMinFlux().second; //Sorted inside model
+        minflux2 = model.getMinFlux().second; //Sorted inside model
       else
-	if (minflux2 <= 0.0)
-	throw affineExcept("pofd_affine_getdNdS", "getNDouble",
-			   "Minflux2 must be positive if using logspace");
+        if (minflux2 <= 0.0)
+        throw affineExcept("pofd_affine_getdNdS", "getNDouble",
+                           "Minflux2 must be positive if using logspace");
     }
       
     //Get maximum flux if not set, use to compute dflux
@@ -602,26 +604,26 @@ int getNDouble(int argc, char** argv) {
     double dflux1, dflux2;
     if (nflux1 > 1) {
       if (logspace)
-	dflux1 = log2(maxflux1 / minflux1) / static_cast<double>(nflux1 - 1);
+        dflux1 = log2(maxflux1 / minflux1) / static_cast<double>(nflux1 - 1);
       else
-	dflux1 = (maxflux1 - minflux1) / static_cast<double>(nflux1 - 1);
+        dflux1 = (maxflux1 - minflux1) / static_cast<double>(nflux1 - 1);
     } else
       dflux1 = 1.0; //Not used, but avoid compiler warning
     if (nflux1 > 1) {
       if (logspace)
-	dflux2 = log2(maxflux2 / minflux2) / static_cast<double>(nflux2 - 1);
+        dflux2 = log2(maxflux2 / minflux2) / static_cast<double>(nflux2 - 1);
       else
-	dflux2 = (maxflux2 - minflux2) / static_cast<double>(nflux2 - 1);
+        dflux2 = (maxflux2 - minflux2) / static_cast<double>(nflux2 - 1);
     } else
       dflux2 = 1.0;
 
     if (verbose) {
       std::cout << "Flux per sq degree, band 1: "
-		<< model.getFluxPerArea(0) << std::endl;
+                << model.getFluxPerArea(0) << std::endl;
       std::cout << "Flux per sq degree, band 2: "
-		<< model.getFluxPerArea(1) << std::endl;
+                << model.getFluxPerArea(1) << std::endl;
       std::cout << "Number of sources per area: "
-		<< model.getNS() << std::endl;
+                << model.getNS() << std::endl;
     }
 
     //Calculation loop
@@ -631,38 +633,38 @@ int getNDouble(int argc, char** argv) {
       double lmin1 = log2(minflux1);
       double lmin2 = log2(minflux2);
       for (unsigned int i = 0; i < nflux1; ++i) {
-	flux1 = exp2(lmin1 + static_cast<double>(i) * dflux1);
-	for (unsigned int j = 0; j < nflux2; ++j) {
-	  flux2 = exp2(lmin2 + static_cast<double>(j) * dflux2);
-	  dNdS[i * nflux2 + j] = model.getNumberCounts(flux1, flux2);
-	}
+        flux1 = exp2(lmin1 + static_cast<double>(i) * dflux1);
+        for (unsigned int j = 0; j < nflux2; ++j) {
+          flux2 = exp2(lmin2 + static_cast<double>(j) * dflux2);
+          dNdS[i * nflux2 + j] = model.getNumberCounts(flux1, flux2);
+        }
       }
     } else {
       for (unsigned int i = 0; i < nflux1; ++i) {
-	flux1 = minflux1 + static_cast<double>(i) * dflux1;
-	for (unsigned int j = 0; j < nflux2; ++j) {
-	  flux2 = minflux2 + static_cast<double>(j) * dflux2;
-	  dNdS[i * nflux2 + j] = model.getNumberCounts(flux1, flux2);
-	}
+        flux1 = minflux1 + static_cast<double>(i) * dflux1;
+        for (unsigned int j = 0; j < nflux2; ++j) {
+          flux2 = minflux2 + static_cast<double>(j) * dflux2;
+          dNdS[i * nflux2 + j] = model.getNumberCounts(flux1, flux2);
+        }
       }
     }
 
     if (logcounts)
       for (unsigned int i = 0; i < nflux1 * nflux2; ++i)
-	dNdS[i] = log10(dNdS[i]);
+        dNdS[i] = log10(dNdS[i]);
     
     //Write out
     hdf5utils::outfiletype oft = hdf5utils::getOutputFileType(outfile);
     if (oft == hdf5utils::HDF5 || oft == hdf5utils::UNKNOWN) {
       if (verbose) std::cout << "Writing to: " << outfile 
-			     << " as HDF5" << std::endl;
+                             << " as HDF5" << std::endl;
       hid_t file_id;
       file_id = H5Fcreate(outfile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,
-			  H5P_DEFAULT);
+                          H5P_DEFAULT);
       if (H5Iget_ref(file_id) < 0) {
-	H5Fclose(file_id);
-	throw affineExcept("pofd_affine_getdNdS", "getNDouble",
-			   "Failed to open HDF5 file to write");
+        H5Fclose(file_id);
+        throw affineExcept("pofd_affine_getdNdS", "getNDouble",
+                           "Failed to open HDF5 file to write");
       }
       hsize_t adims;
       hid_t mems_id, att_id, group_id;
@@ -671,18 +673,18 @@ int getNDouble(int argc, char** argv) {
       adims = 1;
       mems_id = H5Screate_simple(1, &adims, nullptr);
       att_id = H5Acreate2(file_id, "dflux1", H5T_NATIVE_DOUBLE,
-			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                          mems_id, H5P_DEFAULT, H5P_DEFAULT);
       H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux1);
       H5Aclose(att_id);
       att_id = H5Acreate2(file_id, "dflux2", H5T_NATIVE_DOUBLE,
-			  mems_id, H5P_DEFAULT, H5P_DEFAULT);
+                          mems_id, H5P_DEFAULT, H5P_DEFAULT);
       H5Awrite(att_id, H5T_NATIVE_DOUBLE, &dflux2);
       H5Aclose(att_id);
       H5Sclose(mems_id);
 
       // Model
       group_id = H5Gcreate(file_id, "Model", H5P_DEFAULT, H5P_DEFAULT, 
-			  H5P_DEFAULT);
+                          H5P_DEFAULT);
       model.writeToHDF5Handle(group_id, true);
       H5Gclose(group_id);
 
@@ -690,55 +692,55 @@ int getNDouble(int argc, char** argv) {
       double* fluxes;
       fluxes = new double[nflux1];
       if (logspace) {
-	double lmin1 = log2(minflux1);
-    	for (unsigned int i = 0; i < nflux1; ++i)
-	  fluxes[i] = exp2(lmin1 + static_cast<double>(i) * dflux1);
+        double lmin1 = log2(minflux1);
+        for (unsigned int i = 0; i < nflux1; ++i)
+          fluxes[i] = exp2(lmin1 + static_cast<double>(i) * dflux1);
       } else
-	for (unsigned int i = 0; i < nflux1; ++i) 
-	  fluxes[i] = minflux1 + static_cast<double>(i) * dflux1;
+        for (unsigned int i = 0; i < nflux1; ++i) 
+          fluxes[i] = minflux1 + static_cast<double>(i) * dflux1;
       hdf5utils::writeDataDoubles(file_id, "Flux1", nflux1, fluxes);
       if (nflux1 != nflux2) {
-	delete[] fluxes;
-	fluxes = new double[nflux2];
+        delete[] fluxes;
+        fluxes = new double[nflux2];
       }
       if (logspace) {
-	double lmin2 = log2(minflux2);
-    	for (unsigned int i = 0; i < nflux2; ++i)
-	  fluxes[i] = exp2(lmin2 + static_cast<double>(i) * dflux2);
+        double lmin2 = log2(minflux2);
+        for (unsigned int i = 0; i < nflux2; ++i)
+          fluxes[i] = exp2(lmin2 + static_cast<double>(i) * dflux2);
       } else
-	for (unsigned int i = 0; i < nflux2; ++i) 
-	  fluxes[i] = minflux2 + static_cast<double>(i) * dflux2;
+        for (unsigned int i = 0; i < nflux2; ++i) 
+          fluxes[i] = minflux2 + static_cast<double>(i) * dflux2;
       hdf5utils::writeDataDoubles(file_id, "Flux2", nflux2, fluxes);
       delete[] fluxes;
 
       // dNdS
       if (logcounts)
-	hdf5utils::writeData2DDoubles(file_id, "Log10dNdS", nflux1,
-				      nflux2, dNdS);
+        hdf5utils::writeData2DDoubles(file_id, "Log10dNdS", nflux1,
+                                      nflux2, dNdS);
       else
-	hdf5utils::writeData2DDoubles(file_id, "dNdS", nflux1, nflux2, dNdS);
+        hdf5utils::writeData2DDoubles(file_id, "dNdS", nflux1, nflux2, dNdS);
 
       H5Fclose(file_id);
     } else if (oft == hdf5utils::TXT) {
       FILE *fp;
       fp = fopen( outfile.c_str(),"w");
       if (!fp) 
-	throw affineExcept("pofd_affine_getdNdS", "getNDouble",
-			   "Failed to open text output file");
+        throw affineExcept("pofd_affine_getdNdS", "getNDouble",
+                           "Failed to open text output file");
       fprintf(fp, "Log10Counts: %s\n", logcounts ? "true" : "false");
       fprintf(fp, "%s %u %12.6e %12.6e\n",logspace ? "true" : "false",
-	      nflux1, minflux1, dflux1);
+              nflux1, minflux1, dflux1);
       fprintf(fp, "%s %u %12.6e %12.6e\n", logspace ? "true" : "false",
-	      nflux2, minflux2, dflux2);
+              nflux2, minflux2, dflux2);
       for (unsigned int i = 0; i < nflux1; ++i) {
-	for (unsigned int j = 0; j < nflux2-1; ++j)
-	  fprintf(fp, "%13.7e ", dNdS[i * nflux2 + j]);
-	fprintf(fp, "%13.7e\n", dNdS[i * nflux2 + nflux2 - 1]);
+        for (unsigned int j = 0; j < nflux2-1; ++j)
+          fprintf(fp, "%13.7e ", dNdS[i * nflux2 + j]);
+        fprintf(fp, "%13.7e\n", dNdS[i * nflux2 + nflux2 - 1]);
       }
       fclose(fp);
     } else if (oft == hdf5utils::FITS)
       throw affineExcept("pofd_affine_getdNdS", "getNDouble",
-			 "FITS output not supported");
+                         "FITS output not supported");
 
     delete[] dNdS; 
   } catch (const affineExcept& ex) {
@@ -767,68 +769,68 @@ int main( int argc, char** argv ) {
   int c;
   int option_index = 0;
   while ((c = getopt_long(argc,argv,optstring,long_options,
-			  &option_index)) != -1) 
+                          &option_index)) != -1) 
     switch(c) {
     case 'h' :
       std::cerr << "NAME" << std::endl;
       std::cerr << "\tpofd_affine_getdNdS -- get differential number counts "
-		<< "for a model." << std::endl;
+                << "for a model." << std::endl;
       std::cerr << "\tBoth one-dimensional and two-dimensional models are "
-		<< "supported." << std::endl;
+                << "supported." << std::endl;
       std::cerr << std::endl;
       std::cerr << "SYNOPSIS" << std::endl;
       std::cerr << "\t pofd_affine_getdNdS [options] initfile outfile"
-		<< std::endl;
+                << std::endl;
       std::cerr << std::endl;
       std::cerr << "DESCRIPTION" << std::endl;
       std::cerr << "\tEvaluates the differential number counts for the model "
-		<< "in initfile" << std::endl;
+                << "in initfile" << std::endl;
       std::cerr << "\tand writes it to outfile.  The 1D model is a log-space "
-		<< "spline" << std::endl;
+                << "spline" << std::endl;
       std::cerr << "\tmodel for the number counts, and the 2D model is the 1D" 
-		<< " spline" << std::endl;
+                << " spline" << std::endl;
       std::cerr << "\tmodel times a log-normal color function for the second"
-		<< " band," << std::endl;
+                << " band," << std::endl;
       std::cerr << "\twith the log-space variance and mean color stored as"
-		<< " splines" << std::endl;
+                << " splines" << std::endl;
       std::cerr << "\tin the flux of the first band." << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tIn the 2D case, you can also ask for the projected"
-		<< " band 2" << std::endl;
+                << " band 2" << std::endl;
       std::cerr << "\tmodel." << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tinitfile is a text file specifying the model; the exact"
-		<< " details" << std::endl;
+                << " details" << std::endl;
       std::cerr << "\t(given below) depend on whether the 1D or 2D case is"
-		<< " being used." << std::endl;
+                << " being used." << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tFor the 1D case, initfile is a text file giving the "
-		<< "positions" << std::endl;
+                << "positions" << std::endl;
       std::cerr << "\tof the spline knots and their values in the format"
-		<< " knotflux value." << std::endl;
+                << " knotflux value." << std::endl;
       std::cerr << "\tAdditional elements on each line are ignored."
-		<< std::endl;
+                << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tFor the 2D (or projected 2D) case, initfile is a text "
-		<< "file" << std::endl;
+                << "file" << std::endl;
       std::cerr << "\tgiving the positions of the knot points and their "
-		<< "values, " << std::endl;
+                << "values, " << std::endl;
       std::cerr << "\tfollowed by the sigma knot positions and their values, "
-		<< "then" << std::endl;
+                << "then" << std::endl;
       std::cerr << "\tlikewise for the colour offset. The format is three "
-		<< "numbers" << std::endl;
+                << "numbers" << std::endl;
       std::cerr << "\ton the first line, giving the number of number count "
-		<< "knots," << std::endl;
+                << "knots," << std::endl;
       std::cerr << "\tsigma knots, and offset knots, followed by a number of "
-		<< "lines" << std::endl;
+                << "lines" << std::endl;
       std::cerr << "\tagain with the format knotpos value.  The sigmas and "
-		<< "offsets" << std::endl;
+                << "offsets" << std::endl;
       std::cerr << "\tare in log space." << std::endl;
       std::cerr << std::endl;
       std::cerr << "\tIn all cases the output number counts are written to"
-		<< " outfile." << std::endl;
+                << " outfile." << std::endl;
       std::cerr << "\tThe file output type is controlled by the output file"
-		<< std::endl;
+                << std::endl;
       std::cerr << "\textension (h5 for HDF5, txt for text)." << std::endl;
       std::cerr << std::endl;
       std::cerr << "OPTIONS" << std::endl;
@@ -836,13 +838,13 @@ int main( int argc, char** argv ) {
       std::cerr << "\t\tUse the 2D model." << std::endl;
       std::cerr << "\t-p, --projected" << std::endl;
       std::cerr << "\t\tUse the 2D model, but project out the band 1 counts."
-		<< " In" << std::endl;
+                << " In" << std::endl;
       std::cerr << "\t\tother words, produce the band 2 counts from the 2-band"
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t\tmodel." << std::endl;
       std::cerr << "\t-l, --logspace" << std::endl;
       std::cerr << "\t\tSpace the fluxes in log space rather than linearly"
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t-L, --logcounts" << std::endl;
       std::cerr << "\t\tOutput Log10 dNdS instead of dNdS" << std::endl;
       std::cerr << "\t-v, --verbose" << std::endl;
@@ -853,54 +855,54 @@ int main( int argc, char** argv ) {
       std::cerr << "ONE-D OPTIONS" << std::endl;
       std::cerr << "\t-M, --maxflux value" << std::endl;
       std::cerr << "\t\tThe maximum flux to calculate dN/dS for (def: highest"
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t\tknot specified in initfile)." << std::endl;
       std::cerr << "\t-m, --minflux value" << std::endl;
       std::cerr << "\t\tThe minimum flux to calculate dN/dS for (def: 0, "
-		<< "unless" << std::endl;
+                << "unless" << std::endl;
       std::cerr << "\t\t--logspace is set)." << std::endl;
       std::cerr << "\t-n, --nflux value" << std::endl;
       std::cerr << "\t\tNumber of flux values to output (def: 1000)" 
-		<< std::endl;
+                << std::endl;
       std::cerr << "PROJECTED OPTIONS" << std::endl;
       std::cerr << "\t-M, --maxflux value" << std::endl;
       std::cerr << "\t\tThe maximum band 2 flux to calculate dN/dS for"
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t\t(def: a few sigma above mean value at highest band 1 "
-		<< "knot" << std::endl;
+                << "knot" << std::endl;
       std::cerr << "\t\tspecified in initfile)." << std::endl;
       std::cerr << "\t-m, --minflux value" << std::endl;
       std::cerr << "\t\tThe minimum flux to calculate dN/dS for (def: 0, "
-		<< "unless" << std::endl;
+                << "unless" << std::endl;
       std::cerr << "\t\t--logspace is set)." << std::endl;
       std::cerr << "\t-n, --nflux value" << std::endl;
       std::cerr << "\t\tNumber of flux values to output (def: 100)" 
-		<< std::endl;
+                << std::endl;
       std::cerr << "TWO-D OPTIONS" << std::endl;
       std::cerr << "\t--maxflux1 value" << std::endl;
       std::cerr << "\t\tThe maximum flux to calculate dN/dS for in band 1"
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t\t(def: highest knot specified in initfile)." 
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t--maxflux2 value" << std::endl;
       std::cerr << "\t\tThe maximum flux to calculate dN/dS for in band 2"
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t\t(def: a few sigma above mean value at highest band 1 "
-		<< "knot)." << std::endl;
+                << "knot)." << std::endl;
       std::cerr << "\t--minflux1 value" << std::endl;
       std::cerr << "\t\tThe minimum flux to calculate dN/dS for in band 1. "
-		<< "(def:" << std::endl;
+                << "(def:" << std::endl;
       std::cerr << "\t\tlowest band 1 knot specified in initfile)" 
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t--minflux2 value" << std::endl;
       std::cerr << "\t\tThe minimum flux to calculate dN/dS for in band 2. "
-		<< "(def: 0)" << std::endl;
+                << "(def: 0)" << std::endl;
       std::cerr << "\t--nflux1 value" << std::endl;
       std::cerr << "\t\tNumber of flux values to output, band 1 (def: 100)" 
-		<< std::endl;
+                << std::endl;
       std::cerr << "\t--nflux2 value" << std::endl;
       std::cerr << "\t\tNumber of flux values to output, band 2 (def: 100)" 
-		<< std::endl;
+                << std::endl;
       return 0;
       break;
     case 'd' :
@@ -911,7 +913,7 @@ int main( int argc, char** argv ) {
       break;
     case 'V' :
       std::cerr << "pofd_mcmc version number: " << pofd_mcmc::version 
-		<< std::endl;
+                << std::endl;
       return 0;
       break;
     }
@@ -919,7 +921,7 @@ int main( int argc, char** argv ) {
   if (twod) {
     if (projected)
       std::cout << "WARNING: Both twod and projected set; just using twod"
-		<< std::endl;
+                << std::endl;
     return getNDouble(argc, argv);
   } else if (projected) 
     return getNProjected(argc, argv);
