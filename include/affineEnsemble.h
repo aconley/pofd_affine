@@ -102,7 +102,7 @@ public:
                  bool=false, float=5, float=2);
   virtual ~affineEnsemble(); //!< Destructor
   affineEnsemble(const affineEnsemble&)=delete;
-  affineEnsemble(const affineEnsemble&&)=delete;
+  affineEnsemble(affineEnsemble&&)=delete;
 
   bool isValid() const; //!< Are params valid?
 

@@ -22,6 +22,22 @@ proposedStep::proposedStep(const proposedStep& other) :
   oldLogLike(other.oldLogLike), newLogLike(other.newLogLike),
   z (other.z) { }
 
+/*!
+  \param[in] other Other proposed step to apply move semantics from
+*/
+proposedStep::proposedStep(proposedStep&& other) {
+  update_idx = other.update_idx;
+  oldLogLike = other.oldLogLike;
+  newLogLike = other.newLogLike;
+  z = other.z;
+  oldStep = std::move(other.oldStep);
+  newStep = std::move(other.newStep);
+  other.update_idx = 0;
+  other.oldLogLike = std::numeric_limits<double>::quiet_NaN();
+  other.newLogLike = std::numeric_limits<double>::quiet_NaN();
+  other.z = std::numeric_limits<double>::quiet_NaN();
+}
+
 proposedStep::~proposedStep() {}
 
 void proposedStep::clear() {
@@ -54,6 +70,24 @@ proposedStep& proposedStep::operator=(const proposedStep& other) {
   oldLogLike = other.oldLogLike;
   newLogLike = other.newLogLike;
   z = other.z;
+  return *this;
+}
+
+/*!
+  \param[in] other Other proposed step to apply move semantics from
+*/
+proposedStep& proposedStep::operator=(proposedStep&& other) {
+  if (this == &other) return *this; //Self copy
+  update_idx = other.update_idx;
+  oldLogLike = other.oldLogLike;
+  newLogLike = other.newLogLike;
+  z = other.z;
+  oldStep = std::move(other.oldStep);
+  newStep = std::move(other.newStep);
+  other.update_idx = 0;
+  other.oldLogLike = std::numeric_limits<double>::quiet_NaN();
+  other.newLogLike = std::numeric_limits<double>::quiet_NaN();
+  other.z = std::numeric_limits<double>::quiet_NaN();
   return *this;
 }
 

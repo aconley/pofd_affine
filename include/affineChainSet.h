@@ -27,6 +27,7 @@ struct affineStepChunk {
 
   affineStepChunk(unsigned int, unsigned int, unsigned int); //!< Constructor
   affineStepChunk(const affineStepChunk&); //!< Copy constructor
+  affineStepChunk(affineStepChunk&&)=delete;
   ~affineStepChunk(); //!< Destructor
 
   /*! \brief Fills a chunk with the last step of another chunk, resizing as
@@ -40,7 +41,7 @@ struct affineStepChunk {
   unsigned int getMinNSteps() const; //!< Get minimum number of steps accross all walkers
 
   affineStepChunk& operator=(const affineStepChunk&); //!< Copy
- 
+
   double getMaxLogLike() const; //!< Return maximum log likelihood in this chunk
   void getMaxLogLikeParam(double&, paramSet&) const; //!< Return best Log Likelihood step and it's likelihood in this chunk
 
@@ -109,7 +110,7 @@ class affineChainSet {
  public:
   affineChainSet(unsigned int, unsigned int); //!< Constructor
   affineChainSet(const affineChainSet&)=delete;
-  affineChainSet(const affineChainSet&&)=delete;
+  affineChainSet(affineChainSet&&)=delete;
   ~affineChainSet(); //!< Destructor
 
   void clear(); //!< Clears the chain

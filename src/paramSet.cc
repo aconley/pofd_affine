@@ -81,6 +81,16 @@ paramSet::paramSet(const paramSet& other) {
     paramvals[i] = other.paramvals[i];
 }
 
+/*!
+  \param[in] other Other paramSet to use move semantics on
+*/
+paramSet::paramSet(paramSet&& other) : nparams(0), paramvals(nullptr) {
+  nparams = other.nparams;
+  paramvals = other.paramvals;
+  other.nparams = 0;
+  other.paramvals = nullptr;
+}
+
 paramSet::~paramSet() {
   if (paramvals != nullptr) delete[] paramvals;
 }
@@ -113,6 +123,19 @@ paramSet& paramSet::operator=(const paramSet& other) {
   setNParams(other.nparams);
   for (unsigned int i = 0; i < other.nparams; ++i)
     paramvals[i] = other.paramvals[i];
+  return *this;
+}
+
+/*!
+  \param[in] other paramSet to copy with move semantics
+*/
+paramSet& paramSet::operator=(paramSet&& other) {
+  if (this == &other) return *this;
+  if (paramvals != nullptr) delete[] paramvals;
+  nparams = other.nparams;
+  paramvals = other.paramvals;
+  other.nparams = 0;
+  other.paramvals = nullptr;
   return *this;
 }
 
