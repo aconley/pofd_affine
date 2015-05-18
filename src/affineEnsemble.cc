@@ -54,12 +54,11 @@ affineEnsemble::affineEnsemble(unsigned int NWALKERS, unsigned int NPARAMS,
 
   acor_set = false;
 
-  int nproc;
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
   if (nproc < 2)
     throw affineExcept("affineEnsemble", "affineEnsemble",
                        "Must have at least 2 nodes");
-  int nslaves = nproc - 1;
+  nslaves = nproc - 1;
 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   if (rank == 0) {
@@ -604,8 +603,6 @@ void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
       doMasterStep();
     }
     
-    int nproc;
-    MPI_Comm_size(MPI_COMM_WORLD, &nproc);
     for (int i = 1; i < nproc; ++i)
       MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
   } else
@@ -676,8 +673,7 @@ void affineEnsemble::masterSample() {
                        "Failed to accept any steps from main loop");
   
   //Tell slaves we are done
-  int jnk, nproc;
-  MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+  int jnk;
   for (int i = 1; i < nproc; ++i)
     MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
 }
@@ -1002,21 +998,23 @@ void affineEnsemble::calcLastLikelihood() {
   for (unsigned int i = 0; i < nwalkers; ++i)
     needCalc.push(i);
   
-  int nproc;
-  MPI_Comm_size(MPI_COMM_WORLD, &nproc);
-  
   // HACK
   std::cerr << "calcLastLikelihood processing " << nwalkers
             << " points starting with " << procqueue.size()
             << " processors in the queue" << std::endl;
 
-  unsigned int ndone = 0;
+  // How do we decide we are done?  Two conditions:
+  //  a) All the steps are done
+  //  b) All the slaves are available again
+  bool done = false;
+  unsigned int ndone = 0; // Number done
+  unsigned int ntosend = nwalkers; // Total number undispatched
   unsigned int this_update;
   // This is pretty much what happens in emptyMasterQueue, but with
   //  small modifications
-  while (ndone < nwalkers) {
-    // If there are available procs, send them a step to do
-    if (!procqueue.empty())
+  while (!done) {
+    // If there are available procs and steps to send, do so
+    if ((ntosend > 0) && (!procqueue.empty())) {
       std::cerr << "Sending new points with " << procqueue.size()
                 << " procs available" << " and " << needCalc.size()
                 << " left to do" << std::endl;
@@ -1031,11 +1029,13 @@ void affineEnsemble::calcLastLikelihood() {
                    MPI_COMM_WORLD);
           pstep.sendSelf(MPI_COMM_WORLD, this_rank);
         }
+        ntosend = needCalc.size();
       } catch (const affineExcept& ex) {
         for (int i = 1; i < nproc; ++i)
           MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
         throw ex;
       }
+    }
     
     std::cerr << "Processing messages with " << procqueue.size()
               << " procs available" << " and " << needCalc.size()
@@ -1095,6 +1095,8 @@ void affineEnsemble::calcLastLikelihood() {
       // See if there are more messages waiting
       MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     }
+    // Are we done?
+    done = (ndone >= nwalkers) && (procqueue.size() >= nslaves);
   }
 }
 
@@ -1252,7 +1254,7 @@ void affineEnsemble::doMasterStep(double temp) throw (affineExcept) {
   unsigned int minidx, maxidx;
   std::pair<unsigned int, unsigned int> pr;
   //Do the first half
-  minidx = nwalkers/2; //Generate from second half
+  minidx = nwalkers / 2; //Generate from second half
   maxidx = nwalkers;
   if (verbosity >= 3)
     std::cout << "  Generating new steps for 0:" << nwalkers/2
@@ -1295,8 +1297,8 @@ void affineEnsemble::doMasterStep(double temp) throw (affineExcept) {
 void affineEnsemble::emptyMasterQueue(double temp) throw (affineExcept) {
   //Step loop
   MPI_Status Info;
-  int jnk, this_rank, this_tag, nproc, ismsg;
-  unsigned int ndone, nsteps;
+  int jnk, this_rank, this_tag, ismsg;
+  unsigned int ndone, nsteps, ntosend;
   std::pair<unsigned int, unsigned int> pr;
   double prob; // Probability of accepting a step
   double rval; // Random comparison value
@@ -1314,9 +1316,14 @@ void affineEnsemble::emptyMasterQueue(double temp) throw (affineExcept) {
   std::cerr << "Doing " << nsteps << " steps with " << procqueue.size()
             << " available processors" << std::endl;
 
-  while (ndone < nsteps) {
+  // As in calcLastLikelihood -- we are done when
+  //   a) All the steps are done
+  //   b) All the slaves are available again
+  bool done = false;
+  ntosend = nsteps;
+  while (!done) {
     //First, if there are available procs, send them a step if we can
-    if (!procqueue.empty()) {
+    if ((ntosend > 0) && (!procqueue.empty())) {
       try {
         for (unsigned int i = 0; i < stepqueue.size(); ++i) {
           if (procqueue.empty()) break; //No more available procs
@@ -1340,6 +1347,7 @@ void affineEnsemble::emptyMasterQueue(double temp) throw (affineExcept) {
                    MPI_COMM_WORLD);
           pstep.sendSelf(MPI_COMM_WORLD, this_rank);
         }
+        ntosend = stepqueue.size();
       } catch (const affineExcept& ex) {
         for (int i = 1; i < nproc; ++i)
           MPI_Send(&jnk, 1, MPI_INT, i, mcmc_affine::STOP, MPI_COMM_WORLD);
@@ -1461,6 +1469,8 @@ void affineEnsemble::emptyMasterQueue(double temp) throw (affineExcept) {
       // See if there are any more
       MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &ismsg, &Info);
     }
+    // Are we done?
+    done = (ndone >= nsteps) && (procqueue.size() >= nslaves);
   }
 }
 
