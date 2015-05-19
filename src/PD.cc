@@ -22,6 +22,24 @@ PD::PD(unsigned int N, double MINFLUX, double DFLUX) :
     pd_ = (double *) fftw_malloc(sizeof(double) * capacity);
 }
 
+/*!
+  \param[inout] Other PD instance to move data from.
+*/
+PD::PD(PD&& other) {
+  n = other.n;
+  capacity = other.capacity;
+  logflat = other.logflat;
+  minflux = other.minflux;
+  dflux = other.dflux;
+  pd_ = other.pd_;
+  other.n = 0;
+  other.capacity = 0;
+  other.logflat = false;
+  other.minflux = 0.0;
+  other.dflux = 1.0;
+  other.pd_ = nullptr;
+}
+
 PD::~PD() {
   if (pd_ != nullptr) fftw_free(pd_);
 }
@@ -335,6 +353,27 @@ PD& PD::operator=(const PD& other) {
   dflux   = other.dflux;
   if (n > 0) std::memcpy(pd_, other.pd_, n * sizeof(pd_[0]));
   logflat = other.logflat;
+  return *this;
+}
+
+/*!
+  \param[in] other PD to move semantics
+*/
+PD& PD::operator=(PD&& other) {
+  if (this == &other) return *this;
+  if (pd_ != nullptr) fftw_free(pd_);
+  n = other.n;
+  capacity = other.capacity;
+  logflat = other.logflat;
+  minflux = other.minflux;
+  dflux = other.dflux;
+  pd_ = other.pd_;
+  other.n = 0;
+  other.capacity = 0;
+  other.logflat = false;
+  other.minflux = 0.0;
+  other.dflux = 1.0;
+  other.pd_ = nullptr;
   return *this;
 }
 

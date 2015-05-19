@@ -34,9 +34,9 @@ private:
 
 public:
   /* \brief Constructor */
-  explicit PD(unsigned int N=0, double MINFLUX=0.0, double DFLUX=0.0);
+  explicit PD(unsigned int N=0, double MINFLUX=0.0, double DFLUX=1.0);
   PD(const PD&)=delete;
-  PD(PD&&)=delete;
+  PD(PD&&); //!< Move constructor
   ~PD(); //!< Destructor
 
   //Public for efficient filling -- bad form, but speed matters here
@@ -65,6 +65,7 @@ public:
   dblpair getMeanAndVar(bool donorm=true) const; //!< Get mean and variance 
   
   PD& operator=(const PD&); //!< Copy
+  PD& operator=(PD&&); //!< Move assignment
 
   /*! \brief Fill contents from array*/
   void fill(unsigned int N, double MIN, double DF,

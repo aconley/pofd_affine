@@ -26,9 +26,6 @@ beam::beam() {
   posnbins = negnbins = 0;
   posweights = negweights = nullptr;
   poshistval = neghistval = nullptr;
-  
-  if (minval < 0.0)
-    throw affineExcept("beam", "beam", "Invalid (non-positive) minval");
 }
 
 /*!
@@ -43,7 +40,7 @@ beam::beam(const std::string& filename, bool histogram,
   nneg = npos = 0; 
   totneg = totpos = 0; 
   totnegsq = totpossq = 0.0;
-  pixsize=0.0; 
+  pixsize = 0.0; 
   pospixarr = negpixarr = nullptr;
   posinvpixarr = neginvpixarr = nullptr;
   haspos = hasneg = false;
@@ -115,6 +112,51 @@ beam::beam(const beam& inp) {
 }
 
 /*!
+  \param[in] other Beam to move
+*/
+beam::beam(beam&& other) {
+  npos = other.npos;
+  nneg = other.nneg;
+  haspos = other.haspos;
+  hasneg = other.hasneg;
+  is_pos_histogrammed = other.is_pos_histogrammed;
+  is_neg_histogrammed = other.is_neg_histogrammed;
+  nbins = other.nbins;
+  posnbins = other.posnbins;
+  negnbins = other.negnbins;
+  pixsize = other.pixsize;
+  totpos = other.totpos;
+  totneg = other.totneg;
+  totpossq = other.totpossq;
+  totnegsq = other.totnegsq;
+  minval = other.minval;
+  pospixarr = other.pospixarr;
+  posinvpixarr = other.posinvpixarr;
+  posweights = other.posweights;
+  poshistval = other.poshistval;
+  negpixarr = other.negpixarr;
+  neginvpixarr = other.neginvpixarr;
+  negweights = other.negweights;
+  neghistval = other.neghistval;
+
+  other.npos = other.nneg = 0;
+  other.haspos = other.hasneg = false;
+  other.is_pos_histogrammed = other.is_neg_histogrammed = false;
+  other.nbins = other.posnbins = other.negnbins = 0;
+  other.pixsize = 0.0;
+  other.totpos = other.totneg = other.totpossq = other.totnegsq = 0.0;
+  other.minval = 0.0;
+  other.pospixarr = nullptr;
+  other.posinvpixarr = nullptr;
+  other.posweights = nullptr;
+  other.poshistval = nullptr;
+  other.negpixarr = nullptr;
+  other.neginvpixarr = nullptr;
+  other.negweights = nullptr;
+  other.neghistval = nullptr;
+}
+
+/*!
   \param[in] other beam to copy
 */
 beam& beam::operator=(const beam& other) {
@@ -165,6 +207,55 @@ beam& beam::operator=(const beam& other) {
         neghistval[i]=other.neghistval[i];
     }
   }
+
+  return *this;
+}
+
+/*!
+  \param[in] other beam to move-assign
+*/
+beam& beam::operator=(beam&& other) {
+  if (this == &other) return *this;
+  cleanup();
+  npos = other.npos;
+  nneg = other.nneg;
+  haspos = other.haspos;
+  hasneg = other.hasneg;
+  nbins = other.nbins;
+  is_pos_histogrammed = other.is_pos_histogrammed;
+  is_neg_histogrammed = other.is_neg_histogrammed;
+  posnbins = other.posnbins;
+  negnbins = other.negnbins;
+  pixsize = other.pixsize;
+  totpos = other.totpos;
+  totneg = other.totneg;
+  totpossq = other.totpossq;
+  totnegsq = other.totnegsq;
+  minval = other.minval;
+  pospixarr = other.pospixarr;
+  posinvpixarr = other.posinvpixarr;
+  posweights = other.posweights;
+  poshistval = other.poshistval;
+  negpixarr = other.negpixarr;
+  neginvpixarr = other.neginvpixarr;
+  negweights = other.negweights;
+  neghistval = other.neghistval;
+
+  other.npos = other.nneg = 0;
+  other.haspos = other.hasneg = false;
+  other.is_pos_histogrammed = other.is_neg_histogrammed = false;
+  other.nbins = other.posnbins = other.negnbins = 0;
+  other.pixsize = 0.0;
+  other.totpos = other.totneg = other.totpossq = other.totnegsq = 0.0;
+  other.minval = 0.0;
+  other.pospixarr = nullptr;
+  other.posinvpixarr = nullptr;
+  other.posweights = nullptr;
+  other.poshistval = nullptr;
+  other.negpixarr = nullptr;
+  other.neginvpixarr = nullptr;
+  other.negweights = nullptr;
+  other.neghistval = nullptr;
 
   return *this;
 }

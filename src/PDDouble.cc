@@ -30,6 +30,30 @@ PDDouble::PDDouble(unsigned int N1, double MINFLUX1, double DFLUX1,
     pd_ = (double *) fftw_malloc(sizeof(double) * capacity);
 }
 
+/*!
+  \param[inout] Other PDDouble instance to move data from.
+*/
+PDDouble::PDDouble(PDDouble&& other) {
+  n1 = other.n1;
+  n2 = other.n2;
+  capacity = other.capacity;
+  logflat = other.logflat;
+  minflux1 = other.minflux1;
+  minflux2 = other.minflux2;
+  dflux1 = other.dflux1;
+  dflux2 = other.dflux2;
+  pd_ = other.pd_;
+  other.n1 = 0;
+  other.n2 = 0;
+  other.capacity = 0;
+  other.logflat = false;
+  other.minflux1 = 0.0;
+  other.minflux2 = 0.0;
+  other.dflux1 = 1.0;
+  other.dflux2 = 1.0;
+  other.pd_ = nullptr;
+}
+
 PDDouble::~PDDouble() {
   if (pd_ != nullptr) fftw_free(pd_);
 }
@@ -660,6 +684,33 @@ PDDouble& PDDouble::operator=(const PDDouble& other) {
     std::memcpy(pd_, other.pd_, sz * sizeof(pd_[0]));
   }
   logflat = other.logflat;
+  return *this;
+}
+
+/*!
+  \param[in] other PDDouble to move semantics
+*/
+PDDouble& PDDouble::operator=(PDDouble&& other) {
+  if (this == &other) return *this;
+  if (pd_ != nullptr) fftw_free(pd_);
+  n1 = other.n1;
+  n2 = other.n2;
+  capacity = other.capacity;
+  logflat = other.logflat;
+  minflux1 = other.minflux1;
+  minflux2 = other.minflux2;
+  dflux1 = other.dflux1;
+  dflux2 = other.dflux2;
+  pd_ = other.pd_;
+  other.n1 = 0;
+  other.n2 = 0;
+  other.capacity = 0;
+  other.logflat = false;
+  other.minflux1 = 0.0;
+  other.minflux2 = 0.0;
+  other.dflux1 = 1.0;
+  other.dflux2 = 1.0;
+  other.pd_ = nullptr;
   return *this;
 }
 

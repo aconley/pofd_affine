@@ -69,7 +69,7 @@ class beam {
   beam(const std::string& filename, bool histogram=false, 
        unsigned int NBINS=120, double MINVAL=1e-5); //!< Reads beam from file
   beam(const beam&); //!< Copy constructor
-  beam(beam&&)=delete;
+  beam(beam&&); //!< Move constructor
   ~beam() { cleanup(); } //!< Destructor
 
   void free() { cleanup(); } //!< Free all memory
@@ -87,7 +87,7 @@ class beam {
   double getEffectiveAreaSq() const; //!< Get effective area of squared beam in sq deg
 
   beam& operator=(const beam&); //!< Copy
-  beam& operator=(beam&&)=delete;
+  beam& operator=(beam&&); //!< Move-assign
 
   unsigned int getNPos() const { return npos; } //!< Number of positive beam pix
   unsigned int getNNeg() const { return nneg; } //!< Number of negative beam pix
