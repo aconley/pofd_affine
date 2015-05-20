@@ -836,6 +836,16 @@ unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
   // Figure out the search index range from -n1signeg to +n1sigpos
   int topidx = currsize - static_cast<int>(n1signeg / dflux) - 1;
   int botidx = static_cast<int>(n1sigpos / dflux);
+  if (topidx >= currsize || botidx < 0 || botidx > topidx) {
+    std::stringstream errstr;
+    errstr << "Logic error in topidx/botidx with values "
+           << topidx << " and " << botidx << " and size "
+           << currsize << " with dflux " << dflux
+           << " n1signeg " << n1signeg << " and n1sigpos "
+           << n1sigpos;
+    throw affineExcept("PDFactoryDouble", "findSplitPoint", 
+                       errstr.str());   
+  }
   // Find minimum value
   int minidx;
   double minval;
@@ -870,6 +880,7 @@ unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
     // Check if these values are decreasing
     bool monotonic_decrease = true;
     int initidx = minidx - pre_jitter_n;
+
     double currval, prevval;
     jitter = prevval = data[initidx];
     for (int i = initidx + 1; i < minidx; ++i) {
@@ -901,9 +912,11 @@ unsigned int PDFactoryDouble::findSplitPoint(const double* const data,
     // Try to use some neighboring points to get nicer estimate
     const int nminup = 3;
     int bi, ti;
-    if (minidx < botidx) bi = botidx; else bi = minidx - nminup;
+    if (minidx < botidx) bi = botidx; 
+    else bi = (minidx >= nminup) ? (minidx - nminup) : minidx;
     if (minidx > topidx - nminup ) ti = topidx - nminup; 
     else ti = minidx + nminup;
+    ti = (ti >= currsize) ? (currsize - 1) : ti;
     for (int i = bi; i < ti; ++i) {
       currval = data[i];
       if (currval > minval) minval = currval;

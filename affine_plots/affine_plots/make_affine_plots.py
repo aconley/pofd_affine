@@ -45,6 +45,8 @@ if __name__ == "__main__":
 
       if parse_results.outfile is None:
           outfile = os.path.splitext(parse_results.h5file)[0] + '.pdf'
-          f.savefig(outfile)
       else:
-          f.savefig(outfile)
+          outfile = parse_results.outfile
+
+      print("Writing plots to {0:s}".format(outfile))
+      f.savefig(outfile)
