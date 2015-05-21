@@ -700,6 +700,23 @@ double initFileDoubleLogNormal::getUpperLimit(unsigned int idx) const {
   return uplim[idx];
 }
 
+/*
+  \returns Min Sigma value.  This is either 0.0, or 1/2 the smallest
+    sigma model lower limit if all sigma knots have such a limit.
+*/
+double initFileDoubleLogNormal::getMinSigma() const {
+  if (!has_lower_limits) return 0;
+  bool all_sig_lim = has_lowlim[nknots];
+  for (unsigned int i = nknots+1; i < nknots + nsigmas; ++i)
+    all_sig_lim &= has_lowlim[i];
+  if (!all_sig_lim) return 0;
+  double min_sig = lowlim[nknots];
+  for (unsigned int i = nknots+1; i < nknots + nsigmas; ++i)
+    if (min_sig > lowlim[i]) min_sig = lowlim[i];
+  if (min_sig <= 0) return 0;
+  return 0.5 * min_sig;
+}
+
 /*!
   \param[in] p Parameters to test
   \returns True if p is valid (within limits)

@@ -113,7 +113,7 @@ bool pofdMCMCDouble::initChainsMaster() {
   //Initialize likelihood information -- priors, data, etc.
   if (spec_info.verbosity >= 3)
     std::cout << " Initializing likelihood information" << std::endl;
-  likeSet.setPositions(ifile);
+  likeSet.setupModel(ifile);
   likeSet.setFFTSize(spec_info.fftsize);
   if (spec_info.edge_set) {
     likeSet.setEdgeInteg();

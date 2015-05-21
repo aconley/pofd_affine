@@ -1182,8 +1182,9 @@ void calcLikeDouble::setRegularizationAlpha(double alpha) {
 /*!
   \param[in] ifile Object holding information from model initializaiton file
 */
-void calcLikeDouble::setPositions(const initFileDoubleLogNormal& ifile) {
+void calcLikeDouble::setupModel(const initFileDoubleLogNormal& ifile) {
   ifile.getModelPositions(model);
+  model.setMinSigma(ifile.getMinSigma());
 }
 
 /*!

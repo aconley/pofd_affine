@@ -199,7 +199,7 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
     }
 
     //Get likelihood
-    likeSet.setPositions(model_info);
+    likeSet.setupModel(model_info);
     likeSet.setRRanges(pars); // Have to set parameters first
 
     bool pars_rejected;

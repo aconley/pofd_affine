@@ -73,6 +73,8 @@ class initFileDoubleLogNormal {
   bool knotHasUpperLimit(unsigned int) const; //!< Does knot have a lower limit
   double getUpperLimit(unsigned int) const; //!< Get knot lower limit
 
+  double getMinSigma() const; //!< Use sigma knot lower limits to get min sigma
+
   bool isValid(const paramSet&) const; //!< Checks if parameters are within allowed ranges
 
   void writeToHDF5Handle(hid_t) const; //!< Write to HDF5 handle

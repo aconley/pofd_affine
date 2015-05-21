@@ -72,6 +72,7 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   unsigned int nsigmaknots; //!< Number of knot positions in sigma
   double *sigmaknots; //!< Positions of sigma knots
   double *sigmavals; //!< Sigma values at positions of knots
+  double min_sigma; //!< Minimum allowable sigma value
   gsl_interp_accel *accsigma; //!< Sigma accelerator
   gsl_interp *sigmainterp; //!< Sigma interpolator
   unsigned int noffsetknots; //!< Number of knot positions in offset
@@ -126,7 +127,7 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   double splineInt(double alpha, double beta) const;
 
   /*! \brief Number of elements in varr (lots of model params!) */
-  static constexpr unsigned int nvarr = 17; 
+  static constexpr unsigned int nvarr = 18; 
   void **varr; //!< Internal evil casting array for splineInt
 
   bool isValidLoaded() const; //!< Are loaded values valid?
@@ -187,6 +188,10 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   void setSigmaPositions(unsigned int, const float* const);
   /*! \brief Sets knot positions for band 2 sigma model, c array version */
   void setSigmaPositions(unsigned int, const double* const);
+  /*! \brief Set minimum sigma value */
+  void setMinSigma(double);
+  /*! \brief Get minimum sigma value */
+  double getMinSigma() const { return min_sigma; }
   /*! \brief Sets number of offset positions for color model */
   void setNOffsets(unsigned int);
   /*! \brief Gets number of offset knots in band 2 color model */

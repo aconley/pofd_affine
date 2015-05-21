@@ -302,8 +302,8 @@ class calcLikeDouble {
                     std::vector<double>& O) {
     model.setPositions(K, S, O);
   }
-  /*! \brief Set positions of all knots */
-  void setPositions(const initFileDoubleLogNormal&);
+  /*! \brief Set up knot positions and min_sigma from initfile */
+  void setupModel(const initFileDoubleLogNormal&);
 
   // Sigma priors
   /*! \brief Activates the sigma prior with width set to value, band 1*/

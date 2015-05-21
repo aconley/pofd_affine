@@ -42,7 +42,7 @@ static double evalCounts(double, void*);
 numberCountsDoubleLogNormal::numberCountsDoubleLogNormal() : 
   nknots(0), knots(nullptr), logknots(nullptr), logknotvals(nullptr),
   splinelog(nullptr), nsigmaknots(0), sigmaknots(nullptr), sigmavals(nullptr),
-  sigmainterp(nullptr), noffsetknots(0), offsetknots(nullptr),
+  min_sigma(0.0), sigmainterp(nullptr), noffsetknots(0), offsetknots(nullptr),
   offsetvals(nullptr), offsetinterp(nullptr),
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
@@ -71,7 +71,7 @@ numberCountsDoubleLogNormal::numberCountsDoubleLogNormal() :
 numberCountsDoubleLogNormal::numberCountsDoubleLogNormal(unsigned int NKNOTS,
                                                          unsigned int NSIGMA,
                                                          unsigned int NOFFSET) :
-  nknots(NKNOTS), nsigmaknots(NSIGMA), noffsetknots(NOFFSET), 
+  nknots(NKNOTS), nsigmaknots(NSIGMA), min_sigma(0.0), noffsetknots(NOFFSET), 
   knots_valid(false), sigmas_valid(false), offsets_valid(false),
   knotpos_loaded(false), sigmapos_loaded(false), offsetpos_loaded(false),
   knotvals_loaded(false), sigmavals_loaded(false), offsetvals_loaded(false),
@@ -170,6 +170,7 @@ numberCountsDoubleLogNormal(const std::vector<float>& KNOTS,
   acc = gsl_interp_accel_alloc();
 
   nsigmaknots = 0; sigmaknots = sigmavals = nullptr; sigmainterp = nullptr;
+  min_sigma = 0.0;
   setSigmaPositions(SIGMAS);
   accsigma = gsl_interp_accel_alloc();
 
@@ -208,6 +209,7 @@ numberCountsDoubleLogNormal(const std::vector<double>& KNOTS,
   acc = gsl_interp_accel_alloc();
 
   nsigmaknots = 0; sigmaknots = sigmavals = nullptr; sigmainterp = nullptr;
+  min_sigma = 0.0;
   setSigmaPositions(SIGMAS);
   accsigma = gsl_interp_accel_alloc();
 
@@ -248,6 +250,7 @@ numberCountsDoubleLogNormal(unsigned int nk, const float* const K,
   acc = gsl_interp_accel_alloc();
 
   nsigmaknots = 0; sigmaknots = sigmavals = nullptr; sigmainterp = nullptr;
+  min_sigma = 0.0;
   setSigmaPositions(ns,S);
   accsigma = gsl_interp_accel_alloc();
 
@@ -288,6 +291,7 @@ numberCountsDoubleLogNormal(unsigned int nk, const double* const K,
   acc = gsl_interp_accel_alloc();
 
   nsigmaknots = 0; sigmaknots = sigmavals = nullptr; sigmainterp = nullptr;
+  min_sigma = 0.0;
   setSigmaPositions(ns,S);
   accsigma = gsl_interp_accel_alloc();
 
@@ -306,6 +310,7 @@ numberCountsDoubleLogNormal::
 numberCountsDoubleLogNormal(const numberCountsDoubleLogNormal& other) {
   if (this == &other) return; //Self-copy
   nknots = nsigmaknots = noffsetknots = 0;
+  min_sigma = 0.0;
   knots = logknots = logknotvals = sigmaknots = 
     sigmavals = offsetknots = offsetvals = nullptr;
   acc = accsigma = accoffset = nullptr;
@@ -368,6 +373,7 @@ numberCountsDoubleLogNormal(const numberCountsDoubleLogNormal& other) {
                       static_cast<size_t>(other.nsigmaknots));
     checkSigmasValid();
   }
+  min_sigma = other.min_sigma;
   if (other.offsetvals_loaded) {
     for (unsigned int i = 0; i < noffsetknots; ++i)
       offsetvals[i] = other.offsetvals[i];
@@ -461,6 +467,7 @@ operator=(const numberCountsDoubleLogNormal& other) {
                       static_cast<size_t>(other.nsigmaknots));
     checkSigmasValid();
   }
+  min_sigma = other.min_sigma;
   if (other.offsetvals_loaded) {
     for (unsigned int i = 0; i < noffsetknots; ++i)
       offsetvals[i] = other.offsetvals[i];
@@ -780,6 +787,16 @@ void numberCountsDoubleLogNormal::setSigmaPositions(unsigned int n,
 }
 
 /*!
+  \param[in] mins New minimum sigma value
+*/
+void numberCountsDoubleLogNormal::setMinSigma(double mins) {
+  if (mins < 0)
+    throw affineExcept("numberCountsDoubleLogNormal", "setMinSigma",
+                       "Invalid (negative) min Sigma");
+  min_sigma = mins;
+}
+
+/*!
   \param[in] i Index into sigma knot positions
   \returns Position of idx-th sigma knot
 
@@ -1065,6 +1082,7 @@ void numberCountsDoubleLogNormal::checkSigmasValid() const {
   if (!sigmapos_loaded) return;
   if (!sigmavals_loaded) return;
   if (nsigmaknots == 0) return;
+  if (min_sigma < 0.0) return;
   for (unsigned int i = 0; i < nsigmaknots; ++i)
     if (std::isnan(sigmaknots[i]) || std::isinf(sigmaknots[i])) return;
   if (sigmaknots[0] <= 0.0) return;
@@ -1155,8 +1173,9 @@ double numberCountsDoubleLogNormal::getSigmaInner(double f1) const {
   if (nsigmaknots == 1) return sigmavals[0];
   if (f1 <= sigmaknots[0]) return sigmavals[0];
   if (f1 >= sigmaknots[nsigmaknots-1]) return sigmavals[nsigmaknots-1];
-  return gsl_interp_eval(sigmainterp, sigmaknots, sigmavals, 
-                         f1, accsigma);
+  double val = gsl_interp_eval(sigmainterp, sigmaknots, sigmavals, 
+                               f1, accsigma);
+  return (val < min_sigma) ? min_sigma : val;
 }
 
 /*!
@@ -1288,9 +1307,10 @@ double numberCountsDoubleLogNormal::getBand2NumberCounts(double f2) const {
   gsl_function F;
   double minknot = knots[0];
   double maxknot = knots[nknots-1];
-  unsigned int noff = noffsetknots;
+  unsigned int noff = noffsetknots; // Copy to avoid casting errors
   unsigned int nsig = nsigmaknots;
-  double f2_internal = f2; // Avoid compiler warning!
+  double mins = min_sigma;
+  double f2_internal = f2;
   //  We use the same varr as splineInt, but pack stuff in differently
   varr[0] = static_cast<void*>(&f2_internal);
   varr[1] = static_cast<void*>(splinelog);
@@ -1307,6 +1327,7 @@ double numberCountsDoubleLogNormal::getBand2NumberCounts(double f2) const {
   varr[12] = static_cast<void*>(&nsig);
   varr[13] = static_cast<void*>(sigmaknots);
   varr[14] = static_cast<void*>(sigmavals);
+  varr[15] = static_cast<void*>(&mins);
 
   params = static_cast<void*>(varr);
 
@@ -1531,8 +1552,9 @@ double numberCountsDoubleLogNormal::splineInt(double alpha, double beta) const {
   gsl_function F;
   double minknot = knots[0];
   double maxknot = knots[nknots-1];
-  unsigned int noff = noffsetknots;
+  unsigned int noff = noffsetknots; // Copy to avoid casting issues
   unsigned int nsig = nsigmaknots;
+  double mins = min_sigma;
   
   //What we actually pass to evalPowfNDoubleLogNormal is
   // power = alpha+beta
@@ -1570,6 +1592,7 @@ double numberCountsDoubleLogNormal::splineInt(double alpha, double beta) const {
     varr[14] = static_cast<void*>(&nsig);
     varr[15] = static_cast<void*>(sigmaknots);
     varr[16] = static_cast<void*>(sigmavals);
+    varr[17] = static_cast<void*>(&mins);
   }
 
   params = static_cast<void*>(varr);
@@ -2017,6 +2040,8 @@ void numberCountsDoubleLogNormal::sendSelf(MPI_Comm comm, int dest) const {
   if (sigmapos_loaded && sigmavals_loaded && nsigmaknots > 0)
     MPI_Send(sigmavals, nsigmaknots, MPI_DOUBLE, dest,
              pofd_mcmc::NCDCSENDSIGMAVALS, comm);
+  MPI_Send(const_cast<double*>(&min_sigma), 1, MPI_DOUBLE, dest,
+           pofd_mcmc::NCDCSENDMINSIGMA, comm);
 
   //Offsets
   MPI_Send(const_cast<bool*>(&offsetpos_loaded), 1, MPI::BOOL, dest, 
@@ -2088,6 +2113,8 @@ void numberCountsDoubleLogNormal::receiveCopy(MPI_Comm comm, int src) {
                       static_cast<size_t>(nsigmaknots));
     sigmavals_loaded = loaded;
   }
+  MPI_Recv(&min_sigma, 1, MPI_DOUBLE, src, pofd_mcmc::NCDCSENDMINSIGMA,
+           comm, &Info);
   checkSigmasValid();
 
   //Offsets
@@ -2178,7 +2205,10 @@ void numberCountsDoubleLogNormal::writeToHDF5Handle(hid_t objid,
                       mems_id, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(att_id, H5T_NATIVE_UINT, &noffsetknots);
   H5Aclose(att_id);
-
+  att_id = H5Acreate2(objid, "MinSigma", H5T_NATIVE_DOUBLE,
+                      mems_id, H5P_DEFAULT, H5P_DEFAULT);
+  H5Awrite(att_id, H5T_NATIVE_DOUBLE, &min_sigma);
+  H5Aclose(att_id);
   H5Sclose(mems_id);
 
   // Knot positions as data
@@ -2250,6 +2280,7 @@ void numberCountsDoubleLogNormal::readFromHDF5Handle(hid_t objid) {
     setSigmaPositions(f_nknots, newknots);
     delete[] newknots;
   }
+  // Note -- not reading MinSigma to keep backwards compatability
   f_nknots = hdf5utils::readAttUnsignedInt(objid, "NOffsetKnots");
   setNOffsets(f_nknots);
   if (f_nknots > 0) {
@@ -2322,6 +2353,7 @@ static double evalCounts(double s1, void* params) {
   // params[12] nsigmas
   // params[13] sigma positions
   // params[14] sigma values
+  // params[15] min_sigma
   //But this really has to be an array of pointers to void to work
   void** vptr = static_cast<void**>(params);
 
@@ -2355,18 +2387,21 @@ static double evalCounts(double s1, void* params) {
   }
 
   // Sigma
-  double isigma;
+  double sigma, isigma;
   unsigned int nsigmas = *static_cast<unsigned int*>(vptr[12]);
   double *sigmapos = static_cast<double*>(vptr[13]);
   double *sigmaval = static_cast<double*>(vptr[14]);
-  if (nsigmas == 1) isigma = 1.0 / sigmaval[0];
-  else if (s1 <= sigmapos[0]) isigma = 1.0 / sigmaval[0];
-  else if (s1 >= sigmapos[nsigmas - 1]) isigma = 1.0 / sigmaval[nsigmas - 1];
+  double min_sigma = *static_cast<double*>(vptr[15]);
+  if (nsigmas == 1) sigma = sigmaval[0];
+  else if (s1 <= sigmapos[0]) sigma = sigmaval[0];
+  else if (s1 >= sigmapos[nsigmas - 1]) sigma = sigmaval[nsigmas - 1];
   else {
     gsl_interp* sspl = static_cast<gsl_interp*>(vptr[10]);
     gsl_interp_accel* sacc = static_cast<gsl_interp_accel*>(vptr[11]);
-    isigma = 1.0 / gsl_interp_eval(sspl, sigmapos, sigmaval, s1, sacc);
+    sigma = gsl_interp_eval(sspl, sigmapos, sigmaval, s1, sacc);
   }
+  if (sigma < min_sigma) sigma = min_sigma;
+  isigma = 1.0 / sigma;
 
   // Log normal evaluation; note that s2 and s1 are both required to be
   // positive because we explicitly check that above (for s1, that is because
@@ -2407,6 +2442,7 @@ static double evalPowfNDoubleLogNormal(double s1, void* params) {
   // params[14] nsigmas
   // params[15] sigma positions
   // params[16] sigma values
+  // params[17] min_sigma
   //But this really has to be an array of pointers to void to work
   void** vptr = static_cast<void**>(params);
 
@@ -2457,6 +2493,7 @@ static double evalPowfNDoubleLogNormal(double s1, void* params) {
       unsigned int nsigmas = *static_cast<unsigned int*>(vptr[14]);
       double *sigmapos = static_cast<double*>(vptr[15]);
       double *sigmaval = static_cast<double*>(vptr[16]);
+      double min_sigma = *static_cast<double*>(vptr[17]);
       if (nsigmas == 1) sigma = sigmaval[0];
       else if (s1 <= sigmapos[0]) sigma = sigmaval[0];
       else if (s1 >= sigmapos[nsigmas-1]) sigma = sigmaval[nsigmas-1];
@@ -2465,6 +2502,7 @@ static double evalPowfNDoubleLogNormal(double s1, void* params) {
         gsl_interp_accel* sacc = static_cast<gsl_interp_accel*>(vptr[13]);
         sigma = gsl_interp_eval(sspl, sigmapos, sigmaval, s1, sacc);
       }
+      if (sigma < min_sigma) sigma = min_sigma;
       expbit += const2 * sigma * sigma;
     } 
 

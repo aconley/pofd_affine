@@ -29,13 +29,14 @@ static struct option long_options[] = {
   {"sigma", required_argument, 0, 's'},
   {"verbose", no_argument, 0, 'v'},
   {"wisdom", required_argument, 0, 'w'},
+  {"minsigma", required_argument, 0, 'm'},
   {"nedge", required_argument, 0, '5'},
   {"sigma1", required_argument, 0, '6'},
   {"sigma2", required_argument, 0, '7'},
   {0, 0, 0, 0}
 };
 
-char optstring[] = "hdVHl1:n:N:r:s:vw:5:6:7:";
+char optstring[] = "hdVHl1:m:n:N:r:s:vw:5:6:7:";
 
 int getPDSingle(int argc, char **argv) {
 
@@ -269,7 +270,7 @@ int getPDDouble(int argc, char** argv) {
   double sigma1, sigma2; //Noise
   unsigned int nflux, nedge, nbins;
   bool has_wisdom, histogram, verbose, getLog, doedge, writeR;
-  double minflux1, maxflux1, minflux2, maxflux2;
+  double minflux1, maxflux1, minflux2, maxflux2, min_sigma;
   std::string wisdom_file;
   
   std::string modelfile; //Model file
@@ -280,6 +281,7 @@ int getPDDouble(int argc, char** argv) {
   //Defaults
   sigma1              = 0.0;
   sigma2              = 0.0;
+  min_sigma           = 0.0;
   has_wisdom          = false;
   nflux               = 2048;
   verbose             = false;
@@ -307,6 +309,9 @@ int getPDDouble(int argc, char** argv) {
       break;
     case '5':
       nedge = static_cast<unsigned int>(atoi(optarg));
+      break;
+    case 'm':
+      min_sigma = atof(optarg);
       break;
     case 'n':
       nflux = static_cast<unsigned int>(atoi(optarg));
@@ -359,6 +364,10 @@ int getPDDouble(int argc, char** argv) {
     std::cerr << "Invalid noise level in band 2: must be >= 0.0" << std::endl;
     return 1;
   }
+  if (min_sigma < 0.0) {
+    std::cerr << "Invalid (negative) min_sigma" << std::endl;
+    return 1;
+  }
   if (writeR && rfile.empty()) {
     std::cout << "Requested R be written to empty filename" << std::endl;
     return 1;
@@ -382,6 +391,8 @@ int getPDDouble(int argc, char** argv) {
 
     PDDouble pd;
 
+    if (min_sigma > 0) model.setMinSigma(min_sigma);
+
     if (has_wisdom) {
       if (verbose)
         std::cout << "Reading in wisdom file: " << wisdom_file 
@@ -401,6 +412,7 @@ int getPDDouble(int argc, char** argv) {
 
       printf("  Flux per area, band 2:   %0.3f [Jy deg^-2]\n",
              model.getFluxPerArea(1));
+
       printf("  Nknots:                  %u\n", model_info.getNKnots());
       printf("  Nsigma:                  %u\n", model_info.getNSigmas());
       printf("  Noffset:                 %u\n", model_info.getNOffsets());
@@ -429,6 +441,8 @@ int getPDDouble(int argc, char** argv) {
         pr = model_info.getSigma(i);
         printf("    %11.5e  %11.5e\n",pr.first,pr.second);
       }
+      if (model.getMinSigma() > 0)
+        printf("  Min Color Sigma:         %0.5f\n", model.getMinSigma());
       printf("  Offset Positions and initial values:\n");
       for (unsigned int i = 0; i < model_info.getNOffsets(); ++i) {
         pr = model_info.getOffset(i);
@@ -650,6 +664,9 @@ int main( int argc, char** argv ) {
       std::cerr << "\t\tThe assumed per-pixel noise (assumed Gaussian, "
                 << "def: 0)." << std::endl;
       std::cerr << "TWO-D ONLY OPTIONS" << std::endl;
+      std::cerr << "\t-m, --minsigma=VALUE" << std::endl;
+      std::cerr << "\t\tMinimum color model sigma allowed (def: 0.0)."
+                << std::endl;
       std::cerr << "\t--nedge value" << std::endl;
       std::cerr << "\t\tNumber of bins in edge integrals for R."
                 << std::endl;
