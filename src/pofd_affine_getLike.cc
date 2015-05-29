@@ -13,7 +13,8 @@
 #include "../include/specFileDouble.h"
 #include "../include/affineExcept.h"
 
-int getLikeSingle(const std::string& initfile, const std::string specfile) {
+int getLikeSingle(const std::string& initfile, const std::string specfile,
+                  float sigmult=1.0) {
 
   try {
     //Read in the initialization file knot positions, values
@@ -30,7 +31,7 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
 
     paramSet pars(nknots + 1);
     model_info.getParams(pars);
-    pars[nknots] = 1.0;
+    pars[nknots] = sigmult;
 
     //Make sure we got some data
     if (spec_info.datafiles.size() == 0) 
@@ -107,7 +108,8 @@ int getLikeSingle(const std::string& initfile, const std::string specfile) {
 
 /////////////////////////////////////
 
-int getLikeDouble(const std::string& initfile, const std::string& specfile) {
+int getLikeDouble(const std::string& initfile, const std::string& specfile,
+                  float sigmult1=1.0, float sigmult2=1.0) {
 
   try {
     //Read in the initialization file knot positions, values
@@ -128,8 +130,8 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
     // + 2 for the bonus mean flux^2 per area
     paramSet pars(ntot + 6);
     model_info.getParams(pars);
-    pars[ntot] = 1.0;  // Sigma multipliers
-    pars[ntot+1] = 1.0;
+    pars[ntot] = sigmult1;  // Sigma multipliers
+    pars[ntot+1] = sigmult2;
 
     //Make sure we got some data
     if (spec_info.datafiles1.size() == 0) 
@@ -225,17 +227,24 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile) {
 
 int main(int argc, char** argv) {
   bool twod;
+  float sigmult, sigmult1, sigmult2;
   std::string initfile, specfile;
 
   twod = false;
+  sigmult = 1.0;
+  sigmult1 = 1.0;
+  sigmult2 = 1.0;
 
   static struct option long_options[] = {
     {"help", no_argument, 0, 'h'},
-    {"double",no_argument,0,'d'},
-    {"version",no_argument,0,'V'}, //Below here not parsed in main routine
+    {"double",no_argument, 0, 'd'},
+    {"sigmult", required_argument, 0, 's'},
+    {"sigmult1", required_argument, 0, '!'},
+    {"sigmult2", required_argument, 0, '@'},
+    {"version",no_argument, 0, 'V'},
     {0,0,0,0}
   };
-  char optstring[] = "hdV";
+  char optstring[] = "hds:!:@:V";
   int c;
   int option_index = 0;
 
@@ -308,10 +317,29 @@ int main(int argc, char** argv) {
       std::cerr << "\t\tOutput this help message and exit." << std::endl;
       std::cerr << "\t-V, --version" << std::endl;
       std::cerr << "\t\tOutput the version number and exit" << std::endl;
+      std::cerr << "ONE-D OPTIONS" << std::endl;
+      std::cerr << "\t-s, --sigmult VALUE" << std::endl;
+      std::cerr << "\t\tSigma multplier to use (def: 1.0)." << std::endl;
+      std::cerr << "TWO-D OPTIONS" << std::endl;
+      std::cerr << "\t--sigmult1 VALUE" << std::endl;
+      std::cerr << "\t\tSigma multplier to use, band 1 (def: 1.0)." 
+                << std::endl;
+      std::cerr << "\t--sigmult2 VALUE" << std::endl;
+      std::cerr << "\t\tSigma multplier to use, band 2 (def: 1.0)." 
+                << std::endl;
       return 0;
       break;
     case 'd' :
       twod = true;
+      break;
+    case 's':
+      sigmult = atof(optarg);
+      break;
+    case '!':
+      sigmult1 = atof(optarg);
+      break;
+    case '@':
+      sigmult2 = atof(optarg);
       break;
     case 'V' :
       std::cerr << "pofd_mcmc version number: " << pofd_mcmc::version 
@@ -329,8 +357,25 @@ int main(int argc, char** argv) {
   initfile = std::string(argv[optind]);
   specfile = std::string(argv[optind+1]);
 
-  if (! twod)
-    return getLikeSingle(initfile, specfile);
-  else
-    return getLikeDouble(initfile, specfile);
+  if (! twod) {
+    if (sigmult <= 0.0) {
+      std::cerr << "Invalid (non-positive) user supplied sigmult: "
+                << sigmult << std::endl;
+      return 1;
+    }
+    return getLikeSingle(initfile, specfile, sigmult);
+  } else {
+    if (sigmult1 <= 0.0) {
+      std::cerr << "Invalid (non-positive) user supplied sigmult1: "
+                << sigmult1 << std::endl;
+      return 1;
+    }
+    if (sigmult2 <= 0.0) {
+      std::cerr << "Invalid (non-positive) user supplied sigmult2: "
+                << sigmult2 << std::endl;
+      return 1;
+    }
+
+    return getLikeDouble(initfile, specfile, sigmult1, sigmult2);
+  }
 }
