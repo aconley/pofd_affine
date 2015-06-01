@@ -65,9 +65,9 @@ int getLikeSingle(const std::string& initfile, const std::string specfile,
                               spec_info.nbeamhist, spec_info.exp_conf);
     
     if (spec_info.has_wisdom_file) likeSet.addWisdom(spec_info.wisdom_file);
-    if (spec_info.verbosity >= 2) likeSet.setVerbose();
       
-    if (spec_info.verbosity >= 1) {
+    if (spec_info.verbosity >= 2) {
+      likeSet.setVerbose();
       printf("  FFTsize:       %u\n", spec_info.fftsize);
       printf("  Nknots:        %u\n", model_info.getNKnots());
       if (spec_info.beam_histogram)
@@ -173,9 +173,9 @@ int getLikeDouble(const std::string& initfile, const std::string& specfile,
                               spec_info.exp_conf1, spec_info.exp_conf2);
 
     if (spec_info.has_wisdom_file) likeSet.addWisdom(spec_info.wisdom_file);
-    if (spec_info.verbosity >= 2) likeSet.setVerbose();
       
-    if (spec_info.verbosity >= 1) {
+    if (spec_info.verbosity >= 2) {
+      likeSet.setVerbose();
       printf("  FFTsize:       %u\n", spec_info.fftsize);
       if (spec_info.beam_histogram)
         printf("  Using histogramming to reduce beam size\n");  
