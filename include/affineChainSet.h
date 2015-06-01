@@ -32,17 +32,17 @@ struct affineStepChunk {
 
   /*! \brief Fills a chunk with the last step of another chunk, resizing as
   needed */
-  void fillFromLastStep(const affineStepChunk&) throw (affineExcept);
+  void fillFromLastStep(const affineStepChunk&);
 
   void clear(); //!< Frees memory
 
   /*! \brief Gets number of steps for specified walker */
-  unsigned int getNSteps(unsigned int i) const { return nsteps[i]; }
-  unsigned int getMinNSteps() const; //!< Get minimum number of steps accross all walkers
+  unsigned int getNSteps(unsigned int i) const noexcept { return nsteps[i]; }
+  unsigned int getMinNSteps() const noexcept; //!< Get minimum number of steps accross all walkers
 
   affineStepChunk& operator=(const affineStepChunk&); //!< Copy
 
-  double getMaxLogLike() const; //!< Return maximum log likelihood in this chunk
+  double getMaxLogLike() const noexcept; //!< Return maximum log likelihood in this chunk
   void getMaxLogLikeParam(double&, paramSet&) const; //!< Return best Log Likelihood step and it's likelihood in this chunk
 
   /*! \brief Adds a new step, values in paramSet */
@@ -116,22 +116,22 @@ class affineChainSet {
   void clear(); //!< Clears the chain
   void clearPreserveLast() throw (affineExcept); //!< Clears the chain, preserving the last step of the old one as the first of the new
 
-  unsigned int getNWalkers() const { return nwalkers; } //!< Get number of walkers
+  unsigned int getNWalkers() const noexcept { return nwalkers; } //!< Get number of walkers
   void setNWalkers(unsigned int) throw (affineExcept); //!< Change the number of walkers
 
-  unsigned int getNParams() const { return nparams; } //!< Get number of params
+  unsigned int getNParams() const noexcept { return nparams; } //!< Get number of params
   void setNParams(unsigned int) throw (affineExcept); //!< Change the number of parameters
-  unsigned int getNIters() const; //!< Total number of iterations present across all walkers
+  unsigned int getNIters() const noexcept; //!< Total number of iterations present across all walkers
   unsigned int getNIters(unsigned int) const throw (affineExcept); //!< Total number of iterations for given walker
-  unsigned int getMinNIters() const; //!< Minimum number of iterations across all walkers
+  unsigned int getMinNIters() const noexcept; //!< Minimum number of iterations across all walkers
 
-  unsigned int getNChunks() const { return steps.size(); } //!< Get number of chunks
+  unsigned int getNChunks() const noexcept { return steps.size(); } //!< Get number of chunks
 
-  bool doSkipFirst() const { return skipfirst; } //!< Are we skipping the first tep in any results?
-  void setSkipFirst() { skipfirst = true; } //!< Do skip the first step
-  void unsetSkipFirst() { skipfirst = false; } //!< Don't skip the first step
+  bool doSkipFirst() const noexcept { return skipfirst; } //!< Are we skipping the first tep in any results?
+  void setSkipFirst() noexcept { skipfirst = true; } //!< Do skip the first step
+  void unsetSkipFirst() noexcept { skipfirst = false; } //!< Don't skip the first step
 
-  double getMaxLogLike() const; //!< Return maximum log likelihood over all walkers
+  double getMaxLogLike() const noexcept; //!< Return maximum log likelihood over all walkers
   void getMaxLogLikeParam(double&, paramSet&) const; //!< Return best Log Likelihood step and it's likelihood over all walkers
 
   void addChunk(unsigned int); //!< Adds a new chunk of specified size

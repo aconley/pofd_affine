@@ -79,8 +79,7 @@ affineStepChunk::~affineStepChunk() {
   and sets the only entry for each walker to the last step from the other
   walker. 
 */
-void affineStepChunk::fillFromLastStep(const affineStepChunk& other)
-  throw (affineExcept) {
+void affineStepChunk::fillFromLastStep(const affineStepChunk& other) {
   unsigned int sz;
   sz = other.nwalkers * other.niters * other.nparams;
   if (sz == 0)
@@ -145,7 +144,7 @@ void affineStepChunk::clear() {
 /*!
   \returns Minimum number of steps taken by any walker
 */
-unsigned int affineStepChunk::getMinNSteps() const {
+unsigned int affineStepChunk::getMinNSteps() const noexcept {
   if (nwalkers == 0) return 0;
   unsigned int minstep = nsteps[0];
   unsigned int currval;
@@ -199,7 +198,7 @@ affineStepChunk& affineStepChunk::operator=(const affineStepChunk& other) {
   \returns Maximum log likelihood of any step in this chunk, or NaN
     if no steps available
 */
-double affineStepChunk::getMaxLogLike() const {
+double affineStepChunk::getMaxLogLike() const noexcept {
   if (nwalkers == 0 || niters == 0 || nparams == 0) 
     return std::numeric_limits<double>::quiet_NaN();
   double *sgl_ptr;
@@ -673,7 +672,7 @@ affineChainSet& affineChainSet::operator+=(const affineChainSet& other)
 /*!
   \returns Total number of iterations across all chunks
 */
-unsigned int affineChainSet::getNIters() const {
+unsigned int affineChainSet::getNIters() const noexcept {
   unsigned int ntotiter = 0;
   const affineStepChunk* chunk;
   unsigned int firststep = 0;
@@ -708,7 +707,7 @@ unsigned int affineChainSet::getNIters(unsigned int walker) const
 
   Requires auxilliary storage equal to the number of walkers
 */
-unsigned int affineChainSet::getMinNIters() const {
+unsigned int affineChainSet::getMinNIters() const noexcept {
   unsigned int *iterarr;
   if (steps.size() == 0) return 0;
   iterarr = new unsigned int[nwalkers];
@@ -738,7 +737,7 @@ unsigned int affineChainSet::getMinNIters() const {
 /*!
   \returns Maximum log likelihood of all steps taken
 */
-double affineChainSet::getMaxLogLike() const {
+double affineChainSet::getMaxLogLike() const noexcept {
   if (steps.size() == 0) return std::numeric_limits<double>::quiet_NaN();
   unsigned int firststep = 0;
   if (skipfirst) firststep = 1;

@@ -72,7 +72,7 @@ private:
   void doInitialSteps(bool=false); //!< Do initial steps
   void doMasterStep(double=1.0) throw (affineExcept); //!< Does a step for all walkers, master node
   void emptyMasterQueue(double=1.0) throw (affineExcept); //!< Runs all steps in stepqueue as master node
-  void calcLastLikelihood(); //!< Compute the likelihoods of the last step
+  void calcLastLikelihood(bool=false); //!< Compute the likelihoods of the last step
 
 protected:
   bool is_init; //!< Have the chains been initialized?
@@ -104,18 +104,18 @@ public:
   affineEnsemble(const affineEnsemble&)=delete;
   affineEnsemble(affineEnsemble&&)=delete;
 
-  bool isValid() const; //!< Are params valid?
+  bool isValid() const noexcept; //!< Are params valid?
 
-  void setQuiet() { setVerbosity(0); } //!< Turn off verbose mode
-  void setVerbose() { setVerbosity(1); } //!< Set verbose mode
-  void setUltraVerbose() { setVerbosity(2); } //!< Set ultra-verbose mode
-  virtual void setVerbosity(unsigned int V) { verbosity = V; } //!< Set verbosity level
-  unsigned int getVerbosity() const { return verbosity; } //!< Get verbosity level
+  void setQuiet() noexcept { setVerbosity(0); } //!< Turn off verbose mode
+  void setVerbose() noexcept { setVerbosity(1); } //!< Set verbose mode
+  void setUltraVerbose() noexcept { setVerbosity(2); } //!< Set ultra-verbose mode
+  virtual void setVerbosity(unsigned int V) noexcept { verbosity = V; } //!< Set verbosity level
+  unsigned int getVerbosity() const noexcept { return verbosity; } //!< Get verbosity level
 
-  unsigned int getNWalkers() const { return nwalkers; } //!< Get number of walkers
+  unsigned int getNWalkers() const noexcept { return nwalkers; } //!< Get number of walkers
   void setNWalkers(unsigned int); //!< Set the number of walkers
 
-  unsigned int getNParams() const { return nparams; } //!< Get number of params
+  unsigned int getNParams() const noexcept { return nparams; } //!< Get number of params
   void setNParams(unsigned int); //!< Set the number of parameters
 
   unsigned int getNChunks() const { return chains.getNChunks(); } //!< Get number of chunks
@@ -130,9 +130,9 @@ public:
   // Interact with parameter states
   // Fixing a parameter will also make it ignored
   void clearParamState(); //!< Fit all params, use all params in autocorrelation, no bonus params
-  unsigned int getNFitParams() const; //!< Return number of params being fit
-  unsigned int getNAcorParams() const; //!< Return number of parameters used in autocorrelation (burn in) check
-  unsigned int getNBonusParams() const; //!< Return number of bonus parameters
+  unsigned int getNFitParams() const noexcept; //!< Return number of params being fit
+  unsigned int getNAcorParams() const noexcept; //!< Return number of parameters used in autocorrelation (burn in) check
+  unsigned int getNBonusParams() const noexcept; //!< Return number of bonus parameters
   void fixParam(unsigned int); //!< Treat parameter as fixed
   bool isParamFixed(unsigned int) const; //!< Is a particular parameter fixed?
   void ignoreParamAcor(unsigned int); //!< Ignore parameter in acor computation
@@ -148,7 +148,7 @@ public:
 
   /*! \brief Sets random number generator seed */
   void setSeed(unsigned long long int seed) const { rangen.setSeed(seed); }
-  float generateZ() const; //!< Generate a Z value
+  float generateZ() const noexcept; //!< Generate a Z value
 
   bool computeAcor() const; //!< Computes autocorrelation
 
