@@ -96,7 +96,7 @@ affineEnsemble::~affineEnsemble() {}
 
   Only meaningful for the master node, always return true for slaves
 */
-bool affineEnsemble::isValid() const {
+bool affineEnsemble::isValid() const noexcept {
   if (rank != 0) return true;
   if (!is_init) return false;
   if (nwalkers < 2) return false; //Need at least 2!
@@ -113,7 +113,7 @@ bool affineEnsemble::isValid() const {
 /*!
   \returns A new z value
 */
-float affineEnsemble::generateZ() const {
+float affineEnsemble::generateZ() const noexcept {
   //Don't check isValid or if master for speed
   //Generate a random number satisfying g \propto 1/sqrt(z)
   // for z \elem [1/a,a]
@@ -229,21 +229,21 @@ void affineEnsemble::clearParamState() {
   \returns Number of parameters being fit (nparams minus number of 
   fixed and bonus ones)
 */
-unsigned int affineEnsemble::getNFitParams() const {
+unsigned int affineEnsemble::getNFitParams() const noexcept {
   return nparams - nfixed - nbonus;
 }
 
 /*!
   \returns Number of parameters being used in autocorrelation computation
 */
-unsigned int affineEnsemble::getNAcorParams() const {
+unsigned int affineEnsemble::getNAcorParams() const noexcept {
   return nparams - nignore;
 }
 
 /*!
   \returns Number of bonus parameters
 */
-unsigned int affineEnsemble::getNBonusParams() const {
+unsigned int affineEnsemble::getNBonusParams() const noexcept {
   return nbonus;
 }
 
@@ -538,7 +538,7 @@ void affineEnsemble::doSteps(unsigned int nsteps, unsigned int initsteps) {
     // Make sure our previous likelihood is valid
     if (verbosity >= 2)
       std::cout << "Computing likelihoods of initializing steps" << std::endl;
-    calcLastLikelihood();
+    calcLastLikelihood(verbosity >= 1);
 
     //Do initial steps
     if (initsteps > 0) {
@@ -620,7 +620,7 @@ void affineEnsemble::masterSample() {
                        "Calling with invalid model setup");
   
   //Make sure we have valid likelihoods
-  calcLastLikelihood();
+  calcLastLikelihood(verbosity >= 1);
 
   // Setup: initial steps and burn in
   doInitialSteps(verbosity == 1);
@@ -749,7 +749,7 @@ void affineEnsemble::doInitialSteps(bool dohash) {
     regenFirstStep = p;
     
     // Get the likelihoods of the new initial position
-    calcLastLikelihood();
+    calcLastLikelihood(verbosity >= 2);
   } else if (verbosity >= 1)
     std::cout << "Not doing initial step exploration" << std::endl;
 }
@@ -959,7 +959,9 @@ void affineEnsemble::doBurnIn(bool dohash) throw(affineExcept) {
 }
 
 /*!
-  Redos the likelihood compuatation for the most recent step.
+  \param[in] showprogbar If true, show a progress bar
+
+  Redo the likelihood compuatation for the most recent step.
   The idea behind this is that sometimes -- like when initializing
   the chains -- you need to compute the likelihood of a step, but it's
   computationally difficult.  This provides a mechanism for doing that 
@@ -971,7 +973,7 @@ void affineEnsemble::doBurnIn(bool dohash) throw(affineExcept) {
   The slave nodes should be in the middle of slaveSample for this
   to work.
 */
-void affineEnsemble::calcLastLikelihood() {
+void affineEnsemble::calcLastLikelihood(bool showprogbar) {
 
   if (rank != 0)
     throw affineExcept("affineEnsemble", "calcLastLikelihood",
@@ -998,6 +1000,14 @@ void affineEnsemble::calcLastLikelihood() {
   bool done = false;
   unsigned int ndone = 0; // Number done
   unsigned int this_update;
+
+  hashbar* progbar = nullptr;
+  if (showprogbar) {
+    std::cout << "Computing likelihood of initial step" << std::endl;
+    progbar = new hashbar(maxhash, nwalkers, '=');
+    progbar->initialize(std::cout);
+  }
+
   // This is pretty much what happens in emptyMasterQueue, but with
   //  small modifications
   while (!done) {
@@ -1064,6 +1074,7 @@ void affineEnsemble::calcLastLikelihood() {
                                pstep.newLogLike);
       
         ndone += 1;
+        if (showprogbar) progbar->update(ndone + 1, std::cout);
       } else if (this_tag == mcmc_affine::REQUESTPOINT) {
         procqueue.push(this_rank);
       } else {
@@ -1076,6 +1087,10 @@ void affineEnsemble::calcLastLikelihood() {
     }
     // Are we done?
     done = (ndone >= nwalkers) && (procqueue.size() >= nslaves);
+  }
+  if (progbar != nullptr) {
+    progbar->fill(std::cout);
+    delete progbar;
   }
 }
 

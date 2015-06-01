@@ -34,11 +34,11 @@ class paramSet final {
   void setNParams(unsigned int); //!< Set number of parameters
   void clear(); //!< Clear parameters, setting number of params to zero
 
-  unsigned int getNParams() const { return nparams; } //!< Get number of parameters
+  unsigned int getNParams() const noexcept { return nparams; } //!< Get number of parameters
   /*! \brief Return particular parameter value */
-  const float& operator[](unsigned int i) const { return paramvals[i]; }
+  const float& operator[](unsigned int i) const noexcept { return paramvals[i]; }
   /*! \brief Return particular parameter value */
-  float& operator[](unsigned int i) { return paramvals[i]; }
+  float& operator[](unsigned int i) noexcept { return paramvals[i]; }
   const float& at(unsigned int) const throw(std::range_error); //!< Element access with range check
   float& at(unsigned int) throw(std::range_error); //!< Element access with range check
 
@@ -47,7 +47,7 @@ class paramSet final {
   /*! \brief Set parameter values from c array */
   void setParamValues(unsigned int, const float* const) throw(affineExcept);
   /*! \brief Set particular parameter value */
-  void setParamValue(unsigned int i, float val) { paramvals[i]=val; }
+  void setParamValue(unsigned int i, float val) noexcept { paramvals[i]=val; }
   /*! \brief Copy from other paramSet */
   paramSet& operator=(const paramSet&);
   /*! \brief Copy with move semantics */

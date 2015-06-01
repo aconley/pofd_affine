@@ -5,7 +5,7 @@
 /*!
   \param[in] seed New seed
 */
-void ran::setSeed(unsigned long long int seed) {
+void ran::setSeed(unsigned long long int seed) noexcept {
   v = 4101842887655102017LL;
   w = 1LL;
   u = seed^v; int64();
@@ -16,7 +16,7 @@ void ran::setSeed(unsigned long long int seed) {
 /*!
   \returns 64 bit random integer
 */
-unsigned long long int ran::int64() {
+unsigned long long int ran::int64() noexcept {
   u = u * 2862933555777941757LL + 7046029254386353087LL;
   v ^= v >> 17; 
   v ^= v << 31; 
@@ -35,7 +35,7 @@ unsigned long long int ran::int64() {
      maxidx can't be generated
 */
 unsigned int ran::selectFromRange(unsigned int minidx,
-                                  unsigned int maxidx) {
+                                  unsigned int maxidx) noexcept {
   double relidx = (maxidx - minidx) * doub();
   return static_cast<unsigned int>(relidx) + minidx;
 }
@@ -43,7 +43,7 @@ unsigned int ran::selectFromRange(unsigned int minidx,
 /*!
   \returns Gaussian deviate with mean 0 and variance 1
 */
-double ran::gauss() {
+double ran::gauss() noexcept {
   double u1,v1,x,y,q;
   do {
     u1 = doub();
