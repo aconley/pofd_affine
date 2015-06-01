@@ -281,7 +281,7 @@ void numberCountsKnotsSpline::setParams(const paramSet& F) {
   
   Does input validity checks.
 */
-double numberCountsKnotsSpline::getNumberCounts(double fdens) const {
+double numberCountsKnotsSpline::getNumberCounts(double fdens) const noexcept {
   if (nknots < 2) return std::numeric_limits<double>::quiet_NaN();
   if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
   if (fdens < knots[0] || fdens >= knots[nknots-1]) return 0.0; //Out of range
@@ -297,7 +297,7 @@ double numberCountsKnotsSpline::getNumberCounts(double fdens) const {
    \int dS\, S^{\alpha} \frac{dN}{dS}
   \f]
 */
-double numberCountsKnotsSpline::splineInt(double alpha) const {
+double numberCountsKnotsSpline::splineInt(double alpha) const noexcept {
   if (nknots < 2) return std::numeric_limits<double>::quiet_NaN();
   if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
   double result, error;
@@ -324,21 +324,21 @@ double numberCountsKnotsSpline::splineInt(double alpha) const {
 /*!
   \returns Number of sources per unit area
 */
-double numberCountsKnotsSpline::getNS() const {
+double numberCountsKnotsSpline::getNS() const noexcept {
   return splineInt(0);
 }
 
 /*!
   \returns Total flux density per unit area
 */
-double numberCountsKnotsSpline::getFluxPerArea() const {
+double numberCountsKnotsSpline::getFluxPerArea() const noexcept {
   return splineInt(1);
 }
 
 /*!
   \returns Total flux density squared per unit area
 */
-double numberCountsKnotsSpline::getFluxSqPerArea() const {
+double numberCountsKnotsSpline::getFluxSqPerArea() const noexcept {
   return splineInt(2);
 }
   

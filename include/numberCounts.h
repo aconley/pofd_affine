@@ -27,31 +27,31 @@ class numberCounts {
   virtual ~numberCounts() {}; //!< Destructor
 
   virtual void setParams(const paramSet& params)=0; //!< Set parameters  
-  virtual bool isValid() const = 0; //!< See if model params are valid
+  virtual bool isValid() const noexcept = 0; //!< See if model params are valid
 
   /*! \brief Distance between two parameter sets over params model cares about*/
   virtual float paramRelativeDistance(const paramSet& p1, const paramSet& p2) 
     const throw(affineExcept) = 0;
 
   /*! \brief Minimum flux model is defined for */
-  virtual double getMinFlux() const = 0;
+  virtual double getMinFlux() const noexcept = 0;
 
   /*! \brief Maxium flux model is defined for */
-  virtual double getMaxFlux() const = 0;
+  virtual double getMaxFlux() const noexcept = 0;
 
   /*! \brief Get range over which R is expected to be nonzero */
   virtual dblpair getRRange(const beam&) const throw(affineExcept) = 0;
 
   /*! \brief Return the number of sources per unit area */
-  virtual double getNS() const = 0; 
+  virtual double getNS() const noexcept = 0; 
 
   /*! \brief Get flux per unit area */
-  virtual double getFluxPerArea() const = 0; 
+  virtual double getFluxPerArea() const noexcept = 0; 
   /*! \brief Get mean flux^2 per unit area */
-  virtual double getFluxSqPerArea() const = 0;
+  virtual double getFluxSqPerArea() const noexcept = 0;
 
   /*! Get differential number counts */
-  virtual double getNumberCounts(double) const = 0; 
+  virtual double getNumberCounts(double) const noexcept = 0; 
 
   /*! \brief Get number of source responses, single value version */
   virtual double getR(double, const beam&) const = 0;

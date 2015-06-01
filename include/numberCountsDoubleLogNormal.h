@@ -91,9 +91,9 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   bool knotvals_loaded; //!< Knot values loaded (not validity checked)
   bool sigmavals_loaded; //!< Sigma values loaded (not validity checked)
   bool offsetvals_loaded; //!< Offset values loaded (not validity checked)
-  void checkKnotsValid() const; //!< Set knots_valid by checking
-  void checkSigmasValid() const; //!< Set sigmas_valid by checking
-  void checkOffsetsValid() const; //!< Set offsets_valid by checking
+  void checkKnotsValid() const noexcept; //!< Set knots_valid by checking
+  void checkSigmasValid() const noexcept; //!< Set sigmas_valid by checking
+  void checkOffsetsValid() const noexcept; //!< Set offsets_valid by checking
 
   // Workspace.  These are temporary arrays used for efficiency.
   // They are useful if we are going to compute R many times (which we
@@ -112,9 +112,9 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   void setf2WorkSize(unsigned int) const; //!< Controls f2work arrays
 
   //Convenience functions for spline computations without input checking
-  double getSigmaInner(double) const; //!< Inner sigma computation
-  double getOffsetInner(double) const; //!< Inner offset computation
-  double getNumberCountsInner(double,double) const; //!< Inner number counts computation
+  double getSigmaInner(double) const noexcept; //!< Inner sigma computation
+  double getOffsetInner(double) const noexcept; //!< Inner offset computation
+  double getNumberCountsInner(double,double) const noexcept; //!< Inner number counts computation
 
   // Finds value where Log Normal value goes to specified value down from peak
   double logNormalSolver(double mu, double sig, double nsig) const;
@@ -124,13 +124,13 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
     throw(affineExcept);
 
   /*! \brief Integrate powers of fluxes over number counts */
-  double splineInt(double alpha, double beta) const;
+  double splineInt(double alpha, double beta) const noexcept;
 
   /*! \brief Number of elements in varr (lots of model params!) */
   static constexpr unsigned int nvarr = 18; 
   void **varr; //!< Internal evil casting array for splineInt
 
-  bool isValidLoaded() const; //!< Are loaded values valid?
+  bool isValidLoaded() const noexcept; //!< Are loaded values valid?
 
  public :
   numberCountsDoubleLogNormal(); //!< Default
@@ -160,14 +160,14 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   /*! \brief Copy operator */
   numberCountsDoubleLogNormal& operator=(const numberCountsDoubleLogNormal&);
 
-  bool isValid() const override; //!< Are model settings loaded and valid?
+  bool isValid() const noexcept override; //!< Are model settings loaded and valid?
 
   /*! \brief Relative distance between two sets of params over model params*/
   float paramRelativeDistance(const paramSet& p1, const paramSet& p2)
     const throw(affineExcept) override;
 
   void setNKnots(unsigned int n); //!< Sets number of knots in band 1
-  unsigned int getNKnots() const { return nknots; } //!< Number of knots in band 1 spline
+  unsigned int getNKnots() const noexcept { return nknots; } //!< Number of knots in band 1 spline
   /*! \brief Sets knot positions, band 1, vector version */
   void setKnotPositions(const std::vector<float>&);
   /*! \brief Sets knot positions, band 1, vector version */
@@ -179,7 +179,7 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   /*! \brief Sets number of sigma positions for color model */
   void setNSigmas(unsigned int);
   /*! \brief Gets number of sigma knots in band 2 color model */
-  unsigned int getNSigmas() const { return nsigmaknots; }
+  unsigned int getNSigmas() const noexcept { return nsigmaknots; }
   /*! \brief Sets knot positions for band 2 sigma model, vector version */
   void setSigmaPositions(const std::vector<float>&);
   /*! \brief Sets knot positions for band 2 sigma model, vector version */
@@ -191,11 +191,11 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   /*! \brief Set minimum sigma value */
   void setMinSigma(double);
   /*! \brief Get minimum sigma value */
-  double getMinSigma() const { return min_sigma; }
+  double getMinSigma() const noexcept { return min_sigma; }
   /*! \brief Sets number of offset positions for color model */
   void setNOffsets(unsigned int);
   /*! \brief Gets number of offset knots in band 2 color model */
-  unsigned int getNOffsets() const { return noffsetknots; }
+  unsigned int getNOffsets() const noexcept { return noffsetknots; }
   /*! \brief Sets knot positions for band 2 offset model, vector version */
   void setOffsetPositions(const std::vector<float>&);
   /*! \brief Sets knot positions for band 2 offset model, vector version */
@@ -211,7 +211,7 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   double getOffsetPosition(unsigned int i) const; //!< Get offset knot position (unchecked)
 
   /*! \brief Gets total number of parameters */
-  unsigned int getNParams() const { return nknots + nsigmaknots + noffsetknots; }
+  unsigned int getNParams() const noexcept { return nknots + nsigmaknots + noffsetknots; }
   /*! \brief Gets positions of all knots */
   void getPositions(std::vector<double>&, std::vector<double>&,
                     std::vector<double>&) const;
@@ -226,32 +226,32 @@ class numberCountsDoubleLogNormal : public numberCountsDouble {
   void setParams(const paramSet&) override; //!< Set parameters
  
   /*! \brief Evaluates Sigma at specified value of S_1 */
-  double getSigma(double) const;
+  double getSigma(double) const noexcept;
   /*! \brief Evaluates Offset at specified value of S_1 */
-  double getOffset(double) const;
+  double getOffset(double) const noexcept;
   
   /*! \brief Evaluates number counts model */
-  double getNumberCounts(double, double) const override;
+  double getNumberCounts(double, double) const noexcept override;
 
   /*! Evaluates band 1 number counts model at specified value of S_1 */
-  double getBand1NumberCounts(double) const override;
+  double getBand1NumberCounts(double) const noexcept override;
   /*! Evaluates band 2 number counts model at specified value of S_2 */
-  double getBand2NumberCounts(double) const override;
+  double getBand2NumberCounts(double) const noexcept override;
 
   /*! \brief Minimum flux model is defined for */
-  dblpair getMinFlux() const override;
+  dblpair getMinFlux() const noexcept override;
   
   /*! \brief Maxium flux model is defined for */
-  dblpair getMaxFlux() const override;
+  dblpair getMaxFlux() const noexcept override;
   
   /*! \brief Get range over which R is expected to be nonzero */
   std::pair<dblpair, dblpair> getRRange(const doublebeam&) const 
     throw(affineExcept) override;
 
-  double getNS() const override; //!< Total number of sources per area
-  double getFluxPerArea(unsigned int) const override; //!< Flux per unit area (sq deg)
-  double getFluxSqPerArea(unsigned int) const override; //!< Flux^2 per unit area (sq deg)
-  double getFluxPowerPerArea(double p1, double p2) const; //!< Integral of s1 to some power and s2 to some power over number counts
+  double getNS() const noexcept override; //!< Total number of sources per area
+  double getFluxPerArea(unsigned int) const noexcept override; //!< Flux per unit area (sq deg)
+  double getFluxSqPerArea(unsigned int) const noexcept override; //!< Flux^2 per unit area (sq deg)
+  double getFluxPowerPerArea(double p1, double p2) const noexcept; //!< Integral of s1 to some power and s2 to some power over number counts
   
   //Routines for getting R
   /*! \brief Get R value at single flux1,flux2 value */

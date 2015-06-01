@@ -38,7 +38,7 @@ pofdMCMCDouble::pofdMCMCDouble(const std::string& INITFILE,
   // All of this is done in initChains
 }
 
-void pofdMCMCDouble::setVerbosity(unsigned int V) {
+void pofdMCMCDouble::setVerbosity(unsigned int V) noexcept {
   if (V >= 4) likeSet.setVerbose(); else likeSet.unSetVerbose();
   affineEnsemble::setVerbosity(V);
 }

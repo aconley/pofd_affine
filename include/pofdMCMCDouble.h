@@ -38,7 +38,7 @@ class pofdMCMCDouble : public affineEnsemble {
   pofdMCMCDouble& operator=(const pofdMCMCDouble&)=delete;
   pofdMCMCDouble& operator=(pofdMCMCDouble&&)=delete;
   
-  void setVerbosity(unsigned int) override;
+  void setVerbosity(unsigned int) noexcept override;
 
   void initChains() override; //!< Initializes data between MPI jobs
   bool areParamsValid(const paramSet&) const override; //!< Test against limits

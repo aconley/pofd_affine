@@ -124,29 +124,29 @@ class calcLikeDoubleSingle { //Odd name...
   /*! \brief Access to beam info */
   const doublebeam& getBeam() const { return bm; }
 
-  void setVerbose() { verbose=true; } //!< Activate verbose mode
-  void unSetVerbose() { verbose = false; } //!< Turn off verbose mode
+  void setVerbose() noexcept { verbose = true; } //!< Activate verbose mode
+  void unSetVerbose() noexcept { verbose = false; } //!< Turn off verbose mode
 
-  void setLikeNorm(unsigned int i, double val) { like_norm[i]=val;} //!< Set likelihood normalization factor relative to beam area; set to zero to nor normalize
+  void setLikeNorm(unsigned int i, double val) noexcept { like_norm[i]=val;} //!< Set likelihood normalization factor relative to beam area; set to zero to nor normalize
   void setLikeNorm(const std::vector<double>&); //!< Set likelihood normalization factor
   void setLikeNorm(unsigned int n, const double* const); //!< Set likelihood normalization factor
-  double getLikeNorm(unsigned int i) const { return like_norm[i]; } //!< Return likelihood normalization factor
+  double getLikeNorm(unsigned int i) const noexcept { return like_norm[i]; } //!< Return likelihood normalization factor
 
   void setSigmaBase1(const std::vector<double>&); //!< Set base sigma values, band 1
   void setSigmaBase1(unsigned int, const double* const); //!< Set base sigma values, band 1
   /*! \brief Gets sigma base value for band 1 */
-  double getSigmaBase1(unsigned int i) const { return sigma_base1[i]; }
+  double getSigmaBase1(unsigned int i) const noexcept { return sigma_base1[i]; }
   void setSigmaBase2(const std::vector<double>&); //!< Set base sigma values, band 2
   void setSigmaBase2(unsigned int, const double* const); //!< Set base sigma values, band 2
   /*! \brief Gets sigma base value for band 2 */
-  double getSigmaBase2(unsigned int i) const { return sigma_base2[i]; }
+  double getSigmaBase2(unsigned int i) const noexcept { return sigma_base2[i]; }
 
-  void setExpConf1(double v) { exp_conf1 = v;} //!< Set expected confusion noise, band 1
-  double getExpConf1() const { return exp_conf1;} //!< Get expected confusion noise, band 1
-  void setExpConf2(double v) { exp_conf2 = v;} //!< Set expected confusion noise, band 1
-  double getExpConf2() const { return exp_conf2;} //!< Get expected confusion noise, band 1
+  void setExpConf1(double v) noexcept { exp_conf1 = v;} //!< Set expected confusion noise, band 1
+  double getExpConf1() const noexcept { return exp_conf1;} //!< Get expected confusion noise, band 1
+  void setExpConf2(double v) noexcept { exp_conf2 = v;} //!< Set expected confusion noise, band 1
+  double getExpConf2() const noexcept { return exp_conf2;} //!< Get expected confusion noise, band 1
 
-  unsigned int getNDataSets() const { return ndatasets; } //!< Number of data sets
+  unsigned int getNDataSets() const noexcept { return ndatasets; } //!< Number of data sets
   unsigned int getNData(unsigned int i) const { return data[i].getN(); } //!< Number of data points in given data set
 
   /*! \brief Returns \f$\log L\f$ over all data sets.  Model must be set */
@@ -265,16 +265,16 @@ class calcLikeDouble {
                          unsigned int NBEAMHIST=160,
                          double EXPCONF1=0.0, double EXPCONF2=0.0);
   
-  void setVerbose() { verbose=true; } //!< Turn on verbose mode
-  void unSetVerbose() { verbose = false; } //!< Turn off verbose mode
+  void setVerbose() noexcept { verbose=true; } //!< Turn on verbose mode
+  void unSetVerbose() noexcept { verbose = false; } //!< Turn off verbose mode
 
-  void setFFTSize(unsigned int val) { fftsize = val; } //!< Set FFT size
-  unsigned int getFFTSize() const { return fftsize; } //!< Return current FFT size
-  void setEdgeInteg() { edgeInteg=true; } //!< Turn on edge integration
-  void unSetEdgeInteg() { edgeInteg=false; } //!< Turn off edge integration
-  bool getEdgeInteg() const { return edgeInteg; } //!< Are we doing edge integration?
+  void setFFTSize(unsigned int val) noexcept { fftsize = val; } //!< Set FFT size
+  unsigned int getFFTSize() const noexcept { return fftsize; } //!< Return current FFT size
+  void setEdgeInteg() noexcept { edgeInteg=true; } //!< Turn on edge integration
+  void unSetEdgeInteg() noexcept { edgeInteg=false; } //!< Turn off edge integration
+  bool getEdgeInteg() const noexcept { return edgeInteg; } //!< Are we doing edge integration?
   void setNEdge(unsigned int); //!< Set edge integration size
-  unsigned int getNEdge() const { return nedge; } //!< Get edge integration size
+  unsigned int getNEdge() const noexcept { return nedge; } //!< Get edge integration size
 
   void setRRanges(const paramSet& p); //!< Set R ranges for all datasets
 
@@ -283,11 +283,11 @@ class calcLikeDouble {
   void setNBins(unsigned int); //!< Change number of bins
 
   /*! \brief Return number of knots for 1st band spline*/
-  unsigned int getNKnots() const { return model.getNKnots(); }
+  unsigned int getNKnots() const noexcept { return model.getNKnots(); }
   /*! \brief Return number of knots in color sigma model */
-  unsigned int getNSigmas() const { return model.getNSigmas(); }
+  unsigned int getNSigmas() const noexcept { return model.getNSigmas(); }
   /*! \brief Return number of knots in color offset model */
-  unsigned int getNOffsets() const { return model.getNOffsets(); }
+  unsigned int getNOffsets() const noexcept { return model.getNOffsets(); }
   /*! \brief Set knot positoins for 1st band spline */
   void setKnotPositions(std::vector<double>& knts) 
   { model.setKnotPositions(knts); }
@@ -307,41 +307,41 @@ class calcLikeDouble {
 
   // Sigma priors
   /*! \brief Activates the sigma prior with width set to value, band 1*/
-  void setSigmaPrior1(double val) { 
+  void setSigmaPrior1(double val) noexcept { 
     has_sigma_prior1 = true; sigma_prior_width1 = val;}
   /*! \brief De-activate the sigma prior, band 1*/
-  void unsetSigmaPrior1() { has_sigma_prior1 = false; }
+  void unsetSigmaPrior1() noexcept { has_sigma_prior1 = false; }
   /*! \brief Activates the sigma prior with width set to value, band 2*/
-  void setSigmaPrior2(double val) { 
+  void setSigmaPrior2(double val) noexcept { 
     has_sigma_prior2 = true; sigma_prior_width2 = val;}
   /*! \brief De-activate the sigma prior, band 2*/
-  void unsetSigmaPrior2() { has_sigma_prior2 = false; }
+  void unsetSigmaPrior2() noexcept { has_sigma_prior2 = false; }
 
   // CFIRB priors
   /*! \brief Activates the CFIRB prior with the specified values, band 1 */
   void setCFIRBPrior1(double, double);
   /*! \brief De-activate CFIRB prior, band 1 */
-  void unsetCFIRBPrior1() { has_cfirb_prior1 = false; }
+  void unsetCFIRBPrior1() noexcept { has_cfirb_prior1 = false; }
   /*! \brief Activates the CFIRB prior with the specified values, band 2 */
   void setCFIRBPrior2(double, double);
   /*! \brief De-activate CFIRB prior, band 2 */
-  void unsetCFIRBPrior2() { has_cfirb_prior2 = false; }
+  void unsetCFIRBPrior2() noexcept { has_cfirb_prior2 = false; }
 
   // Poisson priors
   /*! \brief Activates the Poisson prior with the specified values, band 1 */
-  void setPoissonPrior1( double, double);
+  void setPoissonPrior1(double, double);
   /*! \brief De-activates Poisson prior, band 1 */
-  void unsetPoissonPrior1() { has_poisson_prior1 = false; }
+  void unsetPoissonPrior1() noexcept { has_poisson_prior1 = false; }
   /*! \brief Activates the Poisson prior with the specified values, band 2 */
   void setPoissonPrior2(double, double);
   /*! \brief De-activates Poisson prior, band 2 */
-  void unsetPoissonPrior2() { has_poisson_prior2 = false; }
+  void unsetPoissonPrior2() noexcept { has_poisson_prior2 = false; }
 
   /*! \brief Set Regularization Alpha*/
   void setRegularizationAlpha(double);
 
   /*! \brief Get number of beam sets */
-  unsigned int getNBeamSets() const { return nbeamsets; }
+  unsigned int getNBeamSets() const noexcept { return nbeamsets; }
 
   /*! \brief Get Log-Likelihood of data for a set of parameters */
   double getLogLike(const paramSet&, bool&) const;

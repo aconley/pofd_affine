@@ -270,7 +270,7 @@ void numberCountsKnots::setParams(const paramSet& F) {
 /*!
   \returns True if the model parameters are valid
  */
-bool numberCountsKnots::isValid() const {
+bool numberCountsKnots::isValid() const noexcept {
   if (nknots == 0) return false;
   if (!knotvals_loaded) return false;
   for (unsigned int i = 0; i < nknots; ++i)
@@ -322,7 +322,7 @@ float numberCountsKnots::paramRelativeDistance(const paramSet& p1,
 /*!
   \returns Minimum flux density model is non-zero at
 */
-double numberCountsKnots::getMinFlux() const {
+double numberCountsKnots::getMinFlux() const noexcept {
   if (nknots == 0) return std::numeric_limits<double>::quiet_NaN();
   return knots[0];
 }
@@ -330,7 +330,7 @@ double numberCountsKnots::getMinFlux() const {
 /*!
   \returns Maximum flux density model is non-zero at
 */
-double numberCountsKnots::getMaxFlux() const {
+double numberCountsKnots::getMaxFlux() const noexcept {
   if (nknots == 0) return std::numeric_limits<double>::quiet_NaN();
   return knots[nknots-1];
 }

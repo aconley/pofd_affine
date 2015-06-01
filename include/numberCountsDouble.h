@@ -27,25 +27,25 @@ class numberCountsDouble {
   numberCountsDouble() {};
   virtual ~numberCountsDouble() {};
   
-  virtual bool isValid() const = 0; //!< See if model params are valid
+  virtual bool isValid() const noexcept = 0; //!< See if model params are valid
 
   /*! \brief Relative distance between two sets of params over model params*/
   virtual float paramRelativeDistance(const paramSet& p1, const paramSet& p2)
     const throw(affineExcept) = 0;
 
-  virtual double getNS() const = 0; //!< Total number of sources per area
+  virtual double getNS() const noexcept = 0; //!< Total number of sources per area
 
   /*! \brief Get Mean Flux per unit area */
-  virtual double getFluxPerArea(unsigned int) const = 0;
+  virtual double getFluxPerArea(unsigned int) const noexcept = 0;
 
   /*! \brief Get Mean Flux^2 per unit area */
-  virtual double getFluxSqPerArea(unsigned int) const = 0;
+  virtual double getFluxSqPerArea(unsigned int) const noexcept = 0;
 
   /*! \brief Minimum flux model is defined for */
-  virtual dblpair getMinFlux() const = 0;
+  virtual dblpair getMinFlux() const noexcept = 0;
 
   /*! \brief Maxium flux model is defined for */
-  virtual dblpair getMaxFlux() const = 0;
+  virtual dblpair getMaxFlux() const noexcept = 0;
 
   /*! \brief Get range over which R is expected to be nonzero */
   virtual std::pair<dblpair, dblpair> 
@@ -54,15 +54,15 @@ class numberCountsDouble {
   virtual void getParams(paramSet&) const=0; //!< Get parameters
   virtual void setParams(const paramSet& params)=0; //!< Set parameters
 
-  virtual unsigned int getNParams() const = 0; //!< Return number of parameters required
+  virtual unsigned int getNParams() const noexcept = 0; //!< Return number of parameters required
 
   /*! Evaluates number counts model */
-  virtual double getNumberCounts(double, double) const = 0; 
+  virtual double getNumberCounts(double, double) const noexcept = 0; 
 
   /*! Evaluates band 1 number counts model at specified value of S_1 */
-  virtual double getBand1NumberCounts(double) const = 0;
+  virtual double getBand1NumberCounts(double) const noexcept = 0;
   /*! Evaluates band 2 number counts model at specified value of S_2 */
-  virtual double getBand2NumberCounts(double) const = 0;
+  virtual double getBand2NumberCounts(double) const noexcept = 0;
   
   /*! \brief Get number of source responses, single value version */
   virtual double getR(double, double, const doublebeam&) const = 0;

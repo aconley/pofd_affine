@@ -37,7 +37,7 @@ public:
   pofdMCMC& operator=(const pofdMCMC&)=delete;
   pofdMCMC& operator=(pofdMCMC&&)=delete;
   
-  void setVerbosity(unsigned int) override;
+  void setVerbosity(unsigned int) noexcept override;
 
   void initChains() override; //!< Initializes data between MPI jobs
   bool areParamsValid(const paramSet&) const override; //!< Test against limits

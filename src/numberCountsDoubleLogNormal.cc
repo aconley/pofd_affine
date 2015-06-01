@@ -15,7 +15,7 @@
 #include "../include/affineExcept.h"
 
 // Determines sign component of fluxes (pp, pn, np, nn)
-inline unsigned int signComp(double x1, double x2) {
+inline unsigned int signComp(double x1, double x2) noexcept {
   if (x1 >= 0) {
     if (x2 >= 0) return 0;
     else return 1;
@@ -27,7 +27,7 @@ inline unsigned int signComp(double x1, double x2) {
 
 //Functions to pass to GSL integrator
 /*! \brief Evaluates flux1^power1 * exp(const1*mu + const2*sigma^2) dN/dS1 */
-static double evalPowfNDoubleLogNormal(double, void*); 
+static double evalPowfNDoubleLogNormal(double, void*) noexcept; 
 
 // Function for root solving to find maximum band 2 flux
 struct lognorm_params {
@@ -37,7 +37,7 @@ struct lognorm_params {
 static double lognorm(double, void*);
 
 /*! \brief Evaluates sqrt(2 pi) dN / dS1 dS2 with S1 as an argument and S2 a parameter*/
-static double evalCounts(double, void*); 
+static double evalCounts(double, void*) noexcept; 
 
 numberCountsDoubleLogNormal::numberCountsDoubleLogNormal() : 
   nknots(0), knots(nullptr), logknots(nullptr), logknotvals(nullptr),
@@ -1057,7 +1057,7 @@ void numberCountsDoubleLogNormal::setParams(const paramSet& F) {
   the results whenever the knots are set rather than every
   time we call the model.
 */
-void numberCountsDoubleLogNormal::checkKnotsValid() const {
+void numberCountsDoubleLogNormal::checkKnotsValid() const noexcept {
   knots_valid = false;
   if (!knotpos_loaded) return;
   if (!knotvals_loaded) return;
@@ -1077,7 +1077,7 @@ void numberCountsDoubleLogNormal::checkKnotsValid() const {
   the results whenever the sigmas are set rather than every
   time we call the model.
 */
-void numberCountsDoubleLogNormal::checkSigmasValid() const {
+void numberCountsDoubleLogNormal::checkSigmasValid() const noexcept {
   sigmas_valid = false;
   if (!sigmapos_loaded) return;
   if (!sigmavals_loaded) return;
@@ -1100,7 +1100,7 @@ void numberCountsDoubleLogNormal::checkSigmasValid() const {
   the results whenever the offsets are set rather than every time
   we do anything.
 */
-void numberCountsDoubleLogNormal::checkOffsetsValid() const {
+void numberCountsDoubleLogNormal::checkOffsetsValid() const noexcept {
   offsets_valid = false;
   if (!offsetpos_loaded) return;
   if (!offsetvals_loaded) return;
@@ -1118,7 +1118,7 @@ void numberCountsDoubleLogNormal::checkOffsetsValid() const {
 /*!
   \returns True if the model parameters are valid
 */
-bool numberCountsDoubleLogNormal::isValid() const {
+bool numberCountsDoubleLogNormal::isValid() const noexcept {
   if (!(knots_valid && sigmas_valid && offsets_valid)) return false;
   return true;
 }
@@ -1169,7 +1169,7 @@ float numberCountsDoubleLogNormal::paramRelativeDistance(const paramSet& p1,
 
   Assumes validity already checked
 */
-double numberCountsDoubleLogNormal::getSigmaInner(double f1) const {
+double numberCountsDoubleLogNormal::getSigmaInner(double f1) const noexcept {
   if (nsigmaknots == 1) return sigmavals[0];
   if (f1 <= sigmaknots[0]) return sigmavals[0];
   if (f1 >= sigmaknots[nsigmaknots-1]) return sigmavals[nsigmaknots-1];
@@ -1184,7 +1184,7 @@ double numberCountsDoubleLogNormal::getSigmaInner(double f1) const {
 
   Assumes validity already checked
 */
-double numberCountsDoubleLogNormal::getOffsetInner(double f1) const {
+double numberCountsDoubleLogNormal::getOffsetInner(double f1) const noexcept {
   if (noffsetknots == 1) return offsetvals[0];
   if (f1 <= offsetknots[0]) return offsetvals[0];
   if (f1 >= offsetknots[noffsetknots-1]) return offsetvals[noffsetknots-1];
@@ -1198,7 +1198,7 @@ double numberCountsDoubleLogNormal::getOffsetInner(double f1) const {
 
   Does validity checks on model state.
 */
-double numberCountsDoubleLogNormal::getSigma(double f1) const {
+double numberCountsDoubleLogNormal::getSigma(double f1) const noexcept {
   if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
   if (nsigmaknots < 1) return std::numeric_limits<double>::quiet_NaN();
   if (std::isnan(f1) || std::isinf(f1)) 
@@ -1212,7 +1212,7 @@ double numberCountsDoubleLogNormal::getSigma(double f1) const {
 
   Does validity checks on model state.
 */
-double numberCountsDoubleLogNormal::getOffset(double f1) const {
+double numberCountsDoubleLogNormal::getOffset(double f1) const noexcept {
   if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
   if (noffsetknots < 1) return std::numeric_limits<double>::quiet_NaN();
   if (std::isnan(f1) || std::isinf(f1)) 
@@ -1228,7 +1228,7 @@ double numberCountsDoubleLogNormal::getOffset(double f1) const {
   Assumes model validity already checked
 */
 double numberCountsDoubleLogNormal::
-getNumberCountsInner(double f1, double f2) const {
+getNumberCountsInner(double f1, double f2) const noexcept {
   const double normfac = 1.0 / sqrt(2 * M_PI);
   const double prefac = -0.5 * pofd_mcmc::ilog2toe;
   if (f1 < knots[0] || f1 >= knots[nknots-1] || f2 <= 0.0) 
@@ -1254,7 +1254,7 @@ getNumberCountsInner(double f1, double f2) const {
   Does validity checks on input.
 */
 double numberCountsDoubleLogNormal::getNumberCounts(double f1, double f2) 
-  const {
+  const noexcept {
   if ((nknots < 2) || (nsigmaknots < 1) || (noffsetknots < 1))
     return std::numeric_limits<double>::quiet_NaN();
   if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
@@ -1269,7 +1269,8 @@ double numberCountsDoubleLogNormal::getNumberCounts(double f1, double f2)
   \param[in] f1 Flux density in band 1
   \returns Number counts in band 1 at f1: \f$dN / dS_1 \left(f1\right) \f$
 */
-double numberCountsDoubleLogNormal::getBand1NumberCounts(double f1) const {
+double numberCountsDoubleLogNormal::getBand1NumberCounts(double f1) 
+  const noexcept {
   if ((nknots < 2) || (nsigmaknots < 1) || (noffsetknots < 1))
     return std::numeric_limits<double>::quiet_NaN();
   if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
@@ -1286,7 +1287,8 @@ double numberCountsDoubleLogNormal::getBand1NumberCounts(double f1) const {
   \param[in] f2 Flux density in band 2
   \returns Number counts in band 2 at f2: \f$dN / dS_2 \left(f2\right) \f$
 */
-double numberCountsDoubleLogNormal::getBand2NumberCounts(double f2) const {
+double numberCountsDoubleLogNormal::getBand2NumberCounts(double f2) 
+  const noexcept {
 
   const double normfac = 1.0 / sqrt(2 * M_PI);
 
@@ -1347,7 +1349,7 @@ double numberCountsDoubleLogNormal::getBand2NumberCounts(double f2) const {
 
   Fluxes must be positive, so return smallest non-zero double value.
  */
-dblpair numberCountsDoubleLogNormal::getMinFlux() const {
+dblpair numberCountsDoubleLogNormal::getMinFlux() const noexcept {
   if (nknots == 0) 
     return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
                           std::numeric_limits<double>::quiet_NaN());
@@ -1360,7 +1362,7 @@ dblpair numberCountsDoubleLogNormal::getMinFlux() const {
   This is not entirely defined for band 2, so return a value a few sigma
   above the top value.  It is well defined for band 1.
  */
-dblpair numberCountsDoubleLogNormal::getMaxFlux() const {
+dblpair numberCountsDoubleLogNormal::getMaxFlux() const noexcept {
   const double nsig = 3.0; // Gaussian equivalent sigma for band 2 solver
   if (nknots == 0)     
     return std::make_pair(std::numeric_limits<double>::quiet_NaN(),
@@ -1544,7 +1546,8 @@ numberCountsDoubleLogNormal::getRRangeInternal(const doublebeam& bm) const
   The function evaluation is done in evalPowfNDoubleLogNormal, 
   which is the thing that is passed to the GSL integration routines.
 */
-double numberCountsDoubleLogNormal::splineInt(double alpha, double beta) const {
+double numberCountsDoubleLogNormal::splineInt(double alpha, double beta) 
+  const noexcept {
   if (nknots < 2) return std::numeric_limits<double>::quiet_NaN();
   if (!isValid()) return std::numeric_limits<double>::quiet_NaN();
   double result, error;
@@ -1632,7 +1635,7 @@ numberCountsDoubleLogNormal::getRRange(const doublebeam& bm) const
   \returns The Total number of sources per area, however area is defined
            by the model.
 */
-double numberCountsDoubleLogNormal::getNS() const {
+double numberCountsDoubleLogNormal::getNS() const noexcept {
   return splineInt(0.0,0.0);
 }
 
@@ -1642,11 +1645,10 @@ double numberCountsDoubleLogNormal::getNS() const {
            flux
 */
 double numberCountsDoubleLogNormal::
-getFluxPerArea(unsigned int band) const {
+getFluxPerArea(unsigned int band) const noexcept {
   if (band == 0) return splineInt(1.0, 0.0);
   else if (band == 1) return splineInt(0.0, 1.0);
-  else throw affineExcept("numberCountsDoubleLogNormal",
-                          "getFluxPerArea", "Band must be 0 or 1");
+  else return std::numeric_limits<double>::quiet_NaN();
 }
 
 /*!
@@ -1655,11 +1657,10 @@ getFluxPerArea(unsigned int band) const {
            flux
 */
 double numberCountsDoubleLogNormal::
-getFluxSqPerArea(unsigned int band) const {
+getFluxSqPerArea(unsigned int band) const noexcept {
   if (band == 0) return splineInt(2.0, 0.0);
   else if (band == 1) return splineInt(0.0, 2.0);
-  else throw affineExcept("numberCountsDoubleLogNormal",
-                          "getFluxSqPerArea", "Band must be 0 or 1");
+  else return std::numeric_limits<double>::quiet_NaN();
 }
 
 /*!
@@ -1668,7 +1669,7 @@ getFluxSqPerArea(unsigned int band) const {
   \returns The flux density (band1)^p1 * flux density (band2)^p2 per area
 */
 double numberCountsDoubleLogNormal::
-getFluxPowerPerArea(double p1, double p2) const {
+getFluxPowerPerArea(double p1, double p2) const noexcept {
   return splineInt(p1, p2);
 }
 
@@ -2332,7 +2333,7 @@ bool numberCountsDoubleLogNormal::writeToStream(std::ostream& os) const {
   This is just the number counts with some constants removed,
   and the idea is to integrate this over S_1
 */
-static double evalCounts(double s1, void* params) {
+static double evalCounts(double s1, void* params) noexcept {
   // Model is: n1(s1) / s1 * LogNormal(s2 / s1; mu(s1), sigma(s1))
   //  where s1 is the flux in the first band and n1 is the number
   // counts in band 1 -- see splineInt.  However, the constant 1 / sqrt(2 * pi)
@@ -2420,7 +2421,7 @@ static double evalCounts(double s1, void* params) {
      can work with.
   Internal function for use in model integrations.
 */
-static double evalPowfNDoubleLogNormal(double s1, void* params) {
+static double evalPowfNDoubleLogNormal(double s1, void* params) noexcept {
   //Model is: ( s1^power * exp( const1*mu + const2*sigma^2 ) ) * n1(s1)
   // where s1 is the flux in the first band and n1 is the number
   // counts in band 1 -- see splineInt.

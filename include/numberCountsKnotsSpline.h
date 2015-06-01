@@ -29,7 +29,7 @@ class numberCountsKnotsSpline : public numberCountsKnots {
   gsl_integration_workspace *gsl_work; //!< Integration workspace for QAG
 
   /*! \brief Integrates flux^power over number counts */
-  double splineInt(double power) const; 
+  double splineInt(double power) const noexcept; 
   void **varr; //!< Internal evil casting array for integration
 
  public :
@@ -52,11 +52,11 @@ class numberCountsKnotsSpline : public numberCountsKnots {
 
   void setParams(const paramSet&) override; //!< Set parameters
 
-  double getNumberCounts(double) const override; //!< Evaluates number counts model
-  double getNS() const override; //!< Return the number of sources with \f$S > S_{min}\f$ per square degree
+  double getNumberCounts(double) const noexcept override; //!< Evaluates number counts model
+  double getNS() const noexcept override; //!< Return the number of sources with \f$S > S_{min}\f$ per square degree
 
-  double getFluxPerArea() const override; //!< Flux per unit area (sq deg)
-  double getFluxSqPerArea() const override; //!< Flux squared per unit area (sq deg)
+  double getFluxPerArea() const noexcept override; //!< Flux per unit area (sq deg)
+  double getFluxSqPerArea() const noexcept override; //!< Flux squared per unit area (sq deg)
   
   /*! \brief Get R at single flux value */
   double getR(double, const beam&) const override;

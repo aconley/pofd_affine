@@ -58,22 +58,22 @@ class numberCountsKnots : public numberCounts {
   virtual void getParams(paramSet&) const; //!< Return current parameters
   virtual void setParams(const paramSet&) override; //!< Set parameters
 
-  unsigned int getNKnots() const { return nknots; } //!< Returns number of knots
+  unsigned int getNKnots() const noexcept { return nknots; } //!< Returns number of knots
   /*! \brief Get position of specified knot */
-  double getKnotPos(unsigned int i) const { return knots[i]; }
+  double getKnotPos(unsigned int i) const noexcept { return knots[i]; }
 
   /*! \brief Get knot position and log value */
-  dblpair getLogKnot(unsigned int i) const {
+  dblpair getLogKnot(unsigned int i) const noexcept {
     return std::pair<double,double>(knots[i], logknotvals[i]); }
 
-  virtual bool isValid() const override; //!< Are model parameters valid
+  virtual bool isValid() const noexcept override; //!< Are model parameters valid
 
   /*! \brief Distance between two parameter sets over params model cares about*/
   virtual float paramRelativeDistance(const paramSet& p1, const paramSet& p2) 
     const throw(affineExcept) override;
 
-  double getMaxFlux() const override; //!< Maximum flux supported by model
-  double getMinFlux() const override; //!< Minimum flux supported by model
+  double getMaxFlux() const noexcept override; //!< Maximum flux supported by model
+  double getMinFlux() const noexcept override; //!< Minimum flux supported by model
 
   /*! \brief Get range over which R is expected to be nonzero */
   dblpair getRRange(const beam&) const throw(affineExcept) override;
