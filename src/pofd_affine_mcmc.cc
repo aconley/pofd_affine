@@ -6,6 +6,7 @@
 #include "../include/pofdMCMC.h"
 #include "../include/pofdMCMCDouble.h"
 #include "../include/affineExcept.h"
+#include "../include/hdf5utils.h"
 
 int main(int argc, char** argv) {
 
@@ -49,7 +50,6 @@ int main(int argc, char** argv) {
     {"help", no_argument, 0, 'h'},
     {"double",no_argument,0,'d'},
     {"fixedburn", no_argument, 0, 'f'},
-    {"hdf", no_argument, 0, 'H'},
     {"initsteps",required_argument,0,'i'},
     {"inittemp", required_argument, 0, 'I'},
     {"minburn",required_argument,0,'m'},
@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
     {"version",no_argument,0,'V'}, 
     {0,0,0,0}
   };
-  char optstring[] = "b:hdfHi:I:m:n:N:s:V";
+  char optstring[] = "b:hdfi:I:m:n:N:s:V";
   int c;
   int option_index = 0;
 
@@ -108,9 +108,6 @@ int main(int argc, char** argv) {
         std::cerr << "\t\trather than using the autocorrelation." << std::endl;
         std::cerr << "\t-h, --help" << std::endl;
         std::cerr << "\t\tOutput this help message and exit." << std::endl;
-        std::cerr << "\t-H, --hdf" << std::endl;
-        std::cerr << "\t\tWrite as HDF5 file rather than text file."
-                  << std::endl;
         std::cerr << "\t-i, --initsteps INITIAL_STEPS" << std::endl;
         std::cerr << "\t\tThis many steps per walker are taken and thrown away"
                   << std::endl;
@@ -264,6 +261,10 @@ int main(int argc, char** argv) {
   }
   
   try {
+    hdf5utils::outfiletype oft = hdf5utils::getOutputFileType(outfile);
+    if (oft == hdf5utils::HDF5 || oft == hdf5utils::UNKNOWN)
+      write_as_hdf = true;
+
     if (!twod) {
       // Single band case
       pofdMCMC engine(initfile, specfile, nwalkers, nsamples, init_steps,
